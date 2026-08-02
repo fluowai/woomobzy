@@ -1,5 +1,14 @@
 # Handoff
 
+## 2026-08-02 — Reconstrução visual das novas telas WooTech Imob
+
+- As referências do ZIP foram incorporadas às rotas existentes, preservando serviços, formulários, permissões e dados reais.
+- Novo sistema visual compartilhado: `views/wootech-reference.css`, importado por `index.css`; os componentes alvo usam a classe `wootech-reference-screen`.
+- Destaques: pipeline comercial com KPIs e ações; Matchmaking 360 com métricas de IA; metas rurais com progresso; BI Rural e configurações com cabeçalhos operacionais; aparência do site com preview responsivo.
+- As alterações locais da central de mensagens pertencentes a outro fluxo de trabalho foram preservadas.
+- Gates verdes: type-check, lint sem erros, 127 testes e build.
+- Próximo passo: validar visualmente as rotas autenticadas em desktop/mobile, revisar o conjunto e só então decidir commit/push/deploy.
+
 ## 2026-08-02 — QR do WhatsApp não chegava ao frontend
 
 - Evidência de produção: o bundle do frontend já contém o timeout de 30 segundos, mas a instância `b0e96d10-...` terminou `disconnected` sem `qr_code`; portanto, o frontend não recebeu conteúdo para renderizar.

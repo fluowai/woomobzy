@@ -7,8 +7,10 @@ import {
   Upload,
   Palette,
   Layout,
-  Type,
   Globe,
+  Eye,
+  Monitor,
+  Smartphone,
 } from 'lucide-react';
 import { uploadFile } from '../../services/storage';
 import { extractColorsFromImage } from '../../utils/colors';
@@ -118,16 +120,16 @@ const AppearanceSettings: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="p-6 border-b border-gray-100 bg-gray-50 flex items-center gap-3">
-        <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
-          <Palette size={20} />
-        </div>
+    <div className="wootech-reference-screen bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="wootech-page-heading border-b border-gray-100 p-6">
         <div>
-          <h2 className="font-semibold text-gray-800">Aparência do Site</h2>
-          <p className="text-xs text-gray-500">
-            Personalize cores, logo e identidade visual.
-          </p>
+          <div className="wootech-breadcrumb"><strong>Configurações</strong><span>/</span><span>Aparência</span></div>
+          <h1 className="flex items-center gap-2"><Palette size={24} /> Aparência do site</h1>
+          <p>Personalize identidade, cores, logo e experiência pública da sua imobiliária.</p>
+        </div>
+        <div className="wootech-action-row">
+          <button className="wootech-secondary-action" onClick={() => document.getElementById('site-appearance-preview')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}><Eye size={17} /> Pré-visualizar site</button>
+          <button className="wootech-primary-action" onClick={handleSave} disabled={saving}><Save size={17} /> {saving ? 'Salvando...' : 'Salvar alterações'}</button>
         </div>
       </div>
 
@@ -142,7 +144,7 @@ const AppearanceSettings: React.FC = () => {
                   formData.isLive ? 'text-emerald-500' : 'text-orange-500'
                 }
               />
-              Publicacao do Site
+              Publicação do site
             </h3>
             <p className="text-sm text-slate-500 mt-1">
               {formData.isLive
@@ -150,7 +152,7 @@ const AppearanceSettings: React.FC = () => {
                 : 'Seu site está em MODO MANUTENÇÃO. Apenas administradores podem visualizá-lo.'}
             </p>
             <p className="mt-2 text-xs font-semibold text-slate-400">
-              Desligado = pagina de lancamento com captura. Ligado = site
+              Desligado = página de lançamento com captura. Ligado = site
               completo publicado.
             </p>
           </div>
@@ -413,6 +415,27 @@ const AppearanceSettings: React.FC = () => {
             </div>
           </div>
         </div>
+
+        <section id="site-appearance-preview" className="rounded-xl border border-slate-200 bg-slate-50 p-4 md:p-6">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div><h3 className="font-semibold text-slate-900">Preview do site</h3><p className="text-xs text-slate-500">As alterações aparecem aqui antes da publicação.</p></div>
+            <div className="flex rounded-lg border border-slate-200 bg-white p-1 text-slate-500"><button className="rounded-md bg-emerald-50 p-2 text-emerald-700" aria-label="Visualização desktop"><Monitor size={16} /></button><button className="rounded-md p-2" aria-label="Visualização mobile"><Smartphone size={16} /></button></div>
+          </div>
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-3">
+              <div className="flex items-center gap-3 font-bold" style={{ color: formData.headerColor === '#ffffff' ? formData.primaryColor : formData.headerColor }}>
+                {logoPreview ? <img src={logoPreview} alt="Logo da imobiliária" className="h-7 max-w-36 object-contain" /> : <span>{formData.agencyName || 'Sua imobiliária'}</span>}
+              </div>
+              <div className="hidden items-center gap-5 text-xs font-medium text-slate-600 md:flex"><span>Comprar</span><span>Alugar</span><span>Rural</span><span>Contato</span></div>
+              <button className="rounded-md px-3 py-2 text-xs font-semibold text-white" style={{ backgroundColor: formData.primaryColor }}>Fale conosco</button>
+            </div>
+            <div className="relative min-h-72 overflow-hidden px-6 py-12 text-white md:px-10" style={{ background: `linear-gradient(120deg, ${formData.headerColor} 0%, ${formData.primaryColor} 100%)` }}>
+              <div className="relative z-10 max-w-md"><h3 className="!text-white text-3xl font-bold leading-tight">Encontre o imóvel ideal com inteligência</h3><p className="mt-3 text-sm text-white/80">As melhores oportunidades, com tecnologia e atendimento especializado para você.</p></div>
+              <div className="relative z-10 mt-7 flex max-w-3xl flex-col gap-2 rounded-lg bg-white p-2 sm:flex-row"><input className="min-h-10 flex-1 rounded-md border border-slate-200 px-3 text-sm text-slate-700" placeholder="Onde você quer morar?" /><select className="min-h-10 rounded-md border border-slate-200 px-3 text-sm text-slate-700"><option>Tipo de imóvel</option></select><button className="rounded-md px-5 py-2 text-sm font-semibold text-white" style={{ backgroundColor: formData.primaryColor }}>Buscar</button></div>
+              <div className="absolute -right-16 -bottom-28 h-72 w-72 rounded-full bg-white/10" />
+            </div>
+          </div>
+        </section>
 
         <div className="flex justify-end pt-6 border-t border-gray-100">
           <button

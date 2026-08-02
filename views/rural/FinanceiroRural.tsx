@@ -10,6 +10,8 @@ import {
   PieChart,
   Users,
   Save,
+  Download,
+  Plus,
 } from 'lucide-react';
 import { leadService } from '../../services/leads';
 import { propertyService } from '../../services/properties';
@@ -132,24 +134,28 @@ const FinanceiroRural: React.FC = () => {
     return <div className="p-10 text-center">Carregando indicadores...</div>;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="wootech-reference-screen space-y-8 animate-in fade-in duration-500">
+      <div className="wootech-page-heading">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 uppercase italic tracking-tighter flex items-center gap-3">
-            <Target className="text-indigo-600" size={32} />
-            Metas & Vendas Rurais
-          </h1>
-          <p className="text-slate-500 font-medium">
-            Acompanhamento de performance, VGV e fechamento de negócios.
-          </p>
+          <div className="wootech-breadcrumb"><strong>Rural</strong><span>/</span><span>Metas &amp; Vendas</span></div>
+          <h1>Metas e vendas rurais</h1>
+          <p>Acompanhe VGV, comissão, pipeline e performance por território.</p>
         </div>
+        <div className="wootech-action-row">
+          <button className="wootech-secondary-action" onClick={() => document.getElementById('meta-rural-vgv')?.focus()}><Target size={17} /> Definir meta</button>
+          <button className="wootech-secondary-action" onClick={() => navigate('/rural/reports')}><Download size={17} /> Exportar relatório</button>
+          <button className="wootech-primary-action" onClick={() => navigate('/rural/kanban')}><Plus size={17} /> Nova oportunidade</button>
+        </div>
+      </div>
 
-        <div className="flex bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
+      <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center">
           <div className="px-4 py-2 border-r border-slate-100">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
               Meta Mensal VGV
             </p>
             <input
+              id="meta-rural-vgv"
               type="number"
               min="0"
               value={goals.monthly_vgv}
@@ -179,6 +185,10 @@ const FinanceiroRural: React.FC = () => {
           >
             <Save size={20} />
           </button>
+        </div>
+        <div className="min-w-[240px] flex-1 sm:max-w-md">
+          <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-500"><span>Meta mensal</span><span>{goalProgress.toFixed(0)}% atingido</span></div>
+          <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-emerald-600 transition-all" style={{ width: `${goalProgress}%` }} /></div>
         </div>
       </div>
 

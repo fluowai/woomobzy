@@ -1,5 +1,15 @@
 # Verificação
 
+## 2026-08-02 — Novas telas WooTech Imob
+
+- `npm run type-check`: aprovado.
+- `npm run lint`: aprovado com 0 erros; 596 avisos preexistentes no repositório.
+- `npm run test -- --run`: 27 arquivos e 127 testes aprovados.
+- `npm run build`: aprovado; 4.079 módulos transformados e PWA gerada.
+- `git diff --check`: aprovado antes da atualização documental.
+- Escopo compilado: portfólio, CRM/Kanban, mensagens, metas rurais, Matchmaking, BI Rural, configurações, aparência, condomínio, simulador, chaves, loteamentos, jurídico e locações.
+- Validação visual autenticada no navegador não foi executada nesta rodada; permanece recomendada em desktop e mobile antes do deploy.
+
 ## 2026-08-02 — Diagnóstico e atualização do protocolo WhatsApp
 
 - Produção: `https://imob.wootech.com.br/assets/QRCodeModal-CzCKB0xN.js` contém o timeout e o retry atuais; frontend confirmado atualizado.

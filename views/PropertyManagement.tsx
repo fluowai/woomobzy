@@ -30,6 +30,9 @@ import { toast } from 'sonner';
 
 export default function PropertyManagement() {
   const navigate = useNavigate();
+  const propertiesBasePath = window.location.pathname.startsWith('/rural')
+    ? '/rural/properties'
+    : '/urban/properties';
   const [viewMode, setViewMode] = useState('Lista');
 
   const [properties, setProperties] = useState<Property[]>([]);
@@ -119,7 +122,7 @@ export default function PropertyManagement() {
   };
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto pb-12 font-sans text-slate-800 animate-fade-in">
+    <div className="wootech-reference-screen w-full max-w-[1600px] mx-auto pb-12 font-sans text-slate-800 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
@@ -144,7 +147,7 @@ export default function PropertyManagement() {
             <UploadCloud size={18} /> Importar imóveis
           </button>
           <button
-            onClick={() => navigate('/imoveis/novo')}
+            onClick={() => navigate(`${propertiesBasePath}/new`)}
             className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2"
           >
             <Plus size={18} /> Novo imóvel

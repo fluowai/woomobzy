@@ -1,5 +1,14 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-02] Reconstrução das novas telas WooTech Imob
+
+- Mapeadas as 15 referências do arquivo `novas-telas-wootech-imob.zip` para as rotas e componentes existentes dos painéis urbano e rural.
+- Consolidado o sistema visual WooTech Imob em `views/wootech-reference.css`, com paleta verde, superfícies, bordas, ações, indicadores, foco acessível e breakpoints responsivos.
+- Reconstruídas as superfícies de portfólio, funil CRM, metas e vendas rurais, Matchmaking 360, BI Rural Select, central de configurações, aparência do site, cadastro de condomínio, simulador financeiro, controle de chaves, loteamentos, contratos e jurídico e central de locações.
+- Pipeline, Matchmaking, configurações e aparência receberam novas hierarquias, métricas, ações e preview; os fluxos e integrações existentes foram preservados.
+- A central de mensagens já estava sendo reconstruída em alterações locais independentes e foi preservada sem sobrescrever o trabalho em andamento.
+- Gates: type-check, lint sem erros, 127 testes e build Vite aprovados; nenhum commit, push ou deploy foi executado.
+
 ## [2026-08-02] QR WhatsApp — causa isolada no backend/protocolo
 
 - As capturas mostraram `/instances/:id` em `connecting` e `/qrcode` retornando apenas `pending`; não havia `qr_code` para o React desenhar.

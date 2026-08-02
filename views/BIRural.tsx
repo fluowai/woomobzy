@@ -232,36 +232,21 @@ const BIRural: React.FC = () => {
   }
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto space-y-8 pb-12 font-sans text-gray-900">
-      {/* Header Premium */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 p-8 shadow-lg shadow-emerald-900/20">
-        <div className="absolute right-0 top-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
-        <div className="absolute left-0 bottom-0 w-48 h-48 bg-teal-500/10 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4"></div>
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+    <div className="wootech-reference-screen w-full max-w-[1600px] mx-auto space-y-8 pb-12 font-sans text-gray-900">
+      <div className="wootech-page-heading">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-2.5 py-1 rounded-full bg-white/10 text-white/90 text-xs font-semibold tracking-wider uppercase backdrop-blur-sm border border-white/10">
-                Inteligência Rural
-              </span>
-            </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight flex items-center gap-3">
-              <Activity className="text-emerald-400" size={36} />
-              BI Rural Select
-            </h1>
-            <p className="text-emerald-100 mt-2 text-sm md:text-base max-w-xl">
-              Análise de performance, portfólio e mercado do segmento rural em
-              tempo real.
-            </p>
+            <div className="wootech-breadcrumb"><strong>Rural</strong><span>/</span><span>BI Rural Select</span></div>
+            <h1 className="flex items-center gap-3"><Activity className="text-emerald-600" size={30} /> BI Rural Select</h1>
+            <p>Análise de performance, portfólio e mercado do segmento rural em tempo real.</p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex bg-white/10 rounded-xl p-1 backdrop-blur-sm border border-white/20">
+          <div className="wootech-action-row">
+            <div className="flex rounded-lg border border-slate-200 bg-white p-1">
               {['Mensal', 'Semestral', 'Anual'].map((range) => (
                 <button
                   key={range}
                   onClick={() => setTimeRange(range)}
-                  className={`px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${timeRange === range ? 'bg-white text-emerald-900 shadow-sm' : 'text-white/70 hover:text-white'}`}
+                  className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${timeRange === range ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
                 >
                   {range}
                 </button>
@@ -269,12 +254,11 @@ const BIRural: React.FC = () => {
             </div>
             <button
               onClick={exportReport}
-              className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-xl backdrop-blur-sm transition-all flex items-center gap-2 border border-white/20"
+              className="wootech-secondary-action"
             >
-              <Download size={18} /> Exportar
+              <Download size={18} /> Exportar relatório
             </button>
           </div>
-        </div>
       </div>
 
       {/* KPI Cloud */}

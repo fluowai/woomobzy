@@ -443,6 +443,13 @@ export interface Chat {
   avatar_url?: string;
   created_at: string;
   updated_at: string;
+  crm_lead_id?: string;
+  crm_assigned_to?: string | null;
+  crm_is_mine?: boolean;
+  crm_status?: string | null;
+  crm_classification?: string | null;
+  crm_lead_score?: number | null;
+  crm_tags?: string[];
 }
 
 export interface Message {
@@ -500,9 +507,49 @@ export interface DeleteChatsResponse {
   deleted_messages: number;
 }
 
+export interface CrmLead {
+  id: string;
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  status?: string | null;
+  classification?: string | null;
+  assigned_to?: string | null;
+  lead_score?: number | null;
+  qualification_score?: number | null;
+  budget?: number | null;
+  ai_next_action?: string | null;
+  ai_last_intent?: string | null;
+  property_id?: string | null;
+  preferences?: Record<string, unknown> | null;
+}
+
+export interface CrmTask {
+  id: string;
+  title: string;
+  due_at: string;
+  status: string;
+  kind: string;
+}
+
+export interface CrmProperty {
+  id: string;
+  title: string;
+  property_type?: string | null;
+  neighborhood?: string | null;
+  city?: string | null;
+  state?: string | null;
+  price?: number | null;
+  rental_value?: number | null;
+  images?: string[] | null;
+}
+
 export interface CrmContactResponse {
-  lead: any | null;
+  lead: CrmLead | null;
   tags: string[];
+  assignee?: CrmAssignee | null;
+  tasks?: CrmTask[];
+  property?: CrmProperty | null;
 }
 
 export interface CrmAssignee {
@@ -684,6 +731,25 @@ export const crmContactApi = {
   assignees: () =>
     callApi('/api/crm/whatsapp/assignees') as Promise<CrmAssigneesResponse>,
 
+  inboxContext: (phones: string[]) =>
+    callApi('/api/crm/whatsapp/inbox-context', {
+      method: 'POST',
+      body: JSON.stringify({ phones }),
+    }) as Promise<{
+      contacts: Record<
+        string,
+        {
+          lead_id: string;
+          assigned_to?: string | null;
+          is_mine?: boolean;
+          status?: string | null;
+          classification?: string | null;
+          lead_score?: number | null;
+          tags?: string[];
+        }
+      >;
+    }>,
+
   link: (payload: {
     phone: string;
     name?: string;
@@ -753,7 +819,13 @@ export const crmContactApi = {
     callApi('/api/crm/whatsapp/task', {
       method: 'POST',
       body: JSON.stringify(payload),
-    }) as Promise<CrmContactResponse & { task?: any }>,
+    }) as Promise<CrmContactResponse & { task?: CrmTask }>,
+
+  updateTask: (taskId: string, status: 'pending' | 'completed') =>
+    callApi(`/api/crm/whatsapp/task/${taskId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }) as Promise<{ task: CrmTask }>,
 };
 
 // ---- Message API ----

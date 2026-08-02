@@ -1,21 +1,29 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import {
+  ChevronDown,
+  Globe2,
+  Inbox,
+  ListFilter,
+  MessageCircle,
+  Search,
+  Settings2,
+  SlidersHorizontal,
+  Smartphone,
+  TimerOff,
+  UserMinus,
+  Users,
+} from 'lucide-react';
+
 import { formatPhoneDisplay, getChatDisplayName } from './hooks/api';
 import type { UnifiedChat } from './hooks/unifiedInbox';
 import {
-  Search,
-  Users,
-  MessageCircle,
-  DownloadCloud,
-  Loader2,
-  Trash2,
-  Clock3,
-} from 'lucide-react';
-
-/** WhatsApp CDN profile-pic URLs expire and require WA session — never load in browser. */
-function isWhatsAppCdnUrl(url?: string): boolean {
-  if (!url) return false;
-  return url.includes('pps.whatsapp.net') || url.includes('mmg.whatsapp.net');
-}
+  filterInboxChats,
+  formatSla,
+  getInboxMetrics,
+  isSlaOverdue,
+  type InboxPlatformFilter,
+  type InboxQueueFilter,
+} from './inboxPresentation';
 
 interface ChatSidebarProps {
   chats: UnifiedChat[];
@@ -23,23 +31,9 @@ interface ChatSidebarProps {
   onSelectChat: (chat: UnifiedChat) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  onImportHistory: () => void;
-  importingHistory: boolean;
-  canImportHistory: boolean;
-  historyPeriodDays: number;
-  historyPeriodOptions: Array<{ value: number; label: string }>;
-  onHistoryPeriodChange: (value: number) => void;
-  historyImportStats: {
-    importedMessages: number;
-    importedChats: number;
-    requestedChats: number;
-    elapsedSeconds: number;
-  };
-  historyPeriodLabel: string;
-  formatImportElapsed: (seconds: number) => string;
-  onDeleteAllChats: () => void;
-  deletingChats: boolean;
-  canDeleteChats: boolean;
+  attentionOnly: boolean;
+  onOpenQueues: () => void;
+  onOpenInstances: () => void;
 }
 
 const ChatSidebar: React.FC<ChatSidebarProps> = ({
@@ -48,390 +42,382 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onSelectChat,
   searchQuery,
   onSearchChange,
-  onImportHistory,
-  importingHistory,
-  canImportHistory,
-  historyPeriodDays,
-  historyPeriodOptions,
-  onHistoryPeriodChange,
-  historyImportStats,
-  historyPeriodLabel,
-  formatImportElapsed,
-  onDeleteAllChats,
-  deletingChats,
-  canDeleteChats,
+  attentionOnly,
+  onOpenQueues,
+  onOpenInstances,
 }) => {
-  const [activeType, setActiveType] = React.useState<'direct' | 'group'>(
-    'direct'
-  );
-  const [activePlatform, setActivePlatform] = React.useState<
-    'all' | 'whatsapp' | 'instagram'
-  >('all');
+  const [platform, setPlatform] = useState<InboxPlatformFilter>('all');
+  const [queue, setQueue] = useState<InboxQueueFilter>('all');
+  const [groups, setGroups] = useState(false);
+  const [newestFirst, setNewestFirst] = useState(true);
   const [erroredAvatars, setErroredAvatars] = useState<Set<string>>(new Set());
-  const visibleChats = chats.filter((chat) => {
-    const typeMatch = activeType === 'group' ? chat.is_group : !chat.is_group;
-    const platformMatch =
-      activePlatform === 'all' || chat.platform === activePlatform;
-    return typeMatch && platformMatch;
-  });
-
-  const formatTime = (dateStr?: string) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    const now = new Date();
-    const isToday = date.toDateString() === now.toDateString();
-
-    if (isToday) {
-      return date.toLocaleTimeString('pt-BR', {
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    }
-
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    if (date.toDateString() === yesterday.toDateString()) {
-      return 'Ontem';
-    }
-
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
+  const metrics = useMemo(() => getInboxMetrics(chats), [chats]);
+  const visibleChats = useMemo(() => {
+    const filtered = filterInboxChats(chats, {
+      platform,
+      queue,
+      groups,
+      attentionOnly,
     });
-  };
+    return newestFirst ? filtered : [...filtered].reverse();
+  }, [attentionOnly, chats, groups, newestFirst, platform, queue]);
 
-  const getInitials = (name: string) => {
-    if (!name) return '?';
-    const parts = name.trim().split(' ');
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
-  };
-
-  const getAvatarColor = (name: string) => {
-    const colors = [
-      '#25D366',
-      '#128C7E',
-      '#075E54',
-      '#34B7F1',
-      '#00A884',
-      '#D97706',
-      '#7C3AED',
-      '#DC2626',
-      '#059669',
-      '#0284C7',
-      '#9333EA',
-      '#E11D48',
-    ];
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
-  };
-
-  const getChatName = (chat: UnifiedChat) => {
-    if (chat.platform === 'instagram') {
-      return (
-        chat.instagram_contact_full_name ||
-        (chat.instagram_contact_username
-          ? `@${chat.instagram_contact_username}`
-          : 'Contato Instagram')
-      );
-    }
-    return (
-      getChatDisplayName(chat) ||
-      formatPhoneDisplay(chat.chat_jid) ||
-      'Contato sem telefone'
-    );
+  const resetFilters = () => {
+    setPlatform('all');
+    setQueue('all');
+    setGroups(false);
+    onSearchChange('');
   };
 
   return (
-    <aside className="wa-sidebar" id="chat-sidebar">
-      {/* Search */}
-      <div className="wa-search">
-        <div className="wa-search-input-wrapper">
-          <Search size={16} className="wa-search-icon" />
+    <aside className="wa-sidebar wa-center-sidebar" id="chat-sidebar">
+      <div className="wa-center-search-row">
+        <label className="wa-search-input-wrapper" htmlFor="chat-search">
+          <Search size={17} />
           <input
-            type="text"
-            placeholder="Buscar conversa..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="wa-search-input"
             id="chat-search"
+            type="search"
+            placeholder="Buscar conversas, contatos ou imóveis..."
+            value={searchQuery}
+            onChange={(event) => onSearchChange(event.target.value)}
           />
+        </label>
+        <button
+          type="button"
+          className="wa-square-control"
+          onClick={onOpenQueues}
+          title="Configurar filas"
+        >
+          <SlidersHorizontal size={18} />
+        </button>
+      </div>
+
+      <div className="wa-channel-tabs" role="tablist" aria-label="Canais">
+        <ChannelTab
+          active={platform === 'all'}
+          onClick={() => setPlatform('all')}
+          label="Todos"
+        />
+        <ChannelTab
+          active={platform === 'whatsapp'}
+          onClick={() => setPlatform('whatsapp')}
+          label="WhatsApp"
+          icon={<MessageCircle size={15} />}
+        />
+        <ChannelTab
+          active={platform === 'instagram'}
+          onClick={() => setPlatform('instagram')}
+          label="Instagram"
+          icon={<InstagramIcon />}
+        />
+        <ChannelTab
+          active={platform === 'site'}
+          onClick={() => setPlatform('site')}
+          label="Site"
+          icon={<Globe2 size={15} />}
+        />
+      </div>
+
+      <div className="wa-queue-tabs">
+        <QueueButton
+          active={queue === 'mine'}
+          onClick={() => setQueue(queue === 'mine' ? 'all' : 'mine')}
+          icon={<Inbox size={14} />}
+          label="Minha fila"
+          count={metrics.mine}
+        />
+        <QueueButton
+          active={queue === 'unassigned'}
+          onClick={() =>
+            setQueue(queue === 'unassigned' ? 'all' : 'unassigned')
+          }
+          icon={<UserMinus size={14} />}
+          label="Sem responsável"
+          count={metrics.unassigned}
+        />
+        <QueueButton
+          active={queue === 'sla'}
+          onClick={() => setQueue(queue === 'sla' ? 'all' : 'sla')}
+          icon={<TimerOff size={14} />}
+          label="SLA vencido"
+          count={metrics.overdue}
+        />
+      </div>
+
+      <div className="wa-inbox-metrics">
+        <Metric value={metrics.conversations} label="conversas" />
+        <Metric value={metrics.open} label="abertas" />
+        <Metric value={metrics.awaiting} label="aguardando resposta" />
+        <Metric value={metrics.overdue} label="SLA vencido" danger />
+      </div>
+
+      <div className="wa-inbox-toolbar">
+        <button type="button" onClick={() => setNewestFirst((value) => !value)}>
+          Ordenar: {newestFirst ? 'Mais recentes' : 'Mais antigas'}{' '}
+          <ChevronDown size={14} />
+        </button>
+        <div>
+          <button
+            type="button"
+            onClick={() => setGroups((value) => !value)}
+            className={groups ? 'active' : ''}
+            title="Alternar grupos"
+          >
+            <Users size={17} />
+          </button>
+          <button
+            type="button"
+            onClick={onOpenInstances}
+            title="Gerenciar canais"
+          >
+            <Settings2 size={17} />
+          </button>
+          <ListFilter size={17} />
         </div>
       </div>
 
-      <div className="wa-chat-tabs">
-        <button
-          type="button"
-          className={`wa-chat-tab ${activeType === 'direct' ? 'active' : ''}`}
-          onClick={() => setActiveType('direct')}
-        >
-          Conversas
-        </button>
-        <button
-          type="button"
-          className={`wa-chat-tab ${activeType === 'group' ? 'active' : ''}`}
-          onClick={() => setActiveType('group')}
-        >
-          Grupos
-        </button>
-      </div>
-
-      <div className="wa-platform-tabs">
-        <button
-          type="button"
-          className={`wa-platform-tab ${activePlatform === 'all' ? 'active' : ''}`}
-          onClick={() => setActivePlatform('all')}
-        >
-          Todos
-        </button>
-        <button
-          type="button"
-          className={`wa-platform-tab ${activePlatform === 'whatsapp' ? 'active' : ''}`}
-          onClick={() => setActivePlatform('whatsapp')}
-        >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-          </svg>
-          WhatsApp
-        </button>
-        <button
-          type="button"
-          className={`wa-platform-tab ${activePlatform === 'instagram' ? 'active' : ''}`}
-          onClick={() => setActivePlatform('instagram')}
-        >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-            <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-          </svg>
-          Instagram
-        </button>
-      </div>
-
-      <div className="wa-sidebar-actions">
-        <div className="wa-history-controls">
-          <label
-            className="wa-history-period-label"
-            htmlFor="wa-history-period"
-          >
-            <Clock3 size={14} />
-            <span>Periodo</span>
-          </label>
-          <select
-            id="wa-history-period"
-            className="wa-history-period-select"
-            value={historyPeriodDays}
-            onChange={(event) =>
-              onHistoryPeriodChange(Number(event.target.value))
-            }
-            disabled={importingHistory}
-          >
-            {historyPeriodOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="wa-history-progress">
-          <div>
-            <span>Tempo</span>
-            <strong>
-              {formatImportElapsed(historyImportStats.elapsedSeconds)}
-            </strong>
-          </div>
-          <div>
-            <span>Mensagens</span>
-            <strong>{historyImportStats.importedMessages}</strong>
-          </div>
-          <div>
-            <span>Chats</span>
-            <strong>
-              {historyImportStats.importedChats}/
-              {historyImportStats.requestedChats || '-'}
-            </strong>
-          </div>
-        </div>
-        <button
-          type="button"
-          className="wa-sidebar-import-btn"
-          onClick={onImportHistory}
-          disabled={!canImportHistory || importingHistory}
-          title="Importar conversas do WhatsApp e organizar no CRM com IA"
-        >
-          {importingHistory ? (
-            <Loader2 size={16} className="animate-spin" />
-          ) : (
-            <DownloadCloud size={16} />
-          )}
-          <span>
-            {importingHistory
-              ? `Importando ${historyPeriodLabel}...`
-              : `Importar ${historyPeriodLabel}`}
-          </span>
-        </button>
-        <button
-          type="button"
-          className="wa-sidebar-clear-btn"
-          onClick={onDeleteAllChats}
-          disabled={!canDeleteChats || deletingChats}
-          title="Excluir todas as conversas individuais, grupos e mensagens desta instancia"
-        >
-          {deletingChats ? (
-            <Loader2 size={16} className="animate-spin" />
-          ) : (
-            <Trash2 size={16} />
-          )}
-          <span>
-            {deletingChats ? 'Excluindo...' : 'Excluir todos os chats'}
-          </span>
-        </button>
-      </div>
-
-      {/* Chat List */}
       <div className="wa-chat-list" id="chat-list">
         {visibleChats.length === 0 ? (
           <div className="wa-no-chats">
-            <MessageCircle size={32} strokeWidth={1} />
-            <p>
-              Nenhuma{' '}
-              {activeType === 'group'
-                ? 'conversa em grupo'
-                : 'conversa individual'}
-            </p>
-            <span>As mensagens aparecerão aqui</span>
+            <MessageCircle size={32} strokeWidth={1.2} />
+            <p>Nenhuma conversa neste filtro</p>
+            <button type="button" onClick={resetFilters}>
+              Ver todas as conversas
+            </button>
           </div>
         ) : (
-          visibleChats.map((chat) => (
-            <div
-              key={chat.id}
-              className={`wa-chat-item ${selectedChat?.id === chat.id ? 'active' : ''}`}
-              onClick={() => onSelectChat(chat)}
-              id={`chat-${chat.id}`}
-            >
-              {/* Avatar */}
-              <div
-                className="wa-avatar"
-                style={{ backgroundColor: getAvatarColor(getChatName(chat)) }}
+          visibleChats.map((chat) => {
+            const name = getChatName(chat);
+            const overdue = isSlaOverdue(chat);
+            return (
+              <button
+                type="button"
+                key={chat.id}
+                className={`wa-chat-item ${selectedChat?.id === chat.id ? 'active' : ''}`}
+                onClick={() => onSelectChat(chat)}
+                id={`chat-${chat.id}`}
               >
-                {chat.avatar_url &&
-                !isWhatsAppCdnUrl(chat.avatar_url) &&
-                !erroredAvatars.has(chat.id) ? (
-                  <img
-                    src={chat.avatar_url}
-                    alt=""
-                    className="wa-avatar-img"
-                    onError={() =>
-                      setErroredAvatars((prev) => new Set(prev).add(chat.id))
-                    }
-                  />
-                ) : chat.is_group ? (
-                  <Users size={18} color="white" />
-                ) : (
-                  <span className="wa-avatar-text">
-                    {getInitials(getChatName(chat))}
-                  </span>
-                )}
-              </div>
-
-              {/* Info */}
-              <div className="wa-chat-info">
-                <div className="wa-chat-top">
-                  <span className="wa-chat-name">
-                    {chat.is_group && (
-                      <Users size={12} className="wa-group-icon" />
-                    )}
-                    {getChatName(chat)}
-                    {chat.platform === 'instagram' && (
-                      <span
-                        className="wa-platform-badge-sm wa-platform-instagram-sm"
-                        title="Instagram"
-                      >
-                        <svg
-                          width="10"
-                          height="10"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <rect
-                            width="20"
-                            height="20"
-                            x="2"
-                            y="2"
-                            rx="5"
-                            ry="5"
-                          />
-                          <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                          <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-                        </svg>
-                      </span>
-                    )}
-                  </span>
-                  <span className="wa-chat-time">
-                    {formatTime(chat.last_message_at)}
-                  </span>
-                </div>
-                <div className="wa-chat-bottom">
-                  <p className="wa-chat-preview">
-                    {formatChatPreview(chat.last_message) ||
-                      (chat.platform === 'instagram'
-                        ? chat.instagram_contact_username
-                          ? `@${chat.instagram_contact_username}`
-                          : 'Instagram'
-                        : formatPhoneDisplay(chat.chat_jid)) ||
-                      '...'}
-                  </p>
-                  {chat.unread_count > 0 && (
-                    <span
-                      className={`wa-unread-badge ${chat.platform === 'instagram' ? 'wa-unread-ig' : ''}`}
-                    >
-                      {chat.unread_count > 99 ? '99+' : chat.unread_count}
-                    </span>
+                <span
+                  className="wa-avatar"
+                  style={{ backgroundColor: avatarColor(name) }}
+                >
+                  {chat.avatar_url &&
+                  !isWhatsAppCdnUrl(chat.avatar_url) &&
+                  !erroredAvatars.has(chat.id) ? (
+                    <img
+                      src={chat.avatar_url}
+                      alt=""
+                      onError={() =>
+                        setErroredAvatars((current) =>
+                          new Set(current).add(chat.id)
+                        )
+                      }
+                    />
+                  ) : chat.is_group ? (
+                    <Users size={18} />
+                  ) : (
+                    initials(name)
                   )}
-                </div>
-              </div>
-            </div>
-          ))
+                </span>
+
+                <span className="wa-chat-info">
+                  <span className="wa-chat-top">
+                    <strong className="wa-chat-name">
+                      {name}
+                      <PlatformIcon platform={chat.platform} />
+                    </strong>
+                    <time>{formatTime(chat.last_message_at)}</time>
+                  </span>
+                  <span className="wa-chat-bottom">
+                    <span className="wa-chat-preview">
+                      {formatChatPreview(chat.last_message) ||
+                        formatPhoneDisplay(chat.chat_jid) ||
+                        'Sem mensagens'}
+                    </span>
+                    {chat.unread_count > 0 && (
+                      <b className="wa-unread-badge">
+                        {Math.min(chat.unread_count, 99)}
+                      </b>
+                    )}
+                  </span>
+                  <span className="wa-chat-meta-row">
+                    <span className="wa-chat-tags">
+                      {(chat.crm_tags || []).slice(0, 2).map((tag) => (
+                        <i key={tag}>{tag}</i>
+                      ))}
+                      {!chat.crm_assigned_to && <i>Sem responsável</i>}
+                    </span>
+                    <em className={overdue ? 'danger' : ''}>
+                      {formatSla(chat)}
+                    </em>
+                  </span>
+                </span>
+              </button>
+            );
+          })
         )}
       </div>
+
+      <button type="button" className="wa-view-all" onClick={resetFilters}>
+        Ver todas as conversas
+      </button>
     </aside>
   );
 };
 
-export default ChatSidebar;
+function ChannelTab({
+  active,
+  onClick,
+  label,
+  icon,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  icon?: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      className={active ? 'active' : ''}
+      onClick={onClick}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+function QueueButton({
+  active,
+  onClick,
+  icon,
+  label,
+  count,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+  count: number;
+}) {
+  return (
+    <button type="button" className={active ? 'active' : ''} onClick={onClick}>
+      {icon}
+      <span>{label}</span>
+      <b>{count}</b>
+    </button>
+  );
+}
+
+function Metric({
+  value,
+  label,
+  danger = false,
+}: {
+  value: number;
+  label: string;
+  danger?: boolean;
+}) {
+  return (
+    <div className={danger ? 'danger' : ''}>
+      <strong>{value}</strong>
+      <span>{label}</span>
+    </div>
+  );
+}
+
+function PlatformIcon({ platform }: { platform: UnifiedChat['platform'] }) {
+  return platform === 'instagram' ? (
+    <InstagramIcon />
+  ) : (
+    <MessageCircle size={14} className="wa-platform-whatsapp-icon" />
+  );
+}
+
+function InstagramIcon() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function isWhatsAppCdnUrl(url?: string) {
+  return Boolean(
+    url &&
+    (url.includes('pps.whatsapp.net') || url.includes('mmg.whatsapp.net'))
+  );
+}
+
+function getChatName(chat: UnifiedChat) {
+  if (chat.platform === 'instagram')
+    return (
+      chat.instagram_contact_full_name ||
+      (chat.instagram_contact_username
+        ? `@${chat.instagram_contact_username}`
+        : 'Contato Instagram')
+    );
+  return (
+    getChatDisplayName(chat) ||
+    formatPhoneDisplay(chat.chat_jid) ||
+    'Contato sem telefone'
+  );
+}
+
+function initials(name: string) {
+  return (
+    name
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase() || '?'
+  );
+}
+
+function avatarColor(name: string) {
+  const colors = [
+    '#128c67',
+    '#0f7a5b',
+    '#2775a9',
+    '#9a5b28',
+    '#7c4b9e',
+    '#a8445d',
+  ];
+  const hash = [...name].reduce((total, char) => total + char.charCodeAt(0), 0);
+  return colors[hash % colors.length];
+}
+
+function formatTime(value?: string | null) {
+  if (!value) return '';
+  const date = new Date(value);
+  return date.toDateString() === new Date().toDateString()
+    ? date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+}
 
 function formatChatPreview(value?: string) {
   const clean = String(value || '').trim();
-  if (!clean) return '';
-  if (/^\[(image|audio|video|document|sticker)\]$/i.test(clean)) return '';
-  if (/^(imagem|audio|áudio|video|vídeo|pdf|documento)$/i.test(clean))
-    return '';
-  return clean;
+  const media: Record<string, string> = {
+    '[image]': 'Imagem',
+    '[audio]': 'Áudio',
+    '[video]': 'Vídeo',
+    '[document]': 'Documento',
+    '[sticker]': 'Figurinha',
+  };
+  return media[clean.toLowerCase()] || clean;
 }
+
+export default ChatSidebar;

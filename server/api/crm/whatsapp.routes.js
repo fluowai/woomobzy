@@ -24,13 +24,136 @@ router.get('/whatsapp/contact', verifyAuth, requireTenant, async (req, res) => {
 
     const lead = await findLeadByNormalizedPhone(req.orgId, phone);
 
-    const tags = lead ? await getLeadTags(req.orgId, lead.id) : [];
-    res.json({ success: true, lead, tags });
+    const [tags, assigneeResult, tasksResult, propertyResult] = lead
+      ? await Promise.all([
+          getLeadTags(req.orgId, lead.id),
+          lead.assigned_to
+            ? supabase
+                .from('profiles')
+                .select('id, name, email')
+                .eq('id', lead.assigned_to)
+                .eq('organization_id', req.orgId)
+                .maybeSingle()
+            : Promise.resolve({ data: null, error: null }),
+          supabase
+            .from('lead_followups')
+            .select('id, title, due_at, status, kind')
+            .eq('organization_id', req.orgId)
+            .eq('lead_id', lead.id)
+            .order('due_at', { ascending: true })
+            .limit(5),
+          lead.property_id
+            ? supabase
+                .from('properties')
+                .select(
+                  'id, title, property_type, neighborhood, city, state, price, rental_value, images'
+                )
+                .eq('id', lead.property_id)
+                .eq('organization_id', req.orgId)
+                .maybeSingle()
+            : Promise.resolve({ data: null, error: null }),
+        ])
+      : [
+          [],
+          { data: null, error: null },
+          { data: [], error: null },
+          { data: null, error: null },
+        ];
+
+    if (assigneeResult.error) throw assigneeResult.error;
+    if (tasksResult.error) throw tasksResult.error;
+    if (propertyResult.error) throw propertyResult.error;
+
+    const assignee = assigneeResult.data
+      ? {
+          id: assigneeResult.data.id,
+          name:
+            assigneeResult.data.name ||
+            assigneeResult.data.email?.split('@')[0] ||
+            'Usuário',
+          email: assigneeResult.data.email || '',
+        }
+      : null;
+    res.json({
+      success: true,
+      lead,
+      tags,
+      assignee,
+      tasks: tasksResult.data || [],
+      property: propertyResult.data || null,
+    });
   } catch (err) {
     console.error('[WhatsApp] Contact lookup error:', err.message);
     res.status(500).json({ error: 'Erro ao buscar contato' });
   }
 });
+
+router.post(
+  '/whatsapp/inbox-context',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const phones = [
+        ...new Set(
+          (Array.isArray(req.body.phones) ? req.body.phones : [])
+            .map(normalizePhone)
+            .filter(isValidBRPhone)
+        ),
+      ].slice(0, 200);
+      if (!phones.length) return res.json({ success: true, contacts: {} });
+
+      const { data: leads, error } = await supabase
+        .from('leads')
+        .select(
+          'id, phone, assigned_to, status, classification, lead_score, last_contacted_at'
+        )
+        .eq('organization_id', req.orgId)
+        .in('phone', phones);
+      if (error) throw error;
+
+      const leadIds = (leads || []).map((lead) => lead.id);
+      const { data: tagRows, error: tagsError } = leadIds.length
+        ? await supabase
+            .from('lead_tags')
+            .select('lead_id, tag')
+            .eq('organization_id', req.orgId)
+            .in('lead_id', leadIds)
+        : { data: [], error: null };
+      if (tagsError) throw tagsError;
+
+      const tagsByLead = new Map();
+      for (const row of tagRows || []) {
+        const values = tagsByLead.get(row.lead_id) || [];
+        values.push(row.tag);
+        tagsByLead.set(row.lead_id, values);
+      }
+
+      const contacts = {};
+      for (const lead of leads || []) {
+        const phone = normalizePhone(lead.phone);
+        if (!phone) continue;
+        contacts[phone] = {
+          lead_id: lead.id,
+          assigned_to: lead.assigned_to,
+          is_mine: lead.assigned_to === req.user.id,
+          status: lead.status,
+          classification: lead.classification,
+          lead_score: lead.lead_score,
+          last_contacted_at: lead.last_contacted_at,
+          tags: tagsByLead.get(lead.id) || [],
+        };
+      }
+
+      res.json({ success: true, contacts });
+    } catch (err) {
+      console.error('[WhatsApp] Inbox context error:', err.message);
+      res
+        .status(500)
+        .json({ error: 'Erro ao carregar contexto do atendimento' });
+    }
+  }
+);
 
 router.get(
   '/whatsapp/assignees',
@@ -405,5 +528,28 @@ router.post('/whatsapp/task', verifyAuth, requireTenant, async (req, res) => {
     res.status(err.statusCode || 500).json({ error: 'Erro ao criar tarefa' });
   }
 });
+
+router.patch(
+  '/whatsapp/task/:taskId',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const status = req.body.status === 'completed' ? 'completed' : 'pending';
+      const { data: task, error } = await supabase
+        .from('lead_followups')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('id', req.params.taskId)
+        .eq('organization_id', req.orgId)
+        .select('id, title, due_at, status, kind')
+        .single();
+      if (error) throw error;
+      res.json({ success: true, task });
+    } catch (err) {
+      console.error('[WhatsApp] Task status error:', err.message);
+      res.status(500).json({ error: 'Erro ao atualizar tarefa' });
+    }
+  }
+);
 
 export default router;

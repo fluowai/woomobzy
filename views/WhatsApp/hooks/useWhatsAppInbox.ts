@@ -5,6 +5,7 @@ import {
   chatApi,
   messageApi,
   accountApi,
+  crmContactApi,
   isSupportedChat,
   normalizeMessagePreview,
   type Instance,
@@ -67,6 +68,17 @@ export function useWhatsAppInbox(
   >({});
 
   const { isConnected, on } = useWebSocket(webSocketEnabled);
+
+  const crmContextSignature = useMemo(
+    () =>
+      chats
+        .filter((chat) => chat.platform === 'whatsapp' && !chat.is_group)
+        .map((chat) => String(chat.phone || '').replace(/\D/g, ''))
+        .filter(Boolean)
+        .sort()
+        .join(','),
+    [chats]
+  );
 
   const noteInstanceActivity = useCallback(
     (instanceId?: string, activityAt = Date.now()) => {
@@ -148,6 +160,40 @@ export function useWhatsAppInbox(
   useEffect(() => {
     loadInstagramConversations();
   }, []);
+
+  useEffect(() => {
+    if (!crmContextSignature) return;
+    let active = true;
+    const phones = crmContextSignature.split(',');
+    crmContactApi
+      .inboxContext(phones)
+      .then(({ contacts }) => {
+        if (!active) return;
+        setChats((previous) =>
+          previous.map((chat) => {
+            const phone = String(chat.phone || '').replace(/\D/g, '');
+            const context = contacts[phone];
+            if (!context) return chat;
+            return {
+              ...chat,
+              crm_lead_id: context.lead_id,
+              crm_assigned_to: context.assigned_to,
+              crm_is_mine: context.is_mine,
+              crm_status: context.status,
+              crm_classification: context.classification,
+              crm_lead_score: context.lead_score,
+              crm_tags: context.tags || [],
+            };
+          })
+        );
+      })
+      .catch((error) => {
+        logger.warn('Falha ao carregar contexto CRM da central', error);
+      });
+    return () => {
+      active = false;
+    };
+  }, [crmContextSignature]);
 
   useEffect(() => {
     const shouldTrackImport =
@@ -613,6 +659,25 @@ export function useWhatsAppInbox(
     );
   };
 
+  const handleCreateConversation = async (phone: string, name?: string) => {
+    if (!selectedInstance) {
+      throw new Error('Selecione uma instância do WhatsApp.');
+    }
+    const created = await chatApi.ensureDirect(selectedInstance.id, {
+      phone,
+      name,
+    });
+    const unified = whatsappChatToUnified(created);
+    setChats((previous) =>
+      sortUnifiedChats([
+        unified,
+        ...previous.filter((chat) => chat.id !== unified.id),
+      ])
+    );
+    handleSelectChat(unified);
+    return unified;
+  };
+
   const handleChatUpdated = (chat: UnifiedChat) => {
     setSelectedChat(chat);
     setChats((prev) =>
@@ -768,6 +833,7 @@ export function useWhatsAppInbox(
     filteredChats,
     selectedChat,
     handleSelectChat,
+    handleCreateConversation,
     messages,
     loading,
     serviceUnavailable,

@@ -99,6 +99,50 @@ async function simulateLeadReply(
   }
 }
 
+async function simulateAgentReply(
+  draft: BuilderDraft,
+  message: string,
+  history: TestMessage[]
+) {
+  const agentName = draft.name || 'Agente';
+  const role = draft.role || 'Atendimento';
+  const systemInstruction = [
+    `Voce e ${agentName}, um agente imobiliario da WooTech Imob.`,
+    `Sua funcao: ${role}.`,
+    `Estilo: ${draft.response_style || 'consultivo'}.`,
+    draft.instructions
+      ? `Instrucoes adicionais: ${draft.instructions}`
+      : '',
+    'Responda como um corretor humano real, nunca como IA ou robo.',
+    'Em saudacoes (oi, bom dia, ola), apresente seu nome e funcao e faca UMA pergunta de qualificacao.',
+    'Mensagens curtas, no maximo 2 perguntas por vez, sem repetir perguntas ja respondidas.',
+    'Nao use markdown, nao explique que e um teste.',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const prompt = JSON.stringify({
+    agent: { name: agentName, role, style: draft.response_style || 'consultivo' },
+    conversation: history.slice(-8).map((item) => ({
+      role: item.side === 'agent' ? 'broker' : 'lead',
+      content: item.content,
+    })),
+    lead_message: message,
+    task:
+      'Continue a conversa respondendo apenas como o agente imobiliario, conduzindo o lead.',
+  });
+
+  try {
+    const data = await callApi('/api/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify({ prompt, systemInstruction, temperature: 0.7 }),
+    });
+    return String(data?.text || '').trim();
+  } catch {
+    return '';
+  }
+}
+
 export const AgentChatTest: React.FC<AgentChatTestProps> = ({
   agent,
   draft,
@@ -142,10 +186,13 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
         const response = await aiAgentService.chat(agent.id, msg, sessionId);
         reply = response.reply;
       } else {
-        const agentName = draft.name || agent?.name || '';
-        reply = agentName
-          ? `Olá! Sou ${agentName}, ${draft.role || 'atendimento'}. Como posso ajudar com a sua busca por imóveis?`
-          : `Olá! Recebi sua mensagem. Como posso ajudar com sua busca por imóveis?`;
+        reply = await simulateAgentReply(draft, msg, nextHistory);
+        if (!reply) {
+          const agentName = draft.name || agent?.name || '';
+          reply = agentName
+            ? `Olá! Sou ${agentName}, ${draft.role || 'atendimento'}. Como posso ajudar com a sua busca por imóveis?`
+            : `Olá! Recebi sua mensagem. Como posso ajudar com sua busca por imóveis?`;
+        }
       }
 
       setMessages((prev) => [

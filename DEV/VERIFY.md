@@ -1,5 +1,17 @@
 # Verificação
 
+## 2026-08-01 — WhatsApp + testes E2E estabilizados
+
+- `npm run type-check`: passou.
+- `npm run lint`: passou com 0 erros e 594 avisos preexistentes.
+- ESLint direcionado aos cinco arquivos TypeScript alterados: 0 erros; 2 avisos preexistentes em `QRCodeModal.tsx` e `api.ts`.
+- `npm run test -- --run`: 25 arquivos e 123 testes passaram.
+- `npm run build`: passou, 4.076 módulos transformados.
+- Playwright direcionado: 32/32 testes passaram em Chromium desktop e mobile.
+- Estabilidade do fluxo de autenticação/cadastro: 12/12 testes passaram com `--repeat-each=3`.
+- `git diff --check`: passou.
+- Não executado: pareamento real do WhatsApp com QR Code, pois depende do backend WhatsApp e de credenciais válidas.
+
 ## 2026-08-01 — WhatsApp não gerava QR no frontend (fix BUG 1 frontend + BUG 2 backend)
 
 - BUG 1 (`views/WhatsApp/QRCodeModal.tsx`): o polling só consultava `getQRCode` em `qr_pending`; em `connecting`/`disconnected` o fluxo entrava em loading e nunca chamava `getQRCode` → QR perdido e spinner infinito (~40s). Corrigido: `fetchQR` sempre chama `getQRCode`; `emptyQRAttemptsRef` conta 3 tentativas sem QR e sem conexão ativa → tela de erro/retry ("QR Code não disponível..."); em `connected` limpa o QR e fecha o modal em 1.8s.

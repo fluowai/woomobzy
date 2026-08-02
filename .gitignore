@@ -59,6 +59,10 @@ traefik/acme.json
 # Test coverage
 coverage
 
+# Playwright generated artifacts
+playwright-report/
+test-results/
+
 # Backup files
 *.bak
 *.backup

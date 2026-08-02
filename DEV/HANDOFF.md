@@ -1,5 +1,13 @@
 # Handoff
 
+## 2026-08-01 — WhatsApp + estabilização dos testes E2E enviados
+
+- A correção local do WhatsApp remove o provider WAHA do frontend e força `connect` antes de tentar obter novamente o QR Code; falhas de reconexão agora usam o logger central.
+- Os três testes E2E novos foram reescritos com seletores semânticos, mock de textos públicos e espera explícita pelo bootstrap da aplicação. O fluxo `/register` valida corretamente o redirecionamento para `/onboarding` e o botão “Avançar”.
+- `playwright-report/` e `test-results/` foram removidos do controle de versão e adicionados ao `.gitignore`.
+- Gates: type-check, lint sem erros, 123 testes unitários, build e 32 testes E2E desktop/mobile aprovados; o teste de autenticação também passou 12/12 em repetição tripla.
+- Risco restante: validação manual com uma instância real do WhatsApp ainda depende do serviço e de credenciais de ambiente.
+
 ## 2026-08-01 — Impersonação de revenda ia para /urban em vez de /superadmin
 
 - Sintoma: ao clicar "Acessar Painel (Suporte)" numa revenda no mega admin, o usuário caía no painel/login da imobiliária urbana.

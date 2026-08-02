@@ -24,8 +24,6 @@ export const WS_URL = normalizeWhatsAppWsUrl(
   getRuntimeEnv('VITE_WHATSAPP_WS_URL', DEFAULT_WHATSAPP_WS_PATH)
 );
 
-
-
 import { supabase } from '@/services/supabase';
 
 let tenantIdCache: string | null | undefined;
@@ -406,7 +404,6 @@ export interface Instance {
   tenant_id?: string;
   name: string;
   status: 'connected' | 'disconnected' | 'connecting' | 'qr_pending';
-
   qr_code?: string;
   phone?: string;
   jid?: string;

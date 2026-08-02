@@ -13,6 +13,7 @@ import {
   Phone,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { logger } from '@/utils/logger';
 
 interface QRCodeModalProps {
   instance: Instance;
@@ -290,8 +291,11 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
                       setQrCode('');
                       try {
                         await instanceApi.connect(instance.id);
-                      } catch (e) {
-                        console.error('Reconnect failed', e);
+                      } catch (error) {
+                        logger.error(
+                          'Falha ao reconectar instância do WhatsApp',
+                          error
+                        );
                       }
                       fetchQR();
                     }}
@@ -321,8 +325,11 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
                     setLoading(true);
                     try {
                       await instanceApi.connect(instance.id);
-                    } catch (e) {
-                      console.error('Reconnect failed', e);
+                    } catch (error) {
+                      logger.error(
+                        'Falha ao reconectar instância do WhatsApp',
+                        error
+                      );
                     }
                     fetchQR();
                   }} className="wa-qr-retry">

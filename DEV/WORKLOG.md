@@ -1,5 +1,13 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-01] WhatsApp + estabilização e higiene dos testes E2E
+
+- Ajustado o retry do QR do WhatsApp para registrar falhas pelo logger central e removidos resíduos do provider WAHA.
+- Corrigida a premissa incorreta do teste de `/register`: a rota redireciona para `/onboarding`, cuja primeira ação é “Avançar”, não um submit.
+- Reescritos os testes de autenticação, rotas públicas e proteção de painéis com seletores semânticos, mock do endpoint público e espera pelo bootstrap da aplicação.
+- Relatórios, screenshots e vídeos gerados pelo Playwright deixaram de ser rastreados e passaram a ser ignorados.
+- Gates verdes: type-check, lint sem erros, 123 testes unitários, build, 32 testes E2E e repetição 12/12 do fluxo de autenticação.
+
 ## [2026-08-01] Impersonação de revenda (mega admin) redirecionava para /urban em vez de /superadmin
 
 - Sintoma: mega admin clicava "Acessar Painel" numa revenda (`ResellerManager`) e caía no login/painel da imobiliária urbana.

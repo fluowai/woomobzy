@@ -73,6 +73,7 @@ const MIGRATIONS = [
   'migrations/20260730_fix_all_production_errors.sql',
   'migrations/20260730_fix_contracts_legal_tab.sql',
   'migrations/20260731_ui_redesign_schema_additions.sql',
+  'migrations/20260801_fix_organizations_niche_check.sql',
 ];
 
 async function executeMigrations() {

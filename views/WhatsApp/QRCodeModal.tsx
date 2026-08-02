@@ -108,17 +108,13 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
   }, [instance.id, on]);
 
   const fetchQR = async () => {
-    if (
+    const waitTimedOut =
       !qrCodeRef.current &&
       (qrWaitTimedOutRef.current ||
-        didQRCodeWaitTimeout(qrWaitStartedAtRef.current))
-    ) {
+        didQRCodeWaitTimeout(qrWaitStartedAtRef.current));
+
+    if (waitTimedOut) {
       qrWaitTimedOutRef.current = true;
-      setLoading(false);
-      setPairingError(
-        'O WhatsMeow não gerou o QR Code em 30 segundos. Tente gerar um novo código.'
-      );
-      return;
     }
 
     try {
@@ -156,7 +152,11 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
           setPairingError('');
           setExpiresAt(data.expires_at || '');
           emptyQRAttemptsRef.current = 0;
-        } else if (qrWaitTimedOutRef.current) {
+        } else if (waitTimedOut) {
+          setLoading(false);
+          setPairingError(
+            'O WhatsApp não respondeu ao pedido de QR Code em 30 segundos. Verifique a conexão do serviço e tente novamente.'
+          );
           return;
         } else if (
           freshInstance.status === 'connecting' ||

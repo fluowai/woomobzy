@@ -31,6 +31,7 @@ import (
 type Manager struct {
 	clients           map[uuid.UUID]*Client
 	connecting        map[uuid.UUID]bool
+	pairingErrors     map[uuid.UUID]string
 	mu                sync.RWMutex
 	instanceRepo      *repository.InstanceRepo
 	chatRepo          *repository.ChatRepo
@@ -57,6 +58,7 @@ type Manager struct {
 	ctx               context.Context
 	cancel            context.CancelFunc
 	sessionStore      *sqlstore.Container
+	protocolLogger    waLog.Logger
 }
 
 const qrStartupTimeout = 30 * time.Second
@@ -85,12 +87,14 @@ func NewManager(
 	automationEnabled bool,
 	pairClientType string,
 	pairClientName string,
+	protocolLogLevel string,
 ) *Manager {
 	managerCtx, cancel := context.WithCancel(context.Background())
 	configureHistorySyncCapabilities()
 	return &Manager{
 		clients:           make(map[uuid.UUID]*Client),
 		connecting:        make(map[uuid.UUID]bool),
+		pairingErrors:     make(map[uuid.UUID]string),
 		instanceRepo:      instanceRepo,
 		chatRepo:          chatRepo,
 		contactRepo:       contactRepo,
@@ -115,6 +119,16 @@ func NewManager(
 		pairClientName:    pairClientName,
 		ctx:               managerCtx,
 		cancel:            cancel,
+		protocolLogger:    waLog.Stdout("WhatsMeow", normalizeProtocolLogLevel(protocolLogLevel), false),
+	}
+}
+
+func normalizeProtocolLogLevel(value string) string {
+	switch strings.ToUpper(strings.TrimSpace(value)) {
+	case "DEBUG", "INFO", "WARN", "ERROR":
+		return strings.ToUpper(strings.TrimSpace(value))
+	default:
+		return "INFO"
 	}
 }
 
@@ -162,7 +176,7 @@ func (m *Manager) initializeSessionStore(ctx context.Context) error {
 	if m.sessionStore != nil {
 		return nil
 	}
-	container, err := sqlstore.New(ctx, "pgx", m.dbURI, waLog.Noop)
+	container, err := sqlstore.New(ctx, "pgx", m.dbURI, m.protocolLogger.Sub("Database"))
 	if err != nil {
 		return fmt.Errorf("failed to initialize postgres session store: %w", err)
 	}
@@ -196,6 +210,7 @@ func (m *Manager) ConnectInstance(ctx context.Context, instanceID uuid.UUID) err
 
 func (m *Manager) connectInstance(ctx context.Context, instanceID uuid.UUID, pairPhone string) error {
 	m.mu.Lock()
+	delete(m.pairingErrors, instanceID)
 	if client, exists := m.clients[instanceID]; exists {
 		if client.IsConnected() {
 			m.mu.Unlock()
@@ -239,7 +254,7 @@ func (m *Manager) connectInstance(ctx context.Context, instanceID uuid.UUID, pai
 		return m.failConnect(ctx, instanceID, inst.TenantID, err)
 	}
 
-	waClient := whatsmeow.NewClient(deviceStore, waLog.Noop)
+	waClient := whatsmeow.NewClient(deviceStore, m.protocolLogger.Sub(instanceID.String()))
 
 	client := NewClient(
 		m.ctx,
@@ -287,6 +302,8 @@ func (m *Manager) connectInstance(ctx context.Context, instanceID uuid.UUID, pai
 	// Start connection in background
 	go func() {
 		if err := client.Connect(client.ctx); err != nil {
+			message := "Não foi possível conectar ao WhatsApp. Verifique o acesso à internet do serviço e tente novamente."
+			m.setPairingError(instanceID, message)
 			m.logger.Error("Failed to connect instance",
 				zap.String("id", instanceID.String()),
 				zap.Error(err),
@@ -300,7 +317,7 @@ func (m *Manager) connectInstance(ctx context.Context, instanceID uuid.UUID, pai
 			m.hub.BroadcastEventToTenant(uuidToString(inst.TenantID), "instance_status", models.InstanceStatusEvent{
 				InstanceID: instanceID,
 				Status:     models.StatusDisconnected,
-				Error:      "Não foi possível conectar ao WhatsApp. Verifique se a instância tem acesso à internet e tente novamente.",
+				Error:      message,
 			})
 		}
 	}()
@@ -330,7 +347,8 @@ func (m *Manager) watchQRStartup(instanceID uuid.UUID, client *Client, tenantID 
 	}
 
 	client.Disconnect()
-	message := "O WhatsMeow não gerou o QR Code dentro do tempo esperado. Tente novamente."
+	message := "O WhatsApp não respondeu ao pedido de QR Code em 30 segundos. Verifique a conexão de saída do serviço e tente novamente."
+	m.setPairingError(instanceID, message)
 	m.logger.Warn("WhatsApp QR startup timed out",
 		zap.String("id", instanceID.String()),
 		zap.Duration("timeout", qrStartupTimeout),
@@ -358,6 +376,8 @@ func shouldAbortQRStartup(currentClient, watchedClient *Client) bool {
 // failConnect resets an instance to disconnected and notifies the frontend when
 // connection setup fails before the WhatsApp client can be started.
 func (m *Manager) failConnect(ctx context.Context, instanceID uuid.UUID, tenantID *uuid.UUID, err error) error {
+	message := "Não foi possível iniciar a conexão com o WhatsApp. Tente novamente em alguns instantes."
+	m.setPairingError(instanceID, message)
 	m.logger.Error("Failed to connect instance",
 		zap.String("id", instanceID.String()),
 		zap.Error(err),
@@ -371,9 +391,31 @@ func (m *Manager) failConnect(ctx context.Context, instanceID uuid.UUID, tenantI
 	m.hub.BroadcastEventToTenant(uuidToString(tenantID), "instance_status", models.InstanceStatusEvent{
 		InstanceID: instanceID,
 		Status:     models.StatusDisconnected,
-		Error:      "Não foi possível iniciar a conexão com o WhatsApp. Tente novamente em alguns instantes.",
+		Error:      message,
 	})
 	return err
+}
+
+func (m *Manager) setPairingError(instanceID uuid.UUID, message string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if message == "" {
+		delete(m.pairingErrors, instanceID)
+		return
+	}
+	m.pairingErrors[instanceID] = message
+}
+
+// GetPairingError returns the last terminal error for the current QR flow.
+func (m *Manager) GetPairingError(instanceID uuid.UUID) string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	if client := m.clients[instanceID]; client != nil {
+		if message := client.CurrentPairingError(); message != "" {
+			return message
+		}
+	}
+	return m.pairingErrors[instanceID]
 }
 
 // RequestPairCode generates the code shown in WhatsApp's "link with phone
@@ -455,7 +497,7 @@ func (m *Manager) migrateLegacySQLiteSession(ctx context.Context, instanceID uui
 		}
 		return nil, err
 	}
-	legacy, err := sqlstore.New(ctx, "sqlite3", fmt.Sprintf("file:%s?_foreign_keys=on", dbPath), waLog.Noop)
+	legacy, err := sqlstore.New(ctx, "sqlite3", fmt.Sprintf("file:%s?_foreign_keys=on", dbPath), m.protocolLogger.Sub("LegacyDatabase"))
 	if err != nil {
 		return nil, err
 	}
@@ -483,6 +525,7 @@ func (m *Manager) DisconnectInstance(ctx context.Context, instanceID uuid.UUID) 
 
 	client.Disconnect()
 	delete(m.clients, instanceID)
+	delete(m.pairingErrors, instanceID)
 
 	if err := m.instanceRepo.UpdateStatus(ctx, instanceID, models.StatusDisconnected); err != nil {
 		m.logger.Error("Failed to update instance status", zap.Error(err))

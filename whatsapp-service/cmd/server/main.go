@@ -78,6 +78,7 @@ func main() {
 		cfg.SupabaseURL, cfg.SupabaseServiceKey, cfg.StorageBucket,
 		cfg.MinIOEndpoint, cfg.MinIOPublicURL, cfg.MinIOAccessKey, cfg.MinIOSecretKey, cfg.MinIORegion,
 		cfg.NodeURL, cfg.InternalToken, cfg.AutomationEnabled, cfg.PairClientType, cfg.PairClientName,
+		cfg.ProtocolLogLevel,
 	)
 
 	// Auto-reconnect existing sessions

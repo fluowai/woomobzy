@@ -39,6 +39,7 @@ type Client struct {
 	hub            *ws.Hub
 	logger         *zap.Logger
 	qrCode         string
+	pairingError   string
 	qrChan         <-chan whatsmeow.QRChannelItem
 	connected      bool
 	eventHandlerID uint32
@@ -134,6 +135,7 @@ func NewClient(
 // Connect initiates the WhatsApp connection
 func (c *Client) Connect(ctx context.Context) error {
 	c.mu.Lock()
+	c.pairingError = ""
 	if c.eventHandlerID == 0 {
 		c.eventHandlerID = c.waClient.AddEventHandler(c.eventHandler)
 	}
@@ -168,6 +170,7 @@ func (c *Client) Connect(ctx context.Context) error {
 			case whatsmeow.QRChannelEventCode:
 				c.mu.Lock()
 				c.qrCode = evt.Code
+				c.pairingError = ""
 				c.mu.Unlock()
 
 				c.logger.Info("QR Code generated",
@@ -175,7 +178,12 @@ func (c *Client) Connect(ctx context.Context) error {
 				)
 
 				// Save to DB
-				c.instanceRepo.UpdateQRCode(ctx, c.instanceID, evt.Code)
+				if err := c.instanceRepo.UpdateQRCode(ctx, c.instanceID, evt.Code); err != nil {
+					c.logger.Error("Failed to persist QR code",
+						zap.String("instance", c.instanceID.String()),
+						zap.Error(err),
+					)
+				}
 
 				// Broadcast to WebSocket
 				c.broadcastEvent("qr_code", models.QRCodeEvent{
@@ -343,6 +351,7 @@ func (c *Client) finishPairingWithError(ctx context.Context, message string, err
 	c.mu.Lock()
 	c.connected = false
 	c.qrCode = ""
+	c.pairingError = message
 	c.mu.Unlock()
 
 	fields := []zap.Field{
@@ -430,6 +439,13 @@ func (c *Client) CurrentQRCode() string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.qrCode
+}
+
+// CurrentPairingError returns the terminal error from the current QR flow.
+func (c *Client) CurrentPairingError() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.pairingError
 }
 
 // GetWAClient returns the underlying WhatsMeow client (for sending messages)

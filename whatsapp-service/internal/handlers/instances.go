@@ -152,6 +152,15 @@ func (h *InstanceHandler) GetQRCode(c *gin.Context) {
 		return
 	}
 
+	if message := h.manager.GetPairingError(id); message != "" {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error":  message,
+			"code":   "WHATSAPP_QR_FAILED",
+			"status": "failed",
+		})
+		return
+	}
+
 	client, exists := h.manager.GetClient(id)
 	clientExists := exists && client != nil
 	clientConnected := clientExists && client.IsConnected()

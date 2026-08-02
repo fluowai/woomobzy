@@ -1,5 +1,16 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-02] Agentes IA — protocolo de saudação/apresentação e conversa humana
+
+- Diagnóstico: ao mandar "oi" no chat de teste, o agente respondia de forma genérica sem se apresentar. Causas: (1) nenhum prompt instruía o agente a se apresentar em saudação/início de conversa; (2) sem contexto de marca no backend; (3) o chat de teste não usava o orquestrador de ferramentas (só o WhatsApp usava); (4) regras de conversa humana (máx. 2 perguntas, mensagens curtas) só existiam no fluxo do WhatsApp.
+- Novo `server/services/ai/agentPrompt.js` com `buildAgentSystemPrompt(agent, { history, channel, brandName })`: identidade, marca, personalidade, instruções, estilo, capacidades, ferramentas, autonomia, handoff, histórico, protocolo de saudação/apresentação (nunca responder "oi" com "oi" seco) e regras de conversa humana.
+- `server/api/ai/chat.routes.js`: `buildMemorySystemPrompt` delega ao builder compartilhado; `/agents/:id/chat` agora usa o `AgentOrchestrator` (ReAct/function calling) quando o agente tem tools e o provedor é Gemini, para o teste se comportar igual ao WhatsApp (fallback para o fluxo antigo preservado).
+- `server/services/ai/agentOrchestrator.js`: system prompt usa o builder compartilhado + diretrizes de ferramentas (buscar_imoveis, agendar_visita, simular_financiamento, atualizar_etapa_crm, qualificar_lead).
+- `server/lib/AIAutomation.js`: `processIntent` ganhou contexto de marca (`AGENT_BRAND_NAME`) e regra de apresentação na "reply" quando a conversa começa com saudação e não há resposta do agente no histórico.
+- `components/agents/AgentChatTest.tsx`: fallback (sem agente salvo) agora se apresenta com o nome/função do agente.
+- Gates: type-check ✓, eslint 0 erros (1 aviso pré-existente), Vitest 27 arquivos / 127 testes ✓, `node --check` ✓.
+- Nenhum commit/push/deploy.
+
 ## [2026-08-02] QR WhatsApp — mensagens de falha diferenciadas por fase de conexão
 
 - Falha do QR com causa dupla confirmada na sessão anterior (instância em `disconnected` sem `qr_code`; CI sem `deploy-portainer` na branch).

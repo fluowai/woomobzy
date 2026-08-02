@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { matchLeadProperties } from '../leadPropertyMatcher.js';
+import { buildAgentSystemPrompt } from './agentPrompt.js';
 
 const allTools = [
   {
@@ -387,17 +388,19 @@ export class AgentOrchestrator {
       systemInstruction: {
         parts: [
           {
-            text: `
-Voce e um agente autonomo imobiliario. 
-Nome: ${agent?.name || 'Agente'}
-Personalidade: ${agent?.personality || 'Profissional e prestativo'}
-Instrucoes: ${agent?.instructions || 'Ajude o cliente a encontrar imoveis e agendar visitas.'}
+            text:
+              buildAgentSystemPrompt(agent, {
+                history,
+                channel: 'WhatsApp',
+              }) +
+              `
 
-Voce possui acesso a ferramentas (Tools) no sistema IMOBZY.
-- Use "buscar_imoveis" para verificar disponibilidade antes de oferecer algo.
+DIRETRIZES DE FERRAMENTAS (apenas quando aplicavel ao contexto):
+- Use "buscar_imoveis" para verificar disponibilidade antes de oferecer um imovel.
 - Use "agendar_visita" apenas quando o cliente confirmar o dia e o horario.
-- Sempre responda de forma natural e amigavel ao cliente no WhatsApp, resumindo o resultado da ferramenta.
-        `,
+- Use "simular_financiamento" quando o cliente pedir valores, parcelas ou financiamento.
+- Use "atualizar_etapa_crm" e "qualificar_lead" para manter o CRM atualizado.
+- Sempre resuma o resultado da ferramenta de forma natural e amigavel ao cliente, sem citar termos tecnicos internos.`,
           },
         ],
       },

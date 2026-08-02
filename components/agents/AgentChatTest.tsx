@@ -142,7 +142,10 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
         const response = await aiAgentService.chat(agent.id, msg, sessionId);
         reply = response.reply;
       } else {
-        reply = `Olá! Recebi sua mensagem. Como posso ajudar com sua busca por imóveis?`;
+        const agentName = draft.name || agent?.name || '';
+        reply = agentName
+          ? `Olá! Sou ${agentName}, ${draft.role || 'atendimento'}. Como posso ajudar com a sua busca por imóveis?`
+          : `Olá! Recebi sua mensagem. Como posso ajudar com sua busca por imóveis?`;
       }
 
       setMessages((prev) => [

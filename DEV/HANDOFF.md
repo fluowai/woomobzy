@@ -1,5 +1,14 @@
 # Handoff
 
+## 2026-08-02 — Agentes IA: conversa inteligente com saudação e apresentação
+
+- Sintoma relatado: mandar "oi" ao agente gerava resposta genérica, sem o agente se identificar nem se apresentar.
+- Correções: novo prompt compartilhado `server/services/ai/agentPrompt.js` (protocolo de saudação/apresentação + marca + regras de conversa humana), aplicado no chat de teste (`chat.routes.js`), no orquestrador ReAct (WhatsApp) e na geração de reply do WhatsApp (`AIAutomation.processIntent`). O chat de teste agora usa o orquestrador de ferramentas quando o agente tem tools (comportamento igual ao WhatsApp).
+- Gates verdes: type-check, eslint 0 erros (1 aviso pré-existente), Vitest 27 arquivos / 127 testes.
+- Próxima ação (maestro): subir dev server + backend com `GEMINI_API_KEY` e validar no navegador — criar/publish um agente Zya, enviar "oi" no chat de teste e confirmar que ele se apresenta ("Sou Zya, Atendimento da WooTech Imob...") e pergunta 1 coisa para qualificar. Repetir em instância WhatsApp real com autonomia >= 3 e tool `whatsapp` (pré-requisito do auto-reply).
+- Nota: no WhatsApp o auto-reply só dispara se o agente estiver Ativo, `autonomy_level >= 3` e com tool `whatsapp` — agentes Semiautônomos (nível 2) não respondem sozinhos.
+- Nenhum commit/push/deploy foi executado.
+
 ## 2026-08-02 — QR WhatsApp: mensagens de falha por fase de conexão
 
 - `QRCodeModal.tsx`: `terminalErrorRef` para o polling após erro terminal (instância com `error` ou HTTP com `status`); resetado no retry.

@@ -1,5 +1,15 @@
 # Verificação
 
+## 2026-08-02 — Agentes IA: protocolo de saudação/apresentação e conversa humana
+
+- Novo `server/services/ai/agentPrompt.js`: construtor compartilhado de system prompt (identidade, marca, personalidade, ferramentas, histórico, protocolo de saudação/apresentação e regras de conversa humana).
+- `node --check` em `server/api/ai/chat.routes.js`, `server/lib/AIAutomation.js`, `server/services/ai/agentOrchestrator.js` e `server/services/ai/agentPrompt.js`: aprovado.
+- `npm run type-check`: aprovado.
+- `npx eslint` nos arquivos alterados: 0 erros; 1 aviso pré-existente (`matchLeadProperties` não usado em `agentOrchestrator.js`, fora do diff).
+- `npm run test`: 27 arquivos e 127 testes aprovados.
+- `git diff --check`: aprovado antes da atualização documental.
+- Validação runtime (enviar "oi" no chat de teste e em instância WhatsApp real) permanece pendente e depende do dev server + chave Gemini configurada.
+
 ## 2026-08-02 — QR WhatsApp: mensagens de falha por fase de conexão
 
 - `npm run type-check`: aprovado.

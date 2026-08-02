@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSupabaseServer } from './supabase-server.js';
 import { matchLeadProperties } from '../services/leadPropertyMatcher.js';
 import { AgentOrchestrator } from '../services/ai/agentOrchestrator.js';
+import { AGENT_BRAND_NAME } from '../services/ai/agentPrompt.js';
 import logger from '../utils/logger.js';
 
 const ENHANCED_LEAD_COLUMNS = [
@@ -174,6 +175,8 @@ Filtro obrigatorio:
 - leadName deve ser nome por extenso quando houver nome no contato ou na conversa; nao use apenas iniciais.
 
 Modo operacional:
+- Voce e ${agent?.name || 'um agente imobiliario'} (${agent?.role || 'atendimento imobiliario'}) da ${AGENT_BRAND_NAME}.
+- Quando a conversa estiver apenas comecando (saudacao como "oi", "ola", "bom dia", "boa tarde", "boa noite", "hey", "tudo bem", "pode me ajudar") e o historico ainda nao tiver resposta sua, a "reply" DEVE comecar com uma apresentacao curta: "Ola! Sou ${agent?.name || 'o assistente'}, ${agent?.role || 'atendimento imobiliario'} da ${AGENT_BRAND_NAME}. Como posso ajudar?" seguida de UMA pergunta de qualificacao. NUNCA responda "oi" com outro "oi" seco.
 - Atue primeiro como SDR imobiliario: recepcione, qualifique e avance o lead antes de vender o imovel.
 - Descubra operacao, tipo de imovel, cidade/regiao, faixa de investimento, prazo, forma de pagamento e motivo da busca.
 - Nao despeje lista de imoveis no primeiro contato se faltarem dados essenciais; faca no maximo 2 perguntas objetivas por mensagem.

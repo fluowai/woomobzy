@@ -24,10 +24,7 @@ export const WS_URL = normalizeWhatsAppWsUrl(
   getRuntimeEnv('VITE_WHATSAPP_WS_URL', DEFAULT_WHATSAPP_WS_PATH)
 );
 
-const providerCache = new Map<string, string>();
-export const setInstanceProviderCache = (id: string, provider: string) =>
-  providerCache.set(id, provider);
-export const getInstanceProviderCache = (id: string) => providerCache.get(id);
+
 
 import { supabase } from '@/services/supabase';
 
@@ -409,7 +406,7 @@ export interface Instance {
   tenant_id?: string;
   name: string;
   status: 'connected' | 'disconnected' | 'connecting' | 'qr_pending';
-  provider?: 'whatsmeow' | 'waha';
+
   qr_code?: string;
   phone?: string;
   jid?: string;
@@ -594,10 +591,10 @@ export interface WhatsAppMessageReceiptEvent {
 
 // ---- Instance API ----
 export const instanceApi = {
-  create: (name: string, provider?: string) =>
+  create: (name: string) =>
     apiRequest<Instance>('/instances', {
       method: 'POST',
-      body: JSON.stringify({ name, provider }),
+      body: JSON.stringify({ name }),
     }),
 
   list: () => apiRequest<Instance[]>('/instances'),
@@ -805,11 +802,8 @@ export const messageApi = {
     formData.append('content', content);
     formData.append('type', mediaTypeFromFile(file));
 
-    const provider = getInstanceProviderCache(instanceId);
-    const prefix = provider === 'waha' ? '/waha' : '';
     const cleanPath = `/messages/${chatId}/send-media?instance_id=${instanceId}`;
-
-    const res = await fetch(buildApiUrl(`${prefix}${cleanPath}`, tenantId), {
+    const res = await fetch(buildApiUrl(cleanPath, tenantId), {
       method: 'POST',
       headers: {
         Authorization: session ? `Bearer ${session.access_token}` : '',

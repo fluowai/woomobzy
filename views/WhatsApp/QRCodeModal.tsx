@@ -284,10 +284,15 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
                 <div className="wa-qr-error">
                   <p>{pairingError}</p>
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       setPairingError('');
                       setLoading(true);
                       setQrCode('');
+                      try {
+                        await instanceApi.connect(instance.id);
+                      } catch (e) {
+                        console.error('Reconnect failed', e);
+                      }
                       fetchQR();
                     }}
                     className="wa-qr-retry"
@@ -312,7 +317,15 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
               ) : (
                 <div className="wa-qr-error">
                   <p>QR Code não disponível</p>
-                  <button onClick={fetchQR} className="wa-qr-retry">
+                  <button onClick={async () => {
+                    setLoading(true);
+                    try {
+                      await instanceApi.connect(instance.id);
+                    } catch (e) {
+                      console.error('Reconnect failed', e);
+                    }
+                    fetchQR();
+                  }} className="wa-qr-retry">
                     <RefreshCw size={14} /> Tentar novamente
                   </button>
                 </div>

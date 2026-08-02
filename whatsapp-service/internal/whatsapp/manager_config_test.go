@@ -23,3 +23,15 @@ func TestNormalizeProtocolLogLevel(t *testing.T) {
 		})
 	}
 }
+
+func TestQRStartupFailureMessage(t *testing.T) {
+	connected := qrStartupFailureMessage(true)
+	if connected == "" || connected == qrStartupFailureMessage(false) {
+		t.Fatal("connected and disconnected startup failures must be distinguishable")
+	}
+
+	disconnected := qrStartupFailureMessage(false)
+	if disconnected == "" {
+		t.Fatal("disconnected startup failure must have a message")
+	}
+}

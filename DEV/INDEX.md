@@ -9,6 +9,7 @@
 | `SPECS/AUDITORIA_FUNCIONAL_REGRESSAO.md` | Auditoria por perfil e prevenção de regressões                       | PLANEJAMENTO |
 | `WORKLOG.md`                             | Log de trabalhos realizados no projeto                               | ATIVO        |
 | `RELATORIO_GAP_URBANO_RURAL.md`          | Gap de mudanças aplicadas no Urbano e não no Rural (sidebar sanfona) | CONCLUÍDO    |
+| `RELATORIO_TIPOGRAFIA_CORES_2026-08-02.md` | Auditoria de fontes, escala tipográfica, cores, contraste e marca   | CONCLUÍDO    |
 
 ## Módulos Implementados
 

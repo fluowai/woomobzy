@@ -1,5 +1,23 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-02] QR WhatsApp — mensagens de falha diferenciadas por fase de conexão
+
+- Falha do QR com causa dupla confirmada na sessão anterior (instância em `disconnected` sem `qr_code`; CI sem `deploy-portainer` na branch).
+- Frontend `views/WhatsApp/QRCodeModal.tsx`: novo `terminalErrorRef` impede que o polling continue após erro terminal (status com `error` ou HTTP com `status`), evitando novas chamadas desnecessárias; resetado no clique de nova tentativa.
+- Backend `whatsapp-service/internal/whatsapp`:
+  - `client.go`: novo `IsSocketConnected()` expõe o estado real do WebSocket do WhatsMeow no momento da falha.
+  - `manager.go`: watchdog de 30s agora distingue a causa — conexão aberta mas sem dados do QR (protocolo) vs. conexão encerrada antes do QR (DNS/TLS/proxy/egress) — via `qrStartupFailureMessage(socketConnected)`.
+  - `manager_config_test.go`: novo `TestQRStartupFailureMessage` cobre as duas mensagens.
+- Gates: `npm run type-check` ✓; `npx eslint views/WhatsApp/QRCodeModal.tsx` ✓ (0 erros, 1 aviso pré-existente de exhaustive-deps); Vitest `tests/whatsapp-qr-timeout.test.ts` ✓ 2/2; Go build/vet + `go test ./...` ✓ (via cópia ASCII em temp — path com acento corrompe o módulo Go no Windows).
+- Nenhum deploy; push pendente de autorização do maestro.
+
+## [2026-08-02] Auditoria de tipografia, cores e identidade visual
+
+- Auditados tokens globais, classes Tailwind, fontes, estilos inline, white-label, módulos WooTech e WhatsApp e identidade textual.
+- Inventário estático: 14.094 usos de cores diretas contra 437 usos semânticos; 539 ocorrências de texto em 10 px e predominância de bold/uppercase.
+- Confirmadas falhas de contraste em botões primários, texto terciário e `.btn-accent`, além de fontes declaradas sem carregamento global.
+- Relatório completo criado em `DEV/RELATORIO_TIPOGRAFIA_CORES_2026-08-02.md`; nenhuma alteração de produto, commit, push ou deploy foi executada.
+
 ## [2026-08-02] Reconstrução das novas telas WooTech Imob
 
 - Mapeadas as 15 referências do arquivo `novas-telas-wootech-imob.zip` para as rotas e componentes existentes dos painéis urbano e rural.

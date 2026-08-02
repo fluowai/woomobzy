@@ -448,6 +448,11 @@ func (c *Client) CurrentPairingError() string {
 	return c.pairingError
 }
 
+// IsSocketConnected reports whether the WhatsApp websocket is still open.
+func (c *Client) IsSocketConnected() bool {
+	return c.waClient != nil && c.waClient.IsConnected()
+}
+
 // GetWAClient returns the underlying WhatsMeow client (for sending messages)
 func (c *Client) GetWAClient() *whatsmeow.Client {
 	return c.waClient

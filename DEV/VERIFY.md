@@ -1,5 +1,24 @@
 # Verificação
 
+## 2026-08-02 — QR WhatsApp: mensagens de falha por fase de conexão
+
+- `npm run type-check`: aprovado.
+- `npx eslint views/WhatsApp/QRCodeModal.tsx`: 0 erros; 1 aviso pré-existente de `react-hooks/exhaustive-deps` (fetchQR/onClose/pairingPhone) fora do diff.
+- `npx vitest run tests/whatsapp-qr-timeout.test.ts`: 1 arquivo e 2 testes aprovados.
+- Go `go build ./...` + `go vet ./...` + `go test ./...`: todos os pacotes aprovados (em cópia ASCII em temp — path com acento corrompe o módulo Go no Windows).
+- Novo `TestQRStartupFailureMessage`: aprovado (mensagens de conexão aberta vs. encerrada distinguíveis).
+- `git diff --check` antes da atualização documental: aprovado.
+- Validação runtime em produção continua pendente: redeploy do stack via Portainer forçando pull da imagem `latest`.
+
+## 2026-08-02 — Auditoria de tipografia e cores
+
+- Inspecionados `index.css`, `index.html`, `SettingsContext`, layouts, configuração de aparência, camada WooTech e CSS do WhatsApp.
+- Contagens reproduzidas com `rg` sobre arquivos TypeScript/TSX do núcleo, excluindo testes e as principais superfícies públicas de tema isolado.
+- Contrastes calculados pela fórmula de luminância relativa WCAG para as combinações críticas documentadas.
+- Relatório e documentação verificados com `git diff --check` após a gravação.
+- Não executados build, lint ou testes, pois nenhuma fonte de produto foi alterada.
+- Validação visual autenticada em navegador permanece pendente e está explicitada como limite do relatório.
+
 ## 2026-08-02 — Novas telas WooTech Imob
 
 - `npm run type-check`: aprovado.

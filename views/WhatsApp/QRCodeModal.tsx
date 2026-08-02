@@ -48,6 +48,7 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
   const emptyQRAttemptsRef = useRef(0);
   const qrWaitStartedAtRef = useRef(Date.now());
   const qrWaitTimedOutRef = useRef(false);
+  const terminalErrorRef = useRef(false);
 
   useEffect(() => {
     qrCodeRef.current = qrCode;
@@ -59,6 +60,7 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
       if (data.instance_id === instance.id) {
         qrWaitStartedAtRef.current = Date.now();
         qrWaitTimedOutRef.current = false;
+        terminalErrorRef.current = false;
         qrCodeRef.current = data.qr_code;
         setQrCode(data.qr_code);
         setLoading(false);
@@ -84,6 +86,7 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
       if (data.instance_id === instance.id) {
         setStatus(data.status);
         if (data.error) {
+          terminalErrorRef.current = true;
           setPairingError(data.error);
           setQrCode('');
           setLoading(false);
@@ -108,6 +111,8 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
   }, [instance.id, on]);
 
   const fetchQR = async () => {
+    if (terminalErrorRef.current) return;
+
     const waitTimedOut =
       !qrCodeRef.current &&
       (qrWaitTimedOutRef.current ||
@@ -183,6 +188,7 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
         return;
       }
       if (error?.status) {
+        terminalErrorRef.current = true;
         setPairingError(error.message || 'Não foi possível gerar o QR Code.');
         setLoading(false);
       }
@@ -337,6 +343,7 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
                     onClick={async () => {
                       qrWaitStartedAtRef.current = Date.now();
                       qrWaitTimedOutRef.current = false;
+                      terminalErrorRef.current = false;
                       emptyQRAttemptsRef.current = 0;
                       setPairingError('');
                       setLoading(true);
@@ -377,6 +384,7 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
                     onClick={async () => {
                       qrWaitStartedAtRef.current = Date.now();
                       qrWaitTimedOutRef.current = false;
+                      terminalErrorRef.current = false;
                       emptyQRAttemptsRef.current = 0;
                       setLoading(true);
                       try {

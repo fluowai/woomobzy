@@ -1,5 +1,18 @@
 # Handoff
 
+## 2026-08-02 — QR WhatsApp: mensagens de falha por fase de conexão
+
+- `QRCodeModal.tsx`: `terminalErrorRef` para o polling após erro terminal (instância com `error` ou HTTP com `status`); resetado no retry.
+- Backend: `client.go` ganhou `IsSocketConnected()`; o watchdog de 30s em `manager.go` agora diferencia "conexão aberta sem dados do QR (protocolo)" de "conexão encerrada (DNS/TLS/proxy/egress)".
+- Gates verdes: type-check, lint (1 aviso pré-existente), Vitest 2/2, Go build/vet/test completos.
+- Próxima ação (maestro): revisar e autorizar push; depois redeploy do stack no Portainer forçando pull de `ghcr.io/fluowai/woomobzy-whatsapp:latest` e validar o QR real com as novas mensagens de diagnóstico.
+
+## 2026-08-02 — Auditoria de tipografia e cores
+
+- Relatório criado em `DEV/RELATORIO_TIPOGRAFIA_CORES_2026-08-02.md`.
+- Principais prioridades: corrigir contraste de `.btn-accent` e botões verdes, elevar contraste de textos auxiliares, unificar o painel em Plus Jakarta Sans e migrar cores diretas para tokens semânticos.
+- A auditoria não alterou a interface; implementação e validação visual autenticada continuam pendentes de aprovação do maestro.
+
 ## 2026-08-02 — Reconstrução visual das novas telas WooTech Imob
 
 - As referências do ZIP foram incorporadas às rotas existentes, preservando serviços, formulários, permissões e dados reais.

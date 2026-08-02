@@ -346,8 +346,9 @@ func (m *Manager) watchQRStartup(instanceID uuid.UUID, client *Client, tenantID 
 		return
 	}
 
+	socketConnected := client.IsSocketConnected()
 	client.Disconnect()
-	message := "O WhatsApp não respondeu ao pedido de QR Code em 30 segundos. Verifique a conexão de saída do serviço e tente novamente."
+	message := qrStartupFailureMessage(socketConnected)
 	m.setPairingError(instanceID, message)
 	m.logger.Warn("WhatsApp QR startup timed out",
 		zap.String("id", instanceID.String()),
@@ -364,6 +365,13 @@ func (m *Manager) watchQRStartup(instanceID uuid.UUID, client *Client, tenantID 
 		Status:     models.StatusDisconnected,
 		Error:      message,
 	})
+}
+
+func qrStartupFailureMessage(socketConnected bool) string {
+	if socketConnected {
+		return "A conexão com o WhatsApp foi aberta, mas o servidor não enviou os dados do QR Code. Tente novamente e verifique os logs do protocolo."
+	}
+	return "A conexão com o WhatsApp foi encerrada antes da geração do QR Code. Verifique DNS, TLS, proxy e acesso de saída do container."
 }
 
 func shouldAbortQRStartup(currentClient, watchedClient *Client) bool {

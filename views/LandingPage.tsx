@@ -14,9 +14,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Property, PropertyType } from '../types';
 import { useSettings } from '../context/SettingsContext';
 import { useTexts } from '../context/TextsContext';
-import { propertyService } from '../services/properties';
+import { propertyService, mapToModel } from '../services/properties';
 import { leadService } from '../services/leads';
 import { uploadFile } from '../services/storage';
+import { supabase } from '../services/supabase';
 import SiteHeader from '../components/SiteHeader';
 import ContactForm from '../components/ContactForm';
 import InlineEditable from '../components/InlineEditable';
@@ -195,11 +196,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
     const loadProperties = async () => {
       try {
         setLoading(true);
-        // Fetch all properties (no slicing), filtered by org if present
-        const data = await propertyService.list();
-        setProperties(data);
+        if (organizationId) {
+          const { data, error } = await supabase
+            .from('properties')
+            .select('*')
+            .eq('organization_id', organizationId)
+            .eq('status', 'Disponível')
+            .order('created_at', { ascending: false });
+          if (error) throw error;
+          setProperties((data || []).map(mapToModel));
+        } else {
+          const data = await propertyService.list();
+          setProperties(data);
+        }
       } catch (error) {
-        logger.error('Erro ao carregar imóveis da home', error);
+        logger.error('Erro ao carregar imoveis da home', error);
       } finally {
         setLoading(false);
       }

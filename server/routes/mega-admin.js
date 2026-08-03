@@ -8,6 +8,7 @@ import {
   normalizeDomain,
   unlinkDomainFromOrganization,
 } from '../domainService.js';
+import { provisionLicenseForOrganization } from '../lib/licensing/admin-service.js';
 
 const router = express.Router();
 

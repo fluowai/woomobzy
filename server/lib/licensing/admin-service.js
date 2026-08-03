@@ -15,6 +15,16 @@
 import { randomUUID } from 'node:crypto';
 import { createLicenseKey, generateKeyPair, keyFingerprint } from './crypto.js';
 import { appendAuditEvent } from './installation-service.js';
+import { computeExpiry } from './duration.js';
+import {
+  createSetupToken,
+  SetupTokenError,
+  verifySetupToken,
+} from './setup-token.js';
+import {
+  linkDomainToOrganization,
+  normalizeDomain,
+} from '../../domainService.js';
 
 export class LicenseAdminError extends Error {
   constructor(message, code, status = 400) {
@@ -840,4 +850,192 @@ export async function listAuditEvents(supabase, licenseId, options = {}) {
   if (result.error) throw result.error;
 
   return { auditEvents: result.data || [], total: result.count || 0 };
+}
+
+const VALID_DOMAIN_PURPOSES = new Set(['site', 'panel', 'both']);
+
+function resolveDomainPurpose(purpose) {
+  return VALID_DOMAIN_PURPOSES.has(purpose) ? purpose : 'both';
+}
+
+/**
+ * Cria e ativa automaticamente a licença de uma organização (revenda/cliente)
+ * no fluxo de onboarding, e devolve um token de setup para o link mágico.
+ *
+ * A expiração vem de um preset de duração (`input.duration`) ou de uma data
+ * explícita (`input.expires_at`). Se a chave de assinatura do control plane
+ * não estiver configurada, o token de setup é omitido (não quebra o fluxo).
+ *
+ * @returns {Promise<{ license, licenseKey, setupToken }>}
+ */
+export async function provisionLicenseForOrganization(
+  supabase,
+  input = {},
+  context = {}
+) {
+  const organizationId = requireString(input.organization_id, 'organization_id');
+  assertUuid(organizationId, 'organization_id');
+
+  const existingResult = await supabase
+    .from('licenses')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .maybeSingle();
+  if (existingResult.error) throw existingResult.error;
+  if (existingResult.data) {
+    throw new LicenseAdminError(
+      'Organização já possui uma licença',
+      'LICENSE_ALREADY_EXISTS',
+      409
+    );
+  }
+
+  const expiresAt =
+    input.expires_at === undefined
+      ? computeExpiry({
+          ...(input.duration || {}),
+          from: context.now || undefined,
+        })
+      : input.expires_at;
+
+  const { license, licenseKey } = await createLicense(
+    supabase,
+    {
+      organization_id: organizationId,
+      plan_id: input.plan_id,
+      edition: input.edition,
+      max_installations: input.max_installations,
+      grace_days: input.grace_days,
+      blocking_policy: input.blocking_policy,
+      expires_at: expiresAt,
+      metadata: input.metadata,
+    },
+    context
+  );
+
+  const activated = await setLicenseStatus(
+    supabase,
+    license.id,
+    'activate',
+    context
+  );
+
+  let setupToken = null;
+  const email =
+    typeof input.email === 'string' && input.email.trim()
+      ? input.email.trim()
+      : null;
+  try {
+    setupToken = createSetupToken({
+      licenseId: activated.id,
+      organizationId,
+      email,
+    });
+  } catch (error) {
+    if (error instanceof SetupTokenError) setupToken = null;
+    else throw error;
+  }
+
+  return { license: activated, licenseKey, setupToken };
+}
+
+/**
+ * Vincula o domínio informado no fluxo de setup à licença da organização,
+ * usando o token assinado do link mágico. Registra o domínio em
+ * license_domains e na organização (organizations/domains), e auditada a ação.
+ *
+ * @returns {Promise<{ license, domain, purpose, dnsVerified, linked }>}
+ */
+export async function bindDomainToLicenseViaSetupToken(
+  supabase,
+  input = {},
+  context = {}
+) {
+  const now = context.now || Date.now();
+  const token = requireString(input.token, 'token');
+  const domain = requireString(input.domain, 'domain');
+
+  let claims;
+  try {
+    claims = verifySetupToken(token);
+  } catch (error) {
+    if (error instanceof SetupTokenError) {
+      throw new LicenseAdminError(error.message, error.code, 400);
+    }
+    throw error;
+  }
+
+  const licenseId = claims.licenseId;
+  const organizationId = claims.organizationId;
+  assertUuid(licenseId, 'licenseId');
+  assertUuid(organizationId, 'organizationId');
+
+  const license = await findLicenseOrThrow(supabase, licenseId);
+  if (String(license.organization_id) !== String(organizationId)) {
+    throw new LicenseAdminError(
+      'Licença não pertence à organização do token',
+      'LICENSE_ORG_MISMATCH',
+      403
+    );
+  }
+
+  const purpose = resolveDomainPurpose(input.purpose);
+  const cleanDomain = normalizeDomain(domain);
+
+  const nowIso = new Date(now).toISOString();
+  const { data: domainRow, error: domainError } = await supabase
+    .from('license_domains')
+    .upsert(
+      {
+        license_id: licenseId,
+        organization_id: organizationId,
+        domain: cleanDomain,
+        purpose,
+        status: 'pending',
+        dns_verified: false,
+        ssl_status: 'pending',
+        created_at: nowIso,
+        updated_at: nowIso,
+      },
+      { onConflict: 'license_id,domain' }
+    )
+    .select()
+    .single();
+  if (domainError) throw domainError;
+
+  let linked;
+  try {
+    linked = await linkDomainToOrganization(supabase, {
+      domain: cleanDomain,
+      organizationId,
+      purpose,
+      strictDns: false,
+    });
+  } catch (error) {
+    await supabase.from('license_domains').delete().eq('id', domainRow.id);
+    throw error;
+  }
+
+  await writeAudit(supabase, {
+    license,
+    action: 'license.domain_linked',
+    severity: 'info',
+    eventData: {
+      domain: cleanDomain,
+      purpose,
+      tokenJti: claims.jti || null,
+      dnsVerified: linked?.dnsVerified || false,
+    },
+    actorId: context.actorId,
+    ipAddress: context.ipAddress,
+    now,
+  });
+
+  return {
+    license,
+    domain: cleanDomain,
+    purpose,
+    dnsVerified: linked?.dnsVerified || false,
+    linked,
+  };
 }

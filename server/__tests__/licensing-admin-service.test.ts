@@ -5,14 +5,17 @@ import {
 } from '../lib/licensing/crypto.js';
 import {
   createLicense,
+  bindDomainToLicenseViaSetupToken,
   getLicenseDetail,
   LicenseAdminError,
   listLicenses,
+  provisionLicenseForOrganization,
   reissueLicenseKey,
   revokeInstallation,
   setLicenseStatus,
   updateLicense,
 } from '../lib/licensing/admin-service.js';
+import { createSetupToken } from '../lib/licensing/setup-token.js';
 
 type Row = Record<string, unknown>;
 
@@ -29,6 +32,7 @@ function createMock(seed: {
   organizations?: Row[];
   plans?: Row[];
   domains?: Row[];
+  orgDomains?: Row[];
   entitlements?: Row[];
 } = {}) {
   const state: {
@@ -37,6 +41,7 @@ function createMock(seed: {
     organizations: Row[];
     plans: Row[];
     domains: Row[];
+    orgDomains: Row[];
     entitlements: Row[];
     heartbeats: Row[];
     audit: Row[];
@@ -47,6 +52,7 @@ function createMock(seed: {
     organizations: seed.organizations || [],
     plans: seed.plans || [],
     domains: seed.domains || [],
+    orgDomains: seed.orgDomains || [],
     entitlements: seed.entitlements || [],
     heartbeats: [],
     audit: [],
@@ -59,6 +65,7 @@ function createMock(seed: {
     organizations: state.organizations,
     plans: state.plans,
     license_domains: state.domains,
+    domains: state.orgDomains,
     license_entitlements: state.entitlements,
     license_heartbeats: state.heartbeats,
     license_audit_events: state.audit,
@@ -70,6 +77,7 @@ function createMock(seed: {
     in: Record<string, unknown[]>;
     is: Record<string, unknown>;
     ilike: Record<string, string>;
+    or: Array<{ col: string; val: unknown }>;
   };
 
   function normalizePattern(pattern: string) {
@@ -95,6 +103,12 @@ function createMock(seed: {
         return false;
       }
     }
+    if (filters.or.length) {
+      const orMatch = filters.or.some(
+        (o) => String(row[o.col]) === String(o.val)
+      );
+      if (!orMatch) return false;
+    }
     return true;
   }
 
@@ -116,7 +130,7 @@ function createMock(seed: {
   }
 
   function buildQuery(table: string) {
-    const filters: Filters = { eq: {}, in: {}, is: {}, ilike: {} };
+    const filters: Filters = { eq: {}, in: {}, is: {}, ilike: {}, or: [] };
     const q: any = {
       select(columns: unknown, opts?: { count?: boolean; head?: boolean }) {
         q.countMode = !!opts?.count;
@@ -138,6 +152,13 @@ function createMock(seed: {
       },
       ilike(col: string, pattern: string) {
         filters.ilike[col] = pattern;
+        return q;
+      },
+      or(expr: string) {
+        for (const group of String(expr).split(',')) {
+          const [col, val] = group.split('.eq.');
+          filters.or.push({ col, val });
+        }
         return q;
       },
       limit(n: number) {
@@ -198,6 +219,60 @@ function createMock(seed: {
           },
           then(resolve: (v: { data: Row[]; error: null }) => void) {
             return Promise.resolve({ data: inserted, error: null }).then(resolve);
+          },
+        };
+      },
+      upsert(rows: Row[], opts?: { onConflict?: string }) {
+        const list = (Array.isArray(rows) ? rows : [rows]) as Row[];
+        const conflictCols = (opts?.onConflict || 'id')
+          .split(',')
+          .map((c) => c.trim())
+          .filter(Boolean);
+        const target = tables[table];
+        const inserted = list.map((row) => {
+          const full: Row = {
+            id: String(row.id) || `${table}-${tables[table].length + 1}`,
+            ...row,
+            created_at: (row.created_at as string) || NOW_ISO,
+          };
+          for (const existing of [...target]) {
+            if (conflictCols.every((col) => existing[col] === full[col])) {
+              target.splice(target.indexOf(existing), 1);
+            }
+          }
+          target.push(full);
+          return full;
+        });
+        return {
+          select() {
+            return {
+              async single() {
+                return { data: inserted[0] ?? null, error: null };
+              },
+            };
+          },
+          then(resolve: (v: { data: Row[]; error: null }) => void) {
+            return Promise.resolve({ data: inserted, error: null }).then(resolve);
+          },
+        };
+      },
+      delete() {
+        return {
+          eq(col: string, val: unknown) {
+            return {
+              async then(resolve: (v: { data: Row[]; error: null }) => void) {
+                const target = tables[table];
+                const removed = target.filter(
+                  (r) => String(r[col]) === String(val)
+                );
+                for (const row of removed) {
+                  target.splice(target.indexOf(row), 1);
+                }
+                return Promise.resolve({ data: removed, error: null }).then(
+                  resolve
+                );
+              },
+            };
           },
         };
       },
@@ -601,6 +676,166 @@ describe('license admin service', () => {
       const payload = verifyLicenseKey(result.licenseKey, keyPair.publicKeyPem);
       expect(payload.licenseId).toBe('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
       expect(mock.state.audit[0].action).toBe('license.key_reissued');
+    });
+  });
+
+  describe('provisionLicenseForOrganization', () => {
+    it('provisions an active license and a setup token', async () => {
+      const mock = createMock({
+        organizations: [{ id: orgId, name: 'Imob Empresa' }],
+      });
+
+      const result = await provisionLicenseForOrganization(
+        mock as never,
+        {
+          organization_id: orgId,
+          email: 'cliente@exemplo.com',
+          duration: { presetId: 'year1' },
+        },
+        context
+      );
+
+      expect(result.license.status).toBe('active');
+      expect(result.license.activated_at).toBe(NOW_ISO);
+      expect(result.license.expires_at).toBe('2027-07-28T12:00:00.000Z');
+      expect(result.licenseKey).toMatch(/^WOLK1\./);
+      expect(result.setupToken).toMatch(/^WOLKS1\./);
+      expect(mock.state.audit.map((a) => a.action)).toEqual([
+        'license.created',
+        'license.activated',
+      ]);
+    });
+
+    it('lifetime preset leaves expires_at null', async () => {
+      const mock = createMock({
+        organizations: [{ id: orgId, name: 'Imob Empresa' }],
+      });
+      const result = await provisionLicenseForOrganization(
+        mock as never,
+        { organization_id: orgId, duration: { presetId: 'lifetime' } },
+        context
+      );
+      expect(result.license.expires_at).toBeNull();
+      expect(result.license.status).toBe('active');
+    });
+
+    it('explicit expires_at overrides the duration preset', async () => {
+      const mock = createMock({
+        organizations: [{ id: orgId, name: 'Imob Empresa' }],
+      });
+      const result = await provisionLicenseForOrganization(
+        mock as never,
+        {
+          organization_id: orgId,
+          expires_at: '2030-01-01T00:00:00.000Z',
+          duration: { presetId: 'lifetime' },
+        },
+        context
+      );
+      expect(result.license.expires_at).toBe('2030-01-01T00:00:00.000Z');
+    });
+
+    it('rejects an organization that already has a license', async () => {
+      const mock = createMock({
+        organizations: [{ id: orgId, name: 'Imob Empresa' }],
+        licenses: [baseLicense()],
+      });
+      await expect(
+        provisionLicenseForOrganization(
+          mock as never,
+          { organization_id: orgId },
+          context
+        )
+      ).rejects.toMatchObject({ code: 'LICENSE_ALREADY_EXISTS', status: 409 });
+    });
+
+    it('omits the setup token when no signing key is configured', async () => {
+      const previous = process.env.LICENSE_SIGNING_PRIVATE_KEY;
+      delete process.env.LICENSE_SIGNING_PRIVATE_KEY;
+      try {
+        const mock = createMock({
+          organizations: [{ id: orgId, name: 'Imob Empresa' }],
+        });
+        const result = await provisionLicenseForOrganization(
+          mock as never,
+          { organization_id: orgId },
+          context
+        );
+        expect(result.setupToken).toBeNull();
+        expect(result.license.status).toBe('active');
+      } finally {
+        if (previous !== undefined) {
+          process.env.LICENSE_SIGNING_PRIVATE_KEY = previous;
+        }
+      }
+    });
+  });
+
+  describe('bindDomainToLicenseViaSetupToken', () => {
+    const licenseId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+
+    it('binds the domain to the license and organization', async () => {
+      const token = createSetupToken(
+        { licenseId, organizationId: orgId, email: 'cliente@exemplo.com' },
+        { privateKeyPem: keyPair.privateKeyPem, now: NOW }
+      );
+      const mock = createMock({
+        licenses: [baseLicense({ id: licenseId, status: 'active' })],
+        organizations: [
+          {
+            id: orgId,
+            name: 'Imob Empresa',
+            custom_domain: null,
+            platform_domain: null,
+          },
+        ],
+        orgDomains: [],
+      });
+
+      const result = await bindDomainToLicenseViaSetupToken(
+        mock as never,
+        { token, domain: 'meucliente.com.br', purpose: 'both' },
+        context
+      );
+
+      expect(result.domain).toBe('meucliente.com.br');
+      expect(result.purpose).toBe('both');
+      expect(result.dnsVerified).toBe(false);
+
+      const bound = mock.state.domains.find((d) => d.license_id === licenseId);
+      expect(bound).toBeTruthy();
+      expect(bound?.domain).toBe('meucliente.com.br');
+      expect(mock.state.audit[0].action).toBe('license.domain_linked');
+      expect(mock.state.auditLogs[0].action).toBe('license.domain_linked');
+    });
+
+    it('rejects an invalid token', async () => {
+      const mock = createMock({});
+      await expect(
+        bindDomainToLicenseViaSetupToken(
+          mock as never,
+          { token: 'x', domain: 'meucliente.com.br' },
+          context
+        )
+      ).rejects.toMatchObject({ code: 'TOKEN_FORMAT', status: 400 });
+    });
+
+    it('rejects a token pointing to another organization', async () => {
+      const otherOrg = '33333333-3333-4333-8333-333333333333';
+      const token = createSetupToken(
+        { licenseId, organizationId: otherOrg },
+        { privateKeyPem: keyPair.privateKeyPem, now: NOW }
+      );
+      const mock = createMock({
+        licenses: [baseLicense({ id: licenseId, status: 'active' })],
+      });
+      await expect(
+        bindDomainToLicenseViaSetupToken(
+          mock as never,
+          { token, domain: 'meucliente.com.br' },
+          context
+        )
+      ).rejects.toMatchObject({ code: 'LICENSE_ORG_MISMATCH', status: 403 });
     });
   });
 

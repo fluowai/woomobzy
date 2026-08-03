@@ -140,6 +140,9 @@ const DirectClientsManager = lazy(
 );
 const Licenses = lazy(() => import('./views/megaadmin/Licenses'));
 const LicenseDetail = lazy(() => import('./views/megaadmin/LicenseDetail'));
+const SystemContracts = lazy(() => import('./views/megaadmin/SystemContracts'));
+const ContractEditor = lazy(() => import('./views/megaadmin/ContractEditor'));
+const ContractPreview = lazy(() => import('./views/megaadmin/ContractPreview'));
 const SiteManager = lazy(() => import('./views/SiteManager'));
 const MegaTheme = lazy(() => import('./src/views/sites/megainvestimentos/MegaTheme'));
 const SitePageEditor = lazy(() => import('./views/SitePageEditor'));
@@ -378,6 +381,10 @@ const AppRoutes: React.FC = () => {
           <Route path="direct-clients" element={<DirectClientsManager />} />
           <Route path="licenses" element={<Licenses />} />
           <Route path="licenses/:id" element={<LicenseDetail />} />
+          <Route path="contracts" element={<SystemContracts />} />
+          <Route path="contracts/:id/edit" element={<ContractEditor />} />
+          <Route path="contracts/new" element={<ContractEditor />} />
+          <Route path="contracts/:id/preview" element={<ContractPreview />} />
           <Route path="analytics" element={<AnalyticsDashboard />} />
           <Route path="monitoring" element={<PlatformMonitoring />} />
           <Route path="billing" element={<BillingOverview />} />

@@ -4,6 +4,7 @@
  */
 import { Router } from 'express';
 import { z } from 'zod';
+import { logger } from '../../utils/logger.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
@@ -69,7 +70,7 @@ router.get('/:lease_id', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true, data: data || [] });
   } catch (error) {
-    console.error('[InspectionRoutes] List error:', error);
+    logger.error('[InspectionRoutes] List error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -100,7 +101,7 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
 
     res.status(201).json({ success: true, data });
   } catch (error) {
-    console.error('[InspectionRoutes] Create error:', error);
+    logger.error('[InspectionRoutes] Create error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -135,7 +136,7 @@ router.put('/:id', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true, data });
   } catch (error) {
-    console.error('[InspectionRoutes] Update error:', error);
+    logger.error('[InspectionRoutes] Update error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -182,7 +183,7 @@ router.post(
           .upload(fileName, file.buffer, { contentType: file.mimetype });
 
         if (uploadError) {
-          console.warn('[InspectionPhotos] Upload error:', uploadError.message);
+          logger.warn('[InspectionPhotos] Upload error:', uploadError.message);
           continue;
         }
 
@@ -230,10 +231,11 @@ router.post(
         photo_urls: photoUrls,
       });
     } catch (error) {
-      console.error('[InspectionRoutes] Photo upload error:', error);
+      logger.error('[InspectionRoutes] Photo upload error:', error);
       res.status(500).json({ error: error.message });
     }
   }
 );
 
 export default router;
+

@@ -3,6 +3,7 @@
  * /api/locacao/notifications
  */
 import { Router } from 'express';
+import { logger } from '../../utils/logger.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
@@ -19,7 +20,7 @@ router.post('/run', verifyAuth, requireTenant, async (req, res) => {
     const results = await LeaseNotificationWorker.runAll(req.orgId);
     res.json({ success: true, data: results });
   } catch (error) {
-    console.error('[NotificationRoutes] Run error:', error);
+    logger.error('[NotificationRoutes] Run error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -117,9 +118,10 @@ router.get('/cron', async (req, res) => {
 
     res.json({ success: true, data: allResults });
   } catch (error) {
-    console.error('[NotificationRoutes] Cron error:', error);
+    logger.error('[NotificationRoutes] Cron error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
 export default router;
+

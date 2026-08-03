@@ -68,6 +68,8 @@ const RentalsContractEditor = lazy(
   () => import('./views/RentalsContractEditor')
 );
 const RentalsBordero = lazy(() => import('./views/RentalsBordero'));
+const LeaseDetail = lazy(() => import('./src/components/lease/LeaseDetail').then(m => ({ default: m.LeaseDetail })));
+const LeaseWizard = lazy(() => import('./src/components/lease/LeaseWizard').then(m => ({ default: m.LeaseWizard })));
 const ComplianceUrbano = lazy(() => import('./views/urban/ComplianceUrbano'));
 const Cobranca = lazy(() => import('./views/urban/Cobranca'));
 const Simulator360 = lazy(() => import('./views/urban/Simulator360'));
@@ -304,6 +306,8 @@ const AppRoutes: React.FC = () => {
           <Route path="loteamentos" element={<Empreendimentos />} />
           <Route path="loteamentos/:id" element={<LoteamentoDetails />} />
           <Route path="locacao" element={<RentalsManagement />} />
+          <Route path="locacao/:id" element={<LeaseDetail />} />
+          <Route path="locacao/:id/editar" element={<LeaseWizard />} />
           <Route path="locacao/contrato" element={<RentalsContractEditor />} />
           <Route path="locacao/bordero" element={<RentalsBordero />} />
           <Route path="compliance" element={<ComplianceUrbano />} />

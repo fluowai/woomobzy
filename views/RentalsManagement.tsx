@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
 import { useEffect, useMemo } from 'react';
 import {
@@ -26,6 +27,9 @@ import {
   Filter,
   Users,
   DollarSign,
+  Sparkles,
+  X,
+  Send,
 } from 'lucide-react';
 import {
   BarChart,
@@ -37,6 +41,7 @@ import {
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { generateLeaseAssistantResponse } from '@/services/geminiService';
 
 export default function RentalsManagement() {
   const navigate = useNavigate();
@@ -45,19 +50,24 @@ export default function RentalsManagement() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [dashboard, setDashboard] = useState<DashboardResumo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [aiMessages, setAiMessages] = useState<{ role: 'user' | 'assistant'; text: string }[]>([]);
+  const [aiInput, setAiInput] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [dash, list] = await Promise.all([
+        const [dashRes, listRes] = await Promise.all([
           locacaoService.getDashboard(),
           locacaoService.listContracts(),
         ]);
-        setDashboard(dash);
-        setContracts(list);
+        setDashboard(dashRes.data);
+        setContracts(listRes.data);
       } catch (e) {
-        console.error(e);
+        logger.error('Erro ao carregar dados do dashboard:', e);
       } finally {
         setLoading(false);
       }
@@ -66,29 +76,86 @@ export default function RentalsManagement() {
   }, []);
 
   const filteredContracts = useMemo(() => {
-    if (activeTab === 'Todos') return contracts;
+    let result = contracts;
     if (activeTab === 'Em dia')
-      return contracts.filter((c) => c.payment_status === 'em_dia');
-    if (activeTab === 'Inadimplentes')
-      return contracts.filter((c) => c.payment_status === 'inadimplente');
-    if (activeTab === 'Atenção')
-      return contracts.filter((c) => c.payment_status === 'atrasado');
-    return contracts;
-  }, [contracts, activeTab]);
+      result = result.filter((c) => c.payment_status === 'em_dia');
+    else if (activeTab === 'Inadimplentes')
+      result = result.filter((c) => c.payment_status === 'inadimplente');
+    else if (activeTab === 'Atenção')
+      result = result.filter((c) => c.payment_status === 'atrasado');
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((c) =>
+        (c.tenant_name || '').toLowerCase().includes(q) ||
+        (c.property_title || '').toLowerCase().includes(q) ||
+        (c.contract_number || '').toLowerCase().includes(q)
+      );
+    }
+
+    return result;
+  }, [contracts, activeTab, searchQuery]);
 
   // MOCK DATA for Recharts
-  const fluxoData = [
-    { name: 'Previsto', value: 184000, color: '#10b981' },
-    { name: 'Recebido', value: 162000, color: '#10b981' },
-    { name: 'Repassado', value: 119000, color: '#10b981' },
-  ];
+  const fluxoData = dashboard
+    ? [
+        { name: 'Previsto', value: dashboard.receita_mensal || 0, color: '#10b981' },
+        {
+          name: 'Recebido',
+          value: Math.round((dashboard.receita_anual || 0) / 12),
+          color: '#10b981',
+        },
+        {
+          name: 'Repassado',
+          value: Math.round((dashboard.receita_anual || 0) / 12 * 0.9),
+          color: '#10b981',
+        },
+      ]
+    : [
+        { name: 'Previsto', value: 0, color: '#10b981' },
+        { name: 'Recebido', value: 0, color: '#10b981' },
+        { name: 'Repassado', value: 0, color: '#10b981' },
+      ];
 
-  const formatCompactCurrency = (val: number) =>
-    val.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      maximumFractionDigits: 0,
-    });
+  const emDiaCount = useMemo(() => contracts.filter((c) => c.payment_status === 'em_dia').length, [contracts]);
+  const atrasadosCount = useMemo(() => contracts.filter((c) => c.payment_status === 'atrasado').length, [contracts]);
+  const inadimplentesCount = useMemo(() => contracts.filter((c) => c.payment_status === 'inadimplente').length, [contracts]);
+  const valorAtrasado = useMemo(() => contracts.filter((c) => c.payment_status === 'inadimplente' || c.payment_status === 'atrasado').reduce((sum, c) => sum + (c.monthly_rent || 0), 0), [contracts]);
+
+  const vencendo60Dias = useMemo(() => {
+    const now = new Date();
+    const em60Days = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
+    return contracts.filter((c) => {
+      if (!c.end_date || c.status !== 'active') return false;
+      const end = new Date(c.end_date);
+      return end >= now && end <= em60Days;
+    }).length;
+  }, [contracts]);
+
+const formatCompactCurrency = (val: number) =>
+  val.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    maximumFractionDigits: 0,
+  });
+
+  const handleAiSend = async () => {
+    if (!aiInput.trim() || aiLoading) return;
+    const question = aiInput.trim();
+    setAiInput('');
+    setAiMessages((prev) => [...prev, { role: 'user', text: question }]);
+    setAiLoading(true);
+    try {
+      const context = `Carteira com ${contracts.length} contratos. ${dashboard ? `Receita mensal: R$ ${dashboard.receita_mensal}. ` : ''}Inadimplentes: ${dashboard?.inadimplentes || 0}. Atrasados: ${dashboard?.atrasados || 0}.`;
+      const response = await generateLeaseAssistantResponse(question, context);
+      setAiMessages((prev) => [...prev, { role: 'assistant', text: response || 'Não consegui gerar uma resposta no momento.' }]);
+    } catch (error) {
+      logger.error('Erro no assistente IA:', error);
+      setAiMessages((prev) => [...prev, { role: 'assistant', text: 'Ocorreu um erro ao consultar o assistente.' }]);
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   return (
     <div className="wootech-reference-screen w-full max-w-[1600px] mx-auto pb-12 font-sans text-slate-800 animate-fade-in">
@@ -115,7 +182,7 @@ export default function RentalsManagement() {
             <FileText size={18} /> Gerar cobrança
           </button>
           <button
-            onClick={() => navigate('/locacoes/nova')}
+            onClick={() => navigate('/urban/financeiro-advanced/novo')}
             className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2"
           >
             <Plus size={18} /> Nova locação
@@ -392,7 +459,7 @@ export default function RentalsManagement() {
                     <span
                       className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${activeTab === 'Todos' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100'}`}
                     >
-                      128
+                      {contracts.length}
                     </span>
                   </button>
                   <button
@@ -403,7 +470,7 @@ export default function RentalsManagement() {
                     <span
                       className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${activeTab === 'Em dia' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100'}`}
                     >
-                      112
+                      {emDiaCount}
                     </span>
                   </button>
                   <button
@@ -414,7 +481,7 @@ export default function RentalsManagement() {
                     <span
                       className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${activeTab === 'Atenção' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100'}`}
                     >
-                      11
+                      {atrasadosCount}
                     </span>
                   </button>
                   <button
@@ -425,7 +492,7 @@ export default function RentalsManagement() {
                     <span
                       className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${activeTab === 'Inadimplentes' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100'}`}
                     >
-                      5
+                      {inadimplentesCount}
                     </span>
                   </button>
                 </div>
@@ -438,6 +505,8 @@ export default function RentalsManagement() {
                     />
                     <input
                       type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Buscar inquilino ou imóvel..."
                       className="w-64 pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
                     />
@@ -496,7 +565,7 @@ export default function RentalsManagement() {
                     filteredContracts.map((contract) => (
                       <tr
                         key={contract.id}
-                        onClick={() => navigate('/locacao/contrato')}
+                        onClick={() => navigate(`/urban/locacao/${contract.id}`)}
                         className="hover:bg-slate-50/50 transition-colors cursor-pointer group"
                       >
                         <td className="py-4 pl-6 pr-4">
@@ -575,15 +644,17 @@ export default function RentalsManagement() {
                 />
                 <div className="flex-1">
                   <p className="text-sm font-bold text-slate-900">
-                    5 aluguéis em atraso{' '}
-                    <span className="text-red-500 ml-1">• R$ 8.750</span>
+                    {atrasadosCount + inadimplentesCount} aluguéis em atraso{' '}
+                    <span className="text-red-500 ml-1">
+                      • {formatCompactCurrency(valorAtrasado)}
+                    </span>
                   </p>
                   <p className="text-xs text-slate-500 mt-1">
                     Ação imediata recomendada
                   </p>
                 </div>
                 <button
-                  onClick={() => navigate('/locacoes/inadimplentes')}
+                  onClick={() => navigate('/urban/locacao?filter=inadimplentes')}
                   className="text-xs font-bold text-emerald-600 whitespace-nowrap mt-0.5"
                 >
                   Ver detalhes {'>'}
@@ -594,14 +665,14 @@ export default function RentalsManagement() {
                 <Clock size={20} className="text-amber-500 shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm font-bold text-slate-900">
-                    8 contratos vencem em 60 dias
+                    {vencendo60Dias} contratos vencem em 60 dias
                   </p>
                   <p className="text-xs text-slate-500 mt-1">
                     Planeje renovações
                   </p>
                 </div>
                 <button
-                  onClick={() => navigate('/contratos')}
+                  onClick={() => navigate('/urban/locacao')}
                   className="text-xs font-bold text-emerald-600 whitespace-nowrap mt-0.5"
                 >
                   Ver contratos {'>'}
@@ -674,19 +745,25 @@ export default function RentalsManagement() {
                 <p className="text-[10px] font-bold text-slate-400 uppercase">
                   Previsto
                 </p>
-                <p className="text-xs font-bold text-slate-700">R$ 184 mil</p>
+                <p className="text-xs font-bold text-slate-700">
+                  {formatCompactCurrency(fluxoData[0]?.value || 0)}
+                </p>
               </div>
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase">
                   Recebido
                 </p>
-                <p className="text-xs font-bold text-slate-700">R$ 162 mil</p>
+                <p className="text-xs font-bold text-slate-700">
+                  {formatCompactCurrency(fluxoData[1]?.value || 0)}
+                </p>
               </div>
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase">
                   Repassado
                 </p>
-                <p className="text-xs font-bold text-slate-700">R$ 119 mil</p>
+                <p className="text-xs font-bold text-slate-700">
+                  {formatCompactCurrency(fluxoData[2]?.value || 0)}
+                </p>
               </div>
             </div>
           </div>
@@ -709,12 +786,12 @@ export default function RentalsManagement() {
                   <p className="text-xl font-bold text-slate-900">R$ 28.460</p>
                 </div>
               </div>
-              <button
-                onClick={() => navigate('/locacoes/bordero')}
-                className="px-4 py-2 bg-white border border-emerald-600 text-emerald-600 font-bold text-sm rounded-lg hover:bg-emerald-50 transition-colors"
-              >
-                Ver borderô
-              </button>
+                <button
+                  onClick={() => navigate('/urban/locacao/bordero')}
+                  className="px-4 py-2 bg-white border border-emerald-600 text-emerald-600 font-bold text-sm rounded-lg hover:bg-emerald-50 transition-colors"
+                >
+                  Ver borderô
+                </button>
             </div>
           </div>
 
@@ -764,6 +841,62 @@ export default function RentalsManagement() {
           </div>
         </div>
       </div>
+
+      {/* AI Assistant */}
+      {aiChatOpen && (
+        <div className="fixed bottom-6 right-6 w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl flex flex-col z-50">
+          <div className="flex items-center justify-between p-4 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-indigo-600 rounded-xl text-white"><Sparkles size={18} /></div>
+              <div>
+                <p className="text-sm font-bold text-slate-900">Assistente IA</p>
+                <p className="text-[10px] text-slate-500">Gestão de locações</p>
+              </div>
+            </div>
+            <button onClick={() => setAiChatOpen(false)} className="p-1 hover:bg-slate-100 rounded-lg"><X size={18} className="text-slate-500" /></button>
+          </div>
+          <div className="flex-1 min-h-[300px] max-h-[400px] overflow-y-auto p-4 space-y-3">
+            {aiMessages.length === 0 && (
+              <p className="text-xs text-slate-400 text-center py-8">Pergunte sobre inadimplência, reajustes, renovações ou dúvidas do módulo.</p>
+            )}
+            {aiMessages.map((msg, idx) => (
+              <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] px-3 py-2 rounded-xl text-xs ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'}`}>
+                  {msg.text}
+                </div>
+              </div>
+            ))}
+            {aiLoading && (
+              <div className="flex justify-start">
+                <div className="px-3 py-2 rounded-xl bg-slate-100 text-xs text-slate-500">Digitando...</div>
+              </div>
+            )}
+          </div>
+          <div className="p-3 border-t border-slate-100 flex gap-2">
+            <input
+              type="text"
+              value={aiInput}
+              onChange={(e) => setAiInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAiSend()}
+              placeholder="Digite sua pergunta..."
+              className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <button onClick={handleAiSend} disabled={aiLoading} className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white rounded-lg">
+              <Send size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!aiChatOpen && (
+        <button
+          onClick={() => setAiChatOpen(true)}
+          className="fixed bottom-6 right-6 p-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg flex items-center gap-2 z-40"
+        >
+          <Sparkles size={20} />
+          <span className="text-xs font-bold">Assistente IA</span>
+        </button>
+      )}
     </div>
   );
 }

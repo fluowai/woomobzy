@@ -75,6 +75,8 @@ const MIGRATIONS = [
   'migrations/20260731_ui_redesign_schema_additions.sql',
   'migrations/20260801_fix_organizations_niche_check.sql',
   'migrations/20260803_domain_purpose.sql',
+  'migrations/20260803_licensing_core.sql',
+  'migrations/20260803_lease_schema_alignment.sql',
 ];
 
 async function executeMigrations() {
@@ -134,11 +136,15 @@ async function executeMigrations() {
       const sqlContent = fs.readFileSync(migrationFile, 'utf-8');
 
       // Dividir por ; mas respeitando blocos $$ (funções)
+      // Linhas de comentário são removidas antes do parsing para que
+      // statements precedidos por comentários não sejam descartados.
       const statements = [];
       let currentStatement = '';
       let inDollarBlock = false;
 
-      const lines = sqlContent.split('\n');
+      const lines = sqlContent
+        .split('\n')
+        .filter((line) => !line.trim().startsWith('--'));
       for (let line of lines) {
         if (line.includes('$$')) inDollarBlock = !inDollarBlock;
         currentStatement += line + '\n';

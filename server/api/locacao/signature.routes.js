@@ -4,6 +4,7 @@
  */
 import { Router } from 'express';
 import { z } from 'zod';
+import { logger } from '../../utils/logger.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
@@ -91,7 +92,7 @@ router.get('/:lease_id', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true, data: data || [] });
   } catch (error) {
-    console.error('[SignatureRoutes] List error:', error);
+    logger.error('[SignatureRoutes] List error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -122,7 +123,7 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
 
     res.status(201).json({ success: true, data });
   } catch (error) {
-    console.error('[SignatureRoutes] Create error:', error);
+    logger.error('[SignatureRoutes] Create error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -193,7 +194,7 @@ router.patch('/:id/status', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true, data });
   } catch (error) {
-    console.error('[SignatureRoutes] Status error:', error);
+    logger.error('[SignatureRoutes] Status error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -241,7 +242,7 @@ router.post(
 
       res.json({ success: true, data: signature });
     } catch (error) {
-      console.error('[SignatureRoutes] Send invitation error:', error);
+      logger.error('[SignatureRoutes] Send invitation error:', error);
       res.status(500).json({ error: error.message });
     }
   }
@@ -267,7 +268,7 @@ router.post(
       );
       res.json({ success: true, data: result });
     } catch (error) {
-      console.error('[SignatureRoutes] Invite error:', error);
+      logger.error('[SignatureRoutes] Invite error:', error);
       res.status(500).json({ error: error.message });
     }
   }
@@ -340,9 +341,10 @@ router.post('/webhook/:provider', async (req, res) => {
     );
     res.json(result);
   } catch (error) {
-    console.error('[SignatureWebhook] Error:', error.message);
+    logger.error('[SignatureWebhook] Error:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
 
 export default router;
+

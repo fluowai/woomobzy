@@ -1,6 +1,7 @@
-import React from 'react';
-import { ShieldCheck, AlertTriangle, UserCheck, FileText } from 'lucide-react';
+import React, { useState } from 'react';
+import { ShieldCheck, AlertTriangle, UserCheck, FileText, Sparkles, Loader2 } from 'lucide-react';
 import type { Lease } from '../../../types/lease';
+import { analyzeLeaseRisk } from '../../../../services/geminiService';
 
 interface Props {
   lease: Partial<Lease>;
@@ -12,6 +13,37 @@ const inputClass = 'w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-
 const labelClass = 'text-[10px] font-bold text-slate-500 uppercase tracking-widest';
 
 export const StepCadastralAnalysis: React.FC<Props> = ({ lease, updateField }) => {
+  const [analyzing, setAnalyzing] = useState(false);
+  const [riskResult, setRiskResult] = useState<{
+    risk_level: 'baixo' | 'medio' | 'alto';
+    risk_score: number;
+    recommendation: string;
+    factors: string[];
+  } | null>(null);
+
+  const handleAIAnalysis = async () => {
+    setAnalyzing(true);
+    setRiskResult(null);
+    try {
+      const result = await analyzeLeaseRisk({
+        tenant_name: lease.tenant_name || 'Não informado',
+        tenant_type: lease.tenant_type || 'PF',
+        tenant_monthly_income: lease.tenant_monthly_income,
+        monthly_rent: lease.monthly_rent || 0,
+        guarantee_type: lease.guarantee_type || 'sem',
+        credit_score: lease.credit_score,
+        has_restrictions: lease.has_restrictions || false,
+      });
+      setRiskResult(result);
+      if (result.risk_score) {
+        updateField('evaluation_score', result.risk_score);
+      }
+    } catch (error) {
+      console.error('Erro na análise IA:', error);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Status da Análise */}
@@ -55,6 +87,52 @@ export const StepCadastralAnalysis: React.FC<Props> = ({ lease, updateField }) =
             />
           </div>
         </div>
+      </section>
+
+      {/* Análise com IA */}
+      <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-indigo-50 rounded-xl text-indigo-600"><Sparkles size={20} /></div>
+            <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Análise de Risco com IA</h4>
+          </div>
+          <button
+            onClick={handleAIAnalysis}
+            disabled={analyzing}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-2"
+          >
+            {analyzing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+            {analyzing ? 'Analisando...' : 'Analisar Risco'}
+          </button>
+        </div>
+
+        {riskResult && (
+          <div className={`mt-4 p-4 rounded-xl border ${
+            riskResult.risk_level === 'baixo' ? 'bg-emerald-50 border-emerald-200' :
+            riskResult.risk_level === 'alto' ? 'bg-red-50 border-red-200' :
+            'bg-amber-50 border-amber-200'
+          }`}>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Nível de Risco</span>
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                riskResult.risk_level === 'baixo' ? 'bg-emerald-100 text-emerald-700' :
+                riskResult.risk_level === 'alto' ? 'bg-red-100 text-red-700' :
+                'bg-amber-100 text-amber-700'
+              }`}>
+                {riskResult.risk_level.toUpperCase()}
+              </span>
+              <span className="text-xs font-bold text-slate-500">Score: {riskResult.risk_score}/100</span>
+            </div>
+            <p className="text-sm text-slate-700 mb-2">{riskResult.recommendation}</p>
+            {riskResult.factors.length > 0 && (
+              <ul className="list-disc list-inside text-xs text-slate-600 space-y-1">
+                {riskResult.factors.map((factor, idx) => (
+                  <li key={idx}>{factor}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </section>
 
       {/* Restrições */}

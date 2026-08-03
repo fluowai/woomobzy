@@ -4,6 +4,7 @@
  */
 import { Router } from 'express';
 import { z } from 'zod';
+import { logger } from '../../utils/logger.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
@@ -59,7 +60,7 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true, data: data || [] });
   } catch (error) {
-    console.error('[TemplateRoutes] List error:', error);
+    logger.error('[TemplateRoutes] List error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -94,7 +95,7 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
 
     res.status(201).json({ success: true, data });
   } catch (error) {
-    console.error('[TemplateRoutes] Create error:', error);
+    logger.error('[TemplateRoutes] Create error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -127,7 +128,7 @@ router.get('/:id', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true, data: { ...data, versions: versions || [] } });
   } catch (error) {
-    console.error('[TemplateRoutes] Get error:', error);
+    logger.error('[TemplateRoutes] Get error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -188,7 +189,7 @@ router.put('/:id', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true, data });
   } catch (error) {
-    console.error('[TemplateRoutes] Update error:', error);
+    logger.error('[TemplateRoutes] Update error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -212,7 +213,7 @@ router.delete('/:id', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('[TemplateRoutes] Delete error:', error);
+    logger.error('[TemplateRoutes] Delete error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -244,9 +245,10 @@ router.post('/validate', verifyAuth, requireTenant, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('[TemplateRoutes] Validate error:', error);
+    logger.error('[TemplateRoutes] Validate error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
 export default router;
+

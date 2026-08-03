@@ -138,8 +138,67 @@ export const generateCollectionMessage = async (
   );
 };
 
+export const analyzeLeaseRisk = async (leaseData: {
+  tenant_name: string;
+  tenant_type: string;
+  tenant_monthly_income?: number;
+  monthly_rent: number;
+  guarantee_type: string;
+  credit_score?: number;
+  has_restrictions: boolean;
+}) => {
+  const prompt = `Analise o risco de inadimplência para esta locação e retorne APENAS um JSON:
+{
+  "risk_level": "baixo|medio|alto",
+  "risk_score": 0-100,
+  "recommendation": "texto curto",
+  "factors": ["fator1", "fator2"]
+}
+
+Dados da locação:
+- Inquilino: ${leaseData.tenant_name} (${leaseData.tenant_type === 'PJ' ? 'Pessoa Jurídica' : 'Pessoa Física'})
+- Renda mensal: R$ ${leaseData.tenant_monthly_income?.toLocaleString('pt-BR') || 'N/A'}
+- Aluguel: R$ ${leaseData.monthly_rent.toLocaleString('pt-BR')}
+- Garantia: ${leaseData.guarantee_type}
+- Score de crédito: ${leaseData.credit_score ?? 'N/A'}
+- Restrições: ${leaseData.has_restrictions ? 'Sim' : 'Não'}
+
+Considere: se a renda cobre mais de 3x o aluguel = baixo risco. Score de crédito baixo ou restrições = alto risco. Garantia sem fiador aumenta o risco.`;
+
+  const response = await callSecureAI(
+    prompt,
+    'Você é um especialista em análise de risco de locação imobiliária brasileira.',
+    { temperature: 0.3, jsonMode: true }
+  );
+
+  try {
+    const cleanJson = response
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .trim();
+    return JSON.parse(cleanJson);
+  } catch (e) {
+    logger.error('Failed to parse lease risk analysis', e);
+    return {
+      risk_level: 'medio' as const,
+      risk_score: 50,
+      recommendation: 'Análise manual recomendada.',
+      factors: ['Dados insuficientes para análise automatizada'],
+    };
+  }
+};
+
+export const generateLeaseAssistantResponse = async (question: string, context?: string) => {
+  const systemInstruction = `Você é um assistente especializado em gestão de locações imobiliárias brasileiras. Responda de forma concisa e prática. Contexto: ${context || 'Nenhum contexto adicional'}.`;
+
+  return callSecureAI(question, systemInstruction, { temperature: 0.7 });
+};
+
 export const geminiService = {
   matchLeadWithProperties,
+  analyzeLeaseRisk,
+  generateLeaseAssistantResponse,
+  generateCollectionMessage,
 
   generateText: async (prompt: string) => {
     return callSecureAI(prompt, undefined, { temperature: 0.2 });

@@ -3,6 +3,7 @@
  * /api/locacao/bordero
  */
 import { Router } from 'express';
+import { logger } from '../../utils/logger.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
@@ -104,9 +105,10 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true, data: bordero });
   } catch (error) {
-    console.error('[BorderoRoutes] Generation error:', error);
+    logger.error('[BorderoRoutes] Generation error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
 export default router;
+

@@ -1,5 +1,12 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-03] InoveBrokers — SSL + página "Em breve" (inovebrokers.com.br / app.inovebrokers.com.br)
+
+- Entregáveis criados (planejados, sem deploy): `coming-soon/index.html` (página única "Em breve — um sistema será instalado aqui", sem dependências externas), `Dockerfile.coming-soon` (nginx estática), `traefik/dynamic/inovebrokers_com_br.yml` (router `Host(inovebrokers.com.br) || Host(app.inovebrokers.com.br)` → `websecure` + `certResolver letsencryptresolver` → service `inovebrokers_coming_soon@file` → `http://coming-soon:80`; cert único com os 2 SANs no acme.json), service `coming-soon` no `docker-compose.yml` (rede externa `wootech1`) e entrada de build no CI (`ghcr.io/fluowai/inovebrokers-coming-soon`).
+- Plano/guia completo: `DEV/SPECS/INOVEBROKERS_SSL_COMING_SOON.md` (DNS A → 207.58.153.219, deploy Portainer + cópia do dynamic para o volume `imobzy_traefik_dynamic`, verificação e rollback).
+- Validação local: YAML válido (js-yaml) em `docker-compose.yml` e no dynamic do Traefik. Docker não disponível nesta máquina Windows → `docker compose config` não rodou.
+- Pendente (maestro): criar registros DNS A, push/branch → CI builda imagem, atualizar a stack no Portainer com o service `coming-soon`, copiar o dynamic para o volume do Traefik e validar HTTPS nas duas URLs. Nenhum commit/push/deploy foi executado.
+
 ## [2026-08-03] Central de Licenciamento Wootech — Incremento 7 (enforcement no acesso autenticado)
 
 - **`server/lib/licensing/enforcement.js`** (criado na sessão anterior, validado agora): `resolveEnforcementMode`/`resolveLegacyTenantsFlag`, `resolveOrgLicense` (cache TTL 60s via `TtlCache`), `clearLicenseEnforcementCache`, `isEnforcementExempt`, `buildEnforcementDecision`, `auditDecision` (throttle por org+estado; `license_audit_events` com hash encadeado quando há licença, `audit_logs` quando não), `enforceLicenseAccess` (middleware fail-open; injeta `req.licenseState`; 403 com código+dados da licença quando bloqueia) e `clearEnforcementAuditThrottle`.

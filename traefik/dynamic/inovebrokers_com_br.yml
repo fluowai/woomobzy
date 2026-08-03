@@ -1,0 +1,21 @@
+# Em breve — InoveBrokers
+# Serve a página "Em breve" em inovebrokers.com.br e app.inovebrokers.com.br
+# SSL emitido automaticamente pelo Let's Encrypt via Traefik (certResolver letsencryptresolver).
+
+http:
+  routers:
+    inovebrokers_com_br_coming_soon:
+      rule: 'Host(`inovebrokers.com.br`) || Host(`app.inovebrokers.com.br`)'
+      entryPoints:
+        - websecure
+      priority: 100
+      tls:
+        certResolver: letsencryptresolver
+      service: inovebrokers_coming_soon@file
+
+  services:
+    inovebrokers_coming_soon:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://coming-soon:80"

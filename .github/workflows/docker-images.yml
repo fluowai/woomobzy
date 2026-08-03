@@ -43,6 +43,10 @@ jobs:
             image: ghcr.io/fluowai/woomobzy-instagram-worker
             dockerfile: Dockerfile.instagram-worker
             deployment_alias: ghcr.io/fluowai/woomobzy-instagram-worker:latest
+          - name: coming-soon
+            image: ghcr.io/fluowai/inovebrokers-coming-soon
+            dockerfile: Dockerfile.coming-soon
+            deployment_alias: ghcr.io/fluowai/inovebrokers-coming-soon:latest
 
     steps:
       - name: Checkout

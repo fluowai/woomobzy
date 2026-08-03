@@ -1,5 +1,61 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-03] Central de Licenciamento Wootech — Incremento 7 (enforcement no acesso autenticado)
+
+- **`server/lib/licensing/enforcement.js`** (criado na sessão anterior, validado agora): `resolveEnforcementMode`/`resolveLegacyTenantsFlag`, `resolveOrgLicense` (cache TTL 60s via `TtlCache`), `clearLicenseEnforcementCache`, `isEnforcementExempt`, `buildEnforcementDecision`, `auditDecision` (throttle por org+estado; `license_audit_events` com hash encadeado quando há licença, `audit_logs` quando não), `enforceLicenseAccess` (middleware fail-open; injeta `req.licenseState`; 403 com código+dados da licença quando bloqueia) e `clearEnforcementAuditThrottle`.
+- **Ajuste de contrato**: no_license em modo `hard`+`legacy_tenant` agora retorna `degraded: true` (escape pré-rollout sinaliza banner), alinhado à spec (teste 10).
+- **`server/__tests__/licensing-enforcement.test.ts`** (novo): mock Supabase próprio (licenses + license_audit_events + audit_logs + contadores de query). **23 testes verdes** cobrindo os 10 casos da spec + suspended, expirado hard, valid, control plane/reseller/sem-org isentos, impersonação pela org alvo, erro de banco fail-open, cache e invalidação, e parsing de env.
+- **Integração em `verifyAuth`** (`server/middleware/auth.js`): helper `continueAfterTenant` aplica `enforceLicenseAccess()` nos 3 pontos de saída pós-resolução de tenant (auto-link de org, fallback de org, e `next()` final). Modo `off` (padrão) → não bloqueia nada; control plane (superadmin sem impersonação) é isento; impersonação avalia a org alvo (`req.orgId`).
+- **`.env.example`**: seção "Licenciamento Wootech" com `LICENSE_ENFORCEMENT` (off/soft/hard), `LICENSE_ENFORCEMENT_LEGACY_TENANTS` e chaves `LICENSE_SIGNING_PRIVATE_KEY`/`LICENSE_SIGNING_PUBLIC_KEY`.
+- Gates: `node --check` ✓ (auth.js/enforcement.js), enforcement 23/23 ✓, suíte de licenciamento 7 arquivos/99 testes ✓, type-check ✓, lint 0 erros nos arquivos alterados ✓, suíte completa vitest 220 passed / 1 flaky pré-existente (`subscriptionGuard` — passa isolado) / 2 worker-startups (hooks/App — passam isolados). Sem commit/push/deploy.
+
+## [2026-08-03] Central de Licenciamento Wootech — Incrementos 5-6 (admin API + telas Mega Admin)
+
+- **Incremento 5 (API admin de licenças) concluído**:
+  - `server/lib/licensing/admin-service.js` (novo): `LicenseAdminError`, `listLicenses` (filtros status/edition/org/search + paginação + enriquecimento org/plano/instalações/heartbeat), `getLicenseDetail` (license + organization + plan + installations + domains + entitlements + heartbeats + auditEvents), `createLicense` (draft com chave temporária → update com chave final assinada; entitlements semeados de `plans.features`/`plans.limits`), `updateLicense` (whitelist), `setLicenseStatus` (allowlist `STATUS_TRANSITIONS`; revoke/block cascateiam para `license_installations`; unblock→active), `revokeInstallation`, `reissueLicenseKey` (novo token WOLK1 + evento `license.key_reissued`), `listHeartbeats`, `listAuditEvents`; auditoria dupla (`license_audit_events` com hash encadeado + `audit_logs` global).
+  - `server/lib/licensing/installation-service.js`: `appendAuditEvent` exportado para reuso.
+  - `server/api/mega-licenses/index.js` (novo): Router com `verifyMegaAdmin` por rota; `GET /`, `GET /:id`, `POST /`, `PUT /:id`, `GET /:id/heartbeats`, `GET /:id/audit`, `POST /:id/reissue-key`, `POST /:id/installations/:installationId/revoke`, `POST /:id/activate|suspend|revoke|block|unblock`; `handleError` → `LicenseAdminError` tipado.
+  - `server/routes/index.js`: monta `/api/mega/licenses` → `../api/mega-licenses/index.js`.
+  - `server/__tests__/licensing-admin-service.test.ts` (novo): mock Supabase estendido (organizations, plans, audit_logs; `insert(...).select().single()`/`update(...).eq(...).select().single()`) — **18 testes verdes**.
+- **Incremento 6 (telas frontend) concluído**:
+  - `views/megaadmin/Licenses.tsx` (novo): listagem com busca (org/chave) + filtros status/edição, modal "Nova Licença" (org, edição, status, máx. instalações, tolerância, política de bloqueio, expiração, plano, metadata, copiar chave), ações por estado (ativar/suspender/revogar/bloquear/desbloquear), reemitir/copiar chave, link detalhe `/megaadmin/licenses/:id`.
+  - `views/megaadmin/LicenseDetail.tsx` (novo): header (status/edição/policy/chave/org/plano), grid de metadados (máx instalações, expiração, tolerância, emitida/ativada, última validação, signing_key_id), ações por status + reemitir, e 5 abas locais (Instalações com revogar, Domínios, Entitlements, Heartbeats, Auditoria com severidade e hash encadeado + tooltip do previous_hash).
+  - `App.routes.tsx`: lazy `Licenses`/`LicenseDetail` + rotas `licenses` e `licenses/:id` no bloco `/megaadmin`.
+  - `views/megaadmin/MegaAdminLayout.tsx`: item de navegação "Licenças" (ícone `KeyRound`, `/megaadmin/licenses`).
+- Gates: `node --check` ✓ (4 arquivos server), testes admin 18/18 ✓, type-check ✓ (sem output), lint 0 erros (599 warnings pré-existentes, nenhum nos arquivos alterados — grep confirmou). Suíte completa vitest: 202 passed / 1 falha de timeout (5s) em `src/test/subscriptionGuard.test.tsx` — pré-existente e não relacionada ao licenciamento; **passa isolado** (flaky sob carga da suíte; setup do env tomou ~446s).
+- Nenhum commit/push/deploy.
+
+## [2026-08-03] Revenda Delazari — hardening do escopo de revenda em `server/routes/admin.js`
+
+- Evidência de produção capturada: `pg_policies` de `organizations` (PERMISSIVE/OR) — reseller vê própria org + filhos (`parent_id = get_auth_organization_id()`); clientes diretos ficam fora. Produção: 2 resellers, 9 não-reseller, 6 clientes diretos. Filhos do Delazari = Mega/Pamas/Vapt.
+- Problema: backend usa service role (bypassa RLS) → isolamento precisa ser forçado no código; só existia no filtro do GET principal.
+- Correção em `server/routes/admin.js`: helpers `resolveAdminOrgScope`/`isOrgWithinScope`/`areOrgsWithinScope`; GET refatorado (comportamento idêntico); fallback `queryOrganizationsWithDirectDb(parentId)` filtra `parent_id`; POST define `parent_id` via escopo (cobre impersonação de revenda); PUT/DELETE/bulk-delete → 403 fora do escopo.
+- Gates: `node --check` ✓, `npx eslint server/routes/admin.js` ✓ (0 erros), Vitest server 13 arquivos/102 testes ✓, `npm run type-check` ✓. Lint completo (ts/tsx) não re-executado (não cobre `.js`; usuário abortou o run).
+- Removido `query_org_scope.tmp.mjs` (raiz). Sem commit/push. Working tree continua com WIP de outras sessões.
+
+## [2026-08-03] Central de Licenciamento Wootech — Incrementos 1-4
+
+- Plano aprovado em 7 incrementos (Etapa B). Incrementos 1-3 já concluídos em sessões anteriores (schema SQL, crypto, policy/estado/envelope) — 43 testes verdes.
+- **Incremento 4 (endpoints de instalação) concluído** — 15 testes novos (58 licenciamento / 185 total):
+  - `server/lib/licensing/installation-service.js`: `activateInstallation`, `validateInstallation`, `sendHeartbeat` + `LicenseEndpointError` + `replayGuard`. Verificação da chave WOLK1 (formato + assinatura Ed25519 via `LICENSE_SIGNING_PUBLIC_KEY`; sem env, assinatura pulada), anti-replay de nonce (hash SHA-256, 30min), lookup da licença por `license_key`, ativação de draft→active (limitada a valid/grace/draft), vínculo de domínio, limite de instalações, upsert de instalação por fingerprint, heartbeat log, auditoria com hash encadeado (`license_audit_events`, retry em 23505), envelope offline assinado (`createValidationEnvelope`; `signature: null` sem `LICENSE_SIGNING_PRIVATE_KEY`).
+  - `server/api/licensing/index.js`: `GET /status`, `POST /activate`, `POST /validate`, `POST /heartbeat` sob `licensingLimiter` (60 req/min/IP), erro tipado `{code, status}`.
+  - `server/routes/index.js`: montagem em `/api/licensing/v1`.
+  - `server/__tests__/licensing-installation-service.test.ts`: mock Supabase stateful (licenses/installations/domains/entitlements/heartbeats/audit) com cadeia de filtros; cobre ativação, assinatura forjada, licença desconhecida, bloqueada, domínio não vinculado, limite excedido, replay de nonce, mismatch de `licenseId` no payload, validação (válida/fingerprint desconhecido/bloqueada) e heartbeat (timestamps, instalação não registrada, bloqueada).
+- **Correções de sessão**: `evaluateLicense` (`server/lib/licensing/policy.js`) agora tem defaults `installation = null`/`requestDomain = ''` (fica consistente com o comportamento e destrava o type-check do teste de policy).
+- Gates: Vitest 185/185 (32 arquivos), type-check ✓ (sem output), lint 0 erros (599 warnings pré-existentes, nenhum nos arquivos alterados), `node --check` ✓.
+- Nenhum commit/push/deploy.
+
+## [2026-08-03] Produção revenda Delazari: fix de impersonação confirmado no ar (via build da PR #66, não do main)
+
+- Verificação de produção (bundle + GitHub Actions + probes) do diagnóstico da revenda Delazari.
+- Bundle `index-D0eZEUaE.js` contém `getPanelHomePath`/`is_reseller` e o fluxo de sessões curtas → **o fix `214595a` está em produção** (hipótese "produção sem o fix" descartada).
+- `compare` na GitHub API: `214595a` **não** é ancestral do main (`214595a...e7d546b` → diverged, behind_by=68; `NicheRedirect.tsx` de `c1741da` sem `is_reseller`); `214595a...c3e927cae3` → ahead, behind_by=0 (fix na branch = PR #66 aberta). `c3e927cae3` está na branch local (`git branch --contains`).
+- Workflow `docker-images.yml`: dispara em push para `main` + `codex/main-whatsapp-media-hotfix`; `deploy-portainer` só em `main`. Último deploy automático 30/07 16:45Z (`e7d546b`, PR #65) executou OK — anterior ao fix. Imagens: `:latest`, `:<sha>` e aliases (`api` fixado em `5daaa4a05b3d...`; `frontend` alias = `latest`).
+- Conclusão: produção roda build da branch (redeploy manual do Portainer após 01/08). Probes: `/api/system-status` uptime 57346s → API iniciada ~02/08 21:25Z, logo após builds da branch (21:11Z/21:21Z); sem endpoint de versão (`/api/info|health|version|system/info` → 404).
+- **Risco alto**: próximo push no main reverte o fix (deploy automático do main sem `is_reseller`). Recomendação: mergear PR #66.
+- Causas restantes do sintoma 2: cache do navegador do usuário (PWA/SW/`index.html` antigo), perda da sessão no reload, desvio de relógio.
+- Nenhuma correção de produto; apenas DEV docs + report (seção 5) atualizados. Sem commit/push.
+
 ## [2026-08-03] Diagnóstico da revenda Delazari (escopo de clientes + impersonação)
 
 - Relatório entregue em `DEV/RELATORIO_REVENDA_DELAZARI_2026-08-03.md`; nenhuma correção aplicada.

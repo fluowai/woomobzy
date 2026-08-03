@@ -7,9 +7,11 @@
 | `SPECS/MEGA_ADMIN_PANEL.md`              | Planejamento completo do painel Mega Admin                           | PLANEJAMENTO |
 | `SPECS/IA_SQUAD.md`                      | Estratégia de Personas/IA e Segmentação (Concorrente Ref: BrokerIA)  | PLANEJAMENTO |
 | `SPECS/AUDITORIA_FUNCIONAL_REGRESSAO.md` | Auditoria por perfil e prevenção de regressões                       | PLANEJAMENTO |
+| `SPECS/LICENSING_ENFORCEMENT.md`         | Incremento 7 — enforcement de licença no acesso autenticado (fail-open default) | CONCLUÍDO |
 | `WORKLOG.md`                             | Log de trabalhos realizados no projeto                               | ATIVO        |
 | `RELATORIO_GAP_URBANO_RURAL.md`          | Gap de mudanças aplicadas no Urbano e não no Rural (sidebar sanfona) | CONCLUÍDO    |
 | `RELATORIO_TIPOGRAFIA_CORES_2026-08-02.md` | Auditoria de fontes, escala tipográfica, cores, contraste e marca   | CONCLUÍDO    |
+| `RELATORIO_REVENDA_DELAZARI_2026-08-03.md` | Diagnóstico revenda Delazari: escopo de clientes de revenda e impersonação + verificação de produção (seção 5) + hardening do escopo (seção 6) | CONCLUÍDO |
 
 ## Módulos Implementados
 
@@ -28,7 +30,8 @@ DEV/
 ├── WORKLOG.md                  ← Log de trabalhos
 ├── SPECS/
 │   ├── MEGA_ADMIN_PANEL.md     ← Spec do Mega Admin
-│   └── IA_SQUAD.md             ← Spec do Imobzy AI Squad
+│   ├── IA_SQUAD.md             ← Spec do Imobzy AI Squad
+│   └── LICENSING_ENFORCEMENT.md ← Spec do enforcement de licença
 ```
 
 ## Convenções

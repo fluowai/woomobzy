@@ -1,5 +1,39 @@
 # Handoff
 
+## 2026-08-03 — Central de Licenciamento Wootech: Incremento 7 (enforcement) concluído
+
+- **Incremento 7 (enforcement)**: `server/lib/licensing/enforcement.js` validado + `server/__tests__/licensing-enforcement.test.ts` (novo, 23 testes). Integrado em `verifyAuth` (`server/middleware/auth.js`) via helper `continueAfterTenant` nos 3 pontos de saída pós-resolução de tenant. Modo `off` (padrão) → fail-open total (produção inalterada); `soft`/`hard` via env. Control plane (superadmin sem impersonação) e perfis sem org são isentos; impersonação avalia a org alvo. `.env.example` documentado.
+- Gates: enforcement 23/23 ✓, licenciamento 99/99 (7 arquivos) ✓, type-check ✓, lint 0 erros ✓, suíte completa 220 passed (1 flaky pré-existente `subscriptionGuard` passa isolado; `hooks`/`App` passam isolados). Sem commit/push/deploy.
+- **Próxima ação (maestro)**: (1) validar no navegador com `LICENSE_ENFORCEMENT=soft` + dev server — criar/revogar uma licença no Mega Admin e confirmar 403/`req.licenseState`; (2) decidir rollout do `hard` (e `LICENSE_ENFORCEMENT_LEGACY_TENANTS=on` antes). Validar telas Incrementos 5-6: `/megaadmin/licenses` e `/megaadmin/licenses/:id`.
+- Nenhum commit/push/deploy. Working tree tem WIP de outras sessões — não tocar/push sem conferir.
+
+## 2026-08-03 — Central de Licenciamento Wootech: Incrementos 5-6 concluídos
+
+- **Incremento 5 (admin API)**: `server/api/mega-licenses/index.js` montado em `/api/mega/licenses` (protegido por `verifyMegaAdmin`) + `server/lib/licensing/admin-service.js` (CRUD, transições de status por allowlist, revoke de instalação, reissue de chave WOLK1, heartbeats, auditoria dupla). **18 testes verdes**.
+- **Incremento 6 (frontend)**: views `views/megaadmin/Licenses.tsx` (listagem + criação + ações) e `views/megaadmin/LicenseDetail.tsx` (detalhe + 5 abas: Instalações/Domínios/Entitlements/Heartbeats/Auditoria com hash encadeado); rotas lazy `/megaadmin/licenses` e `/megaadmin/licenses/:id` em `App.routes.tsx`; item "Licenças" (`KeyRound`) no `MegaAdminLayout`.
+- Gates: type-check ✓, lint 0 erros ✓ (599 warnings pré-existentes), testes admin 18/18 ✓. Suíte completa: 202 passaram; `src/test/subscriptionGuard.test.tsx` deu timeout na suíte mas **passa isolado** (flaky pré-existente sob carga — env setup ~446s).
+- **Próxima ação (maestro)**: validar no navegador `/megaadmin/licenses` com login mega admin — criar licença, ativar/suspender/bloquear, reemitir chave, revogar instalação, conferir abas e auditoria.
+- **Próximo incremento (7)**: enforcement — integração em `server/middleware/auth.js`/bootstrap, env vars (`LICENSE_SIGNING_PRIVATE_KEY`/`LICENSE_SIGNING_PUBLIC_KEY` no `.env.example`), docs DEV completas.
+- Nenhum commit/push/deploy. Working tree tem WIP de outras sessões — não tocar/push sem conferir.
+
+## 2026-08-03 — Hardening do escopo de revenda implementado (sintoma 1) — aguardando validação + decisão PR #66
+
+- **Decisão de produto**: revenda vê **apenas filhos** (confirmado por `pg_policies` de produção — clientes diretos ficam fora). Implementado em `server/routes/admin.js`: helpers `resolveAdminOrgScope`/`isOrgWithinScope`/`areOrgsWithinScope`; GET refatorado (comportamento idêntico); fallback direct-DB filtra `parent_id`; POST cria sob a revenda (inclusive em impersonação); **PUT/DELETE/bulk-delete → 403 fora do escopo** (antes abertos).
+- Gates: `node --check` ✓, eslint do arquivo ✓, Vitest server 102/102 ✓, `npm run type-check` ✓. `query_org_scope.tmp.mjs` removido.
+- **Próxima ação (maestro)**: validar com sessão da revenda Delazari — lista só filhos, editar/excluir org fora do grupo = 403, criar org = fica sob a revenda. E **decidir o merge da PR #66** (fix `214595a` só existe nela; próximo push no `main` reverte o fix em produção via deploy automático).
+- Para o sintoma 2 restante (impersonação→redirect): testar em **aba anônima/Ctrl+F5** (cache PWA/`index.html`) e checar `logger` + `sessionStorage['imobzy_impersonation_session']` (TTL 15 min, relógio do usuário).
+- Nenhum commit/push/deploy. Working tree tem WIP de outras sessões — não tocar/push sem conferir.
+
+## 2026-08-03 — Produção revenda Delazari: fix confirmado no ar (PR #66), risco de reversão no próximo push do main
+
+- Relatório: `DEV/RELATORIO_REVENDA_DELAZARI_2026-08-03.md` (seções 1-4 = análise estática; **seção 5 = verificação de produção**).
+- **Fix `214595a` está em produção** (bundle `index-D0eZEUaE.js` com `is_reseller`/`getPanelHomePath`). A hipótese "produção sem o fix" está descartada.
+- **`main` não tem o fix**: `214595a` só existe na branch `codex/main-whatsapp-media-hotfix` = **PR #66 (aberta)**; `compare` API confirma (main diverged/behind 68; head do build c3e927cae3 contém o fix, behind 0). Último deploy automático (30/07, `e7d546b`) é anterior ao fix → produção recebeu o fix por **redeploy manual da stack** (uptime da API ≈ 02/08 21:25Z, logo após push da branch).
+- **Risco alto**: próximo push no `main` → CI builda do main (sem `is_reseller`) → `deploy-portainer` automático **reverte o fix em produção**. Ação recomendada: **mergear PR #66** no main.
+- Sintoma 2 restante: se o usuário ainda relata falha, testar em **aba anônima/Ctrl+F5** (cache PWA/`index.html`) e checar `logger` (target `NicheRedirect`, `isImpersonating`, `sessionStorage['imobzy_impersonation_session']`, TTL 15 min, relógio do usuário).
+- Sintoma 1 segue em aberto (decisão de produto): revenda ver só filhos vs. também clientes diretos (`admin.js:663-693` + RLS).
+- Nenhum commit/push/deploy. Working tree tem WIP de outras sessões — não tocar/push sem conferir.
+
 ## 2026-08-03 — Diagnóstico da revenda Delazari (escopo de clientes + impersonação)
 
 - Relatório: `DEV/RELATORIO_REVENDA_DELAZARI_2026-08-03.md`. Análise estática (código + banco); nenhuma correção aplicada.

@@ -138,6 +138,8 @@ const ResellerDomains = lazy(
 const DirectClientsManager = lazy(
   () => import('./views/megaadmin/DirectClientsManager')
 );
+const Licenses = lazy(() => import('./views/megaadmin/Licenses'));
+const LicenseDetail = lazy(() => import('./views/megaadmin/LicenseDetail'));
 const SiteManager = lazy(() => import('./views/SiteManager'));
 const MegaTheme = lazy(() => import('./src/views/sites/megainvestimentos/MegaTheme'));
 const SitePageEditor = lazy(() => import('./views/SitePageEditor'));
@@ -374,6 +376,8 @@ const AppRoutes: React.FC = () => {
           <Route path="resellers" element={<ResellerManager />} />
           <Route path="domains" element={<ResellerDomains />} />
           <Route path="direct-clients" element={<DirectClientsManager />} />
+          <Route path="licenses" element={<Licenses />} />
+          <Route path="licenses/:id" element={<LicenseDetail />} />
           <Route path="analytics" element={<AnalyticsDashboard />} />
           <Route path="monitoring" element={<PlatformMonitoring />} />
           <Route path="billing" element={<BillingOverview />} />

@@ -1,5 +1,52 @@
 # Verificação
 
+## 2026-08-03 — Central de Licenciamento Wootech — Incremento 7 (enforcement no acesso autenticado)
+
+- `node --check` em `server/middleware/auth.js` e `server/lib/licensing/enforcement.js`: aprovado.
+- `npx vitest run server/__tests__/licensing-enforcement.test.ts`: **23 testes aprovados** (modo off fail-open + auditoria; soft bloqueando blocked/revoked/suspended; grace/expired soft em modo degradado; expired hard → `LICENSE_BLOCKED_HARD`; no_license soft/off liberando + audit; hard no_license sem/sem legacy; isenções superadmin/control-plane/sem-org; impersonação pela org alvo; erro de banco fail-open; cache e invalidação; parsing de env; `buildEnforcementDecision`).
+- Suíte de licenciamento completa (7 arquivos): **99 testes aprovados**.
+- `npm run type-check`: aprovado (sem output).
+- `npm run lint` nos arquivos alterados (`enforcement.js`, `auth.js`, `licensing-enforcement.test.ts`): **0 erros** (1 aviso de unused var corrigido no teste).
+- `npx vitest run` (suíte completa, `--pool=threads --maxWorkers=2`): **220 passed / 1 falha** em `src/test/subscriptionGuard.test.tsx` — flaky pré-existente sob carga, **passa isolado** (confirmado nesta sessão); 2 arquivos (`hooks.test.ts`, `App.test.tsx`) com falha de worker no pool — **passam isolados** (limite de recurso do Windows, sem relação com a mudança).
+- `.env.example`: seção "Licenciamento Wootech" documentada (`LICENSE_ENFORCEMENT`, `LICENSE_ENFORCEMENT_LEGACY_TENANTS`, `LICENSE_SIGNING_PRIVATE_KEY`, `LICENSE_SIGNING_PUBLIC_KEY`).
+- Pendência runtime (requer dev server + backend): modo `off` mantém tudo liberado (comportamento atual de produção é inalterado); testar `soft`/`hard` via env e conferir 403 no login de org bloqueada.
+- Sem commit/push/deploy.
+
+## 2026-08-03 — Central de Licenciamento Wootech — Incrementos 5-6
+
+- `node --check` em `server/lib/licensing/admin-service.js`, `server/lib/licensing/installation-service.js`, `server/api/mega-licenses/index.js`, `server/routes/index.js`: aprovado.
+- `npx vitest run server/__tests__/licensing-admin-service.test.ts`: **18 testes aprovados** (admin service: list/detail/create/update/status transitions/revoke installation/reissue key/heartbeats/audit, com mock Supabase estendido para organizations/plans/audit_logs).
+- `npm run type-check`: aprovado (sem output).
+- `npm run lint`: aprovado com 0 erros; 599 avisos preexistentes — nenhum em `views/megaadmin/Licenses.tsx`, `views/megaadmin/LicenseDetail.tsx`, `App.routes.tsx` ou `views/megaadmin/MegaAdminLayout.tsx` (grep no output confirmou ausência).
+- `npx vitest run` (suíte completa): **202 passed / 1 falha de timeout (5s)** em `src/test/subscriptionGuard.test.tsx` — teste pré-existente do SubscriptionGuard, sem relação com licenciamento; **re-executado isolado passou** (flaky sob carga da suíte, setup do env ~446s).
+- Rotas verificadas por leitura: `/api/mega/licenses` montado em `server/routes/index.js` após `/api/mega`; todas as rotas protegidas por `verifyMegaAdmin`; `handleError` mapeia `LicenseAdminError`.
+- Frontend: rotas lazy `/megaadmin/licenses` e `/megaadmin/licenses/:id` no bloco `/megaadmin` (ProtectedRoute + MegaAdminGuard + MegaAdminLayout); item "Licenças" no `navItems`.
+- Pendência runtime (requer dev server + backend + login mega admin): criar licença, transições de status, reemitir chave, revogar instalação e conferir abas/auditoria em `/megaadmin/licenses`.
+- Incremento 7 (enforcement em `server/middleware/auth.js`/bootstrap + env vars) ainda não implementado.
+- Sem commit/push/deploy.
+
+## 2026-08-03 — Hardening do escopo de revenda (`server/routes/admin.js`)
+
+- `node --check server/routes/admin.js`: aprovado.
+- `npx eslint server/routes/admin.js`: aprovado (0 erros, arquivo JS fora do escopo do `npm run lint` que cobre ts/tsx).
+- `npx vitest run server/__tests__`: **13 arquivos / 102 testes aprovados** (inclui `adminOrganizationsFallback.test.ts`, que importa `admin.js` — módulo carrega limpo).
+- `npm run type-check`: aprovado (sem output).
+- `npm run lint` (projeto, ts/tsx): não re-executado nesta sessão — não cobre `.js` e o run foi abortado pelo usuário; nenhum arquivo ts/tsx foi alterado.
+- Evidência de banco (produção, read-only): `pg_policies` de `organizations` → policies de revenda limitam SELECT/UPDATE/INSERT a `parent_id = get_auth_organization_id()`; filhas do Delazari = Mega/Pamas/Vapt; 6 clientes diretos (`parent_id IS NULL`) invisíveis para revenda.
+- Comportamento preservado: GET refatorado para `resolveAdminOrgScope` (mesma lógica de `req.orgId`/`req.realOrgId`); mutações novas retornam 403 fora do escopo.
+- Pendência runtime (requer credenciais/sessão da revenda): reproduzir lista (só filhos), tentar editar/excluir org fora do grupo (espera 403) e criar org (fica sob a revenda).
+- Sem commit/push/deploy; `query_org_scope.tmp.mjs` removido.
+
+## 2026-08-03 — Produção revenda Delazari: fix em produção, via build da PR #66
+
+- Bundle de produção `index-D0eZEUaE.js`: `getPanelHomePath` com `is_reseller` (revenda → `/superadmin`; cliente → `/rural`/`/urban`) + marcadores de sessões curtas → **fix `214595a` está em produção**.
+- GitHub compare API: `214595a...e7d546b` → `diverged` (behind_by=68) ⇒ **main não tem o fix**; `214595a...c3e927cae3` → `ahead` (behind_by=0) ⇒ head do último build contém o fix; `c3e927cae3` presente na branch local (`git branch --contains`).
+- Runs do workflow Docker Images: último run em `main` com `deploy-portainer` executado = 30/07 16:43-16:45Z (`e7d546b`, success) — anterior ao fix. Deploy automático não pode ter publicado o fix.
+- Probe de produção: `/api/system-status` → `{"success":true,"status":"online",...,"uptime":57346.36}` ⇒ processo da API iniciado ~02/08 21:25:22Z (após builds da branch 21:11Z/21:21Z) — consistente com redeploy manual da stack pós-push da branch.
+- Probes de versão: `/api/info`, `/api/health`, `/api/version`, `/api/system/info` → 404 (backend sem endpoint de versão).
+- Verificação documental: `git diff --check` não aplicável (nenhum código alterado); DEV docs e report atualizados.
+- Não executado: repro no navegador (requer credenciais/sessão do ator Delazari); merge da PR #66; nenhum commit/push/deploy.
+
 ## 2026-08-03 — Diagnóstico revenda Delazari (análise estática)
 
 - Nenhum arquivo de produto alterado → type-check/lint/build não executados.

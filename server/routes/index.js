@@ -13,6 +13,8 @@ import wootechAiRoutes from './wootechAi.js';
 import cvcrmBiaRoutes from './cvcrmBia.js';
 import megaAdminRoutes from './mega-admin.js';
 import subscriptionRoutes from './subscription.js';
+import licensingRoutes from '../api/licensing/index.js';
+import megaLicensesRoutes from '../api/mega-licenses/index.js';
 
 const router = express.Router();
 
@@ -28,6 +30,8 @@ router.use('/api/account', accountRoutes);
 router.use('/api/wootech-ai', wootechAiRoutes);
 router.use('/api/cvcrm-bia', cvcrmBiaRoutes);
 router.use('/api/mega', megaAdminRoutes);
+router.use('/api/mega/licenses', megaLicensesRoutes);
 router.use('/api/subscription', subscriptionRoutes);
+router.use('/api/licensing/v1', licensingRoutes);
 
 export default router;

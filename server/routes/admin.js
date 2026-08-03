@@ -94,6 +94,63 @@ function normalizeOptionalCustomDomain(value) {
   return normalized ? assertValidDomain(normalized) : null;
 }
 
+/**
+ * Escopo efetivo do Super Admin sobre organizações.
+ *
+ * O cliente Supabase do backend usa service role (bypassa RLS), então o
+ * isolamento de revenda precisa ser forçado aqui no código:
+ *  - Revenda (org is_reseller) gerencia APENAS seus filhos (parent_id = org);
+ *  - Super admin impersonando uma org NÃO-reseller vê somente essa org;
+ *  - Mega admin (superadmin sem org ou org não-reseller) tem acesso global.
+ *
+ * @returns {{ type: 'parent_id'|'id', value: string } | null}
+ */
+async function resolveAdminOrgScope(req) {
+  const orgId = req.isImpersonating ? req.orgId : req.realOrgId;
+  if (!orgId) return null;
+
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('is_reseller')
+    .eq('id', orgId)
+    .maybeSingle();
+
+  if (org?.is_reseller) return { type: 'parent_id', value: orgId };
+  if (req.isImpersonating) return { type: 'id', value: orgId };
+  return null;
+}
+
+async function isOrgWithinScope(req, orgId) {
+  const scope = await resolveAdminOrgScope(req);
+  if (!scope) return true;
+
+  let query = supabase.from('organizations').select('id').eq('id', orgId);
+  if (scope.type === 'parent_id') {
+    query = query.eq('parent_id', scope.value);
+  } else {
+    query = query.eq('id', scope.value);
+  }
+
+  const { data } = await query.maybeSingle();
+  return Boolean(data);
+}
+
+async function areOrgsWithinScope(req, ids) {
+  const scope = await resolveAdminOrgScope(req);
+  if (!scope) return true;
+
+  let query = supabase.from('organizations').select('id').in('id', ids);
+  if (scope.type === 'parent_id') {
+    query = query.eq('parent_id', scope.value);
+  } else {
+    query = query.eq('id', scope.value);
+  }
+
+  const { data } = await query;
+  const allowed = new Set((data || []).map((row) => row.id));
+  return ids.every((id) => allowed.has(id));
+}
+
 async function assertCustomDomainAvailable(domain, organizationId = null) {
   if (!domain) return;
 
@@ -660,36 +717,14 @@ router.get('/organizations', verifySuperAdmin, async (req, res) => {
         'id, name, slug, custom_domain, owner_name, owner_email, status, plan_id, niche, subscription_status, trial_ends_at, created_at, updated_at'
       );
 
-    if (req.isImpersonating && req.orgId) {
-      const { data: impOrg } = await supabase
-        .from('organizations')
-        .select('is_reseller')
-        .eq('id', req.orgId)
-        .maybeSingle();
-
-      if (impOrg?.is_reseller) {
-        // Se estiver impersonando um reseller, ver apenas os filhos dele
-        query = query.eq('parent_id', req.orgId);
-      } else {
-        // Se estiver impersonando um tenant comum, nao exibir a lista de todos os tenants
-        // Exibe apenas o proprio tenant para nao vazar dados do reseller/mega admin
-        query = query.eq('id', req.orgId);
-      }
-    } else {
-      // Nao esta impersonando
-      if (req.realOrgId) {
-        const { data: realOrg } = await supabase
-          .from('organizations')
-          .select('is_reseller')
-          .eq('id', req.realOrgId)
-          .maybeSingle();
-
-        if (realOrg?.is_reseller) {
-          // Se for reseller, ver apenas seus filhos
-          query = query.eq('parent_id', req.realOrgId);
-        }
-        // Se for mega admin (realOrg is_reseller false ou sem org), nao filtra (ve todos)
-      }
+    const scope = await resolveAdminOrgScope(req);
+    if (scope?.type === 'parent_id') {
+      // Revenda: ver apenas os filhos dela
+      query = query.eq('parent_id', scope.value);
+    } else if (scope?.type === 'id') {
+      // Impersonando tenant comum: ver apenas o proprio tenant para nao vazar
+      // dados do reseller/mega admin
+      query = query.eq('id', scope.value);
     }
 
     const { data, error } = await query.order('created_at', {
@@ -715,7 +750,9 @@ router.get('/organizations', verifySuperAdmin, async (req, res) => {
           userTokenFallback.error
         );
 
-        const directDbFallback = await queryOrganizationsWithDirectDb();
+        const directDbFallback = await queryOrganizationsWithDirectDb(
+          scope?.type === 'parent_id' ? scope.value : null
+        );
         if (!directDbFallback.error) {
           return res.json({
             success: true,
@@ -792,16 +829,10 @@ router.post('/organizations', verifySuperAdmin, async (req, res) => {
     }
 
     // If user is a reseller, set parent_id to their organization
-    if (req.realOrgId) {
-      const { data: org } = await supabase
-        .from('organizations')
-        .select('is_reseller')
-        .eq('id', req.realOrgId)
-        .maybeSingle();
-
-      if (org?.is_reseller) {
-        payload.parent_id = req.realOrgId;
-      }
+    // (tambem cobre impersonacao de uma revenda — a nova org fica sob a revenda)
+    const scope = await resolveAdminOrgScope(req);
+    if (scope?.type === 'parent_id') {
+      payload.parent_id = scope.value;
     }
 
     const { data, error } = await supabase
@@ -845,6 +876,12 @@ router.post('/organizations', verifySuperAdmin, async (req, res) => {
 router.put('/organizations/:id', verifySuperAdmin, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!(await isOrgWithinScope(req, id))) {
+      return res.status(403).json({
+        error:
+          'Nao autorizado: imobiliaria fora do escopo da sua organizacao',
+      });
+    }
     const {
       name,
       slug,
@@ -974,6 +1011,13 @@ router.post(
         return res
           .status(400)
           .json({ error: 'Lista de imobiliarias contem IDs invalidos.' });
+      }
+
+      if (!(await areOrgsWithinScope(req, ids))) {
+        return res.status(403).json({
+          error:
+            'Nao autorizado: uma ou mais imobiliarias fora do escopo da sua organizacao',
+        });
       }
 
       await unlinkKnownOrganizationReferences(ids);
@@ -1137,7 +1181,7 @@ function sendSupabaseServiceKeyError(res, errors = {}) {
   return res.status(503).json(response);
 }
 
-export async function queryOrganizationsWithDirectDb() {
+export async function queryOrganizationsWithDirectDb(parentId = null) {
   const rawConnectionString = getDirectDatabaseUrl();
   const connectionString = normalizeDirectDatabaseUrl(rawConnectionString);
   if (!connectionString) {
@@ -1160,7 +1204,8 @@ export async function queryOrganizationsWithDirectDb() {
   });
 
   try {
-    const result = await pool.query(`
+    const result = await pool.query(
+      `
       SELECT
         o.id,
         o.name,
@@ -1185,8 +1230,11 @@ export async function queryOrganizationsWithDirectDb() {
         THEN (to_jsonb(o)->>'plan_id')::uuid
         ELSE NULL
       END
+      ${parentId ? 'WHERE o.parent_id = $1' : ''}
       ORDER BY o.created_at DESC NULLS LAST
-    `);
+    `,
+      parentId ? [parentId] : []
+    );
 
     return { data: result.rows, error: null };
   } catch (error) {
@@ -1325,6 +1373,12 @@ export function shouldUseSsl(connectionString) {
 router.delete('/organizations/:id', verifySuperAdmin, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!(await isOrgWithinScope(req, id))) {
+      return res.status(403).json({
+        error:
+          'Nao autorizado: imobiliaria fora do escopo da sua organizacao',
+      });
+    }
     const { data, error } = await supabase
       .from('organizations')
       .delete()

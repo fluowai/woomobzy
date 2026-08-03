@@ -1,5 +1,15 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-03] Simulador de conversa natural (agente + lead automático)
+
+- Diagnóstico: o chat de teste não tinha modo de simulação autônoma; o usuário precisava digitar cada mensagem do lead manualmente. Para demonstrar o protocolo de saudação/apresentação e o fluxo natural, faltava um modo onde o agente e um lead simulado conversassem de forma autônoma.
+- Novo `server/services/ai/conversationSimulator.js`: `ConversationSimulator` executa loop de conversa entre o agente (com `buildAgentSystemPrompt` + orquestrador quando tools ativas) e um lead simulado (prompt dedicado de cliente brasileiro realista). Suporta Gemini/OpenAI/Groq, persiste em `conversation_memory` e retorna transcript.
+- `server/api/ai/chat.routes.js`: novo `POST /agents/:id/simulate` carrega o agente, roda a simulação e devolve o transcript completo + `session_id`.
+- `services/aiAgents.ts`: novo método `simulate(id, { seed_message, turns, session_id })`.
+- `components/agents/AgentChatTest.tsx`: novo modo "Auto" (simulação automática). Quando há agente salvo, usa o endpoint `/simulate`; quando não há, faz simulação client-side com `simulateAgentReply` + `simulateLeadReply`. Reproduz o fluxo "oi → apresentação → qualificação → busca de imóvel" automaticamente.
+- Gates: type-check ✓, eslint 0 erros, Vitest 27/127 ✓, build Vite ✓ (4.079 módulos, PWA 267 entries).
+- Nenhum commit/push/deploy.
+
 ## [2026-08-02] Agentes IA — protocolo de saudação/apresentação e conversa humana
 
 - Diagnóstico: ao mandar "oi" no chat de teste, o agente respondia de forma genérica sem se apresentar. Causas: (1) nenhum prompt instruía o agente a se apresentar em saudação/início de conversa; (2) sem contexto de marca no backend; (3) o chat de teste não usava o orquestrador de ferramentas (só o WhatsApp usava); (4) regras de conversa humana (máx. 2 perguntas, mensagens curtas) só existiam no fluxo do WhatsApp.

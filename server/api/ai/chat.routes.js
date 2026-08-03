@@ -6,6 +6,7 @@ import { requireTenant } from '../../middleware/tenant.js';
 import { getOrgAIConfig } from './helpers.js';
 import { AgentOrchestrator } from '../../services/ai/agentOrchestrator.js';
 import { buildAgentSystemPrompt } from '../../services/ai/agentPrompt.js';
+import { ConversationSimulator } from '../../services/ai/conversationSimulator.js';
 
 const router = Router();
 
@@ -395,6 +396,40 @@ router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
     });
   } catch (error) {
     console.error('[AgentChat] Erro:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/agents/:id/simulate', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const supabase = getSupabaseServer();
+    const { id } = req.params;
+    const { seed_message, turns = 6, session_id } = req.body;
+    const organizationId = req.orgId;
+
+    const { data: agent, error: agentError } = await supabase
+      .from('ai_agents')
+      .select('*')
+      .eq('id', id)
+      .eq('organization_id', organizationId)
+      .maybeSingle();
+
+    if (agentError || !agent) {
+      return res.status(404).json({ error: 'Agente nao encontrado.' });
+    }
+
+    const simulator = new ConversationSimulator();
+    const result = await simulator.run({
+      agent,
+      organizationId,
+      seedMessage: seed_message || 'oi',
+      turns: Math.min(Number(turns) || 6, 12),
+      sessionId: session_id,
+    });
+
+    res.json({ ...result, agent: { name: agent.name, role: agent.role } });
+  } catch (error) {
+    console.error('[AgentSimulate] Erro:', error.message);
     res.status(500).json({ error: error.message });
   }
 });

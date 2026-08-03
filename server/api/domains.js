@@ -21,7 +21,10 @@ const supabase = new Proxy(
 );
 
 export const addDomain = async (req, res) => {
-  const { domain, organizationId } = req.body;
+  const { domain, organizationId, purpose } = req.body;
+  const targetPurpose = ['site', 'panel', 'both'].includes(purpose)
+    ? purpose
+    : 'site';
 
   if (!domain || !organizationId) {
     return res
@@ -34,7 +37,7 @@ export const addDomain = async (req, res) => {
     const { data: existingOrg } = await supabase
       .from('organizations')
       .select('id')
-      .eq('custom_domain', cleanDomain)
+      .or(`custom_domain.eq.${cleanDomain},platform_domain.eq.${cleanDomain}`)
       .maybeSingle();
 
     if (existingOrg && existingOrg.id !== organizationId) {
@@ -46,16 +49,25 @@ export const addDomain = async (req, res) => {
 
     const { data: targetOrg } = await supabase
       .from('organizations')
-      .select('custom_domain')
+      .select('custom_domain, platform_domain')
       .eq('id', organizationId)
       .maybeSingle();
     const previousCustomDomain = targetOrg?.custom_domain || null;
+    const previousPlatformDomain = targetOrg?.platform_domain || null;
 
     await validateDockerDomainDns(cleanDomain);
 
+    const orgUpdate = {};
+    if (targetPurpose === 'site' || targetPurpose === 'both') {
+      orgUpdate.custom_domain = cleanDomain;
+    }
+    if (targetPurpose === 'panel' || targetPurpose === 'both') {
+      orgUpdate.platform_domain = cleanDomain;
+    }
+
     const { error: updateError } = await supabase
       .from('organizations')
-      .update({ custom_domain: cleanDomain })
+      .update(orgUpdate)
       .eq('id', organizationId);
 
     if (updateError) throw updateError;
@@ -66,7 +78,10 @@ export const addDomain = async (req, res) => {
     } catch (provisioningError) {
       await supabase
         .from('organizations')
-        .update({ custom_domain: previousCustomDomain })
+        .update({
+          custom_domain: previousCustomDomain,
+          platform_domain: previousPlatformDomain,
+        })
         .eq('id', organizationId);
 
       throw provisioningError;
@@ -74,8 +89,10 @@ export const addDomain = async (req, res) => {
 
     res.json({
       success: true,
+      purpose: targetPurpose,
       domain: {
         name: cleanDomain,
+        purpose: targetPurpose,
         status: 'pending_ssl',
         verified: false,
         dnsVerified: true,

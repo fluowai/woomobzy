@@ -33,6 +33,8 @@ interface Reseller {
   city?: string;
   state?: string;
   zip_code?: string;
+  custom_domain?: string | null;
+  platform_domain?: string | null;
 }
 
 const ResellerManager: React.FC = () => {
@@ -63,6 +65,8 @@ const ResellerManager: React.FC = () => {
     city: '',
     state: '',
     zip_code: '',
+    site_domain: '',
+    panel_domain: '',
   });
 
   useEffect(() => {
@@ -106,6 +110,8 @@ const ResellerManager: React.FC = () => {
         city: reseller.city || '',
         state: reseller.state || '',
         zip_code: reseller.zip_code || '',
+        site_domain: reseller.custom_domain || '',
+        panel_domain: reseller.platform_domain || '',
       });
     } else {
       setEditingId(null);
@@ -123,6 +129,8 @@ const ResellerManager: React.FC = () => {
         city: '',
         state: '',
         zip_code: '',
+        site_domain: '',
+        panel_domain: '',
       });
     }
     setIsModalOpen(true);
@@ -147,6 +155,8 @@ const ResellerManager: React.FC = () => {
         city: formData.city,
         state: formData.state,
         zip_code: formData.zip_code,
+        site_domain: formData.site_domain || undefined,
+        panel_domain: formData.panel_domain || undefined,
       };
 
       if (editingId) {
@@ -681,6 +691,53 @@ const ResellerManager: React.FC = () => {
                     </p>
                   </div>
                 )}
+
+                <div className="pt-4 border-t border-gray-100">
+                  <h4 className="text-sm font-bold text-gray-800 mb-3">
+                    Domínios do Whitelabel
+                  </h4>
+                  <p className="text-xs text-gray-400 mb-4">
+                    Opcional no cadastro. O DNS ainda não precisa estar apontado
+                    — será provisionado automaticamente ao apontar o registro A
+                    para a plataforma.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Domínio do Site Público
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.site_domain}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            site_domain: e.target.value.toLowerCase(),
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                        placeholder="ex: www.imobiliaria.com.br"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Domínio do Painel
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.panel_domain}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            panel_domain: e.target.value.toLowerCase(),
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                        placeholder="ex: painel.imobiliaria.com.br"
+                      />
+                    </div>
+                  </div>
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">

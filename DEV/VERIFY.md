@@ -1,5 +1,20 @@
 # Verificação
 
+## 2026-08-03 — Diagnóstico revenda Delazari (análise estática)
+
+- Nenhum arquivo de produto alterado → type-check/lint/build não executados.
+- Evidência de banco: sessões ativas em `impersonation_sessions` criadas pelo ator `e3d30425` (Delazari, superadmin) → tenant `52757ffb` (Mega), status active, TTL 15 min; ontem `df587a67` → `8f9bf0f1`. POST de impersonação comprovado.
+- Evidência de código: cadeia completa lida e verificada (`server/routes/admin.js`, `server/lib/impersonation-session.js`, `server/middleware/auth.js`, `src/lib/impersonation.ts`, `src/lib/api.ts`, `context/AuthContext.tsx`, `components/NicheRedirect.tsx`, `components/PanelGuard.tsx`, `components/MegaAdminGuard.tsx`, `views/superadmin/TenantManager.tsx`).
+- Pendência runtime: confirmar versão deployada (inclui `214595a`?) e reproduzir sintoma 2 com logs de browser (target do NicheRedirect, isImpersonating, sessionStorage).
+
+## 2026-08-03 — Mega Admin: frontend de domínios dos whitelabels
+
+- `npm run type-check`: aprovado (sem output).
+- `npm run lint`: aprovado com 0 erros; 598 avisos preexistentes no repositório — nenhum em `views/megaadmin/ResellerDomains.tsx`, `MegaAdminLayout.tsx`, `App.routes.tsx` ou `ResellerManager.tsx` (grep no output confirmou ausência dos arquivos alterados).
+- `npm run build`: aprovado; novos chunks gerados `assets/ResellerDomains-*.js` (20,97 kB / gzip 3,82 kB) e `MegaAdminLayout-*.js` atualizado.
+- Backend revalidado por leitura: `server/routes/mega-admin.js` exporta `POST/DELETE /resellers/:id/domain` e retorna `domains` no `POST /resellers`; `linkDomainToOrganization`/`unlinkDomainFromOrganization` retornam `dnsVerified`/`provisioned`/`purpose` e aceitam purpose `site`/`panel`/`both`.
+- Pendência (runtime, requer dev server + backend + login mega admin): abrir `/megaadmin/domains`, vincular domínio de site/painel a um whitelabel, verificar DNS e remover vínculo; conferir que `POST /resellers` com `site_domain`/`panel_domain` cria o reseller e retorna `domains`.
+
 ## 2026-08-02 — Agentes IA: protocolo de saudação/apresentação e conversa humana
 
 - Novo `server/services/ai/agentPrompt.js`: construtor compartilhado de system prompt (identidade, marca, personalidade, ferramentas, histórico, protocolo de saudação/apresentação e regras de conversa humana).

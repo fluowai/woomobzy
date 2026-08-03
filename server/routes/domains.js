@@ -26,9 +26,13 @@ const supabase = new Proxy(
 
 // ==========================================
 // POST /add — Link custom domain to Docker/Traefik & DB
+// purpose: 'site' (default, site público) | 'panel' (painel/sistema) | 'both'
 // ==========================================
 router.post('/add', verifyAdmin, async (req, res) => {
-  const { domain, organizationId } = req.body;
+  const { domain, organizationId, purpose } = req.body;
+  const targetPurpose = ['site', 'panel', 'both'].includes(purpose)
+    ? purpose
+    : 'site';
 
   if (!domain || !organizationId) {
     return res
@@ -46,8 +50,8 @@ router.post('/add', verifyAdmin, async (req, res) => {
     const cleanDomain = normalizeDomain(domain);
     const { data: existingOrg } = await supabase
       .from('organizations')
-      .select('id, name')
-      .eq('custom_domain', cleanDomain)
+      .select('id, name, custom_domain, platform_domain')
+      .or(`custom_domain.eq.${cleanDomain},platform_domain.eq.${cleanDomain}`)
       .maybeSingle();
 
     if (existingOrg && existingOrg.id !== organizationId) {
@@ -59,7 +63,7 @@ router.post('/add', verifyAdmin, async (req, res) => {
 
     const { data: existingDomain } = await supabase
       .from('domains')
-      .select('organization_id, domain')
+      .select('organization_id, domain, purpose')
       .eq('domain', cleanDomain)
       .maybeSingle();
 
@@ -72,29 +76,47 @@ router.post('/add', verifyAdmin, async (req, res) => {
 
     const { data: targetOrg } = await supabase
       .from('organizations')
-      .select('custom_domain')
+      .select('custom_domain, platform_domain')
       .eq('id', organizationId)
       .maybeSingle();
     const previousCustomDomain = targetOrg?.custom_domain || null;
+    const previousPlatformDomain = targetOrg?.platform_domain || null;
     const hadExistingDomain = !!existingDomain;
 
     await validateDockerDomainDns(cleanDomain);
 
-    // 2. Update DB (Organization)
+    // 2. Update DB (Organization) — conforme a finalidade
+    const orgUpdate = {};
+    if (targetPurpose === 'site' || targetPurpose === 'both') {
+      orgUpdate.custom_domain = cleanDomain;
+    }
+    if (targetPurpose === 'panel' || targetPurpose === 'both') {
+      orgUpdate.platform_domain = cleanDomain;
+    }
+
     const { error: orgError } = await supabase
       .from('organizations')
-      .update({ custom_domain: cleanDomain })
+      .update(orgUpdate)
       .eq('id', organizationId);
 
     if (orgError) throw orgError;
 
     // 3. Add to Domains table for history/tracking
+    const mergedPurpose =
+      existingDomain?.purpose === 'both' ||
+      targetPurpose === 'both' ||
+      (existingDomain?.purpose === 'site' && targetPurpose === 'panel') ||
+      (existingDomain?.purpose === 'panel' && targetPurpose === 'site')
+        ? 'both'
+        : targetPurpose;
+
     await supabase.from('domains').upsert(
       {
         organization_id: organizationId,
         domain: cleanDomain,
         is_custom: true,
         is_primary: true,
+        purpose: mergedPurpose,
         status: 'pending_ssl',
         ssl_status: 'pending',
         updated_at: new Date().toISOString(),
@@ -110,7 +132,10 @@ router.post('/add', verifyAdmin, async (req, res) => {
     } catch (provisioningError) {
       await supabase
         .from('organizations')
-        .update({ custom_domain: previousCustomDomain })
+        .update({
+          custom_domain: previousCustomDomain,
+          platform_domain: previousPlatformDomain,
+        })
         .eq('id', organizationId);
 
       if (hadExistingDomain) {
@@ -127,8 +152,10 @@ router.post('/add', verifyAdmin, async (req, res) => {
 
     res.json({
       success: true,
+      purpose: targetPurpose,
       domain: {
         name: cleanDomain,
+        purpose: mergedPurpose,
         status: 'pending_ssl',
         verified: false,
         dnsVerified: true,
@@ -155,7 +182,7 @@ router.post('/add', verifyAdmin, async (req, res) => {
 // DELETE /remove — Unlink from Docker/Traefik & DB
 // ==========================================
 router.delete('/remove', verifyAdmin, async (req, res) => {
-  const { domain, organizationId } = req.body;
+  const { domain, organizationId, purpose } = req.body;
 
   if (!domain || !organizationId) {
     return res.status(400).json({ error: 'Dados incompletos' });
@@ -171,10 +198,21 @@ router.delete('/remove', verifyAdmin, async (req, res) => {
     const cleanDomain = normalizeDomain(domain);
     await removeDockerDomain(cleanDomain);
 
-    // 2. Clear from DB (Organization)
+    // 2. Clear from DB (Organization) — só as colunas correspondentes
+    const targetPurpose = ['site', 'panel', 'both'].includes(purpose)
+      ? purpose
+      : 'both';
+    const orgUpdate = {};
+    if (targetPurpose === 'site' || targetPurpose === 'both') {
+      orgUpdate.custom_domain = null;
+    }
+    if (targetPurpose === 'panel' || targetPurpose === 'both') {
+      orgUpdate.platform_domain = null;
+    }
+
     await supabase
       .from('organizations')
-      .update({ custom_domain: null })
+      .update(orgUpdate)
       .eq('id', organizationId);
 
     // 3. Delete from Domains table

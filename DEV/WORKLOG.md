@@ -1,5 +1,23 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-03] Diagnóstico da revenda Delazari (escopo de clientes + impersonação)
+
+- Relatório entregue em `DEV/RELATORIO_REVENDA_DELAZARI_2026-08-03.md`; nenhuma correção aplicada.
+- Sintoma 1 (lista de revenda só mostra filhos): causa no filtro de escopo de `GET /api/admin/organizations` (`server/routes/admin.js:663-693`) + RLS "Reseller view/update sub-organizations"; comportamento introduzido pela lógica de escopo de revenda (commits 0901af6/25a5a69).
+- Sintoma 2 (não redireciona ao painel do cliente): cadeia inteira verificada e consistente no código atual — POST `/api/admin/impersonations` → `persistImpersonationSession` (sessionStorage) → `loadProfile` → `/admin` → `NicheRedirect` → `/rural|/urban`; POST comprovado no banco (sessões ativas ator e3d30425 → tenant 52757ffb hoje 12:16Z). Causas prováveis da falha: deploy anterior ao fix `214595a`, perda da sessão no reload, ou envelope sem `organizationId` em versão antiga do server.
+- Gates: análise estática (código + banco); nenhum arquivo de produto alterado → type-check/lint/build não executados.
+- Nenhum commit/push/deploy.
+
+## [2026-08-03] Mega Admin — domínios dos whitelabels (frontend)
+
+- Contexto: backend pronto (rotas `/api/mega/resellers/:id/domain` e campos `site_domain`/`panel_domain` no `POST /resellers`). Faltava o frontend.
+- `views/megaadmin/MegaAdminLayout.tsx`: novo item de navegação "Domínios" (ícone `Globe`, rota `/megaadmin/domains`) ao lado de Resellers.
+- Novo `views/megaadmin/ResellerDomains.tsx`: tabela whitelabel × domínio (Site e Painel) com status (`pending`/`pending_ssl`/`active`) vindo da tabela `domains` (via client Supabase), badge "Site + Painel" para purpose `both`, ações "Verificar DNS" (reusa `/api/domains/verify/:domain`) e "Remover" (DELETE `/api/mega/resellers/:id/domain`, envia purpose `both` quando aplicável); modal "Vincular Domínio" (whitelabel + tipo + domínio, POST com `strictDns: false`, aviso do registro A para `PLATFORM_IP`).
+- `App.routes.tsx`: rota lazy `domains` no bloco `/megaadmin` (protegida por MegaAdminGuard).
+- `views/megaadmin/ResellerManager.tsx`: campos "Domínio do Site" e "Domínio do Painel" no form (pré-preenchidos na edição via `custom_domain`/`platform_domain`, enviados como `site_domain`/`panel_domain`; editada interface `Reseller`).
+- Gates: `npm run type-check` ✓, `npm run lint` ✓ (0 erros; 598 warnings pré-existentes, nenhum nos arquivos alterados), `npm run build` ✓ (chunks `ResellerDomains-*.js` e `MegaAdminLayout-*.js` gerados).
+- Nenhum commit/push/deploy.
+
 ## [2026-08-03] Simulador de conversa natural (agente + lead automático)
 
 - Diagnóstico: o chat de teste não tinha modo de simulação autônoma; o usuário precisava digitar cada mensagem do lead manualmente. Para demonstrar o protocolo de saudação/apresentação e o fluxo natural, faltava um modo onde o agente e um lead simulado conversassem de forma autônoma.

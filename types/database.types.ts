@@ -1542,6 +1542,7 @@ export type Database = {
           is_custom: boolean | null;
           is_primary: boolean | null;
           organization_id: string | null;
+          purpose: string | null;
           ssl_status: string | null;
           status: string | null;
           updated_at: string | null;
@@ -1553,6 +1554,7 @@ export type Database = {
           is_custom?: boolean | null;
           is_primary?: boolean | null;
           organization_id?: string | null;
+          purpose?: string | null;
           ssl_status?: string | null;
           status?: string | null;
           updated_at?: string | null;
@@ -1564,6 +1566,7 @@ export type Database = {
           is_custom?: boolean | null;
           is_primary?: boolean | null;
           organization_id?: string | null;
+          purpose?: string | null;
           ssl_status?: string | null;
           status?: string | null;
           updated_at?: string | null;

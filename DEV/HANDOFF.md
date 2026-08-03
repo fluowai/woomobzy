@@ -1,5 +1,21 @@
 # Handoff
 
+## 2026-08-03 — Diagnóstico da revenda Delazari (escopo de clientes + impersonação)
+
+- Relatório: `DEV/RELATORIO_REVENDA_DELAZARI_2026-08-03.md`. Análise estática (código + banco); nenhuma correção aplicada.
+- Sintoma 1: lista de "clientes de revenda" só mostra os filhos — filtro `parent_id = <revenda>` em `server/routes/admin.js:663-693` (escopo de revenda) + RLS. Decidir se a revenda deve ver também clientes diretos (`parent_id IS NULL`).
+- Sintoma 2: cadeia de impersonação→redirect está correta no código atual (POST comprovado no banco; `NicheRedirect` com fix `214595a`). Suspeitas: produção sem o fix `214595a`, perda da sessão no reload (sessionStorage/TTL 15min), ou envelope antigo sem `organizationId`.
+- Próxima ação (maestro): confirmar versão deployada; reproduzir com logs (`logger` já loga target do NicheRedirect e loadProfile) verificando `sessionStorage['imobzy_impersonation_session']` + `isImpersonating` após o reload; decidir escopo da lista de revenda.
+- Nenhum commit/push/deploy. Working tree tem WIP de outras sessões (domains, locacao, instagram-worker) — não tocar/push sem conferir.
+
+## 2026-08-03 — Mega Admin: domínios dos whitelabels (frontend completo)
+
+- Item de navegação "Domínios" no MegaAdminLayout; nova view `views/megaadmin/ResellerDomains.tsx` (tabela Site × Painel, status de DNS/SSL, verificar/remover/vincular via `/api/mega/resellers/:id/domain` + `/api/domains/verify/:domain`); rota lazy `/megaadmin/domains`; campos de domínio no form do ResellerManager.
+- Gates verdes: type-check, lint 0 erros, build.
+- Próxima ação (maestro): subir dev server + backend e validar em `/megaadmin/domains` — vincular domínio (site e painel), conferir badge "Site + Painel" em purpose `both`, verificar DNS e remover; criar reseller com `site_domain`/`panel_domain` e conferir `domains` na resposta. Depois, decidir commit/push.
+- Ainda em aberto do plano: site padrão do whitelabel (`get_tenant_public`/`get_tenant_by_any_domain` para resellers, reuso do SiteSetupWizard) e branding da org (`logo_url`/`primary_color`/`secondary_color`) no painel servido no domínio do whitelabel.
+- Nenhum commit/push/deploy foi executado.
+
 ## 2026-08-02 — Agentes IA: conversa inteligente com saudação e apresentação
 
 - Sintoma relatado: mandar "oi" ao agente gerava resposta genérica, sem o agente se identificar nem se apresentar.

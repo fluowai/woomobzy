@@ -130,6 +130,9 @@ const MegaAuditLog = lazy(() => import('./views/megaadmin/AuditLog'));
 const MegaAdminLayout = lazy(() => import('./views/megaadmin/MegaAdminLayout'));
 const MegaAdminDashboard = lazy(() => import('./views/megaadmin/Dashboard'));
 const ResellerManager = lazy(() => import('./views/megaadmin/ResellerManager'));
+const ResellerDomains = lazy(
+  () => import('./views/megaadmin/ResellerDomains')
+);
 const DirectClientsManager = lazy(
   () => import('./views/megaadmin/DirectClientsManager')
 );
@@ -365,6 +368,7 @@ const AppRoutes: React.FC = () => {
         >
           <Route index element={<MegaAdminDashboard />} />
           <Route path="resellers" element={<ResellerManager />} />
+          <Route path="domains" element={<ResellerDomains />} />
           <Route path="direct-clients" element={<DirectClientsManager />} />
           <Route path="analytics" element={<AnalyticsDashboard />} />
           <Route path="monitoring" element={<PlatformMonitoring />} />

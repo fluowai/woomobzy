@@ -494,11 +494,14 @@ export async function syncRegisteredDockerDomains(supabase, options = {}) {
 
   const { data: orgs, error: orgError } = await supabase
     .from('organizations')
-    .select('custom_domain')
-    .not('custom_domain', 'is', null);
+    .select('custom_domain, platform_domain')
+    .or('custom_domain.not.is.null,platform_domain.not.is.null');
 
   if (orgError) throw orgError;
-  (orgs || []).forEach((org) => addDomain(org.custom_domain));
+  (orgs || []).forEach((org) => {
+    addDomain(org.custom_domain);
+    addDomain(org.platform_domain);
+  });
 
   const { data: domainRows, error: domainsError } = await supabase
     .from('domains')
@@ -548,4 +551,171 @@ export async function provisionTenantDomain(subdomain) {
     dns: dnsProvisioning,
     success: true,
   };
+}
+
+const DOMAIN_PURPOSES = new Set(['site', 'panel', 'both']);
+
+function resolvePurpose(purpose) {
+  return DOMAIN_PURPOSES.has(purpose) ? purpose : 'site';
+}
+
+/**
+ * Vincula um domínio a uma organização (whitelabel/reseller) e o
+ * provisiona no Traefik. purpose: 'site' (site público) | 'panel'
+ * (painel/sistema) | 'both'. Com strictDns=false, domínios com DNS ainda
+ * não apontado são salvos no banco mas não provisionados (a verificação
+ * posterior auto-provisiona quando o DNS apontar).
+ */
+export async function linkDomainToOrganization(
+  supabase,
+  { domain, organizationId, purpose, strictDns = true }
+) {
+  const targetPurpose = resolvePurpose(purpose);
+  const cleanDomain = normalizeDomain(domain);
+
+  const { data: existingOrg } = await supabase
+    .from('organizations')
+    .select('id')
+    .or(`custom_domain.eq.${cleanDomain},platform_domain.eq.${cleanDomain}`)
+    .maybeSingle();
+
+  if (existingOrg && existingOrg.id !== organizationId) {
+    throw new DomainProvisioningError(
+      'DOMAIN_ALREADY_EXISTS',
+      'Este dominio ja esta vinculado a outra organizacao.',
+      409
+    );
+  }
+
+  const { data: existingDomain } = await supabase
+    .from('domains')
+    .select('organization_id, purpose')
+    .eq('domain', cleanDomain)
+    .maybeSingle();
+
+  if (existingDomain && existingDomain.organization_id !== organizationId) {
+    throw new DomainProvisioningError(
+      'DOMAIN_ALREADY_EXISTS',
+      'Este dominio ja esta cadastrado na WooTech Imob.',
+      409
+    );
+  }
+
+  const { data: targetOrg } = await supabase
+    .from('organizations')
+    .select('custom_domain, platform_domain')
+    .eq('id', organizationId)
+    .maybeSingle();
+  const previousCustomDomain = targetOrg?.custom_domain || null;
+  const previousPlatformDomain = targetOrg?.platform_domain || null;
+
+  const dnsStatus = await checkDnsRecord(cleanDomain);
+  if (strictDns && !dnsStatus.verified) {
+    throw new DomainProvisioningError(
+      'DNS_NOT_POINTED',
+      `DNS ainda nao aponta para ${dnsStatus.expectedIp}.`,
+      422,
+      dnsStatus
+    );
+  }
+
+  const orgUpdate = {};
+  if (targetPurpose === 'site' || targetPurpose === 'both') {
+    orgUpdate.custom_domain = cleanDomain;
+  }
+  if (targetPurpose === 'panel' || targetPurpose === 'both') {
+    orgUpdate.platform_domain = cleanDomain;
+  }
+
+  const { error: orgError } = await supabase
+    .from('organizations')
+    .update(orgUpdate)
+    .eq('id', organizationId);
+
+  if (orgError) throw orgError;
+
+  const mergedPurpose =
+    existingDomain?.purpose === 'both' ||
+    targetPurpose === 'both' ||
+    (existingDomain?.purpose === 'site' && targetPurpose === 'panel') ||
+    (existingDomain?.purpose === 'panel' && targetPurpose === 'site')
+      ? 'both'
+      : targetPurpose;
+
+  await supabase.from('domains').upsert(
+    {
+      organization_id: organizationId,
+      domain: cleanDomain,
+      is_custom: true,
+      is_primary: true,
+      purpose: mergedPurpose,
+      status: dnsStatus.verified ? 'pending_ssl' : 'pending',
+      ssl_status: 'pending',
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'domain' }
+  );
+
+  if (!dnsStatus.verified) {
+    return {
+      domain: cleanDomain,
+      purpose: mergedPurpose,
+      dnsVerified: false,
+      provisioned: false,
+      dnsStatus,
+      provisioning: null,
+      warning:
+        'Dominio salvo, mas o DNS ainda nao aponta para a plataforma. Aponte o registro A e clique em Verificar DNS.',
+    };
+  }
+
+  let provisioning;
+  try {
+    provisioning = await ensureDockerDomainConfig(cleanDomain);
+  } catch (provisioningError) {
+    await supabase
+      .from('organizations')
+      .update({
+        custom_domain: previousCustomDomain,
+        platform_domain: previousPlatformDomain,
+      })
+      .eq('id', organizationId);
+    await supabase.from('domains').delete().eq('domain', cleanDomain);
+    throw provisioningError;
+  }
+
+  return {
+    domain: cleanDomain,
+    purpose: mergedPurpose,
+    dnsVerified: true,
+    provisioned: true,
+    dnsStatus,
+    provisioning,
+  };
+}
+
+/**
+ * Remove um domínio de uma organização e o desprovisiona do Traefik.
+ */
+export async function unlinkDomainFromOrganization(
+  supabase,
+  { domain, organizationId, purpose }
+) {
+  const targetPurpose = DOMAIN_PURPOSES.has(purpose) ? purpose : 'both';
+  const cleanDomain = normalizeDomain(domain);
+
+  await removeDockerDomain(cleanDomain);
+
+  const orgUpdate = {};
+  if (targetPurpose === 'site' || targetPurpose === 'both') {
+    orgUpdate.custom_domain = null;
+  }
+  if (targetPurpose === 'panel' || targetPurpose === 'both') {
+    orgUpdate.platform_domain = null;
+  }
+
+  await supabase.from('organizations').update(orgUpdate).eq('id', organizationId);
+  await supabase.from('domains').delete().eq('domain', cleanDomain);
+
+  return { success: true, domain: cleanDomain };
 }

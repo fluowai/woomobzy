@@ -1,5 +1,19 @@
 # Handoff
 
+## 2026-08-04 — INCIDENTE: API 502 total — hotfix pronto para commit/push (não foi commitado)
+
+- **Sintoma**: `/api/public/texts` e `/api/mega/resellers` → 502; a API inteira 502 (`/api/system-status` em imob.wootech.com.br e imobfluow.consultio.com.br).
+- **Causa raiz**: imagem `woomobzy-api` buildada de `codex/main-whatsapp-media-hotfix` (= `e38a32f`) não sobe — imports ESM quebrados commitados de manhã (Node não importa TS/diretórios; a imagem só copia `server/`).
+- **Correções prontas no working tree** (sem commit):
+  - `server/routes/woosign.js` deletado + mount removido de `server/routes/index.js` (importava o TS `../../services/woosign`).
+  - `server/api/system-contracts/index.js`: imports para `../../middleware|lib/*` + supabase **lazy Proxy**.
+  - `server/services/ai/agentGuardrails.js`: imports para `../../lib|utils/*`.
+  - `server/api/contact.js`: import para `../services/emailService.js` (arquivo morto).
+- **Verificação**: boot simulado do HEAD+fixes responde `/api/system-status` 200, `/api/public/texts` 200, `/api/mega/resellers` 401 sem token. Scanner de imports: HEAD tinha 8 quebrados → resta só `server/services/campaign-dispatcher.js` (import dinâmico em `server/api/campaigns/index.js`, **não bloqueia boot**; bug de runtime de campanha).
+- **Próxima ação (maestro)**: 1) commit do hotfix (`server/routes/index.js`, delete `server/routes/woosign.js`, `server/api/system-contracts/index.js`, `server/services/ai/agentGuardrails.js`, `server/api/contact.js`); 2) push `codex/main-whatsapp-media-hotfix`; 3) CI builda `woomobzy-api`; 4) redeploy/Portainer (alias `5daaa4a05b3d9f85556d4c41b1d23b655e44bfa7`); 5) validar `/api/system-status`, `/api/public/texts`, `/api/mega/resellers` = 200. Follow-up: `campaign-dispatcher.js` (`getWhatsAppClient` não existe no repo).
+- **Atenção**: outro agente/sessão está editando o mesmo working tree (`server/index.js` monta `server/api/woosign/index.js` untracked que importa o TS `services/woosign`; `App.routes.tsx`, `components/Layout.tsx`, `views/woosign/`). Não commitar esses arquivos junto com o hotfix; e se esse WIP de woosign for commitado antes do port do serviço para JS, a API volta a não subir.
+- Nenhum commit/push/deploy foi executado.
+
 ## 2026-08-03 — MinIO produção: upload 503 corrigido (TLS + buckets + key provisionados)
 
 - **Fix completo em produção**: (1) TLS `https://nb.consultio.com.br` → Let's Encrypt via labels `minio_nb` na stack minio (Traefik provider Swarm; file dynamic é inerte); (2) buckets `imobzycrm`, `imobzywhatsapp`, `imobzy-media`, `imobzy-documents`, `imobzy-exports`, `imobzy-backups` criados; (3) policy `imobzy-rw` (s3:* nos 6 buckets) + user `8aHPnW4JQsRWhbKld9Yw` (a key que o app usa) criados via API console MinIO.

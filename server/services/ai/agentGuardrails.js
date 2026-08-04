@@ -1,5 +1,5 @@
-import { getSupabaseServer } from '../lib/supabase-server.js';
-import logger from '../utils/logger.js';
+import { getSupabaseServer } from '../../lib/supabase-server.js';
+import logger from '../../utils/logger.js';
 
 const REAL_ESTATE_SIGNALS = /\b(imovel|casa|apartamento|terreno|fazenda|sitio|chacara|area|hectare|ha\b|alqueire|comprar|vender|alugar|locacao|arrendar|visita|proposta|financiamento|entrada|parcela|car\b|matricula|ccir|incra|geo|itr|contrato|aluguel|locar|imobiliaria|corretor|crm|lead|cliente)\b/i;
 

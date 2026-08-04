@@ -1,5 +1,24 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-04] INCIDENTE — API de produção 502 total; causa: imports quebrados no boot (hotfix em working tree)
+
+- Sintoma: `GET /api/public/texts` e `/api/mega/resellers` → 502 no console do navegador; **toda** a API em 502 (probe `https://imob.wootech.com.br/api/system-status` e `https://imobfluow.consultio.com.br/api/system-status` → 502). O handler de `/texts` (`server/routes/public.js:703`) nunca 502 sozinho (catch-all → `{success, texts:{}, raw:[]}`) → API container down/crash loop atrás do Traefik.
+- Causa raiz: commits da manhã na branch `codex/main-whatsapp-media-hotfix` (HEAD/origin = `e38a32f`) montaram módulos server com imports ESM inválidos. `Dockerfile.api` copia **apenas `server/`**; Node ESM não importa diretórios/TS (`services/woosign` é TS e não vai para a imagem).
+- Boot local reproduzido (`node server/index.js`), 3 erros consecutivos:
+  1. `ERR_UNSUPPORTED_DIR_IMPORT ... services\woosign ... imported from server\routes\woosign.js`
+  2. `ERR_MODULE_NOT_FOUND server\api\middleware\auth.js ... imported from server\api\system-contracts\index.js`
+  3. `ERR_MODULE_NOT_FOUND server\services\lib\supabase-server.js ... imported from server\services\ai\agentGuardrails.js`
+- Correções no working tree (hotfix, sem commit):
+  - `server/routes/woosign.js` **deletado** + import/mount removido de `server/routes/index.js` (importava diretório TS `../../services/woosign`).
+  - `server/api/system-contracts/index.js`: imports `../middleware|lib/*` → `../../middleware|lib/*`; `getSupabaseServer()` eager → **lazy Proxy** (padrão do mega-admin.js; o grafo ESM é avaliado antes do `dotenv.config()` do index.js).
+  - `server/services/ai/agentGuardrails.js`: imports `../lib|utils/*` → `../../lib|utils/*`.
+  - `server/api/contact.js`: `../../services/emailService.js` → `../services/emailService.js` (arquivo morto, não montado).
+- Scanner de imports criado em `C:\Users\paulo\AppData\Local\Temp\opencode\check-imports.mjs`: HEAD tinha **8 imports quebrados** (4 arquivos); após os fixes, resta **1** em `server/services/campaign-dispatcher.js` (`../api/whatsapp/providers/provider-config.js` não existe; `getWhatsAppClient` usado na linha 400 e definido em lugar nenhum). Só é `await import(...)` dinâmico em `server/api/campaigns/index.js` → **não bloqueia boot**; é bug de runtime quando uma campanha dispara.
+- **Verificação (simulada do que o CI builda)**: extração de `HEAD server` + fixes aplicados em `.bootcheck/` (fora do git) → `node .bootcheck/server/index.js` sobe e responde: `/api/system-status` 200 online, `/api/public/texts` 200, `/api/mega/resellers` 401 sem token (gate de auth OK). `.bootcheck` removido.
+- Observação: outro agente/sessão está ativo no mesmo working tree (WIP: `server/index.js` monta `server/api/woosign/index.js` untracked que também importa o TS `services/woosign`; `App.routes.tsx`, `components/Layout.tsx`, `services/woosign/service.ts`, `views/woosign/`). Nenhum desses arquivos está em HEAD → não afeta o build do CI da imagem atual, mas bloqueará o próximo boot se for commitado sem portar o serviço para JS.
+- **Próxima ação (maestro)**: revisar e commitar o hotfix (routes/index.js, delete routes/woosign.js, system-contracts, agentGuardrails, contact.js), push em `codex/main-whatsapp-media-hotfix` → CI builda `woomobzy-api` → redeploy/Portainer (`woomobzy-api:5daaa4a05b3d9f85556d4c41b1d23b655e44bfa7`) → validar `/api/system-status`, `/api/public/texts`, `/api/mega/resellers` = 200. Depois: resolver `campaign-dispatcher.js` (ou achar o módulo real de `getWhatsAppClient`).
+- Nenhum commit/push/deploy executado.
+
 ## [2026-08-03] Fix do 503 de upload — SSL Let's Encrypt para MinIO (nb.consultio.com.br)
 
 - Diagnóstico confirmado por probes: `https://nb.consultio.com.br` responde `CN=TRAEFIK DEFAULT CERT` (self-signed, verify return code 18); sem router para o host em `traefik/dynamic/` → 404 do próprio Traefik (a requisição não chega ao MinIO); porta 9000 no IP não responde mais; `n.woopanel.com.br` (alternativa do stack fazendasbrasil) não resolve (ENOTFOUND). Backend usa `MINIO_ENDPOINT=https://nb.consultio.com.br` → cliente S3 falha na verificação TLS → 503 em `server/api/storage/index.js`.

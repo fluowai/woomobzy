@@ -1,15 +1,25 @@
 import express from 'express';
 import multer from 'multer';
-import { verifyMegaAdmin } from '../middleware/auth.js';
-import { getSupabaseServer } from '../lib/supabase-server.js';
-import { uploadObject, getMinioPublicUrl, getConfiguredBucketName } from '../lib/minio-storage.js';
+import { verifyMegaAdmin } from '../../middleware/auth.js';
+import { getSupabaseServer } from '../../lib/supabase-server.js';
+import { uploadObject, getMinioPublicUrl, getConfiguredBucketName } from '../../lib/minio-storage.js';
 import axios from 'axios';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 const router = express.Router();
-const supabase = getSupabaseServer();
+
+const supabase = new Proxy(
+  {},
+  {
+    get: (_, prop) => {
+      const client = getSupabaseServer();
+      const value = client[prop];
+      return typeof value === 'function' ? value.bind(client) : value;
+    },
+  }
+);
 
 const upload = multer({
   storage: multer.memoryStorage(),

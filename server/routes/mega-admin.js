@@ -9,6 +9,7 @@ import {
   unlinkDomainFromOrganization,
 } from '../domainService.js';
 import { provisionLicenseForOrganization } from '../lib/licensing/admin-service.js';
+import systemContractsRoutes from '../api/system-contracts/index.js';
 
 const router = express.Router();
 
@@ -692,5 +693,7 @@ router.get('/stats', verifyMegaAdmin, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+router.use('/contracts', systemContractsRoutes);
 
 export default router;

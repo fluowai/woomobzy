@@ -1114,3 +1114,163 @@
     margin-inline: 8px;
   }
 }
+
+/* -------------------------------------------------------------
+ * Sidebar Missing Styles (ChatSidebar.tsx) 
+ * ------------------------------------------------------------- */
+.wa-channel-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--mc-border);
+  overflow-x: auto;
+}
+
+.wa-channel-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--mc-border);
+  border-radius: 20px;
+  background: #f8fafc;
+  color: var(--mc-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.wa-channel-tabs button.active {
+  background: var(--mc-green-soft);
+  color: var(--mc-green-dark);
+  border-color: var(--mc-green);
+}
+
+.wa-queue-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--mc-border);
+}
+
+.wa-queue-tabs button {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid transparent;
+  color: var(--mc-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.wa-queue-tabs button:hover {
+  background: #f1f5f9;
+}
+
+.wa-queue-tabs button.active {
+  background: #fff;
+  border-color: var(--mc-border);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  color: var(--mc-text);
+  font-weight: 600;
+}
+
+.wa-inbox-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--mc-border);
+}
+
+.wa-inbox-metrics .wa-metric {
+  display: flex;
+  flex-direction: column;
+}
+
+.wa-inbox-metrics .wa-metric-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--mc-text);
+}
+
+.wa-inbox-metrics .wa-metric-label {
+  font-size: 0.7rem;
+  color: var(--mc-muted);
+  text-transform: uppercase;
+}
+
+.wa-inbox-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--mc-border);
+}
+
+.wa-inbox-toolbar button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--mc-muted);
+  font-size: 0.8rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.wa-inbox-toolbar > div {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  color: var(--mc-muted);
+}
+
+.wa-center-search-row {
+  display: flex;
+  gap: 8px;
+  padding: 16px;
+  border-bottom: 1px solid var(--mc-border);
+}
+
+.wa-center-search-row .wa-search-input-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  border: 1px solid transparent;
+}
+
+.wa-center-search-row .wa-search-input-wrapper input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 10px 0;
+  font-size: 0.9rem;
+}
+
+.wa-center-search-row .wa-square-control {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  border: 1px solid var(--mc-border);
+  border-radius: 8px;
+  color: var(--mc-muted);
+  cursor: pointer;
+}

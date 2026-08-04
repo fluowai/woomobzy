@@ -77,6 +77,7 @@ const MIGRATIONS = [
   'migrations/20260803_domain_purpose.sql',
   'migrations/20260803_licensing_core.sql',
   'migrations/20260803_lease_schema_alignment.sql',
+  'migrations/woosign/20260803_woosign_core.sql',
 ];
 
 async function executeMigrations() {

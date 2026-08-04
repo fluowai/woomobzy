@@ -15,6 +15,7 @@ import megaAdminRoutes from './mega-admin.js';
 import subscriptionRoutes from './subscription.js';
 import licensingRoutes from '../api/licensing/index.js';
 import megaLicensesRoutes from '../api/mega-licenses/index.js';
+import woosignRoutes from './woosign.js';
 
 const router = express.Router();
 
@@ -33,5 +34,6 @@ router.use('/api/mega', megaAdminRoutes);
 router.use('/api/mega/licenses', megaLicensesRoutes);
 router.use('/api/subscription', subscriptionRoutes);
 router.use('/api/licensing/v1', licensingRoutes);
+router.use('/api/woosign', woosignRoutes);
 
 export default router;

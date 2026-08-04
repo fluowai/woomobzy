@@ -150,6 +150,8 @@ export function useWhatsAppInbox(
   // Load chats when instance changes
   useEffect(() => {
     if (selectedInstance) {
+      setSelectedChat(null);
+      setMessages([]);
       loadChats(selectedInstance.id);
     } else {
       setChats((prev) => prev.filter((c) => c.platform === 'instagram'));
@@ -221,6 +223,14 @@ export function useWhatsAppInbox(
   // Load messages when chat changes
   useEffect(() => {
     if (selectedChat) {
+      if (
+        selectedChat.platform === 'whatsapp' &&
+        selectedInstance &&
+        selectedChat.instance_id !== selectedInstance.id
+      ) {
+        setMessages([]);
+        return;
+      }
       setMessages([]);
       if (selectedChat.platform === 'instagram') {
         loadMessages(selectedChat.id, '', 'instagram');
@@ -454,12 +464,20 @@ export function useWhatsAppInbox(
       setServiceError('');
       setTenantContextError('');
       setWebSocketEnabled(true);
-      if (data.length > 0 && !selectedInstance) {
+      if (data.length > 0) {
         const linkedInstance = deepLinkInstanceId
           ? data.find((i) => i.id === deepLinkInstanceId)
           : null;
         const connected = data.find((i) => i.status === 'connected');
-        setSelectedInstance(linkedInstance || connected || data[0]);
+        const nextInstance =
+          linkedInstance || connected || data[0];
+        if (
+          !selectedInstance ||
+          nextInstance.id !== selectedInstance.id ||
+          nextInstance.status === 'connected'
+        ) {
+          setSelectedInstance(nextInstance);
+        }
       }
     } catch (err: any) {
       if (err?.message?.includes('WHATSAPP_UNAVAILABLE')) {
@@ -509,7 +527,14 @@ export function useWhatsAppInbox(
       if (!err?.message?.includes('WHATSAPP_UNAVAILABLE')) {
         logger.error('Failed to load chats:', err);
       }
-      setChats((prev) => prev.filter((c) => c.platform === 'instagram'));
+      if (err?.status === 403) {
+        toast.error(
+          err.message || 'Sem permissao para carregar conversas desta instancia.'
+        );
+      }
+      if (err?.message?.includes('WHATSAPP_UNAVAILABLE')) {
+        setChats((prev) => prev.filter((c) => c.platform === 'instagram'));
+      }
     }
   };
 
@@ -557,6 +582,11 @@ export function useWhatsAppInbox(
     } catch (err: any) {
       if (!err?.message?.includes('WHATSAPP_UNAVAILABLE')) {
         logger.error('Failed to load messages:', err);
+      }
+      if (err?.status === 403) {
+        toast.error(
+          err.message || 'Sem permissao para carregar mensagens desta conversa.'
+        );
       }
       setMessages([]);
     } finally {

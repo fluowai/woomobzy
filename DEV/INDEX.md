@@ -4,6 +4,7 @@
 
 | Arquivo                                  | Descrição                                                            | Status       |
 | ---------------------------------------- | -------------------------------------------------------------------- | ------------ |
+| `SPECS/ACTIVE.md`                        | Contrato da tarefa ativa (Agenda Multi-Agenda por corretor + visita a imóveis) | IMPLEMENTADO (aguardando validação) |
 | `SPECS/MEGA_ADMIN_PANEL.md`              | Planejamento completo do painel Mega Admin                           | PLANEJAMENTO |
 | `SPECS/IA_SQUAD.md`                      | Estratégia de Personas/IA e Segmentação (Concorrente Ref: BrokerIA)  | PLANEJAMENTO |
 | `SPECS/AUDITORIA_FUNCIONAL_REGRESSAO.md` | Auditoria por perfil e prevenção de regressões                       | PLANEJAMENTO |

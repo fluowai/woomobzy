@@ -293,6 +293,7 @@ async function getValidImpersonatedOrgId(
 function clearImpersonationStorage() {
   clearImpersonationSession();
   tenantIdCache = undefined;
+  userTenantContextCache = undefined;
 }
 
 async function getTenantId(userId?: string): Promise<string | null> {

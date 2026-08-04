@@ -41,6 +41,11 @@ const allTools = [
           type: 'string',
           description: 'ID do imovel a ser visitado (se conhecido)',
         },
+        agenda_id: {
+          type: 'string',
+          description:
+            'ID da agenda de visitas em que o compromisso deve entrar (se conhecido)',
+        },
         data_hora: {
           type: 'string',
           description:
@@ -317,6 +322,8 @@ export class AgentOrchestrator {
           supabase.from('lead_appointments').insert({
             organization_id: organizationId,
             lead_id: leadId,
+            agenda_id: args.agenda_id || null,
+            property_id: propertyId,
             user_id: null,
             title: visitTitle,
             appointment_date: scheduledAt,

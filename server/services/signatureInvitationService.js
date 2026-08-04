@@ -28,7 +28,7 @@ export class SignatureInvitationService {
       );
 
     const { data: lease } = await supabase
-      .from('leases')
+      .from('rental_contracts')
       .select('*')
       .eq('id', sig.lease_id)
       .single();
@@ -98,7 +98,7 @@ export class SignatureInvitationService {
 
     // Update lease signature status
     await supabase
-      .from('leases')
+      .from('rental_contracts')
       .update({
         signature_status: 'sent',
         updated_at: new Date().toISOString(),
@@ -381,7 +381,7 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
     const supabase = getSupabaseServer();
 
     const { data: lease } = await supabase
-      .from('leases')
+      .from('rental_contracts')
       .select('signature_method, signature_status')
       .eq('id', leaseId)
       .single();
@@ -498,7 +498,7 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
 
       if (allSigs && allSigs.every((s) => s.status === 'signed')) {
         await supabase
-          .from('leases')
+          .from('rental_contracts')
           .update({
             signature_status: 'signed',
             signed_at: new Date().toISOString(),
@@ -508,7 +508,7 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
           .eq('id', sig.lease_id);
       } else {
         await supabase
-          .from('leases')
+          .from('rental_contracts')
           .update({ signature_status: 'partially_signed' })
           .eq('id', sig.lease_id);
       }

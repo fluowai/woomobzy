@@ -1,5 +1,15 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-04] CI PR #66 — falha corrigida: testes de licenciamento + confirmado woosign TS em HEAD
+
+- **Problema**: run do CI (#66, `codex/main-whatsapp-media-hotfix`) falhou em `test` (2 testes) e `lint-and-typecheck` (exit 2 — erros de tipo TS em `services/woosign/service.ts`), além de warnings de lint em `components/SiteEditor/PropertySelectionPanel.tsx`.
+- **Testes (2 falhas) — causa raiz**: `bindDomainToLicenseViaSetupToken` (`server/lib/licensing/admin-service.js`) calculava `now = context.now || Date.now()` mas chamava `verifySetupToken(token)` **sem propagar `now`** → verificação usava `Date.now()` real. Os testes criam o token com `NOW = 2026-07-28T12:00Z` + TTL 7 dias; passado o relógio real de `2026-08-04T12:00Z`, os tokens ficam "expirados" → `TOKEN_EXPIRED` (400) em vez de `LICENSE_ORG_MISMATCH` (403) e o teste de bind falhava. Bug latente de produção (clock injetado ignorado).
+- **Correção**: `verifySetupToken(token, { now })` — passa a honrar `context.now` (mesmo padrão dos demais pontos do admin-service). Fix de 1 linha.
+- **Woosign TS**: erros de `data`/`error` já foram corrigidos no commit `5d28053` (documenso.ts retorna `{ data }`; service.ts consome `.data`). `npx tsc --noEmit` local: **0 erros** — o run do CI estava 8h atrás (pré-`5d28053`), ou seja, anotação obsoleta.
+- **Lint (warnings)**: `PropertySelectionPanel.tsx` limpo — removido `site` não usado da destrutura de `PropertyTabContent` e `"` escapado em 3 textos (`&quot;`). `DEV/scripts/migrate_pamasimoveis.mjs` NÃO tocado (fora do escopo `--ext ts,tsx` do `npm run lint` + aviso do HANDOFF).
+- Gates: `npx vitest run server/__tests__/licensing-admin-service.test.ts` **26/26 ✓**; suíte completa vitest **36 arquivos / 254 testes ✓**; `npm run lint` 0 erros ✓; `npm run type-check` 0 erros ✓.
+- Sem commit/push/deploy.
+
 ## [2026-08-04] INCIDENTE — API de produção 502 total; causa: imports quebrados no boot (hotfix em working tree)
 
 - Sintoma: `GET /api/public/texts` e `/api/mega/resellers` → 502 no console do navegador; **toda** a API em 502 (probe `https://imob.wootech.com.br/api/system-status` e `https://imobfluow.consultio.com.br/api/system-status` → 502). O handler de `/texts` (`server/routes/public.js:703`) nunca 502 sozinho (catch-all → `{success, texts:{}, raw:[]}`) → API container down/crash loop atrás do Traefik.
@@ -765,4 +775,16 @@ Cinco endpoints estavam falhando no console:
   - `migrations/20260804_agent_guardrails_config.sql` (novo): tabela `agent_guardrails_config` com RLS.
 - **Arquivo de spec atualizado**: `DEV/SPECS/IA_SQUAD.md` (status → EM IMPLEMENTACAO, seção 3 com tools e guardrails).
 - **Pendente**: aplicar migration em dev/prod, validar manualmente no WhatsApp (saudação, busca, agendamento, off-topic), rodar type-check/lint/testes.
+- Nenhum commit/push/deploy executado.
+
+## [2026-08-04] Agenda multi-agenda: agendas por corretor + visita a imoveis
+
+- **Requisito do maestro**: a aba Agenda precisa ser multi-agenda - criar mais de uma agenda, vincular cada agenda a um corretor especifico e usar para agendar visitas a imoveis.
+- **Migration migrations/20260804_create_agendas.sql (nova)**: tabela gendas (organization_id, name, description, broker_id -> auth.users, color, kind, is_active) com RLS por organizacao; lead_appointments ganhou genda_id e property_id (FKs); indices.
+- **iews/CRM/Agenda/index.tsx (reescrita)**: seletor de agendas + cards coloridos; modal Nova/Editar Agenda (nome, descricao, corretor responsavel, tipo, cor); admin exclui agendas; nao-admin ve so as agendas dele; modal Novo Compromisso com Agenda, Imovel (visita), Lead/Cliente opcional, Corretor e Observacoes; badges de agenda/imovel/corretor/lead nos cards.
+- **iews/CRM/KanbanBoard/LeadDetailsModal.tsx**: formulario de agendamento ganhou selects de Agenda e Imovel (visita); insert persiste agenda_id/property_id; lista mostra imovel vinculado.
+- **server/services/ai/agentOrchestrator.js**: tool gendar_visita aceita genda_id e persiste property_id no lead_appointments.
+- **scripts/run-migrations.mjs**: migration adicionada a lista canonica.
+- **Gates**: type-check 0 erros; eslint 0 erros nos arquivos alterados (2 warnings pre-existentes no LeadDetailsModal); build 1m40s OK; vitest 36 arquivos / 254 testes OK.
+- **Pendente**: aplicar 20260804_create_agendas.sql em dev/prod (exec_sql); validar no navegador /urban/agenda e /rural/agenda (criar agenda -> vincular corretor -> agendar visita a imovel); conferir visual e filtros.
 - Nenhum commit/push/deploy executado.

@@ -46,6 +46,9 @@ import { generateLeaseAssistantResponse } from '@/services/geminiService';
 export default function RentalsManagement() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Todos');
+  const [agendaMonth, setAgendaMonth] = useState(new Date().getMonth());
+  const [agendaYear, setAgendaYear] = useState(new Date().getFullYear());
+  const [showFilters, setShowFilters] = useState(false);
 
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [dashboard, setDashboard] = useState<DashboardResumo | null>(null);
@@ -157,6 +160,64 @@ const formatCompactCurrency = (val: number) =>
     }
   };
 
+  const handlePrevMonth = () => {
+    setAgendaMonth((prev) => {
+      if (prev === 0) {
+        setAgendaYear((y) => y - 1);
+        return 11;
+      }
+      return prev - 1;
+    });
+  };
+
+  const handleNextMonth = () => {
+    setAgendaMonth((prev) => {
+      if (prev === 11) {
+        setAgendaYear((y) => y + 1);
+        return 0;
+      }
+      return prev + 1;
+    });
+  };
+
+  const monthName = new Date(agendaYear, agendaMonth).toLocaleString('pt-BR', {
+    month: 'long',
+  });
+
+  const handleRegisterPayment = (contractId: string) => {
+    navigate(`/urban/locacao/${contractId}`);
+  };
+
+  const handleNewInspection = () => {
+    navigate('/urban/locacao/novo');
+  };
+
+  const handleSendReminder = async () => {
+    try {
+      const res = await fetch('/api/locacao/notifications/due-soon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ days_ahead: 5 }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Lembretes enviados: ${data.data?.length || 0}`);
+      } else {
+        toast.error('Erro ao enviar lembretes');
+      }
+    } catch (e) {
+      toast.error('Erro ao enviar lembretes');
+    }
+  };
+
+  const handleViewAdjustments = () => {
+    navigate('/urban/locacao');
+  };
+
+  const handleGenerateCharge = () => {
+    navigate('/urban/locacao/novo');
+  };
+
   return (
     <div className="wootech-reference-screen w-full max-w-[1600px] mx-auto pb-12 font-sans text-slate-800 animate-fade-in">
       {/* Header */}
@@ -176,7 +237,7 @@ const formatCompactCurrency = (val: number) =>
         </div>
         <div className="flex items-center gap-4">
           <button
-            onClick={() => toast.info('Gerador de cobrança em breve')}
+            onClick={handleGenerateCharge}
             className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2"
           >
             <FileText size={18} /> Gerar cobrança
@@ -270,7 +331,7 @@ const formatCompactCurrency = (val: number) =>
 
             <div className="flex items-center justify-between mb-8">
               <button
-                onClick={() => toast.info('Mês anterior')}
+                onClick={handlePrevMonth}
                 className="p-2 hover:bg-slate-50 rounded-full transition-colors"
               >
                 <ChevronLeft size={20} className="text-slate-400" />
@@ -279,53 +340,16 @@ const formatCompactCurrency = (val: number) =>
               <div className="flex gap-8">
                 <div className="text-center">
                   <p className="text-xs font-bold text-slate-400 uppercase">
-                    Seg
+                    {monthName.charAt(0).toUpperCase() + monthName.slice(1)}
                   </p>
-                  <p className="text-lg font-medium text-slate-700">28</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs font-bold text-slate-400 uppercase">
-                    Ter
+                  <p className="text-lg font-medium text-slate-700">
+                    {new Date(agendaYear, agendaMonth).toLocaleString('pt-BR', { month: 'short' })}
                   </p>
-                  <p className="text-lg font-medium text-slate-700">29</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs font-bold text-slate-400 uppercase">
-                    Qua
-                  </p>
-                  <p className="text-lg font-medium text-slate-700">30</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs font-bold text-slate-400 uppercase">
-                    Qui
-                  </p>
-                  <p className="text-lg font-medium text-slate-700">31</p>
-                </div>
-                <div className="text-center relative">
-                  <div className="absolute -inset-2 bg-emerald-50 rounded-lg -z-10" />
-                  <p className="text-xs font-bold text-emerald-600 uppercase">
-                    Sex
-                  </p>
-                  <div className="w-7 h-7 bg-emerald-600 text-white rounded-full flex items-center justify-center text-sm font-bold mx-auto mt-0.5">
-                    01
-                  </div>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs font-bold text-slate-400 uppercase">
-                    Sáb
-                  </p>
-                  <p className="text-lg font-medium text-slate-700">02</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs font-bold text-slate-400 uppercase">
-                    Dom
-                  </p>
-                  <p className="text-lg font-medium text-slate-700">03</p>
                 </div>
               </div>
 
               <button
-                onClick={() => toast.info('Próximo mês')}
+                onClick={handleNextMonth}
                 className="p-2 hover:bg-slate-50 rounded-full transition-colors"
               >
                 <ChevronRight size={20} className="text-slate-400" />
@@ -512,7 +536,7 @@ const formatCompactCurrency = (val: number) =>
                     />
                   </div>
                   <button
-                    onClick={() => toast.info('Painel de filtros em breve')}
+                    onClick={() => setShowFilters(!showFilters)}
                     className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50"
                   >
                     <Filter size={16} /> Filtros
@@ -692,12 +716,12 @@ const formatCompactCurrency = (val: number) =>
                     Atualize os valores
                   </p>
                 </div>
-                <button
-                  onClick={() => toast.info('Tela de reajustes em breve')}
-                  className="text-xs font-bold text-emerald-600 whitespace-nowrap mt-0.5"
-                >
-                  Ver reajustes {'>'}
-                </button>
+                  <button
+                    onClick={handleViewAdjustments}
+                    className="text-xs font-bold text-emerald-600 whitespace-nowrap mt-0.5"
+                  >
+                    Ver reajustes {'>'}
+                  </button>
               </div>
             </div>
           </div>
@@ -803,7 +827,7 @@ const formatCompactCurrency = (val: number) =>
 
             <div className="grid grid-cols-3 gap-3">
               <button
-                onClick={() => toast.info('Registro de pagamento em breve')}
+                onClick={() => navigate('/urban/locacao')}
                 className="flex flex-col items-center justify-center gap-2 p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
               >
                 <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
@@ -815,7 +839,7 @@ const formatCompactCurrency = (val: number) =>
               </button>
 
               <button
-                onClick={() => toast.info('Nova vistoria em breve')}
+                onClick={handleNewInspection}
                 className="flex flex-col items-center justify-center gap-2 p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
               >
                 <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
@@ -827,7 +851,7 @@ const formatCompactCurrency = (val: number) =>
               </button>
 
               <button
-                onClick={() => toast.info('Envio de lembrete em breve')}
+                onClick={handleSendReminder}
                 className="flex flex-col items-center justify-center gap-2 p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
               >
                 <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">

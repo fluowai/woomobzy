@@ -957,7 +957,7 @@ export async function bindDomainToLicenseViaSetupToken(
 
   let claims;
   try {
-    claims = verifySetupToken(token);
+    claims = verifySetupToken(token, { now });
   } catch (error) {
     if (error instanceof SetupTokenError) {
       throw new LicenseAdminError(error.message, error.code, 400);

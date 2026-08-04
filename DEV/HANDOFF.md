@@ -1,5 +1,24 @@
 # Handoff
 
+## 2026-08-04 — Agenda multi-agenda: agendas por corretor + visita a imóveis (pronto para revisão)
+
+- **Implementado no working tree** (sem commit): a aba Agenda agora é multi-agenda — cria múltiplas agendas, cada uma vinculada a um corretor, para agendar visitas a imóveis.
+- Migration `migrations/20260804_create_agendas.sql` (tabela `agendas` + `agenda_id`/`property_id` em `lead_appointments` + RLS + índices) adicionada à lista canônica de `scripts/run-migrations.mjs`. **Não aplicada** — aplicar via `exec_sql` em dev/prod após autorização.
+- Frontend: `views/CRM/Agenda/index.tsx` reescrita (CRUD de agendas, corretor responsável, seletor/cards, modal Novo Compromisso com Imóvel/Lead/Corretor); `views/CRM/KanbanBoard/LeadDetailsModal.tsx` com selects de Agenda e Imóvel no formulário de agendamento.
+- Backend IA: `server/services/ai/agentOrchestrator.js` — `agendar_visita` aceita `agenda_id` e persiste `property_id`.
+- Gates: type-check 0 erros, eslint 0 erros nos arquivos alterados, build 1m40s OK, vitest 36/254 OK, `node --check` do orchestrator OK.
+- **Próxima ação (maestro)**: aplicar a migration `20260804_create_agendas.sql`; validar `/urban/agenda` e `/rural/agenda` (criar agenda → vincular corretor → agendar visita a imóvel → concluir/cancelar) e a aba Agendamentos do Kanban; decidir commit/push.
+- **Atenção**: working tree tem WIP de outras sessões (woosign, licensing PR #66, Zya IA, scripts de verificação) — conferir `git status` antes de qualquer push; não commitar junto com este change set sem revisão.
+- Nenhum commit/push/deploy executado.
+
+## 2026-08-04 — CI PR #66 corrigido (testes de licenciamento) — pronto para revisão/commit
+
+- **Fix aplicado no working tree** (sem commit): `server/lib/licensing/admin-service.js` — `bindDomainToLicenseViaSetupToken` chama `verifySetupToken(token, { now })` (honra `context.now`; antes usava relógio real e os testes passavam a falhar após `2026-07-28 + 7 dias`).
+- **Já em HEAD** (`5d28053`): erros TS de `services/woosign/service.ts` corrigidos — type-check 0 erros (CI estava 8h atrás, rodou antes desse commit).
+- **Lint limpo**: `components/SiteEditor/PropertySelectionPanel.tsx` sem warnings (unused `site` removido + `&quot;`). `DEV/scripts/migrate_pamasimoveis.mjs` não tocado (fora do lint do CI + aviso do HANDOFF anterior).
+- Gates: licensing-admin 26/26 ✓, suíte completa 254/254 ✓, lint 0 erros ✓, type-check 0 erros ✓.
+- **Próxima ação (maestro)**: revisar e commit do fix de 1 linha em `admin-service.js` (+ limpeza do PropertySelectionPanel), push em `codex/main-whatsapp-media-hotfix` → CI deve ficar verde. Depois: decisão do merge da PR #66 e continuar os passos do incidente 502 (commit do hotfix de imports, `campaign-dispatcher.js`).
+
 ## 2026-08-04 — INCIDENTE: API 502 total — hotfix pronto para commit/push (não foi commitado)
 
 - **Sintoma**: `/api/public/texts` e `/api/mega/resellers` → 502; a API inteira 502 (`/api/system-status` em imob.wootech.com.br e imobfluow.consultio.com.br).

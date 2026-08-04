@@ -150,7 +150,7 @@ export class LeaseNotificationWorker {
     );
 
     const { data: leases, error } = await supabase
-      .from('leases')
+      .from('rental_contracts')
       .select('*')
       .eq('organization_id', orgId)
       .eq('status', 'active')
@@ -207,7 +207,7 @@ export class LeaseNotificationWorker {
     );
 
     const { data: leases, error } = await supabase
-      .from('leases')
+      .from('rental_contracts')
       .select('*')
       .eq('organization_id', orgId)
       .eq('status', 'active')

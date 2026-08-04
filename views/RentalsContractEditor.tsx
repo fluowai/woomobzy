@@ -201,23 +201,40 @@ Pedido do usuário: "${userText}"
     try {
       const { data: userData } = await supabase.auth.getUser();
 
-      const fullText = `
-        CONTRATO DE LOCAÇÃO DE IMÓVEL URBANO
-        
-        LOCADOR: ${contractData.locador_nome}, portador do CPF ${contractData.locador_cpf}.
-        LOCATÁRIO: ${contractData.locatario_nome}, portador do CPF ${contractData.locatario_cpf}.
-        
-        IMÓVEL: ${contractData.imovel_endereco} - ${contractData.imovel_cidade}
-        VALOR: R$ ${contractData.aluguel_valor} com vencimento dia ${contractData.aluguel_vencimento}.
-      `;
+      const leasePayload = {
+        tenant_name: contractData.locatario_nome,
+        tenant_cpf: contractData.locatario_cpf,
+        monthly_rent: parseFloat(
+          contractData.aluguel_valor.replace(/\./g, '').replace(',', '.')
+        ),
+        due_day: parseInt(contractData.aluguel_vencimento, 10) || undefined,
+        observation: `Endereço: ${contractData.imovel_endereco} - ${contractData.imovel_cidade}`,
+      };
 
-      // Simula o salvamento
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      let saved;
+      if (leaseId) {
+        const result = await callApi(`/api/locacao/leases/${leaseId}`, {
+          method: 'PUT',
+          body: JSON.stringify(leasePayload),
+        });
+        saved = result.data;
+      } else {
+        const result = await callApi('/api/locacao/leases', {
+          method: 'POST',
+          body: JSON.stringify({ ...leasePayload, status: 'draft' }),
+        });
+        saved = result.data;
+      }
 
-      toast.success('Contrato gerado com sucesso e anexado ao fluxo!');
+      toast.success(
+        saved
+          ? 'Contrato salvo com sucesso!'
+          : 'Contrato gerado com sucesso e anexado ao fluxo!'
+      );
       if (onClose) onClose();
     } catch (error) {
       toast.error('Erro ao salvar o contrato');
+      console.error(error);
     } finally {
       setIsSaving(false);
     }

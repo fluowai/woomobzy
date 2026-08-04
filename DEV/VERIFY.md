@@ -1,5 +1,25 @@
 # Verificação
 
+## 2026-08-04 — Agenda multi-agenda (agendas por corretor + visita a imóveis)
+
+- `migrations/20260804_create_agendas.sql`: tabela `agendas` + colunas `agenda_id`/`property_id` em `lead_appointments` + RLS + índices — sintaxe validada por leitura e pelo parser de statements de `scripts/run-migrations.mjs` (sem `$$`, só statements com `;`). Não aplicada (depende de autorização do maestro em dev/prod via `exec_sql`).
+- `npm run type-check`: **0 erros**.
+- `npx eslint views/CRM/Agenda/index.tsx views/CRM/KanbanBoard/LeadDetailsModal.tsx`: **0 erros** (2 warnings pré-existentes no LeadDetailsModal: exhaustive-deps em effect antigo e `err` não usado em catch antigo).
+- `npm run build`: **✓ built in 1m40s** (PWA generateSW, 281 entries).
+- `npx vitest run`: **36 arquivos / 254 testes aprovados**.
+- `node --check server/services/ai/agentOrchestrator.js`: **aprovado**.
+- Pendência runtime (requer dev server + backend + migration aplicada): criar agenda → vincular corretor → agendar visita a imóvel em `/urban/agenda` e `/rural/agenda`; conferir filtros, badges e criação de compromisso no Kanban (aba Agendamentos).
+- Sem commit/push/deploy.
+
+## 2026-08-04 — CI PR #66: fix dos testes de licenciamento + gates verdes
+
+- `server/lib/licensing/admin-service.js`: `bindDomainToLicenseViaSetupToken` agora chama `verifySetupToken(token, { now })` — propaga `context.now` para a verificação temporal do token (antes usava `Date.now()` real, ignorando o relógio injetado).
+- `npx vitest run server/__tests__/licensing-admin-service.test.ts`: **26/26 testes aprovados** (antes 2 falhas: `TOKEN_EXPIRED` em vez de bind OK e de `LICENSE_ORG_MISMATCH`).
+- Suíte completa `npm run test -- --run`: **36 arquivos / 254 testes aprovados** (CI reportava 2 falhas em 254).
+- `npm run type-check`: **0 erros** (erros TS de woosign eram de commit anterior, já corrigidos em `5d28053`).
+- `npm run lint`: **0 erros** (609 warnings pré-existentes); `components/SiteEditor/PropertySelectionPanel.tsx` sem warnings (removido `site` não usado; `&quot;` nos textos).
+- Sem commit/push/deploy.
+
 ## 2026-08-03 — MinIO produção: buckets + key + política provisionados (fix upload 503)
 
 - Fix TLS em produção: `https://nb.consultio.com.br/minio/health/live` → 200; `openssl s_client` → `subject=CN=nb.consultio.com.br`, `issuer=Let's Encrypt YR1`; router via labels `minio_nb` na stack minio (Traefik só tem provider Swarm — `traefik/dynamic/nb_consultio_com_br.yml` é inerte).

@@ -99,20 +99,39 @@ const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
 
   const { profile } = useAuth();
   const [brokers, setBrokers] = useState<any[]>([]);
+  const [agendas, setAgendas] = useState<any[]>([]);
+  const [properties, setProperties] = useState<any[]>([]);
 
   useEffect(() => {
     if (isOpen && profile?.organization_id) {
-      const fetchBrokers = async () => {
+      const fetchFormOptions = async () => {
         try {
-          const { data } = await supabase
-            .from('profiles')
-            .select('id, full_name:name')
-            .eq('organization_id', profile.organization_id)
-            .order('name');
-          if (data) setBrokers(data);
-        } catch (e) {}
+          const [brokersRes, agendasRes, propertiesRes] = await Promise.all([
+            supabase
+              .from('profiles')
+              .select('id, full_name:name')
+              .eq('organization_id', profile.organization_id)
+              .order('name'),
+            supabase
+              .from('agendas')
+              .select('*')
+              .eq('organization_id', profile.organization_id)
+              .order('name'),
+            supabase
+              .from('properties')
+              .select('id, title, city')
+              .eq('organization_id', profile.organization_id)
+              .order('title')
+              .limit(500),
+          ]);
+          if (brokersRes.data) setBrokers(brokersRes.data);
+          if (agendasRes.data) setAgendas(agendasRes.data);
+          if (propertiesRes.data) setProperties(propertiesRes.data);
+        } catch {
+          /* silencio */
+        }
       };
-      fetchBrokers();
+      fetchFormOptions();
     }
   }, [isOpen, profile?.organization_id]);
 
@@ -120,6 +139,8 @@ const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
     title: '',
     appointment_date: '',
     type: 'reuniao',
+    agenda_id: '',
+    property_id: '',
     notes: '',
     user_id: profile?.id || '',
   });
@@ -130,7 +151,7 @@ const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
     try {
       const { data, error } = await supabase
         .from('lead_appointments')
-        .select('*')
+        .select('*, property:properties(title, city, state)')
         .eq('lead_id', lead.id)
         .order('appointment_date', { ascending: true });
       if (error) throw error;
@@ -169,6 +190,8 @@ const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
         lead_id: lead.id,
         organization_id: lead.organization_id,
         user_id: assignedUserId,
+        agenda_id: newAppointment.agenda_id || null,
+        property_id: newAppointment.property_id || null,
         title: newAppointment.title,
         appointment_date: new Date(
           newAppointment.appointment_date
@@ -185,6 +208,8 @@ const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
         title: '',
         appointment_date: '',
         type: 'reuniao',
+        agenda_id: '',
+        property_id: '',
         notes: '',
         user_id: profile?.id || '',
       });
@@ -907,6 +932,60 @@ const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
                         </div>
                         <div className="col-span-2">
                           <label className="block text-xs font-bold text-slate-500 mb-1">
+                            Agenda
+                          </label>
+                          <select
+                            value={newAppointment.agenda_id}
+                            onChange={(e) =>
+                              setNewAppointment({
+                                ...newAppointment,
+                                agenda_id: e.target.value,
+                                user_id:
+                                  agendas.find((a) => a.id === e.target.value)
+                                    ?.broker_id ||
+                                  newAppointment.user_id ||
+                                  profile?.id ||
+                                  '',
+                              })
+                            }
+                            className="w-full h-10 px-3 rounded-lg border border-slate-300 text-sm"
+                          >
+                            <option value="">Sem agenda</option>
+                            {agendas.map((a) => (
+                              <option key={a.id} value={a.id}>
+                                {a.name}
+                                {a.broker_id
+                                  ? ` — ${brokers.find((b) => b.id === a.broker_id)?.full_name || 'Usuário Sem Nome'}`
+                                  : ''}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-xs font-bold text-slate-500 mb-1">
+                            Imóvel (visita)
+                          </label>
+                          <select
+                            value={newAppointment.property_id}
+                            onChange={(e) =>
+                              setNewAppointment({
+                                ...newAppointment,
+                                property_id: e.target.value,
+                              })
+                            }
+                            className="w-full h-10 px-3 rounded-lg border border-slate-300 text-sm"
+                          >
+                            <option value="">Nenhum imóvel</option>
+                            {properties.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.title}
+                                {p.city ? ` — ${p.city}` : ''}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-xs font-bold text-slate-500 mb-1">
                             Observações (Opcional)
                           </label>
                           <input
@@ -966,13 +1045,22 @@ const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
                                     apt.appointment_date
                                   ).toLocaleString('pt-BR')}
                                 </span>
-                                <span className="capitalize border px-1.5 py-0.5 rounded text-[10px] font-bold">
-                                  {apt.type === 'reuniao'
-                                    ? 'Reunião'
-                                    : 'Retorno'}
-                                </span>
-                              </div>
-                              {apt.notes && (
+                                  <span className="capitalize border px-1.5 py-0.5 rounded text-[10px] font-bold">
+                                    {apt.type === 'reuniao'
+                                      ? 'Reunião'
+                                      : 'Retorno'}
+                                  </span>
+                                </div>
+                                {apt.property?.title && (
+                                  <p className="text-xs font-semibold text-emerald-700 mt-1">
+                                    <Home size={12} className="inline mr-1" />
+                                    {apt.property.title}
+                                    {apt.property.city
+                                      ? ` — ${apt.property.city}`
+                                      : ''}
+                                  </p>
+                                )}
+                                {apt.notes && (
                                 <p className="text-xs text-slate-400 mt-1">
                                   {apt.notes}
                                 </p>

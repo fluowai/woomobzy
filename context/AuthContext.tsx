@@ -382,7 +382,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     await loadProfile(user!.id);
   };
 
-  const stopImpersonation = async () => {
+   const stopImpersonation = async () => {
     logger.info('🛑 Stopping impersonation');
     try {
       if (getStoredImpersonationSession()) {
@@ -404,7 +404,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       clearImpersonationSession();
       setIsImpersonating(false);
       if (user) {
-        await loadProfile(user.id);
+        try {
+          await loadProfile(user.id);
+        } catch {
+          syncActiveOrganization(null, user.id);
+        }
       } else {
         syncActiveOrganization(null);
       }

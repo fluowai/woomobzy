@@ -49,6 +49,7 @@ import campaignRoutes from './api/campaigns/index.js';
 import campaignContactsRoutes from './api/campaigns/contacts.js';
 import campaignSerperRoutes from './api/campaigns/serper.js';
 import campaignBlacklistRoutes from './api/campaigns/blacklist.js';
+import woosignRoutes from './api/woosign/index.js';
 import {
   getPlatformOriginList,
   PLATFORM_COMMERCIAL_NAME,
@@ -343,6 +344,7 @@ app.use(
   campaignContactsRoutes
 );
 app.use('/api/campaigns', verifyAuth, requireTenant, campaignRoutes);
+app.use('/api/woosign', verifyAuth, requireTenant, woosignRoutes);
 
 // System Status & Health
 app.get('/api/system-status', async (req, res) => {

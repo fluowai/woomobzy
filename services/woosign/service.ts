@@ -4,6 +4,7 @@ import { documensoApi } from './documenso';
 import type {
   CreateEnvelopeInput,
   CreditLedgerEntry,
+  CreditPackage,
   DocumensoEnvelope,
   DocumensoWebhookPayload,
   WhiteLabel,
@@ -81,11 +82,11 @@ export class WooSignService {
       envelopePayload.templateId = input.templateId;
     }
 
-    const { data: envelope, error } = await documensoApi.createEnvelope(envelopePayload);
+    const envelope = await documensoApi.createEnvelope(envelopePayload);
 
-    if (error) {
-      logger.error('Failed to create Documenso envelope', error);
-      throw error;
+    if (!envelope?.data) {
+      logger.error('Failed to create Documenso envelope');
+      throw new Error('Failed to create envelope');
     }
 
     return envelope.data;
@@ -96,14 +97,14 @@ export class WooSignService {
       throw new Error('Documenso integration is not configured');
     }
 
-    const { data, error } = await documensoApi.sendEnvelope(envelopeId);
+    const envelope = await documensoApi.sendEnvelope(envelopeId);
 
-    if (error) {
-      logger.error('Failed to send Documenso envelope', error);
-      throw error;
+    if (!envelope?.data) {
+      logger.error('Failed to send Documenso envelope');
+      throw new Error('Failed to send envelope');
     }
 
-    return data.data;
+    return envelope.data;
   }
 
   async cancelEnvelope(envelopeId: string): Promise<DocumensoEnvelope> {
@@ -111,14 +112,14 @@ export class WooSignService {
       throw new Error('Documenso integration is not configured');
     }
 
-    const { data, error } = await documensoApi.cancelEnvelope(envelopeId);
+    const envelope = await documensoApi.cancelEnvelope(envelopeId);
 
-    if (error) {
-      logger.error('Failed to cancel Documenso envelope', error);
-      throw error;
+    if (!envelope?.data) {
+      logger.error('Failed to cancel Documenso envelope');
+      throw new Error('Failed to cancel envelope');
     }
 
-    return data.data;
+    return envelope.data;
   }
 
   async getEnvelopeStatus(envelopeId: string): Promise<DocumensoEnvelope | null> {
@@ -127,14 +128,14 @@ export class WooSignService {
     }
 
     try {
-      const { data, error } = await documensoApi.getEnvelope(envelopeId);
+      const envelope = await documensoApi.getEnvelope(envelopeId);
 
-      if (error) {
-        logger.error('Failed to fetch Documenso envelope', error);
+      if (!envelope?.data) {
+        logger.error('Failed to fetch Documenso envelope');
         return null;
       }
 
-      return data.data;
+      return envelope.data;
     } catch (error) {
       logger.error('Failed to fetch Documenso envelope', error);
       return null;
@@ -348,6 +349,73 @@ export class WooSignService {
     return data as CreditLedgerEntry;
   }
 
+  async listEnvelopes(status?: string): Promise<DocumensoEnvelope[]> {
+    if (!DOCUMENSO_INTEGRATION_ENABLED) {
+      return [];
+    }
+
+    const { data, error } = await supabase
+      .from('woosign_envelope_mappings')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error || !data) {
+      return [];
+    }
+
+    const envelopeIds = (data as Array<{ documenso_envelope_id: string }>)
+      .map((item) => item.documenso_envelope_id)
+      .filter(Boolean);
+
+    if (envelopeIds.length === 0) {
+      return [];
+    }
+
+    const envelopes = await Promise.all(
+      envelopeIds.map((id) => this.getEnvelopeStatus(id))
+    );
+
+    return envelopes.filter((envelope): envelope is DocumensoEnvelope => Boolean(envelope));
+  }
+
+  async listTemplates(): Promise<Array<{ id: string; name: string }>> {
+    if (!DOCUMENSO_INTEGRATION_ENABLED) {
+      return [];
+    }
+
+    const result = await documensoApi.getTemplates();
+    return (result.data || []).map((template) => ({
+      id: String(template.id),
+      name: template.name,
+    }));
+  }
+
+  async listWallets(): Promise<Wallet[]> {
+    const { data, error } = await supabase
+      .from('woosign_wallets')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error || !data) {
+      return [];
+    }
+
+    return data as Wallet[];
+  }
+
+  async listCreditPackages(): Promise<CreditPackage[]> {
+    const { data, error } = await supabase
+      .from('woosign_credit_packages')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error || !data) {
+      return [];
+    }
+
+    return data as CreditPackage[];
+  }
+
   async handleDocumensoWebhook(
     payload: DocumensoWebhookPayload
   ): Promise<void> {
@@ -390,6 +458,60 @@ export class WooSignService {
 
       await this.releaseCreditReservation(mapping.wallet_id, envelopeId, `Envelope ${payload.event.toLowerCase()}`);
     }
+  }
+
+  async createContractEnvelope(input: {
+    contractId: string;
+    organizationId: string;
+    teamId?: string;
+    userId: string;
+    pdfUrl: string;
+    recipients: Array<{ email: string; name: string; role?: string }>;
+    title: string;
+  }): Promise<DocumensoEnvelope | null> {
+    if (!DOCUMENSO_INTEGRATION_ENABLED) {
+      return null;
+    }
+
+    const { data: wallet } = await supabase
+      .from('woosign_wallets')
+      .select('id')
+      .eq('organization_id', input.organizationId)
+      .eq('team_id', input.teamId || null)
+      .eq('user_id', input.userId)
+      .maybeSingle();
+
+    const walletId = wallet?.id || 'default';
+
+    const envelope = await this.createEnvelope({
+      whiteLabelId: 'default',
+      organizationId: input.organizationId,
+      teamId: input.teamId,
+      userId: input.userId,
+      title: input.title,
+      pdfUrl: input.pdfUrl,
+      recipients: input.recipients.map((recipient, index) => ({
+        email: recipient.email,
+        name: recipient.name,
+        role: recipient.role || 'SIGNER',
+        signingOrder: index + 1,
+      })),
+      idempotencyKey: `contract-${input.contractId}-${Date.now()}`,
+    });
+
+    await supabase.from('woosign_envelope_mappings').insert({
+      white_label_id: 'default',
+      organization_id: input.organizationId,
+      team_id: input.teamId,
+      user_id: input.userId,
+      documenso_envelope_id: envelope.id,
+      wallet_id: walletId,
+      credit_amount: 1,
+      idempotency_key: `contract-${input.contractId}-${Date.now()}`,
+      metadata: { contract_id: input.contractId },
+    });
+
+    return envelope;
   }
 }
 

@@ -622,6 +622,8 @@ router.delete('/impersonations/current', verifyAuth, async (req, res) => {
       ipAddress: req.ip,
     });
 
+    clearProfileCache(sessionRow.actor_user_id, req.user?.email);
+
     res.json({
       success: true,
       session: {

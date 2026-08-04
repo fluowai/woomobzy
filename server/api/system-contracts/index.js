@@ -2,6 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import { verifyMegaAdmin } from '../middleware/auth.js';
 import { getSupabaseServer } from '../lib/supabase-server.js';
+import { uploadObject, getMinioPublicUrl, getConfiguredBucketName } from '../lib/minio-storage.js';
 import axios from 'axios';
 import dotenv from 'dotenv';
 
@@ -201,44 +202,27 @@ router.post('/upload', verifyMegaAdmin, upload.single('file'), async (req, res) 
       return res.status(400).json({ error: 'Arquivo não enviado' });
     }
 
-    const bucket = 'contracts';
+    const logicalBucket = 'contracts';
+    const bucket = getConfiguredBucketName('contracts');
     const filePath = `${req.user.id}/${Date.now()}_${req.file.originalname}`;
     const mimeType = req.file.mimetype;
 
-    try {
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const bucketExists = buckets?.some(b => b.name === bucket);
-      if (!bucketExists) {
-        const { error: createBucketError } = await supabase.storage.createBucket(bucket, {
-          public: false,
-          fileSizeLimit: 20 * 1024 * 1024,
-          allowedMimeTypes: ['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
-        });
-        if (createBucketError) throw createBucketError;
-      }
-    } catch (bucketError) {
-      console.error('[SystemContracts] Bucket check error:', bucketError);
-    }
+    const result = await uploadObject({
+      bucket,
+      key: filePath,
+      body: req.file.buffer,
+      contentType: mimeType,
+      logicalBucket,
+    });
 
-    const { error: uploadError } = await supabase.storage
-      .from(bucket)
-      .upload(filePath, req.file.buffer, {
-        contentType: mimeType,
-        upsert: true
-      });
-
-    if (uploadError) throw uploadError;
-
-    const { data: publicUrl } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(filePath);
+    const publicUrl = getMinioPublicUrl({ bucket, key: result.path });
 
     const { error: dbError } = await supabase
       .from('storage_objects')
       .upsert({
         tenant_id: req.user.id,
         bucket,
-        object_key: filePath,
+        object_key: result.path,
         sha256: req.file.buffer.toString('hex'),
         size_bytes: req.file.size,
         mime_type: mimeType,
@@ -254,7 +238,7 @@ router.post('/upload', verifyMegaAdmin, upload.single('file'), async (req, res) 
     res.json({
       success: true,
       url: publicUrl,
-      path: filePath,
+      path: result.path,
       mimeType,
       size: req.file.size
     });

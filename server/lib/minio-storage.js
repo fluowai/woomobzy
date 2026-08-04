@@ -8,6 +8,7 @@ const BUCKET_ENV = {
   documents: ['MINIO_DOCUMENTS_BUCKET', 'S3_DOCUMENTS_BUCKET'],
   backups: ['MINIO_BACKUPS_BUCKET', 'S3_BACKUPS_BUCKET'],
   exports: ['MINIO_EXPORTS_BUCKET', 'S3_EXPORTS_BUCKET'],
+  contracts: ['MINIO_CONTRACTS_BUCKET', 'S3_CONTRACTS_BUCKET'],
 };
 
 const BUCKET_FALLBACKS = {
@@ -16,6 +17,7 @@ const BUCKET_FALLBACKS = {
   documents: 'imobzy-documents',
   backups: 'imobzy-backups',
   exports: 'imobzy-exports',
+  contracts: 'imobzy-contracts',
 };
 
 let minioRuntimeConfig = {};
@@ -78,6 +80,10 @@ export function resolveMediaBucket(requestedBucket = 'imobzyimg') {
 
   if (normalized === 'exports' || normalized === 'imobzy-exports') {
     return getBucketName('exports');
+  }
+
+  if (normalized === 'contracts' || normalized === 'imobzy-contracts') {
+    return getBucketName('contracts');
   }
 
   if (normalized === 'backups' || normalized === 'imobzy-backups') {

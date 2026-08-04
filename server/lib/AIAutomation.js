@@ -3,6 +3,7 @@ import { getSupabaseServer } from './supabase-server.js';
 import { matchLeadProperties } from '../services/leadPropertyMatcher.js';
 import { AgentOrchestrator } from '../services/ai/agentOrchestrator.js';
 import { AGENT_BRAND_NAME } from '../services/ai/agentPrompt.js';
+import { guardrails } from '../services/ai/agentGuardrails.js';
 import logger from '../utils/logger.js';
 
 const ENHANCED_LEAD_COLUMNS = [
@@ -290,6 +291,62 @@ Formato:
     const audioData =
       message.type === 'audio' ? await this._downloadMediaForAI(message) : null;
 
+    const _guardrailConfig = guardrails._getGuardrailsConfig(supabase, organizationId, agent?.id);
+
+    const rateLimitResult = await guardrails.checkRateLimit(normalizedPhone, organizationId);
+    if (rateLimitResult.exceeded) {
+      await this._saveConversationMemory(organizationId, agent?.id, normalizedPhone, 'assistant', guardrails.buildRateLimitRedirect());
+      return {
+        skipped: true,
+        reason: 'rate_limit_exceeded',
+        reply: guardrails.buildRateLimitRedirect(),
+        should_reply: true,
+      };
+    }
+
+    if (guardrails.isSpam(content)) {
+      return {
+        skipped: true,
+        reason: 'spam_detected',
+      };
+    }
+
+    let existingLead = await this._findLeadByNormalizedPhone(supabase, organizationId, normalizedPhone);
+    const history = await this._getConversationMemory(organizationId, normalizedPhone, 8);
+    const topicDrift = guardrails.detectTopicDrift(history, content);
+
+    if (guardrails.hasSensitiveContent(content)) {
+      await this._saveConversationMemory(organizationId, agent?.id, normalizedPhone, 'assistant', guardrails.buildSensitiveTopicRedirect());
+      return {
+        skipped: true,
+        reason: 'sensitive_content',
+        reply: guardrails.buildSensitiveTopicRedirect(),
+        should_reply: true,
+      };
+    }
+
+    if (topicDrift.drifted && existingLead) {
+      await this._saveConversationMemory(organizationId, agent?.id, normalizedPhone, 'assistant', guardrails.buildOffTopicRedirect(agent?.name));
+      return {
+        skipped: true,
+        reason: 'topic_drift',
+        reply: guardrails.buildOffTopicRedirect(agent?.name),
+        should_reply: true,
+      };
+    }
+
+    if (!existingLead && !guardrails.isRealEstateContext(content)) {
+      if (!this._isGreeting(content)) {
+        await this._saveConversationMemory(organizationId, agent?.id, normalizedPhone, 'assistant', guardrails.buildOffTopicRedirect(agent?.name));
+        return {
+          skipped: true,
+          reason: 'not_real_estate_context',
+          reply: guardrails.buildOffTopicRedirect(agent?.name),
+          should_reply: true,
+        };
+      }
+    }
+
     // Step 1: Executar Agente Autonomo (ReAct/Function Calling) caso existam ferramentas ativas
     let autonomousReply = null;
     if (agent && agent.tools && agent.tools.length > 0) {
@@ -351,7 +408,7 @@ Formato:
       content
     );
 
-    const existingLead = await this._findLeadByNormalizedPhone(
+    existingLead = await this._findLeadByNormalizedPhone(
       supabase,
       organizationId,
       normalizedPhone
@@ -2019,5 +2076,13 @@ Formato:
     });
     if (error)
       logger.warn('[AIAutomation] Follow-up nao registrado:', error.message);
+  }
+
+  _isGreeting(text = '') {
+    const normalized = String(text)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+    return /^(oi|ola|bom dia|boa tarde|boa noite|hey|eai|fala|blz|tudo bem|tudo certo|salve|oie|oii|oiii|teste|test|como esta|como vai|prazer|oi tudo bem)\b/.test(normalized);
   }
 }

@@ -734,3 +734,16 @@ Cinco endpoints estavam falhando no console:
 - Testar upload autenticado no app (WhatsApp media → `imobzywhatsapp`; imagens de mídia → `imobzy-media`).
 - Rotacionar credenciais expostas no chat (root do MinIO e secret do stack).
 - Consumidores existentes de `s.wootech.com.br` inalterados; nenhum commit/push/deploy.
+
+## [2026-08-04] Zya — Integração Agenda + Imóveis + Guardrails
+
+- **Diagnóstico**: infra de IA WhatsApp já existia (AIAutomationEngine + AgentOrchestrator + Gemini). Gaps identificados: `agendar_visita` criava `lead_followups` mas não `lead_appointments`; `buscar_imoveis` retornava campos limitados; sem guardrails de contexto/off-topic.
+- **Alterações**:
+  - `server/services/ai/agentOrchestrator.js`: fix `agendar_visita` (agora cria `lead_appointments` também), `buscar_imoveis` retorna campos completos, nova tool `consultar_agenda_disponibilidade` com checagem de conflitos.
+  - `server/lib/AIAutomation.js`: integração de guardrails no fluxo `handleWhatsAppMessage` — rate limit, spam, sensitive content, topic drift, contexto imobiliário, greeting bypass.
+  - `server/services/ai/agentPrompt.js`: adicionado bloco `LIMITES E DIRETRIZES DE SEGURANCA` no system prompt.
+  - `server/services/ai/agentGuardrails.js` (novo): módulo com 9 regras de guardrails.
+  - `migrations/20260804_agent_guardrails_config.sql` (novo): tabela `agent_guardrails_config` com RLS.
+- **Arquivo de spec atualizado**: `DEV/SPECS/IA_SQUAD.md` (status → EM IMPLEMENTACAO, seção 3 com tools e guardrails).
+- **Pendente**: aplicar migration em dev/prod, validar manualmente no WhatsApp (saudação, busca, agendamento, off-topic), rodar type-check/lint/testes.
+- Nenhum commit/push/deploy executado.

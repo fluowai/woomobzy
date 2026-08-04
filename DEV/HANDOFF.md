@@ -1,5 +1,13 @@
 # Handoff
 
+## 2026-08-03 — MinIO produção: upload 503 corrigido (TLS + buckets + key provisionados)
+
+- **Fix completo em produção**: (1) TLS `https://nb.consultio.com.br` → Let's Encrypt via labels `minio_nb` na stack minio (Traefik provider Swarm; file dynamic é inerte); (2) buckets `imobzycrm`, `imobzywhatsapp`, `imobzy-media`, `imobzy-documents`, `imobzy-exports`, `imobzy-backups` criados; (3) policy `imobzy-rw` (s3:* nos 6 buckets) + user `8aHPnW4JQsRWhbKld9Yw` (a key que o app usa) criados via API console MinIO.
+- Verificação: a key do app lista os 6 buckets e faz PUT/DELETE; assinatura SigV4 do `server/lib/minio-storage.js` (`uploadObject`) executada no container `api` com env de produção → PUT 200 em `imobzywhatsapp` e `imobzy-media`.
+- Env do stack **não mudou** (`MINIO_WHATSAPP_BUCKET=imobzywhatsapp`); media usa fallback `imobzy-media` (criado).
+- **Próxima ação (maestro)**: testar upload autenticado no app (WhatsApp media e imagem de imóvel) e confirmar 200 com `provider: minio`; rotacionar credenciais expostas no chat (root do MinIO `wootechadmin` e secret do stack).
+- Nenhum commit/push/deploy. Working tree tem WIP de outras sessões — não tocar/push sem conferir.
+
 ## 2026-08-03 — Central de Licenciamento Wootech: Incremento 7 (enforcement) concluído
 
 - **Incremento 7 (enforcement)**: `server/lib/licensing/enforcement.js` validado + `server/__tests__/licensing-enforcement.test.ts` (novo, 23 testes). Integrado em `verifyAuth` (`server/middleware/auth.js`) via helper `continueAfterTenant` nos 3 pontos de saída pós-resolução de tenant. Modo `off` (padrão) → fail-open total (produção inalterada); `soft`/`hard` via env. Control plane (superadmin sem impersonação) e perfis sem org são isentos; impersonação avalia a org alvo. `.env.example` documentado.

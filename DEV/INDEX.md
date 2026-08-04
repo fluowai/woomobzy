@@ -12,6 +12,7 @@
 | `RELATORIO_GAP_URBANO_RURAL.md`          | Gap de mudanças aplicadas no Urbano e não no Rural (sidebar sanfona) | CONCLUÍDO    |
 | `RELATORIO_TIPOGRAFIA_CORES_2026-08-02.md` | Auditoria de fontes, escala tipográfica, cores, contraste e marca   | CONCLUÍDO    |
 | `RELATORIO_REVENDA_DELAZARI_2026-08-03.md` | Diagnóstico revenda Delazari: escopo de clientes de revenda e impersonação + verificação de produção (seção 5) + hardening do escopo (seção 6) | CONCLUÍDO |
+| `SPECS/NB_CONSULTIO_MINIO_SSL.md` | Fix SSL MinIO `nb.consultio.com.br` + provisionamento de buckets/key em produção | CONCLUÍDO |
 
 ## Módulos Implementados
 

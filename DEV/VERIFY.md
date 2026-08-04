@@ -1,5 +1,15 @@
 # Verificação
 
+## 2026-08-03 — MinIO produção: buckets + key + política provisionados (fix upload 503)
+
+- Fix TLS em produção: `https://nb.consultio.com.br/minio/health/live` → 200; `openssl s_client` → `subject=CN=nb.consultio.com.br`, `issuer=Let's Encrypt YR1`; router via labels `minio_nb` na stack minio (Traefik só tem provider Swarm — `traefik/dynamic/nb_consultio_com_br.yml` é inerte).
+- Buckets criados via root S3 API: `imobzycrm`, `imobzywhatsapp`, `imobzy-media`, `imobzy-documents`, `imobzy-exports`, `imobzy-backups`.
+- Policy `imobzy-rw` (s3:* nos 6 buckets) + user `8aHPnW4JQsRWhbKld9Yw` (status enabled, policy attachada) criados via API console MinIO (auth `Cookie: token=...`).
+- Verificado com a key do app (`8aHP...`): ListBuckets OK nos 6 buckets; PUT/DELETE OK em `imobzywhatsapp` e `imobzy-media` (probe removido).
+- Assinatura SigV4 manual idêntica a `server/lib/minio-storage.js` (`uploadObject`) executada no container `api` com env de produção: PUT 200 em `imobzywhatsapp` e `imobzy-media`.
+- Env real do stack: `MINIO_WHATSAPP_BUCKET=imobzywhatsapp`, sem `MINIO_MEDIA_BUCKET`; `storage_integrations` sem row (config = env puro).
+- Não executado: upload autenticado via `/api/storage/upload` (requer JWT Supabase); nenhum commit/push/deploy.
+
 ## 2026-08-03 — Central de Licenciamento Wootech — Incremento 7 (enforcement no acesso autenticado)
 
 - `node --check` em `server/middleware/auth.js` e `server/lib/licensing/enforcement.js`: aprovado.

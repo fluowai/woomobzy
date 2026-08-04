@@ -1,0 +1,22 @@
+# MinIO — armazenamento de midia (nb.consultio.com.br)
+# Serve o MinIO via https com certificado Let's Encrypt (certResolver letsencryptresolver).
+# Alvo: servico docker `minio` na mesma rede do Traefik (porta 9000, S3/HTTP interno).
+# Necessario que o servico `minio` esteja na rede do Traefik (ex.: wootech1) e nao publique a porta 9000 no host.
+
+http:
+  routers:
+    nb_consultio_com_br_minio:
+      rule: 'Host(`nb.consultio.com.br`)'
+      entryPoints:
+        - websecure
+      priority: 100
+      tls:
+        certResolver: letsencryptresolver
+      service: nb_consultio_minio@file
+
+  services:
+    nb_consultio_minio:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://minio:9000"

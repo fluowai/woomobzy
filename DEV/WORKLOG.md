@@ -1,5 +1,13 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-03] Fix do 503 de upload — SSL Let's Encrypt para MinIO (nb.consultio.com.br)
+
+- Diagnóstico confirmado por probes: `https://nb.consultio.com.br` responde `CN=TRAEFIK DEFAULT CERT` (self-signed, verify return code 18); sem router para o host em `traefik/dynamic/` → 404 do próprio Traefik (a requisição não chega ao MinIO); porta 9000 no IP não responde mais; `n.woopanel.com.br` (alternativa do stack fazendasbrasil) não resolve (ENOTFOUND). Backend usa `MINIO_ENDPOINT=https://nb.consultio.com.br` → cliente S3 falha na verificação TLS → 503 em `server/api/storage/index.js`.
+- Infra confirmada pelo maestro: MinIO roda como **serviço Docker `minio`** no VPS (207.58.153.219), porta S3 `9000`, na rede do Traefik.
+- Entregáveis criados (planejados, sem deploy): `traefik/dynamic/nb_consultio_com_br.yml` (router `Host(nb.consultio.com.br)` → `websecure` + `certResolver letsencryptresolver` → service file `nb_consultio_minio@file` → `http://minio:9000`, padrão dos demais dynamic); `ALLOW_SUPABASE_STORAGE_FALLBACK: true` adicionado em `docker-compose.yml` (api + whatsapp-service) e `portainer-stack-imobfluow-filled.yml` (x-backend-env) como rede de segurança; guia completo em `DEV/SPECS/NB_CONSULTIO_MINIO_SSL.md` (DNS já OK, cópia do dynamic para o volume `imobzy_traefik_dynamic`, verificação e rollback).
+- Validação local: YAML válido (js-yaml) nos 3 arquivos alterados (dynamic + compose + stack filled). Docker não disponível nesta máquina Windows → `docker compose config` não rodou.
+- Pendente (maestro): copiar o dynamic para o volume do Traefik, conferir rede Docker do serviço `minio`, adicionar `ALLOW_SUPABASE_STORAGE_FALLBACK=true` no `.env.production` se necessário, aguardar emissão do cert no acme.json e validar HTTPS + upload real. Nenhum commit/push/deploy foi executado.
+
 ## [2026-08-03] InoveBrokers — SSL + página "Em breve" (inovebrokers.com.br / app.inovebrokers.com.br)
 
 - Entregáveis criados (planejados, sem deploy): `coming-soon/index.html` (página única "Em breve — um sistema será instalado aqui", sem dependências externas), `Dockerfile.coming-soon` (nginx estática), `traefik/dynamic/inovebrokers_com_br.yml` (router `Host(inovebrokers.com.br) || Host(app.inovebrokers.com.br)` → `websecure` + `certResolver letsencryptresolver` → service `inovebrokers_coming_soon@file` → `http://coming-soon:80`; cert único com os 2 SANs no acme.json), service `coming-soon` no `docker-compose.yml` (rede externa `wootech1`) e entrada de build no CI (`ghcr.io/fluowai/inovebrokers-coming-soon`).
@@ -698,3 +706,31 @@ Cinco endpoints estavam falhando no console:
 - Runner: `migrations/20260713_global_templates.sql` adicionada à lista de `scripts/run-migrations.mjs`.
 - Produção: migração executada via `exec_sql` (7 statements OK) em `epgaftsjmqmpczvzsrcc.supabase.co`; tabela criada, RLS + 2 policies ativas.
 - Verificado: SELECT em `global_templates` retorna 0 linhas; seed dos 9 templates padrão ocorre no primeiro GET por organização.
+
+---
+
+## [2026-08-03] MinIO produção: fix upload 503 concluído (TLS + buckets + key provisionados)
+
+### Contexto
+
+- Fix TLS já aplicado (labels do router `minio_nb` na stack minio); restava provisionar os buckets e a access key `8aHPnW4JQsRWhbKld9Yw` que o app usa em produção.
+
+### Feito
+
+- Buckets criados via root (S3 API, container `api`): `imobzycrm`, `imobzywhatsapp` e os fallbacks `imobzy-media`, `imobzy-documents`, `imobzy-exports`, `imobzy-backups`.
+- Policy `imobzy-rw` (`s3:*` sobre os 6 buckets) e user `8aHPnW4JQsRWhbKld9Yw` (status enabled) criados via API do console MinIO. Lições: token de sessão vem via `set-cookie: token=...` e as chamadas autenticadas usam `Cookie: token=<token>` (header `Authorization` → 401 `unauthenticated for invalid credentials`); o create de user exige `policies` (array) no body; `PUT /api/v1/users/{user}/policies` não existe (404).
+- Client `minio` npm do container NÃO tem admin API (só getBucketPolicy/setBucketPolicy/presignedPostPolicy) — provisionamento foi via console API, não pelo client.
+- `storage_integrations` (Supabase) sem row → config de storage em produção é 100% env; o stack só define `MINIO_WHATSAPP_BUCKET=imobzywhatsapp` (sem `MINIO_MEDIA_BUCKET`), então media usa o fallback `imobzy-media` — por isso esse bucket foi criado.
+
+### Verificação
+
+- Key do app: ListBuckets OK nos 6 buckets; PUT/DELETE OK em `imobzywhatsapp` e `imobzy-media` (probe removido).
+- Assinatura SigV4 manual idêntica à de `server/lib/minio-storage.js` (`uploadObject`) executada no container `api` com env de produção → PUT 200 em `imobzywhatsapp` e `imobzy-media`.
+- `https://nb.consultio.com.br/minio/health/live` → 200 (cert Let's Encrypt CN=nb.consultio.com.br).
+- Teste HTTP completo de `/api/storage/upload` não executado (requer sessão JWT Supabase autenticada).
+
+### Próximos Passos
+
+- Testar upload autenticado no app (WhatsApp media → `imobzywhatsapp`; imagens de mídia → `imobzy-media`).
+- Rotacionar credenciais expostas no chat (root do MinIO e secret do stack).
+- Consumidores existentes de `s.wootech.com.br` inalterados; nenhum commit/push/deploy.

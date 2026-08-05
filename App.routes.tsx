@@ -207,11 +207,7 @@ const AppRoutes: React.FC = () => {
           <Route path="empreendimentos" element={<Empreendimentos />} />
           <Route path="loteamentos" element={<Empreendimentos />} />
           <Route path="loteamentos/:id" element={<LoteamentoDetails />} />
-          <Route path="locacao" element={<RentalsManagement />} />
-          <Route path="locacao/:id" element={<LeaseDetail />} />
-          <Route path="locacao/:id/editar" element={<LeaseWizard />} />
-          <Route path="locacao/contrato" element={<RentalsContractEditor />} />
-          <Route path="locacao/bordero" element={<RentalsBordero />} />
+          <Route path="locacao" element={<Locacao />} />
           <Route path="compliance" element={<ComplianceUrbano />} />
           <Route path="cobranca" element={<Cobranca />} />
           <Route path="simulador" element={<Simulator360 />} />

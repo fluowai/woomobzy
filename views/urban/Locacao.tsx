@@ -5,6 +5,8 @@ import { LeaseWizard } from '../../src/components/lease/LeaseWizard';
 import { LeaseDetail } from '../../src/components/lease/LeaseDetail';
 import { TemplateList } from '../../src/components/lease/templates/TemplateList';
 import { TemplateEditor } from '../../src/components/lease/templates/TemplateEditor';
+import RentalsContractEditor from '../../views/RentalsContractEditor';
+import RentalsBordero from '../../views/RentalsBordero';
 
 const Locacao: React.FC = () => {
   return (
@@ -31,6 +33,8 @@ const Locacao: React.FC = () => {
           />
         }
       />
+      <Route path="contrato" element={<RentalsContractEditor />} />
+      <Route path="bordero" element={<RentalsBordero />} />
       <Route path="templates" element={<TemplateList />} />
       <Route path="templates/novo" element={<TemplateEditor />} />
       <Route path="templates/:id" element={<TemplateEditor />} />

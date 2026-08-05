@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -16,6 +17,7 @@ interface SubscriptionPlan {
 const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const navigate = useNavigate();
   const { profile, loading } = useAuth();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [saving, setSaving] = useState(false);
@@ -66,8 +68,9 @@ const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({
       });
 
       setRequestedPlanId(planId);
+      navigate(`/checkout?planId=${planId}`);
       toast.success(
-        'Plano selecionado. A ativação ocorrerá após a confirmação do pagamento.'
+        'Plano selecionado. Finalize o pagamento para liberar o acesso.'
       );
     } catch (error) {
       toast.error(

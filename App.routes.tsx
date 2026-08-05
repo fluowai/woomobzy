@@ -41,6 +41,7 @@ const WaitlistLeads = lazy(() => import('./views/admin/WaitlistLeads'));
 const Dashboard360 = lazy(() => import('./views/admin/Dashboard360'));
 const QuizCampaigns = lazy(() => import('./views/QuizCampaigns'));
 const PublicQuiz = lazy(() => import('./views/PublicQuiz'));
+const PublicSign = lazy(() => import('./views/PublicSign'));
 const CadastroTecnico = lazy(() => import('./views/rural/CadastroTecnico'));
 const RuralTerritoryHub = lazy(() => import('./views/rural/RuralTerritoryHub'));
 const Geointeligencia = lazy(() => import('./views/rural/Geointeligencia'));
@@ -110,6 +111,7 @@ const ContractPreview = lazy(() => import('./views/megaadmin/ContractPreview'));
 const SiteManager = lazy(() => import('./views/SiteManager'));
 const MegaTheme = lazy(() => import('./src/views/sites/megainvestimentos/MegaTheme'));
 const SitePageEditor = lazy(() => import('./views/SitePageEditor'));
+const Checkout = lazy(() => import('./views/Checkout'));
 const PublicSite = lazy(() => import('./views/PublicSite'));
 const WhatsAppDashboard = lazy(() => import('./views/WhatsApp/WhatsAppDashboard'));
 const CampaignManager = lazy(() => import('./views/WhatsApp/CampaignManager'));
@@ -137,12 +139,14 @@ const AppRoutes: React.FC = () => {
         <Route path="/embreve" element={<PublicLandingPage forceComingSoon={true} />} />
         <Route path="/register" element={<Register />} />
         <Route path="/portal-locatario" element={<PortalLocatario />} />
+        <Route path="/public/sign/:signatureId" element={<PublicSign />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/setup-whitelabel" element={<SetupWhitelabel />} />
         <Route path="/:slug/site/*" element={<PublicSite />} />
         <Route path="/site/:slug/*" element={<PublicSite />} />
         <Route path="/sites/:slug/*" element={<PublicSite />} />
 
+        <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><NicheRedirect /></ProtectedRoute>} />
         <Route path="/admin/*" element={<ProtectedRoute><NicheRedirect /></ProtectedRoute>} />
 

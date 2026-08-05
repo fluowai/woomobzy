@@ -13,6 +13,7 @@ import wootechAiRoutes from './wootechAi.js';
 import cvcrmBiaRoutes from './cvcrmBia.js';
 import megaAdminRoutes from './mega-admin.js';
 import subscriptionRoutes from './subscription.js';
+import subscriptionApiRoutes from '../api/subscription/index.js';
 import licensingRoutes from '../api/licensing/index.js';
 import megaLicensesRoutes from '../api/mega-licenses/index.js';
 
@@ -32,6 +33,7 @@ router.use('/api/cvcrm-bia', cvcrmBiaRoutes);
 router.use('/api/mega', megaAdminRoutes);
 router.use('/api/mega/licenses', megaLicensesRoutes);
 router.use('/api/subscription', subscriptionRoutes);
+router.use('/api/subscription', subscriptionApiRoutes);
 router.use('/api/licensing/v1', licensingRoutes);
 
 export default router;

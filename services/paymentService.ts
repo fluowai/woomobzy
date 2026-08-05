@@ -10,7 +10,6 @@ export interface PaymentDetails {
 }
 
 export class PaymentService {
-  // Simula a integração com ASAAS ou IUGU
   async createInvoice(data: {
     amount: number;
     dueDate: string;
@@ -18,14 +17,32 @@ export class PaymentService {
     client: { name: string; email: string; cpfCnpj: string };
   }): Promise<PaymentDetails | null> {
     try {
-      logger.info('Iniciando geração de cobrança no gateway...', data);
+      logger.info('Criando cobranca via Asaas...', data);
 
-      // Simulação de chamada de API externa
+      const res = await fetch('/api/subscription/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planId: data.client.cpfCnpj,
+          billingType: 'UNDEFINED',
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Falha ao criar cobranca');
+      }
+
+      const result = await res.json();
+      const payment = result.data?.payment || result.data?.subscription;
+      if (!payment) return null;
+
       return {
-        id: 'pay_' + Math.random().toString(36).substr(2, 9),
-        invoiceUrl: 'https://payment-gateway.com/invoice/sample',
-        bankSlipUrl: 'https://payment-gateway.com/pdf/sample',
-        pixCode: '00020126360014br.gov.bcb.pix0114+5511999999999',
+        id: payment.id,
+        invoiceUrl: payment.invoiceUrl || '',
+        bankSlipUrl: payment.bankSlipUrl,
+        pixCode: payment.pixCopyPaste,
+        pixQrCode: payment.pixCopyPaste,
         status: 'PENDING',
       };
     } catch (error) {
@@ -35,12 +52,30 @@ export class PaymentService {
   }
 
   async getInvoiceStatus(paymentId: string): Promise<string> {
-    // Simular consulta de status
-    return 'PENDING';
+    try {
+      const res = await fetch(`/api/subscription/invoices?paymentId=${encodeURIComponent(paymentId)}`);
+      if (!res.ok) return 'PENDING';
+      const data = await res.json();
+      const invoice = data.data?.local?.[0] || data.data?.asaas?.[0];
+      if (!invoice) return 'PENDING';
+
+      const statusMap: Record<string, string> = {
+        pago: 'RECEIVED',
+        pendente: 'PENDING',
+        vencido: 'OVERDUE',
+        cancelado: 'CANCELLED',
+        estornado: 'CANCELLED',
+      };
+
+      return statusMap[invoice.status] || 'PENDING';
+    } catch (error) {
+      logger.error('Erro ao consultar status do pagamento:', error);
+      return 'PENDING';
+    }
   }
 
-  async syncOrganizationSettings(apiKey: string): Promise<boolean> {
-    logger.info('Sincronizando chaves do gateway para a organização');
+  async syncOrganizationSettings(_apiKey: string): Promise<boolean> {
+    logger.info('Sincronizando chaves do gateway para a organizacao');
     return true;
   }
 }

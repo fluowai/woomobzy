@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { woosignService } from '../../services/woosign';
+import { woosignService } from '../../services/woosign.js';
 
 const router = Router();
 

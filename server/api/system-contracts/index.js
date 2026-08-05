@@ -6,7 +6,7 @@ import { uploadObject, getMinioPublicUrl, getConfiguredBucketName } from '../../
 import axios from 'axios';
 import dotenv from 'dotenv';
 import puppeteer from 'puppeteer';
-import { woosignService } from '../../../services/woosign';
+import { woosignService } from '../../services/woosign.js';
 
 dotenv.config();
 

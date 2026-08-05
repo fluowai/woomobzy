@@ -59,7 +59,7 @@ services:
       WHATSAPP_AI_AUTOMATION: 'true'
       RABBITMQ_URL: '${RABBITMQ_URL}'
       MEDIA_STORAGE_PROVIDER: 'minio'
-      MINIO_ENDPOINT: '${MINIO_ENDPOINT}'
+      MINIO_ENDPOINT: 'http://minio:9000'
       MINIO_PUBLIC_URL: '${MINIO_PUBLIC_URL}'
       MINIO_ACCESS_KEY: '${MINIO_ACCESS_KEY}'
       MINIO_SECRET_KEY: '${MINIO_SECRET_KEY}'
@@ -116,7 +116,7 @@ services:
       WHATSAPP_WS_JWT_SECRET: '${WHATSAPP_WS_JWT_SECRET}'
       WHATSAPP_AI_AUTOMATION: 'true'
       MEDIA_STORAGE_PROVIDER: 'minio'
-      MINIO_ENDPOINT: '${MINIO_ENDPOINT}'
+      MINIO_ENDPOINT: 'http://minio:9000'
       MINIO_PUBLIC_URL: '${MINIO_PUBLIC_URL}'
       MINIO_ACCESS_KEY: '${MINIO_ACCESS_KEY}'
       MINIO_SECRET_KEY: '${MINIO_SECRET_KEY}'
@@ -126,6 +126,66 @@ services:
       - whatsapp_sessions:/app/.sessions
     networks:
       - imobfluow_internal
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ':9001'
+    environment:
+      MINIO_ROOT_USER: '${MINIO_ROOT_USER}'
+      MINIO_ROOT_PASSWORD: '${MINIO_ROOT_PASSWORD}'
+    volumes:
+      - minio_data:/data
+    networks:
+      - woopanel1
+      - imobfluow_internal
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=woopanel1'
+      - 'traefik.http.routers.minio_nb.rule=Host(`nb.consultio.com.br`)'
+      - 'traefik.http.routers.minio_nb.entrypoints=websecure'
+      - 'traefik.http.routers.minio_nb.tls.certresolver=letsencryptresolver'
+      - 'traefik.http.routers.minio_nb.service=minio_nb'
+      - 'traefik.http.services.minio_nb.loadbalancer.server.port=9000'
+
+  # Provisiona o MinIO novo (do zero): buckets + policy imobzy-rw + usuário do app.
+  # Idempotente — roda a cada subida da stack e não quebra se já existir.
+  minio-init:
+    image: minio/mc:latest
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        for i in $$(seq 1 60); do
+          if mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" >/dev/null 2>&1; then break; fi
+          sleep 2
+        done
+        mc mb --ignore-existing \
+          local/imobzycrm \
+          local/imobzywhatsapp \
+          local/imobzy-media \
+          local/imobzy-documents \
+          local/imobzy-exports \
+          local/imobzy-backups \
+          local/imobzy-contracts
+        printf '%s\n' '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:*"],"Resource":["arn:aws:s3:::imobzy*","arn:aws:s3:::imobzy*/*"]}]}' > /tmp/imobzy-rw.json
+        mc admin policy create local imobzy-rw /tmp/imobzy-rw.json >/dev/null 2>&1 || true
+        mc admin user add local "$$MINIO_APP_ACCESS_KEY" "$$MINIO_APP_SECRET_KEY" >/dev/null 2>&1 || true
+        mc admin policy attach local imobzy-rw --user "$$MINIO_APP_ACCESS_KEY" >/dev/null 2>&1 || true
+    environment:
+      MINIO_ROOT_USER: '${MINIO_ROOT_USER}'
+      MINIO_ROOT_PASSWORD: '${MINIO_ROOT_PASSWORD}'
+      MINIO_APP_ACCESS_KEY: '${MINIO_ACCESS_KEY}'
+      MINIO_APP_SECRET_KEY: '${MINIO_SECRET_KEY}'
+    networks:
+      - imobfluow_internal
+    restart: "no"
 
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
@@ -154,6 +214,7 @@ volumes:
   rabbitmq_data:
   imobzy_traefik_dynamic:
     external: true
+  minio_data:
 
 networks:
   woopanel1:

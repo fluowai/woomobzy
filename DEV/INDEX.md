@@ -14,6 +14,7 @@
 | `RELATORIO_TIPOGRAFIA_CORES_2026-08-02.md` | Auditoria de fontes, escala tipográfica, cores, contraste e marca   | CONCLUÍDO    |
 | `RELATORIO_REVENDA_DELAZARI_2026-08-03.md` | Diagnóstico revenda Delazari: escopo de clientes de revenda e impersonação + verificação de produção (seção 5) + hardening do escopo (seção 6) | CONCLUÍDO |
 | `SPECS/NB_CONSULTIO_MINIO_SSL.md` | Fix SSL MinIO `nb.consultio.com.br` + provisionamento de buckets/key em produção | CONCLUÍDO |
+| `SPECS/MINIO_INTO_STACK_MIGRATION.md` | MinIO para dentro da stack (endpoint interno `http://minio:9000`), modo **FRESH START**: MinIO novo + provisionamento automático via `minio-init` | PRONTO PARA SUBIR |
 
 ## Módulos Implementados
 

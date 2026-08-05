@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { woosignService } from '../../services/woosign.js';
+import { verifyDocumensoWebhookSignature } from '../../services/woosign-webhook.js';
 
 const router = Router();
 
@@ -67,6 +68,26 @@ router.get('/wallets', async (req, res) => {
     res.json({ ok: true, data: items });
   } catch (error) {
     res.status(500).json({ ok: false, error: 'Failed to list wallets' });
+  }
+});
+
+router.post('/webhook/woosign', async (req, res) => {
+  try {
+    const rawBody = JSON.stringify(req.body);
+    const signature = String(req.headers['x-woosign-signature'] || req.headers['x-documenso-signature'] || '').trim();
+    const secret = process.env.DOCUMENSO_WEBHOOK_SECRET || process.env.WOOSIGN_WEBHOOK_SECRET || '';
+
+    if (!secret) {
+      logger.warn('WooSign webhook received but secret is not configured');
+    } else if (signature && !verifyDocumensoWebhookSignature(rawBody, signature, secret)) {
+      return res.status(401).json({ ok: false, error: 'Invalid webhook signature' });
+    }
+
+    await woosignService.handleDocumensoWebhook(req.body);
+    res.json({ ok: true, received: true });
+  } catch (error) {
+    logger.error('[WooSignWebhook] Error:', error);
+    res.status(500).json({ ok: false, error: 'Webhook processing failed' });
   }
 });
 

@@ -1,5 +1,15 @@
 # Verificação
 
+## 2026-08-05 — Change set: MinIO dentro da stack — FRESH START (MinIO novo)
+
+- YAML validado com `js-yaml` (Node): `docker-compose.yml`, `portainer-stack.yml`, `portainer-stack-imobfluow-filled.yml` parseiam sem erro; serviços incluem `minio` e `minio-init`; volume `minio_data` declarado nos 3.
+- Entrypoint do `minio-init` revisado (renderizado do YAML): retry de até 120s no `mc alias set`, `mc mb --ignore-existing` nos 7 buckets, policy `imobzy-rw` (s3:* em `imobzy*`), `mc admin user add` + attach com `|| true` (idempotente). `$$` preserva `$` literal para o shell do container após interpolação do Compose.
+- Revisão do contrato de código (sem mudança): `server/lib/minio-storage.js` `normalizeEndpoint` mantém `http://minio:9000` e usa `MINIO_PUBLIC_URL` para a URL pública; `whatsapp-service` `config.go`/`media.go` derivam `secure=false` de `http://`. Ambos passam a apontar para a rede interna após o deploy.
+- Root creds do MinIO **embutidas** no YAML (`wootechadmin` / `<minio-root-password>`) nas 3 stacks (serviço `minio` e `minio-init`) — nenhuma variável a definir no Portainer; `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` sem placeholder restante (grep confirmou).
+- Docker indisponível nesta máquina Windows: `docker compose config` não executado (gate a rodar no servidor).
+- Pendência runtime (no VPS/Portainer): `docker stack rm minio`, update do stack principal, setar root creds novas, verificar `http://minio:9000/minio/health/live`=200, buckets listados, PUT autenticado `provider: minio`=200 e `https://nb.consultio.com.br/minio/health/live`=200. Roteiro: `DEV/SPECS/MINIO_INTO_STACK_MIGRATION.md`.
+- Sem commit/push/deploy.
+
 ## 2026-08-04 — Agenda multi-agenda (agendas por corretor + visita a imóveis)
 
 - `migrations/20260804_create_agendas.sql`: tabela `agendas` + colunas `agenda_id`/`property_id` em `lead_appointments` + RLS + índices — sintaxe validada por leitura e pelo parser de statements de `scripts/run-migrations.mjs` (sem `$$`, só statements com `;`). Não aplicada (depende de autorização do maestro em dev/prod via `exec_sql`).

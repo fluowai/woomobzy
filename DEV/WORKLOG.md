@@ -1,5 +1,27 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-05] MinIO dentro da stack - FRESH START (MinIO novo, do zero) - pronto para subir
+
+- **Decisao (maestro)**: nao ha dados a preservar no MinIO atual -> subir um **MinIO novo** dentro do stack (volume `minio_data`), sem reutilizar data dir nem root creds antigas. Backend passa a usar `MINIO_ENDPOINT=http://minio:9000` (rede interna). URL publica `https://nb.consultio.com.br` continua via labels Traefik `minio_nb`.
+- **Alterado (working tree, sem commit)**: `docker-compose.yml`, `portainer-stack.yml`, `portainer-stack-imobfluow-filled.yml` - servico `minio` (volume `minio_data`, healthcheck, router `minio_nb`) + novo servico one-shot **`minio-init`** (`minio/mc`) que provisiona na 1a subida: buckets `imobzycrm`/`imobzywhatsapp`/`imobzy-media`/`imobzy-documents`/`imobzy-exports`/`imobzy-backups`/`imobzy-contracts`, policy `imobzy-rw` (s3:* em `imobzy*`) e o usuario do app (`MINIO_ACCESS_KEY`/`MINIO_SECRET_KEY`; na stack filled ja usa `<app-access-key>`). Idempotente (`--ignore-existing`, `|| true`, retry 120s).
+- `.env.production.template` e `.env.example`: `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` re-descritas como credenciais NOVAS; var `MINIO_DATA_DIR` removida (volume nomeado substitui bind mount).
+- **Root creds do MinIO embutidas** no YAML das 3 stacks: `MINIO_ROOT_USER=wootechadmin`, `MINIO_ROOT_PASSWORD=<minio-root-password>` (servico `minio` e `minio-init`) - **nenhuma variavel a definir no Portainer**, stacks prontas para colar. Validado por grep (sem `${MINIO_ROOT` restante) e js-yaml.
+- **Gates**: YAML parseado (js-yaml) nos 3 arquivos; entrypoint do `minio-init` revisado; Docker indisponivel local -> `docker compose config` pendente no VPS.
+- **Proxima acao (maestro)**: `docker stack rm minio` (libera router `minio_nb` e porta) -> update do stack principal -> setar root creds -> verificar `http://minio:9000/minio/health/live`=200, buckets, PUT `provider: minio`=200 e `https://nb.consultio.com.br/minio/health/live`=200 -> **rotacionar** root creds + key do app (segredos versionados, leak 30/07).
+- Roteiro completo: `DEV/SPECS/MINIO_INTO_STACK_MIGRATION.md`.
+- Nenhum commit/push/deploy executado. Working tree tem WIP de outras sessoes - conferir `git status` antes de qualquer commit.
+
+## [2026-08-05] MinIO para dentro da stack — change set pronto para migrar (sem deploy)
+
+- **Decisão**: trazer o serviço `minio` para dentro do stack e trocar `MINIO_ENDPOINT` para o endpoint interno `http://minio:9000` (rede Docker, sem TLS/hop no Traefik) — elimina a rota externa `https://nb.consultio.com.br` que é a fonte dos erros recorrentes (incidente 503 de 03/08). URL pública continua `https://nb.consultio.com.br` via labels Traefik no serviço.
+- **Alterado (working tree, sem commit)**: `docker-compose.yml` (novo serviço `minio`: image `minio/minio:latest`, bind mount `${MINIO_DATA_DIR}:/data`, redes `wootech1`+`imobfluow_internal`, healthcheck curl, labels router `minio_nb`; `MINIO_ENDPOINT` → `http://minio:9000` em api + whatsapp-service); `portainer-stack-imobfluow-filled.yml` (idem, Swarm com `deploy.labels`); `portainer-stack.yml` (idem, rede `woopanel1`); `.env.production.template` e `.env.example` (novas vars `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`, `MINIO_DATA_DIR` documentadas).
+- **Código não mudou**: `server/lib/minio-storage.js` e `whatsapp-service` já normalizam `MINIO_ENDPOINT` com esquema `http://` (Node mantém a URL; Go `normalizeStorageEndpoint`/`uploadToMinIO` usam scheme para `secure=false`).
+- **Segurança aplicada**: as 3 vars novas usam interpolação `:?` obrigatória — sem `MINIO_DATA_DIR` real o deploy falha (evita subir MinIO vazio e perder buckets/users/policies `8aHP...`/`imobzy-rw`). Reusar o MESMO diretório de dados preserva tudo com zero cópia.
+- **Gates**: YAML parseado com sucesso (`js-yaml`) nos 3 arquivos alterados. Docker indisponível nesta máquina → `docker compose config` não executado.
+- **Roteiro de migração**: `DEV/SPECS/MINIO_INTO_STACK_MIGRATION.md` (pré-flight no servidor, cutover: anotar root creds + `MINIO_DATA_DIR` → adicionar vars no Portainer → `docker stack rm minio` → update do stack → verificação; rollback sem perda pois é bind mount do mesmo diretório).
+- **Riscos**: router `minio_nb` único (só uma stack pode declará-lo); lock do `.minio.sys` impede dois MinIO no mesmo data dir; `.env`/`.env.production` têm credenciais reais do MinIO versionadas — **rotacionar root + key do app pós-migração**.
+- Nenhum commit/push/deploy executado. Working tree tem WIP de outras sessões — conferir `git status` antes de qualquer commit.
+
 ## [2026-08-04] CI PR #66 — falha corrigida: testes de licenciamento + confirmado woosign TS em HEAD
 
 - **Problema**: run do CI (#66, `codex/main-whatsapp-media-hotfix`) falhou em `test` (2 testes) e `lint-and-typecheck` (exit 2 — erros de tipo TS em `services/woosign/service.ts`), além de warnings de lint em `components/SiteEditor/PropertySelectionPanel.tsx`.

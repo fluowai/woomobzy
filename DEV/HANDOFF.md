@@ -1,5 +1,15 @@
 # Handoff
 
+## 2026-08-05 — MinIO dentro da stack: FRESH START (MinIO novo, do zero) — pronto para subir no Portainer
+
+- **Decisão (maestro)**: o MinIO atual não tem dados a preservar → **não** se reutiliza o data dir nem as credenciais antigas. Sobe um **MinIO novo** dentro do stack (volume `minio_data`), backend usa o **endpoint interno `http://minio:9000`**. URL pública `https://nb.consultio.com.br` continua via labels Traefik `minio_nb`. Roteiro: `DEV/SPECS/MINIO_INTO_STACK_MIGRATION.md`.
+- **Change set no working tree (sem commit)**: `docker-compose.yml` + `portainer-stack.yml` + `portainer-stack-imobfluow-filled.yml` ganham o serviço `minio` (volume `minio_data`, healthcheck, router `minio_nb`, `MINIO_ENDPOINT=http://minio:9000`) e o serviço **`minio-init`** (one-shot, `minio/mc`) que provisiona automaticamente: buckets `imobzycrm`/`imobzywhatsapp`/`imobzy-media`/`imobzy-documents`/`imobzy-exports`/`imobzy-backups`/`imobzy-contracts`, policy `imobzy-rw` (s3:* em `imobzy*`) e o usuário do app (`MINIO_ACCESS_KEY`/`MINIO_SECRET_KEY`; na stack filled já usa `<app-access-key>`).
+- **Credenciais do MinIO embutidas no YAML** (`MINIO_ROOT_USER=wootechadmin`, `MINIO_ROOT_PASSWORD=<minio-root-password>`) nas 3 stacks — **nenhuma variável a definir no Portainer**; as stacks estão prontas para colar. `MINIO_DATA_DIR` removida — volume nomeado `minio_data` substitui o bind mount.
+- **Gates**: YAML parseado (js-yaml) nos 3 arquivos; `minio-init` idempotente (`--ignore-existing`, `|| true`, retry até 120s); Docker indisponível local → `docker compose config` pendente no VPS.
+- **Próxima ação (maestro, no Portainer/VPS)**: 1) `docker stack rm minio` (remove a stack antiga — libera o router `minio_nb` e a porta); 2) colar o YAML novo (root creds já embutidas — sem variável no ambiente); 3) verificar `http://minio:9000/minio/health/live`=200, buckets listados, PUT `provider: minio`=200, `https://nb.consultio.com.br/minio/health/live`=200; 4) **rotacionar** root creds + key do app (segredos reais versionados — leak do relatório de segurança 30/07).
+- Rollback: restaurar o stack anterior (sem `minio`/`minio-init`, endpoint externo) — o MinIO novo usa volume próprio (`minio_data`), então o rollback é limpo.
+- Nenhum commit/push/deploy. Working tree tem WIP de outras sessões — conferir `git status` antes de qualquer commit/push.
+
 ## 2026-08-04 — Agenda multi-agenda: agendas por corretor + visita a imóveis (pronto para revisão)
 
 - **Implementado no working tree** (sem commit): a aba Agenda agora é multi-agenda — cria múltiplas agendas, cada uma vinculada a um corretor, para agendar visitas a imóveis.

@@ -1,4 +1,5 @@
 import { supabase } from '../../../services/supabase';
+import { callApi } from '../../lib/api';
 import type {
   Lease,
   ContractTemplate,
@@ -14,15 +15,7 @@ import type {
 const BASE_URL = '/api/locacao';
 
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error || 'Erro na requisição');
-  }
-  return res.json();
+  return callApi(url, options) as Promise<T>;
 }
 
 // ── LEASES ──

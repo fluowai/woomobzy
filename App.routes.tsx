@@ -187,7 +187,7 @@ const AppRoutes: React.FC = () => {
           <Route path="wootech-ai" element={<WooTechAI />} />
           <Route path="contracts" element={<LegalContracts />} />
           <Route path="financial" element={<FinanceiroRural />} />
-          <Route path="financeiro-advanced" element={<Locacao />} />
+          <Route path="financeiro-advanced/*" element={<Locacao />} />
           <Route path="whatsapp" element={<WhatsAppDashboard />} />
           <Route path="whatsapp/campaigns" element={<CampaignManager />} />
           <Route path="whatsapp/campaigns/:id" element={<CampaignEditor />} />
@@ -207,7 +207,7 @@ const AppRoutes: React.FC = () => {
           <Route path="empreendimentos" element={<Empreendimentos />} />
           <Route path="loteamentos" element={<Empreendimentos />} />
           <Route path="loteamentos/:id" element={<LoteamentoDetails />} />
-          <Route path="locacao" element={<Locacao />} />
+          <Route path="locacao/*" element={<Locacao />} />
           <Route path="compliance" element={<ComplianceUrbano />} />
           <Route path="cobranca" element={<Cobranca />} />
           <Route path="simulador" element={<Simulator360 />} />

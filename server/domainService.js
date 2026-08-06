@@ -7,7 +7,7 @@ import {
   PLATFORM_COMMERCIAL_NAME,
   WHM_MAIN_DOMAIN,
 } from './lib/platform-config.js';
-import { logger } from './lib/logger.js';
+import logger from './utils/logger.js';
 
 const MAIN_DOMAIN = WHM_MAIN_DOMAIN;
 const PLATFORM_PUBLIC_IP =

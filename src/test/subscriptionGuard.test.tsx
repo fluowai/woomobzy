@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SubscriptionGuard from '../../components/SubscriptionGuard';
 
@@ -68,9 +69,11 @@ describe('SubscriptionGuard', () => {
 
   it('registra a seleção pelo backend sem tratar o JSON como Response', async () => {
     render(
-      <SubscriptionGuard>
-        <div>Conteúdo protegido</div>
-      </SubscriptionGuard>
+      <MemoryRouter>
+        <SubscriptionGuard>
+          <div>Conteúdo protegido</div>
+        </SubscriptionGuard>
+      </MemoryRouter>
     );
 
     const planButton = await screen.findByRole('button', {

@@ -52,7 +52,7 @@ async function runMigration() {
     console.log(`Revenda encontrada: ${reseller.name} (${reseller.id})`);
 
     console.log('2. Verificando/Criando a organização Pamas Imóveis...');
-    let { data: pamas, error: pamasError } = await supabase
+    let { data: pamas, error: _pamasError } = await supabase
       .from('organizations')
       .select('id')
       .eq('slug', 'pamasimoveis')
@@ -115,7 +115,7 @@ async function runMigration() {
                   el.tagName === 'P'
               )?.innerText || priceEls[0].innerText;
             // cleanup
-            const match = price.match(/R\$\s*[\d\.,]+/);
+            const match = price.match(/R\$\s*[\d.,]+/);
             if (match) price = match[0];
           }
 
@@ -144,7 +144,7 @@ async function runMigration() {
 
         // Limpar o preço para numérico
         let parsedPrice = propertyData.price
-          ? propertyData.price.replace(/[R\$\.]/g, '').replace(',', '.')
+          ? propertyData.price.replace(/[R$.]/g, '').replace(',', '.')
           : '0';
         parsedPrice = parseFloat(parsedPrice.trim()) || 0;
 

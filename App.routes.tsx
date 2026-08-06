@@ -63,21 +63,7 @@ const Matchmaking360 = lazy(() => import('./views/admin/Matchmaking360'));
 const Empreendimentos = lazy(() => import('./views/urban/Empreendimentos'));
 const LoteamentoDetails = lazy(() => import('./views/urban/LoteamentoDetails'));
 const Locacao = lazy(() => import('./views/urban/Locacao'));
-const RentalsManagement = lazy(() => import('./views/RentalsManagement'));
-const RentalsContractEditor = lazy(
-  () => import('./views/RentalsContractEditor')
-);
-const RentalsBordero = lazy(() => import('./views/RentalsBordero'));
-const LeaseDetail = lazy(() =>
-  import('./src/components/lease/LeaseDetail').then((m) => ({
-    default: m.LeaseDetail,
-  }))
-);
-const LeaseWizard = lazy(() =>
-  import('./src/components/lease/LeaseWizard').then((m) => ({
-    default: m.LeaseWizard,
-  }))
-);
+
 const ComplianceUrbano = lazy(() => import('./views/urban/ComplianceUrbano'));
 const Cobranca = lazy(() => import('./views/urban/Cobranca'));
 const Simulator360 = lazy(() => import('./views/urban/Simulator360'));

@@ -1,5 +1,34 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-06] Domínios InoveBrokers (inovebrokers.com.br / app.inovebrokers.com.br) — diagnóstico + correção
+
+- **Sintoma**: os 2 domínios apontavam para o VPS (DNS A → 207.58.153.219) mas davam **erro SSL** e **404** em vez do sistema. Probes: HTTPS responde com `CN=TRAEFIK DEFAULT CERT` (self-signed) + 404 → **nenhum router Traefik ativo** para esses hosts.
+- **Causa raiz 1 (SSL/404)**: a stack de produção (`stack-wootech-imob-prod.yml`) estava com a imagem da API **pinada em `e7d546b` (30/07)**, 108 commits antes do `5cf09e7` (05/08) que migrou o `server/domainService.js` para **provisionamento Docker nativo** (cria container `imobzy_route_<dominio>` com labels Traefik). A imagem antiga escreve arquivos em `/traefik/dynamic`, e o Traefik real do VPS **não tem file provider** (só `--providers.swarm` + `--providers.docker`, ver `DEV/SPECS/NB_CONSULTIO_MINIO_SSL.md`) → arquivos inertes → sem router → sem cert.
+- **Causa raiz 2 (resolução de tenant no frontend)**: a RPC `get_tenant_by_any_domain` **não existia** em produção (`pg_proc` só tinha `get_tenant_public`); o arquivo `sql/rpc_get_tenant_by_any_domain.sql` estava fora da lista canônica de migrations. `DomainRouter.tsx` chamava a RPC → 404 → domínio não resolvido para a org Delazari (`e2403fc5`, `is_reseller:true`, `custom_domain=inovebrokers.com.br`, `platform_domain=app.inovebrokers.com.br`).
+- **Correção aplicada em produção**:
+  1. Migration `sql/rpc_get_tenant_by_any_domain.sql` aplicada via `exec_sql` (service role) — **2/2 statements OK**. Verificado: RPC existe em `pg_proc` e responde `inovebrokers.com.br`→`domain_type=site` e `app.inovebrokers.com.br`→`domain_type=platform` (org Delazari).
+  2. `scripts/run-migrations.mjs`: RPC adicionada à lista canônica de migrations.
+  3. `stack-wootech-imob-prod.yml`: imagem da API atualizada de `e7d546b...` para o **alias mantido pelo CI** `5daaa4a05b3d9f85556d4c41b1d23b655e44bfa7` (tag que o Portainer referencia; o CI atualiza a cada build da branch). O último run do workflow "Docker Images" na branch (`b79058d`, success) já publicou a imagem com o fix → **só falta o redeploy da stack no Portainer**.
+- **Próxima ação (maestro, VPS/Portainer)**: no stack `wootech-imob-prod`, confirmar que o serviço `api` usa a imagem com o fix (alias `5daaa4a...`/`latest`) **e monta `/var/run/docker.sock`** (o `stack-wootech-imob-prod.yml` atual já monta). Redeploy/force pull → no boot a API roda `syncRegisteredDockerDomains` e cria os routers `inovebrokers_com_br_*` e `app_inovebrokers_com_br_*` → Traefik emite Let's Encrypt e os domínios passam a servir o sistema. Verificar com `curl -I https://inovebrokers.com.br` e `https://app.inovebrokers.com.br` (esperado 200 + cert Let's Encrypt) e `openssl s_client` (CN correto).
+- Nota segurança: token GitHub fornecido no chat deve ser **revogado/rotacionado** após o push.
+- Nenhum commit/push executado nesta sessão além do indicado; working tree preserva WIP de outras sessões (rotação RabbitMQ, docs).
+
+## [2026-08-06] Diagnostico e resolucao do 500 em `/api/public/texts` (dev local)
+
+- **Sintoma**: `GET http://localhost:3006/api/public/texts net::ERR_ABORTED 500` no console do browser.
+- **Causa raiz**: NÃO era bug de rota. O handler `server/routes/public.js:703` tem catch-all que sempre responde `{success:true, texts:{}}` (200). O 500 vinha do **Vite dev server (3006)**: o proxy `vite.config.ts` encaminha `/api` para `http://127.0.0.1:3002`, e o **backend não estava rodando** (`PORT=3002`; só o Vite na 3006 estava ativo). Com alvo fora do ar, o Vite responde 500 (ERR_ABORTED).
+- **Correcao**: subir o backend — `npm run server` (background, `server-dev.log`). Validado: `GET http://127.0.0.1:3002/api/public/texts` = 200 e via proxy `http://localhost:3006/api/public/texts` = 200 (`{"success":true,"texts":{},"raw":[]}`).
+- **Recomendacao (maestro)**: usar `npm run dev:all` (Vite + server juntos) para não repetir o cenário.
+
+## [2026-08-06] Rotacao de credenciais RabbitMQ + fix stack de producao (erro "Too short cookie string")
+
+- **Causa raiz do erro reportado** (`{badmatch,{error,{failed_to_start_child,auth,{"Too short cookie string"...}}}}`): cookie Erlang do RabbitMQ com menos de 20 caracteres; o dump mostrava node `rabbit_prelaunch_1@localhost` (hostname curto), diferente do compose repo (`rabbit@rabbitmq-server`) -> no VPS rodava um container RabbitMQ antigo, nao a config atual.
+- **Rotacionado (3 arquivos + 1 novo)**: cookie `RABBITMQ_ERLANG_COOKIE` => `LE58zns01Mw7CVJxaHRNhpk9crIeoZ3BdguFXtm4yQOvUGKq` (48 chars, >20 exigidos); `RABBITMQ_DEFAULT_PASS` => `RbIe1a7l2KJ43SHYuXcFQ6U9LB` (24 chars, sem chars especiais, sem URL-encoding); `RABBITMQ_URL` em `api` atualizado em consequencia.
+- **Arquivos alterados (working tree, sem commit)**: `docker-compose.yml`, `portainer-stack-imobfluow-filled-compose.yml`, `portainer-stack-wootech-public.yml` (só fallback do cookie; pass/usr vêm de env) e novo `stack-wootech-imob-prod.yml` (stack Portainer recriada com valores do repo + cookie/senha novos).
+- **Gates**: diff automatico conferido campo-a-campo entre `stack-wootech-imob-prod.yml` e `docker-compose.yml` para as chaves sensiveis (Supabase, MINIO, WhatsApp, GROQ, JWT) — diferencas apenas de aspas simples->duplas, valores identicos. YAML nada parseado localmente (js-yaml indisponivel); dar `docker compose config` no VPS.
+- **Proxima acao (maestro, no VPS/Portainer)**: colar `stack-wootech-imob-prod.yml`, `docker volume rm <prefix>_rabbitmq_data_v4` (uma vez, p/ cookie ser regerado do env), `docker compose up -d rabbitmq`, conferir `docker logs` sem erro `auth` e `rabbitmq-diagnostics -q ping`. Cookie mora em `/var/lib/rabbitmq/.erlang.cookie` (fora do volume so monta `mnesia`), entao so recriar o container ja resolve.
+- Nenhum commit/push/deploy executado. Working tree tem WIP de outras sessoes - conferir `git status` antes de commit.
+
 ## [2026-08-05] Onboarding Rapido + WhatsApp QR no fluxo (Wave 1)
 
 - **Objetivo**: criar conta rapido e conectar o WhatsApp no proprio onboarding (o passo 3 antigo era so um placeholder, nunca gerava QR). Removidos os passos opcionais (IA e Equipe) para encurtar o fluxo.

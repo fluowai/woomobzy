@@ -56,6 +56,7 @@ const MIGRATIONS = [
   'sql/fix_rpc_final.sql',
   'sql/fix_landing_pages_rls.sql',
   'sql/setup_landing_pages.sql',
+  'sql/rpc_get_tenant_by_any_domain.sql',
   'migrations/v6_rural_search_logs.sql',
   'migrations/20260530_fluowai_cloud_migration_control.sql',
   'migrations/20260516_ai_agents_whatsapp_automation.sql',

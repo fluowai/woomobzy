@@ -1,5 +1,16 @@
 # Handoff
 
+## 2026-08-06 — Domínios InoveBrokers: causa raiz encontrada + correção no repo — falta redeploy no Portainer
+
+- **Sintoma**: `inovebrokers.com.br` e `app.inovebrokers.com.br` davam **erro SSL** (`CN=TRAEFIK DEFAULT CERT`, self-signed) e **404** em vez do sistema. DNS A OK nos 2 (207.58.153.219).
+- **Causa raiz 1**: a stack de produção (`stack-wootech-imob-prod.yml`) estava com a API em `e7d546b` (30/07), **108 commits antes** do `5cf09e7` (05/08) que migrou `server/domainService.js` para **provisionamento Docker nativo** (cria container `imobzy_route_<dominio>` com labels Traefik). O Traefik real do VPS **não usa file provider** (swarm+docker only) → os `traefik/dynamic/*.yml` (incl. coming-soon) são **inertes** em produção.
+- **Causa raiz 2**: a RPC `get_tenant_by_any_domain` (usada por `DomainRouter.tsx:175`) **não existia em produção** — era arquivo solto fora da lista canônica de migrations.
+- **Feito na sessão**: (1) RPC aplicada em produção via `exec_sql` (2/2 OK) e verificada via REST anon (`site`/`platform`, org Delazari `e2403fc5`); (2) `scripts/run-migrations.mjs` ganhou a RPC na lista canônica; (3) `stack-wootech-imob-prod.yml` imagem da API → alias CI `5daaa4a05b3d9f85556d4c41b1d23b655e44bfa7` (build `b79058d`, já publicado — último run do workflow "Docker Images" = success). Docs DEV atualizados (`WORKLOG`, `VERIFY`, esta spec).
+- **Commit/push**: NÃO executado ainda — só os 2 arquivos do fix (`scripts/run-migrations.mjs` + `stack-wootech-imob-prod.yml`) devem ir; **não** misturar com WIP de outras sessões (RabbitMQ etc.). Confirmar `git status` antes.
+- **Próxima ação (maestro, VPS/Portainer)**: redeploy da stack `wootech-imob-prod` com a imagem nova (alias/latest) e `docker.sock` montado no `api` → no boot `syncRegisteredDockerDomains` provisiona os routers → Let's Encrypt. Verificar `curl -I https://inovebrokers.com.br` / `https://app.inovebrokers.com.br` = 200 + cert, e login carregando a org Delazari.
+- **Segurança**: token GitHub usado nesta sessão deve ser **rotacionado** após o push.
+- Spec: `DEV/SPECS/INOVEBROKERS_SSL_COMING_SOON.md` (substituída — nova abordagem documentada no topo).
+
 ## 2026-08-05 — Onboarding Rapido + WhatsApp QR no onboarding (Wave 1 do roadmap)
 
 - **Fluxo novo** (`views/Onboarding.tsx`): 3 passos — (1) Conta (nome/email/senha/agência/nicho/tema) → `POST /api/onboarding` + **auto-login** (`supabase.auth.signInWithPassword` + `setActiveOrganizationId`); (2) WhatsApp → `instanceApi.create('WhatsApp')` + **`QRCodeModal` real** reutilizado (polling/WS), com "Pular por enquanto" e fallback "Continuar sem conectar" se o serviço estiver indisponível; (3) Concluído → "Acessar Meu Painel" (`/urban` ou `/rural`).

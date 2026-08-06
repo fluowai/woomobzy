@@ -1,5 +1,26 @@
 # Verificação
 
+## 2026-08-06 — Domínios InoveBrokers: RPC aplicada em produção + stack atualizada
+
+- Probes externas antes do fix: `https://inovebrokers.com.br` e `https://app.inovebrokers.com.br` → HTTPS com `CN=TRAEFIK DEFAULT CERT` (verify return code 18, self-signed) e HTTP 404 (`curl -k`). DNS A OK → 207.58.153.219 nos 2.
+- Banco (pg direto, read-only): org `e2403fc5-fabd-4715-a6e6-eae5d0603106` "Delazari Imóveis" (`is_reseller=true`, `custom_domain=inovebrokers.com.br`, `platform_domain=app.inovebrokers.com.br`); `domains` com `purpose site/panel`, `status=pending_ssl`. RPC `get_tenant_by_any_domain` **ausente** em `pg_proc` (só `get_tenant_public`).
+- **Aplicado em produção**: `sql/rpc_get_tenant_by_any_domain.sql` via `exec_sql` (service role) → **2/2 statements OK (204)**. Pós-verificação:
+  - `pg_proc` → `get_tenant_by_any_domain(domain_input text)` presente.
+  - REST (anon key) `rpc/get_tenant_by_any_domain` `{"domain_input":"inovebrokers.com.br"}` → `domain_type=site`, org Delazari; `app.inovebrokers.com.br` → `domain_type=platform`.
+- Repo (working tree, sem commit do WIP de outras sessões): `scripts/run-migrations.mjs` ganhou `'sql/rpc_get_tenant_by_any_domain.sql'` na lista canônica (idempotente — `create or replace`); `stack-wootech-imob-prod.yml` imagem da API `e7d546b...` → `5daaa4a05b3d9f85556d4c41b1d23b655e44bfa7` (alias CI, aponta para build `b79058d` com o fix). YAML parseado (js-yaml): 5 serviços, `api` com `volumes: [/var/run/docker.sock:/var/run/docker.sock]`. `node --check scripts/run-migrations.mjs` OK.
+- CI: último run do workflow "Docker Images" na branch `codex/main-whatsapp-media-hotfix` (head `b79058d`) → **completed/success** — imagem com provisionamento Docker nativo já publicada (`latest` + alias `5daaa4a...`).
+- **Gate de runtime PENDENTE (VPS/Portainer)**: redeploy da stack `wootech-imob-prod` com a imagem nova (alias/latest) + `docker.sock` montado no `api`; depois `curl -I https://inovebrokers.com.br` / `https://app.inovebrokers.com.br` = 200 e `openssl s_client` com CN Let's Encrypt. O boot da API roda `syncRegisteredDockerDomains` (`server/index.js:407`) e provisiona os routers dos 2 domínios automaticamente.
+- Sem commit/push da doc (WIP de outras sessões no working tree — conferir `git status`). Token GitHub usado nesta sessão deve ser rotacionado.
+
+## 2026-08-06 — Rotação de credenciais RabbitMQ + stack de produção (erro "Too short cookie string")
+
+- `docker-compose.yml` / `portainer-stack-imobfluow-filled-compose.yml` / `stack-wootech-imob-prod.yml`: cookie `LE58zns01Mw7CVJxaHRNhpk9crIeoZ3BdguFXtm4yQOvUGKq` (48 chars) e `RABBITMQ_DEFAULT_PASS` `RbIe1a7l2KJ43SHYuXcFQ6U9LB` (24 chars); `RABBITMQ_URL` em `api` atualizado para a nova senha.
+- Diff automatizado campo-a-campo entre `stack-wootech-imob-prod.yml` e `docker-compose.yml`: chaves sensíveis (Supabase anon/service-role/JWT, MINIO access/secret, WhatsApp tokens, GROQ, RABBITMQ_URL) com valores idênticos — diferenças só de aspas simples vs duplas.
+- `portainer-stack-wootech-public.yml`: cookie de fallback atualizado; senha/usuário permanecem via variáveis (não fixa).
+- Gate de runtime pendente (Docker indisponível nesta máquina Windows): `docker compose config` e re-subir `rabbitmq` no VPS validando `rabbitmq-diagnostics -q ping`.
+- Pendência VPS: remover `rabbitmq_data_v4` (uma vez), `docker compose up -d rabbitmq`, conferir logs sem `auth`/`badmatch`. Cookie está fora do volume (monta só `mnesia`), recriar container resolve.
+- Sem commit/push/deploy.
+
 ## 2026-08-05 — Change set: MinIO dentro da stack — FRESH START (MinIO novo)
 
 - YAML validado com `js-yaml` (Node): `docker-compose.yml`, `portainer-stack.yml`, `portainer-stack-imobfluow-filled.yml` parseiam sem erro; serviços incluem `minio` e `minio-init`; volume `minio_data` declarado nos 3.

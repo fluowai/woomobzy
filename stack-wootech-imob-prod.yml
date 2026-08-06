@@ -26,7 +26,7 @@ services:
       - "traefik.http.services.wootech_imob_frontend.loadbalancer.server.port=80"
 
   api:
-    image: ghcr.io/fluowai/woomobzy-api:e7d546b792ee3a95a210ad62e57c2c53dd514472
+    image: ghcr.io/fluowai/woomobzy-api:5daaa4a05b3d9f85556d4c41b1d23b655e44bfa7
     environment:
       NODE_ENV: production
       PORT: 3002

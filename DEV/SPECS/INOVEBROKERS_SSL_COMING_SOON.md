@@ -1,7 +1,25 @@
-# InoveBrokers — SSL + página "Em breve" (inovebrokers.com.br / app.inovebrokers.com.br)
+# InoveBrokers — SSL + acesso aos domínios (inovebrokers.com.br / app.inovebrokers.com.br)
 
-Status: planejado — entregáveis criados, aguardando DNS + deploy (maestro).
-Data: 2026-08-03
+Status: **SUBSTITUÍDA em 2026-08-06** — a abordagem "coming soon" via file provider foi descartada; o caminho real é o provisionamento **Docker nativo** do domainService. Ver seção "Resolução real (2026-08-06)" abaixo.
+Data: 2026-08-03 (atualizada 2026-08-06)
+
+> ## Resolução real (2026-08-06)
+>
+> O objetivo mudou: os 2 domínios devem servir o **sistema real** (site + painel do whitelabel Delazari), não a página "Em breve".
+>
+> - **Causa raiz encontrada**: a stack de produção rodava a API em `e7d546b` (30/07), **108 commits antes** do `5cf09e7` (05/08) que migrou `server/domainService.js` para criar **containers de rota via Docker API** (labels Traefik) em vez de escrever arquivos em `/traefik/dynamic`. O Traefik real do VPS NÃO usa file provider (só `--providers.swarm` + `--providers.docker`; ver `NB_CONSULTIO_MINIO_SSL.md`) → os `traefik/dynamic/inovebrokers_com_br.yml` deste repo são **inertes** em produção.
+> - **Correções aplicadas (06/08)**:
+>   1. RPC `get_tenant_by_any_domain` aplicada em produção (era só arquivo solto, fora da lista canônica) → adicionada a `scripts/run-migrations.mjs`. Verificada via REST anon: `inovebrokers.com.br` → `domain_type=site`, `app.inovebrokers.com.br` → `domain_type=platform` (org Delazari).
+>   2. `stack-wootech-imob-prod.yml`: imagem da API atualizada para o alias CI `5daaa4a05b3d9f85556d4c41b1d23b655e44bfa7` (build `b79058d` com o fix, já publicado no GHCR).
+> - **Pendente (VPS/Portainer)**: redeploy da stack com a imagem nova + `/var/run/docker.sock` montado no serviço `api` (o YAML atual já monta). No boot, `syncRegisteredDockerDomains` (`server/index.js:407`) cria os routers `inovebrokers_com_br_*`/`app_inovebrokers_com_br_*` → Traefik emite Let's Encrypt e os domínios servem o sistema.
+> - Verificação final: `curl -I https://inovebrokers.com.br` e `https://app.inovebrokers.com.br` = 200 + cert Let's Encrypt; login no painel carrega a org Delazari.
+
+## Objetivo (original — superado)
+
+1. Emitir certificado SSL (Let's Encrypt) para `inovebrokers.com.br` e `app.inovebrokers.com.br`.
+2. Servir uma página única "Em breve — um sistema será instalado aqui" nos dois domínios.
+
+Infra confirmada: mesmo VPS da plataforma (207.58.153.219), Traefik com `certResolver letsencryptresolver` (desafio HTTP-01 na porta 80) + Portainer.
 
 ## Objetivo
 

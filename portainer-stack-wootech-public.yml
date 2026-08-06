@@ -143,7 +143,7 @@ services:
     image: rabbitmq:3.13-management-alpine
     hostname: rabbitmq-server
     environment:
-      RABBITMQ_ERLANG_COOKIE: '${RABBITMQ_ERLANG_COOKIE:-ImobzyCookieSecreto123}'
+      RABBITMQ_ERLANG_COOKIE: '${RABBITMQ_ERLANG_COOKIE:-LE58zns01Mw7CVJxaHRNhpk9crIeoZ3BdguFXtm4yQOvUGKq}'
       RABBITMQ_DEFAULT_USER: '${RABBITMQ_DEFAULT_USER:-imobzy}'
       RABBITMQ_DEFAULT_PASS: '${RABBITMQ_DEFAULT_PASS}'
       RABBITMQ_NODENAME: 'rabbit@rabbitmq-server'

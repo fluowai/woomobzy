@@ -1,9 +1,31 @@
 # DEV WORKLOG — Imobzy
 
-## [2026-08-05] MinIO dentro da stack - FRESH START (MinIO novo, do zero) - pronto para subir
+## [2026-08-05] Onboarding Rapido + WhatsApp QR no fluxo (Wave 1)
+
+- **Objetivo**: criar conta rapido e conectar o WhatsApp no proprio onboarding (o passo 3 antigo era so um placeholder, nunca gerava QR). Removidos os passos opcionais (IA e Equipe) para encurtar o fluxo.
+- **Alterado (working tree, sem commit)**: `views/Onboarding.tsx` reescrito em 3 passos: (1) Conta (nome/email/senha/agencia/nicho/tema) -> `POST /api/onboarding` + **auto-login** (`supabase.auth.signInWithPassword` + `setActiveOrganizationId`); (2) WhatsApp -> `instanceApi.create('WhatsApp')` + **`QRCodeModal` real reutilizado** (polling/WS), com "Pular por enquanto"; (3) Concluido -> "Acessar Meu Painel" (`/urban` ou `/rural`). Sem cambio no backend `server/routes/onboarding.js` (ja cria conta+org com auto-aprovacao).
+- **Gates**: `npm run type-check` OK; `eslint views/Onboarding.tsx` OK. Teste e2e de auth (`tests/e2e/auth.spec.ts`) que esperava navegar para `/onboarding` continua valido (rota inalterada).
+- **Dependencia**: QR real depende do whatsapp-service ativo e do plano permitir instancias; se indisponivel, o passo mostra "Continuar sem conectar" (nao trava o fluxo).
+- **Proxima acao (Wave 2)**: dominio personalizado obrigatorio no onboarding (capturar/validar; base `server/routes/domains.js` + RPC `get_tenant_by_any_domain` + `DomainRouter` ja existe). Spec: `DEV/SPECS/ONBOARDING_FAST_QR.md`.
+- Nenhum commit/deploy executado. Conferir `git status` antes de commit (working tree tem WIP de outras sessoes).
+
+## [2026-08-05] MinIO dentro da stack - REUTILIZA data dir existente (preserva objetos) - pronto para subir
+
+- **Decisao (maestro)**: reutilizar o **data dir do MinIO atual** para nao perder objetos (imagens Pamas `imobfluow/*`, midias WhatsApp). Backend (api + whatsapp-service) passa a usar `MINIO_ENDPOINT=http://minio:9000` (rede interna); rota publica `https://s.wootech.com.br` via labels Traefik `minio_nb`.
+- **Causa raiz da 404 nas imagens** (`https://s.wootech.com.br/imobfluow/pamas/...`): host serve app/Traefik, NAO MinIO - router `minio_nb` nao aplica no VPS. 333 imoveis Pamas ja com URLs normalizadas para `s.wootech.com.br/imobfluow/*`, bucket `imobfluow`. Endpoint externo nao responde (porta 9000 fecha), sem docker/mc local p/ inventario.
+- **Alterado (working tree, sem commit)**: apenas `portainer-stack-wootech-public.yml` reescrito (YAML validado js-yaml, 7 servicos): servico `minio` (bind mount `${MINIO_DATA_DIR}:/data`, healthcheck, router `minio_nb` `Host(${MINIO_PUBLIC_HOST:-s.wootech.com.br})`) + novo servico one-shot **`minio-init`** (`minio/mc`, retry 120s) que provisiona buckets `imobfluow`/`imobzycrm`/`imobzywhatsapp`/`imobzy-media`/`imobzy-documents`/`imobzy-exports`/`imobzy-backups`/`imobzy-contracts`, `anonymous set download` nos publicos, policy `imobzy-rw` (s3:_ em `imobzy_`+`imobfluow`), user do app. **IMPORTANTE: minio-init deve usar as MESMAS root creds do data dir atual** (`.env.production` mantem endpoint externo; na stack o env e sobrescrito p/ interno).
+- api/whatsapp-service: `MINIO_PUBLIC_URL=${MINIO_PUBLIC_URL:-https://s.wootech.com.br}`, `MINIO_MEDIA_BUCKET=${MINIO_MEDIA_BUCKET:-imobfluow}` (default alinhado ao banco).
+- **Variaveis a preencher no Portainer (obrigatorias)**: `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_DATA_DIR`, `RABBITMQ_DEFAULT_PASS`. Opcionais: `MINIO_PUBLIC_URL`, `MINIO_PUBLIC_HOST`, `MINIO_MEDIA_BUCKET`.
+- **Gates**: js-yaml OK; Docker/`mc` indisponivel local -> `docker stack deploy` pendente no VPS/Portainer.
+- **Proxima acao (maestro)**: `docker stack rm minio` (libera router `minio_nb` + porta) -> colar YAML no Portainer com o ambiente acima (+ root creds reais do data dir) -> verificar `http://minio:9000/minio/health/live`=200, buckets, PUT autenticado `provider: minio`=200, `https://s.wootech.com.br/minio/health/live`=200 e imagens Pamas=200 -> **rotacionar** root creds + key do app (segredos vistos no filled-swarm/leak 30/07). Confirmar DNS `s.wootech.com.br`.
+- Rollback: reverter stack (reusa MESMO data dir - nao remover dados).
+- Roteiro/referencia: `DEV/SPECS/MINIO_INTO_STACK_MIGRATION.md`.
+- Nenhum commit/push/deploy executado. Working tree tem WIP de outras sessões - conferir `git status` antes de commit.
+
+## [2026-08-05] MinIO dentro da stack - FRESH START
 
 - **Decisao (maestro)**: nao ha dados a preservar no MinIO atual -> subir um **MinIO novo** dentro do stack (volume `minio_data`), sem reutilizar data dir nem root creds antigas. Backend passa a usar `MINIO_ENDPOINT=http://minio:9000` (rede interna). URL publica `https://nb.consultio.com.br` continua via labels Traefik `minio_nb`.
-- **Alterado (working tree, sem commit)**: `docker-compose.yml`, `portainer-stack.yml`, `portainer-stack-imobfluow-filled.yml` - servico `minio` (volume `minio_data`, healthcheck, router `minio_nb`) + novo servico one-shot **`minio-init`** (`minio/mc`) que provisiona na 1a subida: buckets `imobzycrm`/`imobzywhatsapp`/`imobzy-media`/`imobzy-documents`/`imobzy-exports`/`imobzy-backups`/`imobzy-contracts`, policy `imobzy-rw` (s3:* em `imobzy*`) e o usuario do app (`MINIO_ACCESS_KEY`/`MINIO_SECRET_KEY`; na stack filled ja usa `<app-access-key>`). Idempotente (`--ignore-existing`, `|| true`, retry 120s).
+- **Alterado (working tree, sem commit)**: `docker-compose.yml`, `portainer-stack.yml`, `portainer-stack-imobfluow-filled.yml` - servico `minio` (volume `minio_data`, healthcheck, router `minio_nb`) + novo servico one-shot **`minio-init`** (`minio/mc`) que provisiona na 1a subida: buckets `imobzycrm`/`imobzywhatsapp`/`imobzy-media`/`imobzy-documents`/`imobzy-exports`/`imobzy-backups`/`imobzy-contracts`, policy `imobzy-rw` (s3:_ em `imobzy_`) e o usuario do app (`MINIO_ACCESS_KEY`/`MINIO_SECRET_KEY`; na stack filled ja usa `<app-access-key>`). Idempotente (`--ignore-existing`, `|| true`, retry 120s).
 - `.env.production.template` e `.env.example`: `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` re-descritas como credenciais NOVAS; var `MINIO_DATA_DIR` removida (volume nomeado substitui bind mount).
 - **Root creds do MinIO embutidas** no YAML das 3 stacks: `MINIO_ROOT_USER=wootechadmin`, `MINIO_ROOT_PASSWORD=<minio-root-password>` (servico `minio` e `minio-init`) - **nenhuma variavel a definir no Portainer**, stacks prontas para colar. Validado por grep (sem `${MINIO_ROOT` restante) e js-yaml.
 - **Gates**: YAML parseado (js-yaml) nos 3 arquivos; entrypoint do `minio-init` revisado; Docker indisponivel local -> `docker compose config` pendente no VPS.

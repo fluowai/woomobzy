@@ -1,14 +1,29 @@
 # Handoff
 
-## 2026-08-05 — MinIO dentro da stack: FRESH START (MinIO novo, do zero) — pronto para subir no Portainer
+## 2026-08-05 — Onboarding Rapido + WhatsApp QR no onboarding (Wave 1 do roadmap)
 
-- **Decisão (maestro)**: o MinIO atual não tem dados a preservar → **não** se reutiliza o data dir nem as credenciais antigas. Sobe um **MinIO novo** dentro do stack (volume `minio_data`), backend usa o **endpoint interno `http://minio:9000`**. URL pública `https://nb.consultio.com.br` continua via labels Traefik `minio_nb`. Roteiro: `DEV/SPECS/MINIO_INTO_STACK_MIGRATION.md`.
-- **Change set no working tree (sem commit)**: `docker-compose.yml` + `portainer-stack.yml` + `portainer-stack-imobfluow-filled.yml` ganham o serviço `minio` (volume `minio_data`, healthcheck, router `minio_nb`, `MINIO_ENDPOINT=http://minio:9000`) e o serviço **`minio-init`** (one-shot, `minio/mc`) que provisiona automaticamente: buckets `imobzycrm`/`imobzywhatsapp`/`imobzy-media`/`imobzy-documents`/`imobzy-exports`/`imobzy-backups`/`imobzy-contracts`, policy `imobzy-rw` (s3:* em `imobzy*`) e o usuário do app (`MINIO_ACCESS_KEY`/`MINIO_SECRET_KEY`; na stack filled já usa `<app-access-key>`).
-- **Credenciais do MinIO embutidas no YAML** (`MINIO_ROOT_USER=wootechadmin`, `MINIO_ROOT_PASSWORD=<minio-root-password>`) nas 3 stacks — **nenhuma variável a definir no Portainer**; as stacks estão prontas para colar. `MINIO_DATA_DIR` removida — volume nomeado `minio_data` substitui o bind mount.
-- **Gates**: YAML parseado (js-yaml) nos 3 arquivos; `minio-init` idempotente (`--ignore-existing`, `|| true`, retry até 120s); Docker indisponível local → `docker compose config` pendente no VPS.
-- **Próxima ação (maestro, no Portainer/VPS)**: 1) `docker stack rm minio` (remove a stack antiga — libera o router `minio_nb` e a porta); 2) colar o YAML novo (root creds já embutidas — sem variável no ambiente); 3) verificar `http://minio:9000/minio/health/live`=200, buckets listados, PUT `provider: minio`=200, `https://nb.consultio.com.br/minio/health/live`=200; 4) **rotacionar** root creds + key do app (segredos reais versionados — leak do relatório de segurança 30/07).
-- Rollback: restaurar o stack anterior (sem `minio`/`minio-init`, endpoint externo) — o MinIO novo usa volume próprio (`minio_data`), então o rollback é limpo.
-- Nenhum commit/push/deploy. Working tree tem WIP de outras sessões — conferir `git status` antes de qualquer commit/push.
+- **Fluxo novo** (`views/Onboarding.tsx`): 3 passos — (1) Conta (nome/email/senha/agência/nicho/tema) → `POST /api/onboarding` + **auto-login** (`supabase.auth.signInWithPassword` + `setActiveOrganizationId`); (2) WhatsApp → `instanceApi.create('WhatsApp')` + **`QRCodeModal` real** reutilizado (polling/WS), com "Pular por enquanto" e fallback "Continuar sem conectar" se o serviço estiver indisponível; (3) Concluído → "Acessar Meu Painel" (`/urban` ou `/rural`).
+- **Removido** do fluxo: passos opcionais de IA e Equipe (ficam para o painel pós-onboarding).
+- **Sem mudança no backend** (`server/routes/onboarding.js` já cria usuário + org auto-aprovado).
+- **Gates**: `npm run type-check` OK, `eslint views/Onboarding.tsx` OK.
+- **Próxima ação (maestro)**: revisar o fluxo em navegador (criar conta com auto-login → QR do WhatsApp conectar). **Wave 2 (Valida)** é o **domínio personalizado obrigatório** no onboarding — base já existe (`server/routes/domains.js`, RPC `get_tenant_by_any_domain`, `DomainRouter`); falta capturar/validar/provisionar no fluxo.
+- Spec: `DEV/SPECS/ONBOARDING_FAST_QR.md`. Nenhum commit/deploy. Conferir `git status` (working tree tem WIP de outras sessões).
+
+## 2026-08-05 — MinIO dentro da stack: REUTILIZA data dir existente (preserva objetos) — pronto para subir no Portainer
+
+- **Decisão (maestro)**: **reutilizar o diretório de dados do MinIO atual** para preservar os objetos existentes (imagens Pamas `imobfluow/*`, mídias WhatsApp, etc.). Backend (api + whatsapp-service) passa a usar o **endpoint interno `http://minio:9000`**; rota pública `s.wootech.com.br` via labels Traefik `minio_nb` (`Host(`s.wootech.com.br`) → port 9000`).
+- **Causa raiz da 404 nas imagens** (`https://s.wootech.com.br/imobfluow/pamas/...`): o host está servindo o app/Traefik, **não** o MinIO — o router `minio_nb` não chega a aplicar no VPS (stack minio separada). 333 imóveis Pamas já com URLs normalizadas para `s.wootech.com.br/imobfluow/*`, bucket `imobfluow`.
+- **Change set (sem commit)**: apenas `portainer-stack-wootech-public.yml` reescrito (YAML validado via js-yaml):
+  - serviço `minio`: image `minio/minio:latest`, **bind mount `${MINIO_DATA_DIR}:/data`** (data dir EXISTENTE), healthcheck `curl .../minio/health/live`, labels router `minio_nb` `Host(`${MINIO_PUBLIC_HOST:-s.wootech.com.br}")`.
+  - serviço **`minio-init`** (one-shot `minio/mc`, retry até 120s): cria buckets `imobfluow/imobzycrm/imobzywhatsapp/imobzy-media/imobzy-documents/imobzy-exports/imobzy-backups/imobzy-contracts`, `anonymous set download` nos públicos, policy `imobzy-rw` (s3:_ em `imobzy_`+`imobfluow`), user do app. **Imperativo: usar as MESMAS root creds com que o data dir foi inicializado** (senão `mc` falha).
+  - api/whasapp-service com `MINIO_ENDPOINT=http://minio:9000`, `MINIO_PUBLIC_URL=${MINIO_PUBLIC_URL:-https://s.wootech.com.br}`, `MINIO_MEDIA_BUCKET=${MINIO_MEDIA_BUCKET:-imobfluow}` (default agora `imobfluow`, alinhado às imagens do banco).
+  - Buckets/usuário do app provisionados via `minio-init` (não mais policy embutida hardcoded na filled-swarm).
+- **Variables a preencher no Portainer (obrigatórias)**: `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD` (allow values do data dir atual), `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY` (key do app), `MINIO_DATA_DIR` (caminho do data dir atual), `RABBITMQ_DEFAULT_PASS`. Opcionais: `MINIO_PUBLIC_URL`, `MINIO_PUBLIC_HOST`, `MINIO_MEDIA_BUCKET`. As Supabase/service-role keys foram mantidas iguais às da stack original no YAML.
+- **Endpoint HTTP upgrade `.env.production`**: atual ainda aponta `MINIO_ENDPOINT=https://s.wootech.com.br` — na stack o env é sobrescrito p/ interno; não precisa editar `.env.production` (a stack manda).
+- **Gates**: YAML parseado (js-yaml OK, 7 serviços, `minio` vol=bind mount, api endpoint interno. `docker`/`mc` indisponível no sandbox → `docker stack deploy` pendente no VPS/Portainer.
+- **Próxima ação (maestro)**: 1) `docker stack rm minio` (libera router `minio_nb` + porta); 2) colar YAML no Portainer preenchendo o ambiente com as vars acima + as root creds REAIS do data dir atual; 3) verificar `http://minio:9000/minio/health/live`=200, buckets listados, PUT autenticado `provider: minio`=200, `https://s.woote.com.br/minio/health/live`=200, e imagens `https://s.wootech.com.br/imobfluow/pamas/...`=200; 4) **rotacionar** root creds + key do app (segredos vistos no filled-swarm/report 30/07). Confirmar antes o DNS `s.wootech.com.br`.
+- Rollback: restaurar stack anterior — como reusa o MESMO data dir, NÃO remover dados; apenas reverter o stack se um novo MinIO for necessário.
+- Nenhum commit/push/deploy. Working tree tem WIP de outras sessões — conferir `git status` antes de commit/push.
 
 ## 2026-08-04 — Agenda multi-agenda: agendas por corretor + visita a imóveis (pronto para revisão)
 
@@ -45,7 +60,7 @@
 
 ## 2026-08-03 — MinIO produção: upload 503 corrigido (TLS + buckets + key provisionados)
 
-- **Fix completo em produção**: (1) TLS `https://nb.consultio.com.br` → Let's Encrypt via labels `minio_nb` na stack minio (Traefik provider Swarm; file dynamic é inerte); (2) buckets `imobzycrm`, `imobzywhatsapp`, `imobzy-media`, `imobzy-documents`, `imobzy-exports`, `imobzy-backups` criados; (3) policy `imobzy-rw` (s3:* nos 6 buckets) + user `8aHPnW4JQsRWhbKld9Yw` (a key que o app usa) criados via API console MinIO.
+- **Fix completo em produção**: (1) TLS `https://nb.consultio.com.br` → Let's Encrypt via labels `minio_nb` na stack minio (Traefik provider Swarm; file dynamic é inerte); (2) buckets `imobzycrm`, `imobzywhatsapp`, `imobzy-media`, `imobzy-documents`, `imobzy-exports`, `imobzy-backups` criados; (3) policy `imobzy-rw` (s3:\* nos 6 buckets) + user `8aHPnW4JQsRWhbKld9Yw` (a key que o app usa) criados via API console MinIO.
 - Verificação: a key do app lista os 6 buckets e faz PUT/DELETE; assinatura SigV4 do `server/lib/minio-storage.js` (`uploadObject`) executada no container `api` com env de produção → PUT 200 em `imobzywhatsapp` e `imobzy-media`.
 - Env do stack **não mudou** (`MINIO_WHATSAPP_BUCKET=imobzywhatsapp`); media usa fallback `imobzy-media` (criado).
 - **Próxima ação (maestro)**: testar upload autenticado no app (WhatsApp media e imagem de imóvel) e confirmar 200 com `provider: minio`; rotacionar credenciais expostas no chat (root do MinIO `wootechadmin` e secret do stack).

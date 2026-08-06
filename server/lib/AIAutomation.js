@@ -291,11 +291,24 @@ Formato:
     const audioData =
       message.type === 'audio' ? await this._downloadMediaForAI(message) : null;
 
-    const _guardrailConfig = guardrails._getGuardrailsConfig(supabase, organizationId, agent?.id);
+    const _guardrailConfig = guardrails._getGuardrailsConfig(
+      supabase,
+      organizationId,
+      agent?.id
+    );
 
-    const rateLimitResult = await guardrails.checkRateLimit(normalizedPhone, organizationId);
+    const rateLimitResult = await guardrails.checkRateLimit(
+      normalizedPhone,
+      organizationId
+    );
     if (rateLimitResult.exceeded) {
-      await this._saveConversationMemory(organizationId, agent?.id, normalizedPhone, 'assistant', guardrails.buildRateLimitRedirect());
+      await this._saveConversationMemory(
+        organizationId,
+        agent?.id,
+        normalizedPhone,
+        'assistant',
+        guardrails.buildRateLimitRedirect()
+      );
       return {
         skipped: true,
         reason: 'rate_limit_exceeded',
@@ -311,12 +324,26 @@ Formato:
       };
     }
 
-    let existingLead = await this._findLeadByNormalizedPhone(supabase, organizationId, normalizedPhone);
-    const history = await this._getConversationMemory(organizationId, normalizedPhone, 8);
+    let existingLead = await this._findLeadByNormalizedPhone(
+      supabase,
+      organizationId,
+      normalizedPhone
+    );
+    const history = await this._getConversationMemory(
+      organizationId,
+      normalizedPhone,
+      8
+    );
     const topicDrift = guardrails.detectTopicDrift(history, content);
 
     if (guardrails.hasSensitiveContent(content)) {
-      await this._saveConversationMemory(organizationId, agent?.id, normalizedPhone, 'assistant', guardrails.buildSensitiveTopicRedirect());
+      await this._saveConversationMemory(
+        organizationId,
+        agent?.id,
+        normalizedPhone,
+        'assistant',
+        guardrails.buildSensitiveTopicRedirect()
+      );
       return {
         skipped: true,
         reason: 'sensitive_content',
@@ -326,7 +353,13 @@ Formato:
     }
 
     if (topicDrift.drifted && existingLead) {
-      await this._saveConversationMemory(organizationId, agent?.id, normalizedPhone, 'assistant', guardrails.buildOffTopicRedirect(agent?.name));
+      await this._saveConversationMemory(
+        organizationId,
+        agent?.id,
+        normalizedPhone,
+        'assistant',
+        guardrails.buildOffTopicRedirect(agent?.name)
+      );
       return {
         skipped: true,
         reason: 'topic_drift',
@@ -337,7 +370,13 @@ Formato:
 
     if (!existingLead && !guardrails.isRealEstateContext(content)) {
       if (!this._isGreeting(content)) {
-        await this._saveConversationMemory(organizationId, agent?.id, normalizedPhone, 'assistant', guardrails.buildOffTopicRedirect(agent?.name));
+        await this._saveConversationMemory(
+          organizationId,
+          agent?.id,
+          normalizedPhone,
+          'assistant',
+          guardrails.buildOffTopicRedirect(agent?.name)
+        );
         return {
           skipped: true,
           reason: 'not_real_estate_context',
@@ -373,7 +412,10 @@ Formato:
           leadId: existingLeadForTools?.id || null,
         });
       } catch (err) {
-        logger.error('[AIAutomation] Erro ao executar orquestrador de ferramentas:', err.message);
+        logger.error(
+          '[AIAutomation] Erro ao executar orquestrador de ferramentas:',
+          err.message
+        );
       }
     }
 
@@ -2083,6 +2125,8 @@ Formato:
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase();
-    return /^(oi|ola|bom dia|boa tarde|boa noite|hey|eai|fala|blz|tudo bem|tudo certo|salve|oie|oii|oiii|teste|test|como esta|como vai|prazer|oi tudo bem)\b/.test(normalized);
+    return /^(oi|ola|bom dia|boa tarde|boa noite|hey|eai|fala|blz|tudo bem|tudo certo|salve|oie|oii|oiii|teste|test|como esta|como vai|prazer|oi tudo bem)\b/.test(
+      normalized
+    );
   }
 }

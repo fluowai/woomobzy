@@ -24,7 +24,9 @@ async function fixPamasUrban() {
     process.exit(1);
   }
 
-  console.log(`Org encontrada: ${org.name} (${org.id}) | niche atual: ${org.niche}`);
+  console.log(
+    `Org encontrada: ${org.name} (${org.id}) | niche atual: ${org.niche}`
+  );
 
   const { data: updatedOrg, error: updateOrgError } = await supabase
     .from('organizations')

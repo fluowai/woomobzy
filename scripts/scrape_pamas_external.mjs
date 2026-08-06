@@ -16,8 +16,10 @@ function buildConnectionString(url) {
 }
 
 const client = new Client({
-  connectionString: buildConnectionString(process.env.SUPABASE_DB_URL || process.env.DATABASE_URL),
-  ssl: { rejectUnauthorized: false }
+  connectionString: buildConnectionString(
+    process.env.SUPABASE_DB_URL || process.env.DATABASE_URL
+  ),
+  ssl: { rejectUnauthorized: false },
 });
 
 const PAMAS_ID = '836c2313-0c09-4f07-be1a-501ba188e02d';
@@ -26,26 +28,29 @@ async function scrapePropertyPage(url) {
   try {
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Accept:
+          'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
       },
-      timeout: 15000
+      timeout: 15000,
     });
-    
+
     if (!response.ok) return null;
-    
+
     const html = await response.text();
     const $ = cheerio.load(html);
-    
+
     // Extract title from multiple possible locations
-    const title = $('h1').first().text().trim() ||
-                  $('meta[property="og:title"]').attr('content') ||
-                  $('title').text().trim();
-    
+    const title =
+      $('h1').first().text().trim() ||
+      $('meta[property="og:title"]').attr('content') ||
+      $('title').text().trim();
+
     // Extract images from the embedded JSON data or img tags
     const images = [];
-    
+
     // Try to find images in the page
     $('img').each((i, el) => {
       const src = $(el).attr('src') || $(el).attr('data-src');
@@ -53,18 +58,21 @@ async function scrapePropertyPage(url) {
         images.push(src);
       }
     });
-    
+
     // Also look for image URLs in inline scripts
     const scripts = $('script').text();
-    const s3Matches = scripts.match(/https:\/\/s3\.amazonaws\.com\/msys-imob-pamasimoveis\/[^\s"']+/g) || [];
-    s3Matches.forEach(url => {
+    const s3Matches =
+      scripts.match(
+        /https:\/\/s3\.amazonaws\.com\/msys-imob-pamasimoveis\/[^\s"']+/g
+      ) || [];
+    s3Matches.forEach((url) => {
       if (!images.includes(url)) images.push(url);
     });
-    
+
     return {
       url,
       title: title || '',
-      images: [...new Set(images)]
+      images: [...new Set(images)],
     };
   } catch (err) {
     console.error(`Error scraping ${url}:`, err.message);
@@ -77,44 +85,49 @@ async function run() {
 
   try {
     console.log('=== SCRAPING PAMAS PARA EXTERNAL_ID ===\n');
-    
+
     // 1. Fetch sitemap
     console.log('Fetching sitemap...');
-    const sitemapRes = await fetch('https://pamasimoveis.com.br/sitemaps/propertys.xml');
+    const sitemapRes = await fetch(
+      'https://pamasimoveis.com.br/sitemaps/propertys.xml'
+    );
     const xml = await sitemapRes.text();
-    const urls = [...xml.matchAll(/<loc>(.+?)<\/loc>/g)].map(m => m[1]);
+    const urls = [...xml.matchAll(/<loc>(.+?)<\/loc>/g)].map((m) => m[1]);
     console.log(`Found ${urls.length} URLs in sitemap\n`);
-    
+
     // 2. Load existing properties from DB
-    const { rows: props } = await client.query(`
+    const { rows: props } = await client.query(
+      `
       SELECT id, title, external_id, images
       FROM properties
       WHERE organization_id = $1
-    `, [PAMAS_ID]);
-    
+    `,
+      [PAMAS_ID]
+    );
+
     console.log(`DB properties: ${props.length}`);
-    
+
     // Create lookup by normalized title
     const byTitle = new Map();
-    props.forEach(p => {
+    props.forEach((p) => {
       const key = p.title.toLowerCase().trim();
       if (!byTitle.has(key)) byTitle.set(key, []);
       byTitle.get(key).push(p);
     });
-    
+
     // 3. Scrape a sample of URLs to test
     const sampleSize = Math.min(10, urls.length);
     console.log(`Scraping sample of ${sampleSize} URLs...\n`);
-    
+
     for (let i = 0; i < sampleSize; i++) {
       const url = urls[i];
       console.log(`[${i + 1}/${sampleSize}] ${url}`);
-      
+
       const data = await scrapePropertyPage(url);
       if (data) {
         console.log(`  Title: ${data.title.substring(0, 70)}`);
         console.log(`  Images: ${data.images.length}`);
-        
+
         // Try to match with DB
         const normalizedTitle = data.title.toLowerCase().trim();
         const matches = byTitle.get(normalizedTitle);
@@ -126,14 +139,13 @@ async function run() {
       } else {
         console.log(`  FAILED`);
       }
-      
+
       // Small delay to be polite
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 500));
     }
-    
+
     console.log('\n=== READY FOR FULL SCRAPE ===');
     console.log('To scrape all URLs, run with FULL_SCRAPE=true');
-    
   } catch (err) {
     console.error('Erro:', err);
   } finally {

@@ -1178,7 +1178,7 @@
 .wa-queue-tabs button.active {
   background: #fff;
   border-color: var(--mc-border);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   color: var(--mc-text);
   font-weight: 600;
 }

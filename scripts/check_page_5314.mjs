@@ -19,8 +19,9 @@ async function run() {
     console.log('=== CHECKING PAGE 5314 ===\n');
 
     // Check if this URL is already in DB
-    const url = 'https://pamasimoveis.com.br/imovel/locacao/casas/vinhedo/terras-de-vinhedo-condominio-terras-de-vinhedo/5314';
-    
+    const url =
+      'https://pamasimoveis.com.br/imovel/locacao/casas/vinhedo/terras-de-vinhedo-condominio-terras-de-vinhedo/5314';
+
     const { data: existing } = await supabase
       .from('properties')
       .select('id, title, external_id, images')
@@ -37,8 +38,11 @@ async function run() {
       .eq('organization_id', PAMAS_ID)
       .ilike('title', '%Terras de Vinhedo%');
 
-    console.log('Properties with "Terras de Vinhedo" in title:', terrasVinhedo?.length || 0);
-    terrasVinhedo?.forEach(p => {
+    console.log(
+      'Properties with "Terras de Vinhedo" in title:',
+      terrasVinhedo?.length || 0
+    );
+    terrasVinhedo?.forEach((p) => {
       console.log(`  ${p.id}: ${p.title.substring(0, 70)}`);
       console.log(`    external_id: ${p.external_id?.substring(0, 80)}`);
       console.log(`    images: ${p.images?.length || 0}`);
@@ -51,7 +55,9 @@ async function run() {
       .eq('organization_id', PAMAS_ID)
       .or('title.eq.,title.eq."."');
 
-    console.log(`\nProperties with broken titles: ${brokenTitles?.length || 0}`);
+    console.log(
+      `\nProperties with broken titles: ${brokenTitles?.length || 0}`
+    );
 
     // Check the 36 missing ones more carefully
     console.log('\n=== ANALYZING THE 36 MISSING ===');
@@ -63,7 +69,7 @@ async function run() {
 
     // Group by first few words to see patterns
     const groups = new Map();
-    missing?.forEach(p => {
+    missing?.forEach((p) => {
       const words = p.title.toLowerCase().split(' ').slice(0, 5).join(' ');
       if (!groups.has(words)) groups.set(words, []);
       groups.get(words).push(p);
@@ -73,7 +79,6 @@ async function run() {
     groups.forEach((items, pattern) => {
       console.log(`  "${pattern}": ${items.length} properties`);
     });
-
   } catch (err) {
     console.error('Erro:', err);
   }

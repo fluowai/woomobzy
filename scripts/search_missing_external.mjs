@@ -21,10 +21,12 @@ async function searchPamasProperty(title) {
 
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        Accept:
+          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       },
-      timeout: 15000
+      timeout: 15000,
     });
 
     if (!response.ok) return null;
@@ -37,7 +39,9 @@ async function searchPamasProperty(title) {
       const href = $(el).attr('href');
       const text = $(el).text().trim();
       if (href && text) {
-        const fullUrl = href.startsWith('/') ? `https://pamasimoveis.com.br${href}` : href;
+        const fullUrl = href.startsWith('/')
+          ? `https://pamasimoveis.com.br${href}`
+          : href;
         links.push({ url: fullUrl, title: text });
       }
     });
@@ -58,7 +62,9 @@ async function run() {
       .eq('organization_id', PAMAS_ID)
       .or('external_id.is.null,external_id.eq.');
 
-    console.log(`Found ${missingProps?.length || 0} properties without external_id\n`);
+    console.log(
+      `Found ${missingProps?.length || 0} properties without external_id\n`
+    );
 
     let found = 0;
     let notFound = 0;
@@ -83,7 +89,7 @@ async function run() {
         notFound++;
       }
 
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 500));
     }
 
     console.log(`\n=== RESULTS ===`);
@@ -96,9 +102,10 @@ async function run() {
       .select('id, external_id')
       .eq('organization_id', PAMAS_ID);
 
-    const stillMissing = finalCheck?.filter(p => !p.external_id || p.external_id.length === 0).length || 0;
+    const stillMissing =
+      finalCheck?.filter((p) => !p.external_id || p.external_id.length === 0)
+        .length || 0;
     console.log(`Still missing external_id: ${stillMissing}`);
-
   } catch (err) {
     console.error('Erro:', err);
   }

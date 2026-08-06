@@ -1,5 +1,7 @@
 const DEFAULT_BRAND =
-  process.env.AI_BRAND_NAME || process.env.PLATFORM_BRAND_NAME || 'WooTech Imob';
+  process.env.AI_BRAND_NAME ||
+  process.env.PLATFORM_BRAND_NAME ||
+  'WooTech Imob';
 
 export const AGENT_BRAND_NAME = DEFAULT_BRAND;
 
@@ -30,11 +32,7 @@ function handoffRulesText(agent) {
 }
 
 export function buildAgentSystemPrompt(agent = {}, options = {}) {
-  const {
-    history,
-    channel = 'WhatsApp',
-    brandName = DEFAULT_BRAND,
-  } = options;
+  const { history, channel = 'WhatsApp', brandName = DEFAULT_BRAND } = options;
 
   const name = agent?.name || 'assistente virtual';
   const role = agent?.role || DEFAULT_ROLE;

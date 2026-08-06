@@ -147,7 +147,7 @@ services:
     labels:
       - 'traefik.enable=true'
       - 'traefik.docker.network=woopanel1'
-      - 'traefik.http.routers.minio_nb.rule=Host(`nb.consultio.com.br`)'
+      - 'traefik.http.routers.minio_nb.rule=Host(`s.wootech.com.br`)'
       - 'traefik.http.routers.minio_nb.entrypoints=websecure'
       - 'traefik.http.routers.minio_nb.tls.certresolver=letsencryptresolver'
       - 'traefik.http.routers.minio_nb.service=minio_nb'

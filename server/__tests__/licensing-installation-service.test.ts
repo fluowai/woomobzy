@@ -22,12 +22,14 @@ function nextNonce() {
   return `test-nonce-${nonceCounter}-${'a'.repeat(24)}`;
 }
 
-function createMock(seed: {
-  license?: Row;
-  installations?: Row[];
-  domains?: Row[];
-  entitlements?: Row[];
-} = {}) {
+function createMock(
+  seed: {
+    license?: Row;
+    installations?: Row[];
+    domains?: Row[];
+    entitlements?: Row[];
+  } = {}
+) {
   const state: {
     licenses: Row[];
     installations: Row[];
@@ -82,7 +84,15 @@ function createMock(seed: {
       rows = [...rows].sort((a, b) => {
         const av = String(a[q.orderCol] || '');
         const bv = String(b[q.orderCol] || '');
-        return q.ascending ? (av < bv ? -1 : av > bv ? 1 : 0) : av < bv ? 1 : -1;
+        return q.ascending
+          ? av < bv
+            ? -1
+            : av > bv
+              ? 1
+              : 0
+          : av < bv
+            ? 1
+            : -1;
       });
     }
     if (q.limitN) rows = rows.slice(0, q.limitN);
@@ -118,10 +128,14 @@ function createMock(seed: {
         q.ascending = opts?.ascending !== false;
         return q;
       },
-      then(resolve: (v: { data?: Row[]; count?: number; error: null }) => void) {
+      then(
+        resolve: (v: { data?: Row[]; count?: number; error: null }) => void
+      ) {
         const rows = filtered(table, filters, q);
         if (q.countMode) {
-          return Promise.resolve({ count: rows.length, error: null }).then(resolve);
+          return Promise.resolve({ count: rows.length, error: null }).then(
+            resolve
+          );
         }
         return Promise.resolve({ data: rows, error: null }).then(resolve);
       },
@@ -152,7 +166,9 @@ function createMock(seed: {
             };
           },
           then(resolve: (v: { data: Row[]; error: null }) => void) {
-            return Promise.resolve({ data: inserted, error: null }).then(resolve);
+            return Promise.resolve({ data: inserted, error: null }).then(
+              resolve
+            );
           },
         };
       },
@@ -164,7 +180,10 @@ function createMock(seed: {
                 return {
                   async single() {
                     const row = tables[table].find((r) =>
-                      matches(r, { ...filters, eq: { ...filters.eq, [col]: val } })
+                      matches(r, {
+                        ...filters,
+                        eq: { ...filters.eq, [col]: val },
+                      })
                     );
                     if (!row) return { data: null, error: null };
                     Object.assign(row, patch);

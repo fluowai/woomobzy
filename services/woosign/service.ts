@@ -26,7 +26,9 @@ export class WooSignService {
     return data as WhiteLabel;
   }
 
-  async resolveWhiteLabelByHostname(hostname: string): Promise<WhiteLabel | null> {
+  async resolveWhiteLabelByHostname(
+    hostname: string
+  ): Promise<WhiteLabel | null> {
     const { data, error } = await supabase
       .from('white_labels')
       .select('*')
@@ -122,7 +124,9 @@ export class WooSignService {
     return envelope.data;
   }
 
-  async getEnvelopeStatus(envelopeId: string): Promise<DocumensoEnvelope | null> {
+  async getEnvelopeStatus(
+    envelopeId: string
+  ): Promise<DocumensoEnvelope | null> {
     if (!DOCUMENSO_INTEGRATION_ENABLED) {
       return null;
     }
@@ -158,7 +162,8 @@ export class WooSignService {
       throw new Error('Wallet not found');
     }
 
-    const availableBalance = (wallet as Wallet).balance - (wallet as Wallet).reservedBalance;
+    const availableBalance =
+      (wallet as Wallet).balance - (wallet as Wallet).reservedBalance;
 
     if (availableBalance < amount) {
       throw new Error('Insufficient balance');
@@ -268,7 +273,11 @@ export class WooSignService {
     });
   }
 
-  async releaseCreditReservation(walletId: string, envelopeId: string, reason?: string): Promise<void> {
+  async releaseCreditReservation(
+    walletId: string,
+    envelopeId: string,
+    reason?: string
+  ): Promise<void> {
     const { data: reservation, error: reservationError } = await supabase
       .from('woosign_credit_reservations')
       .select('*')
@@ -296,7 +305,9 @@ export class WooSignService {
       return;
     }
 
-    const newReservedBalance = (wallet as Wallet).reservedBalance - (reservation as { amount: number }).amount;
+    const newReservedBalance =
+      (wallet as Wallet).reservedBalance -
+      (reservation as { amount: number }).amount;
 
     await supabase
       .from('woosign_wallets')
@@ -375,7 +386,9 @@ export class WooSignService {
       envelopeIds.map((id) => this.getEnvelopeStatus(id))
     );
 
-    return envelopes.filter((envelope): envelope is DocumensoEnvelope => Boolean(envelope));
+    return envelopes.filter((envelope): envelope is DocumensoEnvelope =>
+      Boolean(envelope)
+    );
   }
 
   async listTemplates(): Promise<Array<{ id: string; name: string }>> {
@@ -419,7 +432,10 @@ export class WooSignService {
   async handleDocumensoWebhook(
     payload: DocumensoWebhookPayload
   ): Promise<void> {
-    logger.info('Received Documenso webhook', { event: payload.event, envelopeId: payload.envelopeId });
+    logger.info('Received Documenso webhook', {
+      event: payload.event,
+      envelopeId: payload.envelopeId,
+    });
 
     if (payload.event === 'DOCUMENT_COMPLETED') {
       const envelopeId = payload.envelopeId;
@@ -456,7 +472,11 @@ export class WooSignService {
         return;
       }
 
-      await this.releaseCreditReservation(mapping.wallet_id, envelopeId, `Envelope ${payload.event.toLowerCase()}`);
+      await this.releaseCreditReservation(
+        mapping.wallet_id,
+        envelopeId,
+        `Envelope ${payload.event.toLowerCase()}`
+      );
     }
   }
 

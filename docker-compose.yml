@@ -7,8 +7,8 @@ services:
       VITE_API_URL: 'same-origin'
       VITE_WHATSAPP_API_URL: '/api/whatsapp'
       VITE_WHATSAPP_WS_URL: '/api/whatsapp/ws'
-      VITE_SUPABASE_URL: '${VITE_SUPABASE_URL}'
-      VITE_SUPABASE_ANON_KEY: '${VITE_SUPABASE_ANON_KEY}'
+      VITE_SUPABASE_URL: 'https://epgaftsjmqmpczvzsrcc.supabase.co'
+      VITE_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2FmdHNqbXFtcGN6dnpzcmNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5NjUyNDUsImV4cCI6MjEwMDU0MTI0NX0.3p4x2i_BtGwzp4ElNV-HqeeVlQcQS53SWai5nJ2NTL0'
       VITE_PANEL_URL: 'https://imob.wootech.com.br'
       VITE_PUBLIC_APP_URL: 'https://imob.wootech.com.br'
       VITE_PLATFORM_IP: '207.58.153.219'
@@ -25,12 +25,6 @@ services:
       - 'traefik.http.routers.wootech_imob_frontend.service=wootech_imob_frontend'
       - 'traefik.http.services.wootech_imob_frontend.loadbalancer.server.port=80'
 
-  coming-soon:
-    image: ghcr.io/fluowai/inovebrokers-coming-soon:latest
-    restart: unless-stopped
-    networks:
-      - wootech1
-
   api:
     image: ghcr.io/fluowai/woomobzy-api:latest
     environment:
@@ -40,34 +34,32 @@ services:
       WHATSAPP_WEBHOOK_URL: 'http://api:3002'
       ALLOWED_ORIGINS: 'https://imob.wootech.com.br,https://imobfluow.consultio.com.br'
       CORS_ORIGINS: 'https://imob.wootech.com.br,https://imobfluow.consultio.com.br'
-      VITE_SUPABASE_URL: '${VITE_SUPABASE_URL}'
-      VITE_SUPABASE_ANON_KEY: '${VITE_SUPABASE_ANON_KEY}'
-      SUPABASE_SERVICE_ROLE_KEY: '${SUPABASE_SERVICE_ROLE_KEY}'
-      SUPABASE_JWT_SECRET: '${SUPABASE_JWT_SECRET}'
-      DATABASE_URL: '${DATABASE_URL}'
-      SUPABASE_DB_URL: '${SUPABASE_DB_URL}'
+      VITE_SUPABASE_URL: 'https://epgaftsjmqmpczvzsrcc.supabase.co'
+      VITE_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2FmdHNqbXFtcGN6dnpzcmNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5NjUyNDUsImV4cCI6MjEwMDU0MTI0NX0.3p4x2i_BtGwzp4ElNV-HqeeVlQcQS53SWai5nJ2NTL0'
+      SUPABASE_SERVICE_ROLE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2FmdHNqbXFtcGN6dnpzcmNjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDk2NTI0NSwiZXhwIjoyMTAwNTQxMjQ1fQ.tx6ap1RQ-gPCWn_vQQ7Up-YVknjwnx2F27HWAAUqtwo'
+      SUPABASE_JWT_SECRET: 'RISMBLbL3RvTt216f7d3FFQq1SE8pXDMCkcubtboBqT87vV87Da6KvWVY7fDdLHxY918CE3bQm6zy4QGCdmutQ=='
+      DATABASE_URL: 'postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=require&default_query_exec_mode=simple_protocol'
+      SUPABASE_DB_URL: 'postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=require&default_query_exec_mode=simple_protocol'
       PGSSLMODE: require
       WHATSAPP_API_URL: 'http://whatsapp-service:3100'
       WHATSMEOW_URL: 'http://whatsapp-service:3100'
       NODE_URL: 'http://api:3002'
       AGRO_INTEL_URL: 'http://agro-intelligence:8000'
-      INSTAGRAM_SERVICE_URL: 'http://instagram-service:3200'
-      OPENAI_API_KEY: '${OPENAI_API_KEY}'
-      GEMINI_API_KEY: '${GEMINI_API_KEY}'
-      GROQ_API_KEY: '${GROQ_API_KEY}'
-      WHATSAPP_SERVICE_TOKEN: '${WHATSAPP_SERVICE_TOKEN}'
-      WHATSAPP_INTERNAL_TOKEN: '${WHATSAPP_INTERNAL_TOKEN}'
-      WHATSAPP_WS_JWT_SECRET: '${WHATSAPP_WS_JWT_SECRET}'
+      OPENAI_API_KEY: 'sk-dummy1234567890'
+      GEMINI_API_KEY: 'AIzaSy-dummy1234567890'
+      GROQ_API_KEY: 'gsk_dummy1234567890123456789012345678901234567890123456'
+      WHATSAPP_SERVICE_TOKEN: 'b145f12f69de4aa95e9d3664ead5353b344decc130418e5cb8b21808cb08e833'
+      WHATSAPP_INTERNAL_TOKEN: '61b0739dac8483b85be02e43e9ea35afb52fb2f4b0bb4e0af077f380db18fb5b'
+      WHATSAPP_WS_JWT_SECRET: 'f8a2c9e1d4b7f3a6e2d8c5b9a1f4e7d2c6b3a9f1e5d8c2b6a4f7e1d3c9b5a8f2'
       WHATSAPP_AI_AUTOMATION: 'true'
-      RABBITMQ_URL: '${RABBITMQ_URL}'
+      RABBITMQ_URL: 'amqp://imobzy:Argo%4015077399brsc@rabbitmq-server:5672/'
       MEDIA_STORAGE_PROVIDER: 'minio'
-      ALLOW_SUPABASE_STORAGE_FALLBACK: 'true'
-      MINIO_ENDPOINT: 'http://minio:9000'
-      MINIO_PUBLIC_URL: '${MINIO_PUBLIC_URL}'
-      MINIO_ACCESS_KEY: '${MINIO_ACCESS_KEY}'
-      MINIO_SECRET_KEY: '${MINIO_SECRET_KEY}'
-      MINIO_REGION: '${MINIO_REGION}'
-      MINIO_WHATSAPP_BUCKET: '${MINIO_WHATSAPP_BUCKET}'
+      MINIO_ENDPOINT: 'https://s.wootech.com.br'
+      MINIO_PUBLIC_URL: 'https://s.wootech.com.br'
+      MINIO_ACCESS_KEY: '8aHPnW4JQsRWhbKld9Yw'
+      MINIO_SECRET_KEY: 'YRZMCNfcdIZhUtTXpPCvvSiPB74ZFTEtnZ5B9juc'
+      MINIO_REGION: 'us-east-1'
+      MINIO_WHATSAPP_BUCKET: 'imobzywhatsapp'
       TRAEFIK_DYNAMIC_DIR: '/app/traefik/dynamic'
       TRAEFIK_FRONTEND_SERVICE: 'wootech_imob_frontend@docker'
       TRAEFIK_API_SERVICE: 'wootech_imob_api@docker'
@@ -98,103 +90,38 @@ services:
       PORT: 3100
       ALLOWED_ORIGINS: 'https://imob.wootech.com.br,https://imobfluow.consultio.com.br'
       CORS_ORIGINS: 'https://imob.wootech.com.br,https://imobfluow.consultio.com.br'
-      SUPABASE_URL: '${VITE_SUPABASE_URL}'
-      SUPABASE_SERVICE_ROLE_KEY: '${SUPABASE_SERVICE_ROLE_KEY}'
-      SUPABASE_JWT_SECRET: '${SUPABASE_JWT_SECRET}'
-      SUPABASE_DB_URL: '${SUPABASE_DB_URL}'
+      SUPABASE_URL: 'https://epgaftsjmqmpczvzsrcc.supabase.co'
+      SUPABASE_SERVICE_ROLE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2FmdHNqbXFtcGN6dnpzcmNjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDk2NTI0NSwiZXhwIjoyMTAwNTQxMjQ1fQ.tx6ap1RQ-gPCWn_vQQ7Up-YVknjwnx2F27HWAAUqtwo'
+      SUPABASE_JWT_SECRET: 'RISMBLbL3RvTt216f7d3FFQq1SE8pXDMCkcubtboBqT87vV87Da6KvWVY7fDdLHxY918CE3bQm6zy4QGCdmutQ=='
+      SUPABASE_DB_URL: 'postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=require&default_query_exec_mode=simple_protocol'
       PGSSLMODE: require
       NODE_URL: 'http://api:3002'
-      OPENAI_API_KEY: '${OPENAI_API_KEY}'
-      GEMINI_API_KEY: '${GEMINI_API_KEY}'
-      GROQ_API_KEY: '${GROQ_API_KEY}'
-      WHATSAPP_SERVICE_TOKEN: '${WHATSAPP_SERVICE_TOKEN}'
-      WHATSAPP_INTERNAL_TOKEN: '${WHATSAPP_INTERNAL_TOKEN}'
-      WHATSAPP_WS_JWT_SECRET: '${WHATSAPP_WS_JWT_SECRET}'
+      OPENAI_API_KEY: 'sk-dummy1234567890'
+      GEMINI_API_KEY: 'AIzaSy-dummy1234567890'
+      GROQ_API_KEY: 'gsk_dummy1234567890123456789012345678901234567890123456'
+      WHATSAPP_SERVICE_TOKEN: 'b145f12f69de4aa95e9d3664ead5353b344decc130418e5cb8b21808cb08e833'
+      WHATSAPP_INTERNAL_TOKEN: '61b0739dac8483b85be02e43e9ea35afb52fb2f4b0bb4e0af077f380db18fb5b'
+      WHATSAPP_WS_JWT_SECRET: 'f8a2c9e1d4b7f3a6e2d8c5b9a1f4e7d2c6b3a9f1e5d8c2b6a4f7e1d3c9b5a8f2'
       WHATSAPP_AI_AUTOMATION: 'true'
       MEDIA_STORAGE_PROVIDER: 'minio'
-      ALLOW_SUPABASE_STORAGE_FALLBACK: 'true'
-      MINIO_ENDPOINT: 'http://minio:9000'
-      MINIO_PUBLIC_URL: '${MINIO_PUBLIC_URL}'
-      MINIO_ACCESS_KEY: '${MINIO_ACCESS_KEY}'
-      MINIO_SECRET_KEY: '${MINIO_SECRET_KEY}'
-      MINIO_REGION: '${MINIO_REGION}'
-      MINIO_WHATSAPP_BUCKET: '${MINIO_WHATSAPP_BUCKET}'
+      MINIO_ENDPOINT: 'https://s.wootech.com.br'
+      MINIO_PUBLIC_URL: 'https://s.wootech.com.br'
+      MINIO_ACCESS_KEY: '8aHPnW4JQsRWhbKld9Yw'
+      MINIO_SECRET_KEY: 'YRZMCNfcdIZhUtTXpPCvvSiPB74ZFTEtnZ5B9juc'
+      MINIO_REGION: 'us-east-1'
+      MINIO_WHATSAPP_BUCKET: 'imobzywhatsapp'
     volumes:
       - whatsapp_sessions:/app/.sessions
     networks:
       - imobfluow_internal
 
-  minio:
-    image: minio/minio:latest
-    command: server /data --console-address ':9001'
-    environment:
-      MINIO_ROOT_USER: '${MINIO_ROOT_USER}'
-      MINIO_ROOT_PASSWORD: '${MINIO_ROOT_PASSWORD}'
-    volumes:
-      - minio_data:/data
-    networks:
-      - wootech1
-      - imobfluow_internal
-    healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 20s
-    restart: unless-stopped
-    labels:
-      - 'traefik.enable=true'
-      - 'traefik.docker.network=wootech1'
-      - 'traefik.http.routers.minio_nb.rule=Host(`nb.consultio.com.br`)'
-      - 'traefik.http.routers.minio_nb.entrypoints=websecure'
-      - 'traefik.http.routers.minio_nb.tls.certresolver=letsencryptresolver'
-      - 'traefik.http.routers.minio_nb.service=minio_nb'
-      - 'traefik.http.services.minio_nb.loadbalancer.server.port=9000'
-
-  # Provisiona o MinIO novo (do zero): buckets + policy imobzy-rw + usuário do app.
-  # Idempotente — roda a cada subida da stack e não quebra se já existir.
-  minio-init:
-    image: minio/mc:latest
-    entrypoint:
-      - /bin/sh
-      - -c
-      - |
-        set -e
-        for i in $$(seq 1 60); do
-          if mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" >/dev/null 2>&1; then break; fi
-          sleep 2
-        done
-        mc mb --ignore-existing \
-          local/imobzycrm \
-          local/imobzywhatsapp \
-          local/imobzy-media \
-          local/imobzy-documents \
-          local/imobzy-exports \
-          local/imobzy-backups \
-          local/imobzy-contracts
-        printf '%s\n' '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:*"],"Resource":["arn:aws:s3:::imobzy*","arn:aws:s3:::imobzy*/*"]}]}' > /tmp/imobzy-rw.json
-        mc admin policy create local imobzy-rw /tmp/imobzy-rw.json >/dev/null 2>&1 || true
-        mc admin user add local "$$MINIO_APP_ACCESS_KEY" "$$MINIO_APP_SECRET_KEY" >/dev/null 2>&1 || true
-        mc admin policy attach local imobzy-rw --user "$$MINIO_APP_ACCESS_KEY" >/dev/null 2>&1 || true
-    environment:
-      MINIO_ROOT_USER: '${MINIO_ROOT_USER}'
-      MINIO_ROOT_PASSWORD: '${MINIO_ROOT_PASSWORD}'
-      MINIO_APP_ACCESS_KEY: '${MINIO_ACCESS_KEY}'
-      MINIO_APP_SECRET_KEY: '${MINIO_SECRET_KEY}'
-    networks:
-      - imobfluow_internal
-    restart: "no"
-    depends_on:
-      minio:
-        condition: service_healthy
-
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     hostname: rabbitmq-server
     environment:
-      RABBITMQ_ERLANG_COOKIE: '${RABBITMQ_ERLANG_COOKIE:?cookie de 32+ caracteres obrigatorio}'
+      RABBITMQ_ERLANG_COOKIE: 'ImobzyCookieSecreto123'
       RABBITMQ_DEFAULT_USER: 'imobzy'
-      RABBITMQ_DEFAULT_PASS: '${RABBITMQ_DEFAULT_PASS}'
+      RABBITMQ_DEFAULT_PASS: 'Argo@15077399brsc'
       RABBITMQ_NODENAME: 'rabbit@rabbitmq-server'
     volumes:
       - rabbitmq_data_v4:/var/lib/rabbitmq/mnesia
@@ -212,68 +139,11 @@ services:
     networks:
       - imobfluow_internal
 
-  redis:
-    image: redis:7-alpine
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
-    volumes:
-      - redis_data:/data
-    networks:
-      - imobfluow_internal
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
-    restart: unless-stopped
-
-  instagram-service:
-    image: ghcr.io/fluowai/woomobzy-instagram-service:latest
-    environment:
-      NODE_ENV: production
-      PORT: '3200'
-      REDIS_URL: 'redis://redis:6379'
-      INSTAGRAM_WORKER_URL: 'http://instagram-worker:8000'
-      INSTAGRAM_INTERNAL_TOKEN: '${INSTAGRAM_INTERNAL_TOKEN}'
-      ALLOWED_ORIGINS: 'https://imob.wootech.com.br,https://imobfluow.consultio.com.br'
-      SUPABASE_URL: '${VITE_SUPABASE_URL}'
-      SUPABASE_SERVICE_ROLE_KEY: '${SUPABASE_SERVICE_ROLE_KEY}'
-      SUPABASE_JWT_SECRET: '${SUPABASE_JWT_SECRET}'
-    networks:
-      - imobfluow_internal
-    depends_on:
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-
-  instagram-worker:
-    image: ghcr.io/fluowai/woomobzy-instagram-worker:latest
-    environment:
-      SUPABASE_URL: '${VITE_SUPABASE_URL}'
-      SUPABASE_SERVICE_ROLE_KEY: '${SUPABASE_SERVICE_ROLE_KEY}'
-      REDIS_URL: 'redis://redis:6379'
-      INSTAGRAM_INTERNAL_TOKEN: '${INSTAGRAM_INTERNAL_TOKEN}'
-      INSTAGRAM_ENCRYPTION_SECRET: '${INSTAGRAM_ENCRYPTION_SECRET}'
-      NODE_SERVICE_URL: 'http://instagram-service:3200'
-    volumes:
-      - instagram_devices:/data/devices
-      - instagram_sessions:/data/sessions
-    networks:
-      - imobfluow_internal
-    depends_on:
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-
 volumes:
   whatsapp_sessions:
   rabbitmq_data_v4:
   imobzy_traefik_dynamic:
     external: true
-  redis_data:
-  instagram_devices:
-  instagram_sessions:
-  minio_data:
 
 networks:
   wootech1:

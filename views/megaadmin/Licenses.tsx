@@ -91,7 +91,9 @@ const Licenses: React.FC = () => {
       if (statusFilter) params.set('status', statusFilter);
       if (editionFilter) params.set('edition', editionFilter);
       const query = params.toString();
-      const data = await callApi(`/api/mega/licenses${query ? `?${query}` : ''}`);
+      const data = await callApi(
+        `/api/mega/licenses${query ? `?${query}` : ''}`
+      );
       setLicenses(data.licenses || []);
       setTotal(data.total || 0);
       setErrorMsg(null);
@@ -122,7 +124,8 @@ const Licenses: React.FC = () => {
       callApi('/api/mega/direct-clients').catch(() => ({ clients: [] })),
     ])
       .then(([resellersData, clientsData]) => {
-        const resellers = (resellersData.resellers || []) as OrganizationOption[];
+        const resellers = (resellersData.resellers ||
+          []) as OrganizationOption[];
         const clients = (clientsData.clients || []) as OrganizationOption[];
         const merged: OrganizationOption[] = [];
         const seen = new Set<string>();
@@ -218,9 +221,12 @@ const Licenses: React.FC = () => {
     )
       return;
     try {
-      const response = await callApi(`/api/mega/licenses/${license.id}/reissue-key`, {
-        method: 'POST',
-      });
+      const response = await callApi(
+        `/api/mega/licenses/${license.id}/reissue-key`,
+        {
+          method: 'POST',
+        }
+      );
       window.alert(`Nova chave de licença:\n\n${response.licenseKey}`);
       await fetchLicenses();
     } catch (error) {
@@ -302,9 +308,7 @@ const Licenses: React.FC = () => {
     return buttons.map((button) => (
       <button
         key={button.action}
-        onClick={() =>
-          runStatusAction(license, button.action, button.confirm)
-        }
+        onClick={() => runStatusAction(license, button.action, button.confirm)}
         className={`p-1.5 rounded hover:bg-gray-100 mr-1 ${button.className}`}
         title={button.label}
       >
@@ -431,10 +435,12 @@ const Licenses: React.FC = () => {
                         </div>
                         <div>
                           <div className="font-medium text-gray-900">
-                            {license.organization_name || license.organization_id}
+                            {license.organization_name ||
+                              license.organization_id}
                           </div>
                           <div className="text-xs text-gray-400">
-                            {license.organization_slug || license.organization_id.slice(0, 8)}
+                            {license.organization_slug ||
+                              license.organization_id.slice(0, 8)}
                           </div>
                         </div>
                       </div>
@@ -477,17 +483,23 @@ const Licenses: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {license.expires_at
-                        ? new Date(license.expires_at).toLocaleDateString('pt-BR')
+                        ? new Date(license.expires_at).toLocaleDateString(
+                            'pt-BR'
+                          )
                         : 'Sem prazo'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {license.last_heartbeat_at
-                        ? new Date(license.last_heartbeat_at).toLocaleString('pt-BR')
+                        ? new Date(license.last_heartbeat_at).toLocaleString(
+                            'pt-BR'
+                          )
                         : '—'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <button
-                        onClick={() => navigate(`/megaadmin/licenses/${license.id}`)}
+                        onClick={() =>
+                          navigate(`/megaadmin/licenses/${license.id}`)
+                        }
                         className="p-1.5 rounded hover:bg-gray-100 mr-1 text-purple-600"
                         title="Ver detalhes"
                       >
@@ -564,7 +576,10 @@ const Licenses: React.FC = () => {
                     required
                     value={formData.organization_id}
                     onChange={(e) =>
-                      setFormData({ ...formData, organization_id: e.target.value })
+                      setFormData({
+                        ...formData,
+                        organization_id: e.target.value,
+                      })
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
                   >

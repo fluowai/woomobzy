@@ -56,6 +56,7 @@ const ResellerDomains: React.FC = () => {
   const [verifying, setVerifying] = useState<string | null>(null);
   const [verifyResults, setVerifyResults] = useState<Record<string, any>>({});
   const [removing, setRemoving] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -188,6 +189,28 @@ const ResellerDomains: React.FC = () => {
     }
   };
 
+  const handleSyncAll = async () => {
+    if (
+      !confirm(
+        'Sincronizar todos os domínios com o Traefik? Isso recria os arquivos de configuração para todos os domínios cadastrados.'
+      )
+    )
+      return;
+
+    setSyncing(true);
+    try {
+      const response = await callApi('/api/domains/sync-all', {
+        method: 'POST',
+      });
+      alert(response.message || 'Sincronização concluída.');
+      fetchData();
+    } catch (error: any) {
+      alert(`Erro na sincronização: ${error.message || 'Erro desconhecido'}`);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const renderDomainCell = (
     reseller: Reseller,
     domain: string | null | undefined,
@@ -199,8 +222,7 @@ const ResellerDomains: React.FC = () => {
 
     const meta = domainMeta[domain];
     const verifyResult = verifyResults[domain];
-    const removePurpose =
-      meta?.purpose === 'both' ? 'both' : columnPurpose;
+    const removePurpose = meta?.purpose === 'both' ? 'both' : columnPurpose;
 
     return (
       <div className="flex flex-col gap-1.5 items-start">
@@ -215,7 +237,9 @@ const ResellerDomains: React.FC = () => {
           </a>
           {meta && (
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 font-semibold uppercase tracking-tight">
-              {meta.purpose === 'both' ? 'Site + Painel' : PURPOSE_LABELS[columnPurpose]}
+              {meta.purpose === 'both'
+                ? 'Site + Painel'
+                : PURPOSE_LABELS[columnPurpose]}
             </span>
           )}
         </div>
@@ -290,14 +314,24 @@ const ResellerDomains: React.FC = () => {
             Domínios dos Whitelabels
           </h1>
           <p className="text-gray-500 mt-1">
-            Vincule os domínios de site público e de painel de cada whitelabel
-            e acompanhe o provisionamento no Traefik.
+            Vincule os domínios de site público e de painel de cada whitelabel e
+            acompanhe o provisionamento no Traefik.
           </p>
         </div>
         <div className="flex gap-3">
           <button
+            onClick={handleSyncAll}
+            disabled={syncing}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium disabled:opacity-60"
+            title="Sincronizar domínios com o Traefik"
+          >
+            <RefreshCw size={18} className={syncing ? 'animate-spin' : ''} />
+            Sync Traefik
+          </button>
+          <button
             onClick={fetchData}
-            className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg"
+            disabled={syncing}
+            className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg disabled:opacity-60"
             title="Atualizar"
           >
             <RefreshCw size={20} />

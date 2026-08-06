@@ -58,7 +58,9 @@ function requireField(value, field) {
 }
 
 function normalizeDomain(domain) {
-  return String(domain || '').toLowerCase().trim();
+  return String(domain || '')
+    .toLowerCase()
+    .trim();
 }
 
 /**
@@ -186,18 +188,21 @@ async function findInstallationByFingerprintGlobal(supabase, fingerprint) {
   return data || null;
 }
 
-async function upsertInstallation(supabase, {
-  licenseId,
-  organizationId,
-  installationId,
-  fingerprint,
-  name,
-  hostname,
-  platform,
-  version,
-  ipAddress,
-  now,
-}) {
+async function upsertInstallation(
+  supabase,
+  {
+    licenseId,
+    organizationId,
+    installationId,
+    fingerprint,
+    name,
+    hostname,
+    platform,
+    version,
+    ipAddress,
+    now,
+  }
+) {
   const existing = await findInstallation(supabase, licenseId, fingerprint);
   const nowIso = new Date(now).toISOString();
 
@@ -248,12 +253,11 @@ async function upsertInstallation(supabase, {
   return data;
 }
 
-async function touchInstallation(supabase, installation, {
-  hostname,
-  version,
-  ipAddress,
-  now,
-}) {
+async function touchInstallation(
+  supabase,
+  installation,
+  { hostname, version, ipAddress, now }
+) {
   const nowIso = new Date(now).toISOString();
   const { data, error } = await supabase
     .from('license_installations')
@@ -291,16 +295,19 @@ async function updateLicenseActivity(supabase, license, { activate, now }) {
   return data;
 }
 
-async function insertHeartbeatLog(supabase, {
-  licenseId,
-  organizationId,
-  installationId,
-  nonce,
-  status,
-  ipAddress,
-  payload,
-  now,
-}) {
+async function insertHeartbeatLog(
+  supabase,
+  {
+    licenseId,
+    organizationId,
+    installationId,
+    nonce,
+    status,
+    ipAddress,
+    payload,
+    now,
+  }
+) {
   const { data, error } = await supabase
     .from('license_heartbeats')
     .insert([
@@ -326,17 +333,20 @@ async function insertHeartbeatLog(supabase, {
  * Auditoria à prova de adulteração: hash encadeado.
  * event_hash = sha256(previous_hash + dados do evento).
  */
-export async function appendAuditEvent(supabase, {
-  licenseId,
-  organizationId,
-  installationId,
-  actorId,
-  action,
-  severity,
-  eventData,
-  ipAddress,
-  now,
-}) {
+export async function appendAuditEvent(
+  supabase,
+  {
+    licenseId,
+    organizationId,
+    installationId,
+    actorId,
+    action,
+    severity,
+    eventData,
+    ipAddress,
+    now,
+  }
+) {
   const createdAt = new Date(now).toISOString();
   const baseInsert = (previousHash, eventHash) => ({
     license_id: licenseId,
@@ -405,8 +415,7 @@ function buildValidationEnvelope({
 
   let validUntilMs = now + DEFAULT_ENVELOPE_TTL_MS;
   if (expiresAtMs) {
-    const expiryLimitMs =
-      expiresAtMs + CLOCK_SKEW_MS + (isGrace ? graceMs : 0);
+    const expiryLimitMs = expiresAtMs + CLOCK_SKEW_MS + (isGrace ? graceMs : 0);
     validUntilMs = Math.min(validUntilMs, expiryLimitMs);
   }
 
@@ -487,8 +496,10 @@ export async function activateInstallation(supabase, input = {}) {
 
   const baseState = computeLicenseState({ license, now });
   if (!ACTIVATABLE_STATES.has(baseState.state)) {
-    const mapped =
-      ACTIVATION_FORBIDDEN[baseState.state] || { code: baseState.code, status: 403 };
+    const mapped = ACTIVATION_FORBIDDEN[baseState.state] || {
+      code: baseState.code,
+      status: 403,
+    };
     throw new LicenseEndpointError(
       baseState.checks?.licenseState?.reason || 'Licença não ativável',
       mapped.code,
@@ -496,7 +507,10 @@ export async function activateInstallation(supabase, input = {}) {
     );
   }
 
-  const bound = await findInstallationByFingerprintGlobal(supabase, fingerprint);
+  const bound = await findInstallationByFingerprintGlobal(
+    supabase,
+    fingerprint
+  );
   if (bound && String(bound.license_id) !== String(license.id)) {
     throw new LicenseEndpointError(
       'Fingerprint já vinculado a outra licença',
@@ -505,11 +519,13 @@ export async function activateInstallation(supabase, input = {}) {
     );
   }
 
-  const [allowedDomains, entitlements, activeInstallations] = await Promise.all([
-    listDomains(supabase, license.id),
-    listEntitlements(supabase, license.id),
-    countActiveInstallations(supabase, license.id),
-  ]);
+  const [allowedDomains, entitlements, activeInstallations] = await Promise.all(
+    [
+      listDomains(supabase, license.id),
+      listEntitlements(supabase, license.id),
+      countActiveInstallations(supabase, license.id),
+    ]
+  );
 
   const domainOk =
     allowedDomains.length === 0 ||
@@ -523,9 +539,7 @@ export async function activateInstallation(supabase, input = {}) {
   }
 
   const existing = await findInstallation(supabase, license.id, fingerprint);
-  const countsAgainstLimit = !(
-    existing && existing.status === 'active'
-  );
+  const countsAgainstLimit = !(existing && existing.status === 'active');
   const maxInstallations = Number(license.max_installations ?? 1);
   if (countsAgainstLimit && activeInstallations >= maxInstallations) {
     throw new LicenseEndpointError(
@@ -649,7 +663,10 @@ export async function validateInstallation(supabase, input = {}) {
   let result;
   if (!installation) {
     const base = computeLicenseState({ license, now });
-    if (base.state === LICENSE_STATES.VALID || base.state === LICENSE_STATES.GRACE) {
+    if (
+      base.state === LICENSE_STATES.VALID ||
+      base.state === LICENSE_STATES.GRACE
+    ) {
       result = {
         state: LICENSE_STATES.FINGERPRINT_MISMATCH,
         code: 'FINGERPRINT_MISMATCH',
@@ -758,7 +775,11 @@ export async function sendHeartbeat(supabase, input = {}) {
   }
   assertLicenseKeyMatches(license, keyPayload);
 
-  const installation = await findInstallation(supabase, license.id, fingerprint);
+  const installation = await findInstallation(
+    supabase,
+    license.id,
+    fingerprint
+  );
   if (!installation || !HEARTBEAT_OK_STATUSES.includes(installation.status)) {
     throw new LicenseEndpointError(
       'Instalação não encontrada ou inativa',
@@ -767,11 +788,13 @@ export async function sendHeartbeat(supabase, input = {}) {
     );
   }
 
-  const [entitlements, allowedDomains, activeInstallations] = await Promise.all([
-    listEntitlements(supabase, license.id),
-    listDomains(supabase, license.id),
-    countActiveInstallations(supabase, license.id),
-  ]);
+  const [entitlements, allowedDomains, activeInstallations] = await Promise.all(
+    [
+      listEntitlements(supabase, license.id),
+      listDomains(supabase, license.id),
+      countActiveInstallations(supabase, license.id),
+    ]
+  );
 
   const result = evaluateLicense({
     license,

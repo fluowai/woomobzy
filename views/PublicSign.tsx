@@ -70,14 +70,17 @@ export const PublicSign = () => {
         `${formData.signer_name}-${formData.signer_cpf}-${Date.now()}`
       );
 
-      const res = await fetch(`/api/locacao/public/signature/${signatureId}/sign`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          signature_hash: signatureHash,
-        }),
-      });
+      const res = await fetch(
+        `/api/locacao/public/signature/${signatureId}/sign`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            signature_hash: signatureHash,
+          }),
+        }
+      );
 
       const result = await res.json();
       if (result.success) {
@@ -109,8 +112,12 @@ export const PublicSign = () => {
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
           <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-slate-800 mb-2">Assinatura não encontrada</h1>
-          <p className="text-slate-600">Verifique o link ou entre em contato com o remetente.</p>
+          <h1 className="text-xl font-bold text-slate-800 mb-2">
+            Assinatura não encontrada
+          </h1>
+          <p className="text-slate-600">
+            Verifique o link ou entre em contato com o remetente.
+          </p>
         </div>
       </div>
     );
@@ -121,14 +128,20 @@ export const PublicSign = () => {
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
           <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-slate-800 mb-2">Documento já assinado</h1>
-          <p className="text-slate-600">Este documento já foi assinado em {new Date(data.signature.signed_at || '').toLocaleString('pt-BR')}.</p>
+          <h1 className="text-xl font-bold text-slate-800 mb-2">
+            Documento já assinado
+          </h1>
+          <p className="text-slate-600">
+            Este documento já foi assinado em{' '}
+            {new Date(data.signature.signed_at || '').toLocaleString('pt-BR')}.
+          </p>
         </div>
       </div>
     );
   }
 
-  const documentUrl = data.lease?.pdf_url || data.lease?.signed_document_url || '#';
+  const documentUrl =
+    data.lease?.pdf_url || data.lease?.signed_document_url || '#';
 
   return (
     <div className="min-h-screen bg-slate-50 py-8 px-4">
@@ -139,7 +152,9 @@ export const PublicSign = () => {
               <PenTool size={24} />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-slate-800">Assinatura Digital</h1>
+              <h1 className="text-xl font-bold text-slate-800">
+                Assinatura Digital
+              </h1>
               <p className="text-sm text-slate-500">
                 {data.lease?.property_title || 'Contrato de Locação'}
               </p>
@@ -165,12 +180,16 @@ export const PublicSign = () => {
             />
           ) : (
             <div className="p-8 bg-slate-50 rounded-xl text-center text-slate-500">
-              Documento não disponível para preview. Entre em contato com o remetente.
+              Documento não disponível para preview. Entre em contato com o
+              remetente.
             </div>
           )}
         </div>
 
-        <form onSubmit={handleSign} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+        <form
+          onSubmit={handleSign}
+          className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6"
+        >
           <h2 className="text-sm font-bold uppercase tracking-widest text-slate-800 mb-4">
             Confirmar Assinatura
           </h2>
@@ -183,7 +202,9 @@ export const PublicSign = () => {
               <input
                 type="text"
                 value={formData.signer_name}
-                onChange={(e) => setFormData({ ...formData, signer_name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, signer_name: e.target.value })
+                }
                 className="w-full px-4 py-2 rounded-lg border border-slate-200 text-sm outline-none"
                 required
               />
@@ -196,7 +217,9 @@ export const PublicSign = () => {
               <input
                 type="text"
                 value={formData.signer_cpf}
-                onChange={(e) => setFormData({ ...formData, signer_cpf: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, signer_cpf: e.target.value })
+                }
                 className="w-full px-4 py-2 rounded-lg border border-slate-200 text-sm outline-none"
               />
             </div>
@@ -207,7 +230,12 @@ export const PublicSign = () => {
               </label>
               <select
                 value={formData.acceptance_method}
-                onChange={(e) => setFormData({ ...formData, acceptance_method: e.target.value })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    acceptance_method: e.target.value,
+                  })
+                }
                 className="w-full px-4 py-2 rounded-lg border border-slate-200 text-sm outline-none"
               >
                 <option value="digital">Assinatura Digital</option>

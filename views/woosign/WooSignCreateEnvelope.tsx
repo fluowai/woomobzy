@@ -10,9 +10,9 @@ const WooSignCreateEnvelope: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
-  const [recipients, setRecipients] = useState<Array<{ email: string; name: string }>>([
-    { email: '', name: '' },
-  ]);
+  const [recipients, setRecipients] = useState<
+    Array<{ email: string; name: string }>
+  >([{ email: '', name: '' }]);
 
   const addRecipient = () => {
     setRecipients([...recipients, { email: '', name: '' }]);
@@ -22,7 +22,11 @@ const WooSignCreateEnvelope: React.FC = () => {
     setRecipients(recipients.filter((_, i) => i !== index));
   };
 
-  const updateRecipient = (index: number, field: 'email' | 'name', value: string) => {
+  const updateRecipient = (
+    index: number,
+    field: 'email' | 'name',
+    value: string
+  ) => {
     const updated = [...recipients];
     updated[index][field] = value;
     setRecipients(updated);
@@ -33,7 +37,9 @@ const WooSignCreateEnvelope: React.FC = () => {
     setSending(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         toast.error('Usuário não autenticado');
         return;
@@ -54,7 +60,9 @@ const WooSignCreateEnvelope: React.FC = () => {
 
       if (file) {
         setUploading(true);
-        pdfUrl = (await uploadFile(file, 'documents', `woosign/${user.id}`)) || undefined;
+        pdfUrl =
+          (await uploadFile(file, 'documents', `woosign/${user.id}`)) ||
+          undefined;
         setUploading(false);
 
         if (!pdfUrl) {
@@ -115,7 +123,9 @@ const WooSignCreateEnvelope: React.FC = () => {
 
       <form onSubmit={handleSubmit} className="max-w-2xl space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1">Título do documento</label>
+          <label className="block text-sm font-medium mb-1">
+            Título do documento
+          </label>
           <input
             type="text"
             value={title}
@@ -127,7 +137,9 @@ const WooSignCreateEnvelope: React.FC = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">PDF do documento</label>
+          <label className="block text-sm font-medium mb-1">
+            PDF do documento
+          </label>
           <input
             type="file"
             accept="application/pdf"
@@ -167,7 +179,9 @@ const WooSignCreateEnvelope: React.FC = () => {
                 <input
                   type="email"
                   value={recipient.email}
-                  onChange={(e) => updateRecipient(index, 'email', e.target.value)}
+                  onChange={(e) =>
+                    updateRecipient(index, 'email', e.target.value)
+                  }
                   className="flex-1 rounded-lg border border-slate-200 px-3 py-2"
                   placeholder="E-mail"
                   required

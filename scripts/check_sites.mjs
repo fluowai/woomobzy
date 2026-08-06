@@ -14,8 +14,10 @@ function buildConnectionString(url) {
 }
 
 const client = new Client({
-  connectionString: buildConnectionString(process.env.SUPABASE_DB_URL || process.env.DATABASE_URL),
-  ssl: { rejectUnauthorized: false }
+  connectionString: buildConnectionString(
+    process.env.SUPABASE_DB_URL || process.env.DATABASE_URL
+  ),
+  ssl: { rejectUnauthorized: false },
 });
 
 const PAMAS_ID = '836c2313-0c09-4f07-be1a-501ba188e02d';
@@ -33,31 +35,40 @@ async function run() {
       FROM landing_pages
       ORDER BY organization_id, updated_at DESC
     `);
-    
+
     if (allPages.rows.length === 0) {
       console.log('Nenhuma landing page cadastrada.');
     } else {
-      allPages.rows.forEach(page => {
-        const orgName = page.organization_id === PAMAS_ID ? 'PAMAS' :
-                       page.organization_id === MEGA_ID ? 'MEGA' : page.organization_id;
-        console.log(`[${orgName}] ${page.name} | slug: ${page.slug} | status: ${page.status} | mode: ${page.prop_mode}`);
+      allPages.rows.forEach((page) => {
+        const orgName =
+          page.organization_id === PAMAS_ID
+            ? 'PAMAS'
+            : page.organization_id === MEGA_ID
+              ? 'MEGA'
+              : page.organization_id;
+        console.log(
+          `[${orgName}] ${page.name} | slug: ${page.slug} | status: ${page.status} | mode: ${page.prop_mode}`
+        );
       });
     }
 
     // 2. Check site_settings for both orgs
     console.log('\n=== SITE SETTINGS ===');
     try {
-      const settings = await client.query(`
+      const settings = await client.query(
+        `
         SELECT organization_id, *
         FROM site_settings
         WHERE organization_id IN ($1, $2)
         ORDER BY organization_id
-      `, [PAMAS_ID, MEGA_ID]);
-      
+      `,
+        [PAMAS_ID, MEGA_ID]
+      );
+
       if (settings.rows.length === 0) {
         console.log('Nenhum site_settings encontrado para Pamas ou Mega.');
       } else {
-        settings.rows.forEach(row => {
+        settings.rows.forEach((row) => {
           const org = row.organization_id === PAMAS_ID ? 'PAMAS' : 'MEGA';
           console.log(`[${org}]`, JSON.stringify(row).substring(0, 200));
         });
@@ -69,19 +80,26 @@ async function run() {
     // 3. Check if there are any sites table entries
     console.log('\n=== SITES TABLE ===');
     try {
-      const sites = await client.query(`
+      const sites = await client.query(
+        `
         SELECT id, name, slug, organization_id, status
         FROM sites
         WHERE organization_id IN ($1, $2)
         ORDER BY organization_id, updated_at DESC
-      `, [PAMAS_ID, MEGA_ID]);
-      
+      `,
+        [PAMAS_ID, MEGA_ID]
+      );
+
       if (sites.rows.length === 0) {
-        console.log('Nenhum site cadastrado na tabela sites para Pamas ou Mega.');
+        console.log(
+          'Nenhum site cadastrado na tabela sites para Pamas ou Mega.'
+        );
       } else {
-        sites.rows.forEach(site => {
+        sites.rows.forEach((site) => {
           const org = site.organization_id === PAMAS_ID ? 'PAMAS' : 'MEGA';
-          console.log(`[${org}] ${site.name} | slug: ${site.slug} | status: ${site.status}`);
+          console.log(
+            `[${org}] ${site.name} | slug: ${site.slug} | status: ${site.status}`
+          );
         });
       }
     } catch (err) {
@@ -90,20 +108,24 @@ async function run() {
 
     // 3b. Check what those other landing page orgs are
     console.log('\n=== OUTRAS ORGS COM LANDING PAGES ===');
-    const otherOrgs = await client.query(`
+    const otherOrgs = await client.query(
+      `
       SELECT DISTINCT lp.organization_id, o.name, o.slug
       FROM landing_pages lp
       JOIN organizations o ON o.id = lp.organization_id
       WHERE lp.organization_id NOT IN ($1, $2)
-    `, [PAMAS_ID, MEGA_ID]);
-    
-    otherOrgs.rows.forEach(row => {
+    `,
+      [PAMAS_ID, MEGA_ID]
+    );
+
+    otherOrgs.rows.forEach((row) => {
       console.log(`${row.name} (${row.slug}): ${row.organization_id}`);
     });
 
     // 4. Full property count by org and image status
     console.log('\n=== STATUS COMPLETO DOS IMOVEIS ===');
-    const fullStatus = await client.query(`
+    const fullStatus = await client.query(
+      `
       SELECT 
         o.name as org_name,
         o.slug as org_slug,
@@ -115,12 +137,15 @@ async function run() {
       LEFT JOIN properties p ON p.organization_id = o.id
       WHERE o.id IN ($1, $2)
       GROUP BY o.id, o.name, o.slug
-    `, [PAMAS_ID, MEGA_ID]);
-    
-    fullStatus.rows.forEach(row => {
-      console.log(`${row.org_name} (${row.org_slug}): ${row.total} imoveis | ${row.sem_imagens} sem img | ${row.sem_external_id} sem external_id`);
-    });
+    `,
+      [PAMAS_ID, MEGA_ID]
+    );
 
+    fullStatus.rows.forEach((row) => {
+      console.log(
+        `${row.org_name} (${row.org_slug}): ${row.total} imoveis | ${row.sem_imagens} sem img | ${row.sem_external_id} sem external_id`
+      );
+    });
   } catch (err) {
     console.error('Erro:', err);
   } finally {

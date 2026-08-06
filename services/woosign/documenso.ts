@@ -1,6 +1,7 @@
 import type { DocumensoEnvelope, DocumensoField } from './types';
 
-const DOCUMENSO_API_URL = process.env.DOCUMENSO_API_URL || 'http://localhost:3000/api/v2';
+const DOCUMENSO_API_URL =
+  process.env.DOCUMENSO_API_URL || 'http://localhost:3000/api/v2';
 const DOCUMENSO_API_TOKEN = process.env.DOCUMENSO_API_TOKEN || '';
 const DOCUMENSO_WEBHOOK_SECRET = process.env.DOCUMENSO_WEBHOOK_SECRET || '';
 
@@ -21,7 +22,10 @@ export class DocumensoApiError extends Error {
   }
 }
 
-async function request<T>(path: string, options: DocumensoApiOptions = {}): Promise<T> {
+async function request<T>(
+  path: string,
+  options: DocumensoApiOptions = {}
+): Promise<T> {
   const url = `${DOCUMENSO_API_URL}${path}`;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -61,23 +65,32 @@ async function request<T>(path: string, options: DocumensoApiOptions = {}): Prom
 
 export const documensoApi = {
   async getOrganisations() {
-    return request<{ data: Array<{ id: string; name: string; createdAt: string }> }>('/organisations');
+    return request<{
+      data: Array<{ id: string; name: string; createdAt: string }>;
+    }>('/organisations');
   },
 
   async getTeams(organisationId: string) {
-    return request<{ data: Array<{ id: number; name: string; createdAt: string }> }>(
-      `/organisations/${organisationId}/teams`
-    );
+    return request<{
+      data: Array<{ id: number; name: string; createdAt: string }>;
+    }>(`/organisations/${organisationId}/teams`);
   },
 
-  async getEnvelopes(params?: { status?: string; teamId?: number; page?: number; limit?: number }) {
+  async getEnvelopes(params?: {
+    status?: string;
+    teamId?: number;
+    page?: number;
+    limit?: number;
+  }) {
     const query = new URLSearchParams();
     if (params?.status) query.set('status', params.status);
     if (params?.teamId) query.set('teamId', String(params.teamId));
     if (params?.page) query.set('page', String(params.page));
     if (params?.limit) query.set('limit', String(params.limit));
     const qs = query.toString();
-    return request<{ data: DocumensoEnvelope[]; total?: number }>(`/envelopes${qs ? `?${qs}` : ''}`);
+    return request<{ data: DocumensoEnvelope[]; total?: number }>(
+      `/envelopes${qs ? `?${qs}` : ''}`
+    );
   },
 
   async getEnvelope(id: string) {
@@ -109,19 +122,25 @@ export const documensoApi = {
     });
   },
 
-  async getTemplates(params?: { teamId?: number; page?: number; limit?: number }) {
+  async getTemplates(params?: {
+    teamId?: number;
+    page?: number;
+    limit?: number;
+  }) {
     const query = new URLSearchParams();
     if (params?.teamId) query.set('teamId', String(params.teamId));
     if (params?.page) query.set('page', String(params.page));
     if (params?.limit) query.set('limit', String(params.limit));
     const qs = query.toString();
-    return request<{ data: Array<{ id: number; name: string; createdAt: string }> }>(
-      `/templates${qs ? `?${qs}` : ''}`
-    );
+    return request<{
+      data: Array<{ id: number; name: string; createdAt: string }>;
+    }>(`/templates${qs ? `?${qs}` : ''}`);
   },
 
   async getTemplate(id: number) {
-    return request<{ data: { id: number; name: string; fields: DocumensoField[] } }>(`/templates/${id}`);
+    return request<{
+      data: { id: number; name: string; fields: DocumensoField[] };
+    }>(`/templates/${id}`);
   },
 
   async createTemplate(payload: Record<string, unknown>) {
@@ -132,22 +151,30 @@ export const documensoApi = {
   },
 
   async getDocument(id: string) {
-    return request<{ data: { id: string; downloadUrl?: string; certificateUrl?: string } }>(
-      `/documents/${id}`
-    );
+    return request<{
+      data: { id: string; downloadUrl?: string; certificateUrl?: string };
+    }>(`/documents/${id}`);
   },
 
   async getWebhooks(teamId: number) {
-    return request<{ data: Array<{ id: string; url: string; eventTriggers: string[]; enabled: boolean }> }>(
-      `/teams/${teamId}/webhooks`
-    );
+    return request<{
+      data: Array<{
+        id: string;
+        url: string;
+        eventTriggers: string[];
+        enabled: boolean;
+      }>;
+    }>(`/teams/${teamId}/webhooks`);
   },
 
   async createWebhook(teamId: number, payload: Record<string, unknown>) {
-    return request<{ data: { id: string; url: string } }>(`/teams/${teamId}/webhooks`, {
-      method: 'POST',
-      body: payload,
-    });
+    return request<{ data: { id: string; url: string } }>(
+      `/teams/${teamId}/webhooks`,
+      {
+        method: 'POST',
+        body: payload,
+      }
+    );
   },
 };
 
@@ -157,7 +184,10 @@ export function verifyDocumensoWebhookSignature(
   secret: string
 ): boolean {
   const crypto = require('crypto');
-  const expected = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex');
   return signature === expected;
 }
 

@@ -188,7 +188,10 @@ Considere: se a renda cobre mais de 3x o aluguel = baixo risco. Score de crédit
   }
 };
 
-export const generateLeaseAssistantResponse = async (question: string, context?: string) => {
+export const generateLeaseAssistantResponse = async (
+  question: string,
+  context?: string
+) => {
   const systemInstruction = `Você é um assistente especializado em gestão de locações imobiliárias brasileiras. Responda de forma concisa e prática. Contexto: ${context || 'Nenhum contexto adicional'}.`;
 
   return callSecureAI(question, systemInstruction, { temperature: 0.7 });

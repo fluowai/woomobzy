@@ -19,13 +19,13 @@ lockout em produção. Acesso do control plane (mega/superadmin/reseller) nunca 
 
 ### 1. Quem é "gated" (escopo do enforcement)
 
-| Perfil / contexto                       | Enforcement? | Motivo |
-|-----------------------------------------|--------------|--------|
-| superadmin sem org (mega admin)          | NÃO          | Control plane: administra licenças; nunca pode se trancar fora |
-| superadmin com org reseller              | NÃO          | Control plane de revenda; gerencia clientes |
-| superadmin impersonando tenant (`req.isImpersonating`) | SIM (pela org alvo) | O tenant impersonado é quem tem licença |
-| admin/broker/gerente/assistente/user com org | SIM (pela org do perfil) | Tenant final é o alvo do licenciamento |
-| perfil sem org (onboarding/first-login)  | NÃO          | Sem tenant não há licença a checar |
+| Perfil / contexto                                      | Enforcement?             | Motivo                                                         |
+| ------------------------------------------------------ | ------------------------ | -------------------------------------------------------------- |
+| superadmin sem org (mega admin)                        | NÃO                      | Control plane: administra licenças; nunca pode se trancar fora |
+| superadmin com org reseller                            | NÃO                      | Control plane de revenda; gerencia clientes                    |
+| superadmin impersonando tenant (`req.isImpersonating`) | SIM (pela org alvo)      | O tenant impersonado é quem tem licença                        |
+| admin/broker/gerente/assistente/user com org           | SIM (pela org do perfil) | Tenant final é o alvo do licenciamento                         |
+| perfil sem org (onboarding/first-login)                | NÃO                      | Sem tenant não há licença a checar                             |
 
 ### 2. Modos de operação (fail-open por padrão)
 
@@ -47,14 +47,14 @@ enforcement em si.
 
 Avaliação via `computeLicenseState`/`evaluateLicense` sobre a licença do tenant:
 
-| Estado                       | Ação no `soft`/`hard` |
-|------------------------------|------------------------|
-| `valid`                      | libera |
-| `grace` / `expired` (soft/none) | libera em **modo degradado** + audit |
-| `expired` (política hard)    | 403 `LICENSE_BLOCKED_HARD` |
-| `blocked` / `revoked`        | 403 `LICENSE_BLOCKED` / `LICENSE_REVOKED` (hard block não destrutivo) |
-| `no_license`                 | `off`/`soft`: libera + audit `license_missing_org`; `hard`: 403 (ver §2 legacy) |
-| `suspended`                  | `off`: libera + audit; `soft`/`hard`: 403 `LICENSE_SUSPENDED` |
+| Estado                          | Ação no `soft`/`hard`                                                           |
+| ------------------------------- | ------------------------------------------------------------------------------- |
+| `valid`                         | libera                                                                          |
+| `grace` / `expired` (soft/none) | libera em **modo degradado** + audit                                            |
+| `expired` (política hard)       | 403 `LICENSE_BLOCKED_HARD`                                                      |
+| `blocked` / `revoked`           | 403 `LICENSE_BLOCKED` / `LICENSE_REVOKED` (hard block não destrutivo)           |
+| `no_license`                    | `off`/`soft`: libera + audit `license_missing_org`; `hard`: 403 (ver §2 legacy) |
+| `suspended`                     | `off`: libera + audit; `soft`/`hard`: 403 `LICENSE_SUSPENDED`                   |
 
 - Bloqueio é **não destrutivo** (dados do tenant preservados — regra 18 do plano).
 - Resposta 403 padrão: `{ error, code, license: { state, expires_at, blocking_policy } }`.
@@ -62,7 +62,7 @@ Avaliação via `computeLicenseState`/`evaluateLicense` sobre a licença do tena
 ### 4. Onde entra
 
 - Novo módulo `server/lib/licensing/enforcement.js`: `resolveOrgLicense(supabase, orgId)`
-  + `enforceLicenseAccess({ mode })` → `(req, res, next)`.
+  - `enforceLicenseAccess({ mode })` → `(req, res, next)`.
 - Chamado **dentro de `verifyAuth`** (`server/middleware/auth.js`) logo após a resolução de
   tenant (`req.orgId` definido e `req.tenantValidated === true`), antes do `next()` final.
 - Cache de licença por org via `TtlCache` (TTL 60s, mesmo padrão do `organizationCache`);
@@ -95,6 +95,7 @@ Avaliação via `computeLicenseState`/`evaluateLicense` sobre a licença do tena
 ## Testes planejados
 
 `server/__tests__/licensing-enforcement.test.ts` (mock Supabase + TtlCache) — **23 testes verdes**:
+
 1. flag `off` → passa direto (mesmo blocked/revoked) e audita.
 2. `soft`: `blocked` → 403 `LICENSE_BLOCKED`; `revoked` → 403 `LICENSE_REVOKED`.
 3. `soft`: `grace`/`expired` soft → 200 + `req.licenseState.degraded === true`

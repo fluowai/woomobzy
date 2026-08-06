@@ -77,9 +77,15 @@ export default function Header() {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? (
-                <X size={28} className={scrolled ? 'text-[#00325c]' : 'text-white'} />
+                <X
+                  size={28}
+                  className={scrolled ? 'text-[#00325c]' : 'text-white'}
+                />
               ) : (
-                <Menu size={28} className={scrolled ? 'text-[#00325c]' : 'text-white'} />
+                <Menu
+                  size={28}
+                  className={scrolled ? 'text-[#00325c]' : 'text-white'}
+                />
               )}
             </button>
           </div>
@@ -93,12 +99,21 @@ export default function Header() {
         }`}
       >
         <nav className="flex flex-col gap-6 text-xl font-medium text-[#00325c]">
-          <a href="#" className="flex items-center gap-3 border-b border-gray-100 pb-4">
+          <a
+            href="#"
+            className="flex items-center gap-3 border-b border-gray-100 pb-4"
+          >
             <Heart size={24} /> Meus Favoritos
           </a>
-          <a href="#" className="border-b border-gray-100 pb-4">Comprar</a>
-          <a href="#" className="border-b border-gray-100 pb-4">Lançamentos</a>
-          <a href="#" className="border-b border-gray-100 pb-4">Quem Somos</a>
+          <a href="#" className="border-b border-gray-100 pb-4">
+            Comprar
+          </a>
+          <a href="#" className="border-b border-gray-100 pb-4">
+            Lançamentos
+          </a>
+          <a href="#" className="border-b border-gray-100 pb-4">
+            Quem Somos
+          </a>
         </nav>
       </div>
     </>

@@ -5,7 +5,7 @@ import fs from 'fs';
 const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
-  console.error("No DATABASE_URL found in .env");
+  console.error('No DATABASE_URL found in .env');
   process.exit(1);
 }
 

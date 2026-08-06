@@ -8,6 +8,7 @@ Data: 2026-08-05
 Hoje o MinIO roda como um serviço Docker **fora** do stack principal (stack separada `minio`), e o backend o acessa pela rota pública `https://nb.consultio.com.br` (TLS + Traefik + Let's Encrypt). Essa rota externa é a principal fonte dos erros recorrentes (incidente 503 de 03/08 — `DEV/SPECS/NB_CONSULTIO_MINIO_SSL.md`).
 
 **Decisão do maestro (fresh start)**: não há dados a preservar no MinIO atual. Então **não** se reutiliza o diretório de dados antigo nem as credenciais root antigas. Sobe-se um **MinIO novo** dentro do stack, com:
+
 - diretório de dados novo (volume nomeado `minio_data`, criado automaticamente);
 - credenciais root **novas** já **embutidas no YAML** (`wootechadmin` / `<minio-root-password>`) — sem variável a definir no Portainer;
 - buckets + policy + usuário do app **provisionados automaticamente** pelo serviço `minio-init` na primeira subida.
@@ -16,13 +17,13 @@ O backend passa a usar o **endpoint interno `http://minio:9000`** (rede Docker, 
 
 ## O que mudou no repo (working tree, sem commit)
 
-| Arquivo | Mudança |
-|---|---|
-| `docker-compose.yml` | Serviço `minio` (image `minio/minio:latest`, volume nomeado `minio_data:/data`, redes `wootech1`+`imobfluow_internal`, healthcheck curl, labels router `minio_nb`); novo serviço `minio-init` (image `minio/mc:latest`) que provisiona buckets + policy `imobzy-rw` + usuário do app; `MINIO_ENDPOINT=http://minio:9000` em `api` e `whatsapp-service` |
-| `portainer-stack-imobfluow-filled.yml` | Idem (Swarm, rede `v5company1`+`imobfluow_internal`); `minio-init` com as credenciais do app já preenchidas |
-| `portainer-stack.yml` | Idem (rede `woopanel1`+`imobfluow_internal`) |
-| `.env.production.template` / `.env.example` | Vars `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` re-descritas como credenciais NOVAS; removida a var `MINIO_DATA_DIR` (volume nomeado substitui o bind mount) |
-| `traefik/dynamic/nb_consultio_com_br.yml` | Não tocado (router file é inerte no Traefik real; as labels do serviço são o que vale) |
+| Arquivo                                     | Mudança                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `docker-compose.yml`                        | Serviço `minio` (image `minio/minio:latest`, volume nomeado `minio_data:/data`, redes `wootech1`+`imobfluow_internal`, healthcheck curl, labels router `minio_nb`); novo serviço `minio-init` (image `minio/mc:latest`) que provisiona buckets + policy `imobzy-rw` + usuário do app; `MINIO_ENDPOINT=http://minio:9000` em `api` e `whatsapp-service` |
+| `portainer-stack-imobfluow-filled.yml`      | Idem (Swarm, rede `v5company1`+`imobfluow_internal`); `minio-init` com as credenciais do app já preenchidas                                                                                                                                                                                                                                            |
+| `portainer-stack.yml`                       | Idem (rede `woopanel1`+`imobfluow_internal`)                                                                                                                                                                                                                                                                                                           |
+| `.env.production.template` / `.env.example` | Vars `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` re-descritas como credenciais NOVAS; removida a var `MINIO_DATA_DIR` (volume nomeado substitui o bind mount)                                                                                                                                                                                              |
+| `traefik/dynamic/nb_consultio_com_br.yml`   | Não tocado (router file é inerte no Traefik real; as labels do serviço são o que vale)                                                                                                                                                                                                                                                                 |
 
 O código (`server/lib/minio-storage.js`, `whatsapp-service/...`) **não mudou**: Node e Go já normalizam `MINIO_ENDPOINT` com esquema `http://` e tratam `secure=false`. Nenhuma mudança de runtime necessária.
 
@@ -32,7 +33,7 @@ Serviço one-shot (image `minio/mc:latest`, `restart: none`), idempotente — ro
 
 1. Espera o MinIO ficar acessível (`mc alias set local http://minio:9000 ...` com retry até 120s).
 2. Cria os buckets: `imobzycrm`, `imobzywhatsapp`, `imobzy-media`, `imobzy-documents`, `imobzy-exports`, `imobzy-backups`, `imobzy-contracts` (`--ignore-existing`).
-3. Cria a policy `imobzy-rw` (s3:* em `arn:aws:s3:::imobzy*` e objetos).
+3. Cria a policy `imobzy-rw` (s3:_ em `arn:aws:s3:::imobzy_` e objetos).
 4. Cria o usuário do app com as credenciais `MINIO_ACCESS_KEY`/`MINIO_SECRET_KEY` e anexa a policy `imobzy-rw`.
 
 Assim, o backend continua autenticando com a mesma key do app de sempre (`<app-access-key>` na stack filled) — **nenhuma mudança de config no app**.
@@ -41,9 +42,9 @@ Assim, o backend continua autenticando com a mesma key do app de sempre (`<app-a
 
 As stacks já saem **prontas para colar no Portainer** — as root creds estão embutidas no YAML:
 
-| Variável | Valor |
-|---|---|
-| `MINIO_ROOT_USER` | `wootechadmin` |
+| Variável              | Valor                   |
+| --------------------- | ----------------------- |
+| `MINIO_ROOT_USER`     | `wootechadmin`          |
 | `MINIO_ROOT_PASSWORD` | `<minio-root-password>` |
 
 > Nenhuma variável precisa ser definida no ambiente da stack. As credenciais do app (`MINIO_ACCESS_KEY`/`MINIO_SECRET_KEY`) já estão no YAML (stack filled) ou no `.env` (compose local). No `docker-compose.yml`/`portainer-stack.yml` as root creds também estão embutidas; apenas `MINIO_ACCESS_KEY`/`MINIO_SECRET_KEY` seguem por interpolação nesses dois.
@@ -54,7 +55,7 @@ As stacks já saem **prontas para colar no Portainer** — as root creds estão 
    - Não há dados a salvar — nada precisa ser copiado.
 2. **Atualizar o stack principal** no Portainer com o YAML novo (contém `minio` + `minio-init` + `MINIO_ENDPOINT=http://minio:9000`). Root creds já embutidas (`wootechadmin`/`<minio-root-password>`) — **não é preciso definir variável no ambiente**.
 3. `minio-init` roda sozinho na primeira subida e provisiona buckets/policy/usuário do app.
-5. **Verificar** (seção abaixo). Depois disso o tráfego de escrita migra para a rede interna.
+4. **Verificar** (seção abaixo). Depois disso o tráfego de escrita migra para a rede interna.
 
 > Durante o passo 1-2 há uma janela curta em que uploads/media podem falhar (503). Com `ALLOW_SUPABASE_STORAGE_FALLBACK=true` o api cai para o Supabase storage automaticamente se o MinIO não responder — rede de segurança já ativa.
 
@@ -80,6 +81,7 @@ curl.exe -s https://nb.consultio.com.br/minio/health/live   # → 200, issuer Le
 ```
 
 Esperado:
+
 - `GET http://minio:9000/minio/health/live` → 200.
 - ListBuckets retorna os buckets provisionados pelo `minio-init`.
 - Upload autenticado `provider: minio` → 200 no app (WhatsApp media e imagem de imóvel).

@@ -124,4 +124,3 @@ router.get('/cron', async (req, res) => {
 });
 
 export default router;
-

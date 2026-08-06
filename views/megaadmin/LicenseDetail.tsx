@@ -2,12 +2,7 @@ import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { callApi } from '@/src/lib/api';
-import {
-  ArrowLeft,
-  Copy,
-  RefreshCw,
-  ShieldCheck,
-} from 'lucide-react';
+import { ArrowLeft, Copy, RefreshCw, ShieldCheck } from 'lucide-react';
 
 interface LicenseRow {
   id: string;
@@ -147,10 +142,7 @@ const LicenseDetail: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const runStatusAction = async (
-    action: string,
-    confirmMessage: string
-  ) => {
+  const runStatusAction = async (action: string, confirmMessage: string) => {
     if (!detail) return;
     if (!window.confirm(confirmMessage)) return;
     try {
@@ -202,9 +194,7 @@ const LicenseDetail: React.FC = () => {
   };
 
   if (loading && !detail) {
-    return (
-      <div className="text-center text-gray-500 py-16">Carregando...</div>
-    );
+    return <div className="text-center text-gray-500 py-16">Carregando...</div>;
   }
 
   if (errorMsg || !detail) {
@@ -306,7 +296,9 @@ const LicenseDetail: React.FC = () => {
           <ArrowLeft size={18} />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Detalhes da Licença</h1>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Detalhes da Licença
+          </h1>
           <p className="text-gray-500">
             {organization?.name || license.organization_id}
           </p>
@@ -392,7 +384,9 @@ const LicenseDetail: React.FC = () => {
             <div className="text-gray-400 text-xs uppercase tracking-wide">
               Tolerância (dias)
             </div>
-            <div className="font-medium text-gray-900">{license.grace_days}</div>
+            <div className="font-medium text-gray-900">
+              {license.grace_days}
+            </div>
           </div>
           <div>
             <div className="text-gray-400 text-xs uppercase tracking-wide">
@@ -429,7 +423,9 @@ const LicenseDetail: React.FC = () => {
               Chave de assinatura
             </div>
             <div className="font-medium text-gray-900 font-mono text-xs">
-              {license.signing_key_id ? license.signing_key_id.slice(0, 16) : '—'}
+              {license.signing_key_id
+                ? license.signing_key_id.slice(0, 16)
+                : '—'}
             </div>
           </div>
         </div>
@@ -479,7 +475,10 @@ const LicenseDetail: React.FC = () => {
             <tbody className="divide-y divide-gray-200">
               {detail.installations.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                  <td
+                    colSpan={6}
+                    className="px-6 py-8 text-center text-gray-500"
+                  >
                     Nenhuma instalação registrada.
                   </td>
                 </tr>
@@ -488,11 +487,15 @@ const LicenseDetail: React.FC = () => {
                   <tr key={installation.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="font-medium text-gray-900">
-                        {installation.name || installation.hostname || 'Instalação'}
+                        {installation.name ||
+                          installation.hostname ||
+                          'Instalação'}
                       </div>
                       <div className="text-xs text-gray-400">
                         {installation.platform || 'desconhecido'}
-                        {installation.version ? ` v${installation.version}` : ''}
+                        {installation.version
+                          ? ` v${installation.version}`
+                          : ''}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -515,9 +518,9 @@ const LicenseDetail: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {installation.last_heartbeat_at
-                        ? new Date(installation.last_heartbeat_at).toLocaleString(
-                            'pt-BR'
-                          )
+                        ? new Date(
+                            installation.last_heartbeat_at
+                          ).toLocaleString('pt-BR')
                         : '—'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
@@ -567,7 +570,10 @@ const LicenseDetail: React.FC = () => {
             <tbody className="divide-y divide-gray-200">
               {detail.domains.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                  <td
+                    colSpan={5}
+                    className="px-6 py-8 text-center text-gray-500"
+                  >
                     Nenhum domínio vinculado.
                   </td>
                 </tr>
@@ -616,7 +622,10 @@ const LicenseDetail: React.FC = () => {
             <tbody className="divide-y divide-gray-200">
               {detail.entitlements.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="px-6 py-8 text-center text-gray-500">
+                  <td
+                    colSpan={3}
+                    className="px-6 py-8 text-center text-gray-500"
+                  >
                     Nenhum entitlement definido.
                   </td>
                 </tr>
@@ -673,7 +682,10 @@ const LicenseDetail: React.FC = () => {
             <tbody className="divide-y divide-gray-200">
               {detail.heartbeats.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                  <td
+                    colSpan={5}
+                    className="px-6 py-8 text-center text-gray-500"
+                  >
                     Nenhum heartbeat recebido.
                   </td>
                 </tr>
@@ -730,7 +742,10 @@ const LicenseDetail: React.FC = () => {
             <tbody className="divide-y divide-gray-200">
               {detail.auditEvents.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                  <td
+                    colSpan={5}
+                    className="px-6 py-8 text-center text-gray-500"
+                  >
                     Nenhum evento de auditoria.
                   </td>
                 </tr>
@@ -746,7 +761,8 @@ const LicenseDetail: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
                         className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          SEVERITY_CLASSES[event.severity] || SEVERITY_CLASSES.info
+                          SEVERITY_CLASSES[event.severity] ||
+                          SEVERITY_CLASSES.info
                         }`}
                       >
                         {event.severity}

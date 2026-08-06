@@ -32,6 +32,7 @@ Abaixo estão os 6 agentes de IA do ecossistema IMOBZY e suas funções mapeadas
 ## 3. Implementação: Zya (Agente WhatsApp) — Fase 1
 
 **Arquivos alterados/criados:**
+
 - `server/services/ai/agentOrchestrator.js` — tools `buscar_imoveis`, `agendar_visita`, `consultar_agenda_disponibilidade`
 - `server/lib/AIAutomation.js` — integração de guardrails no fluxo WhatsApp
 - `server/services/ai/agentPrompt.js` — regras de segurança no system prompt
@@ -40,27 +41,27 @@ Abaixo estão os 6 agentes de IA do ecossistema IMOBZY e suas funções mapeadas
 
 ### 3.1 Tools disponíveis
 
-| Tool | Função | Status |
-|---|---|---|
-| `buscar_imoveis` | Busca imóveis por tipo, cidade, orçamento, quartos | ✅ Aprimorada — retorna título, preço, cidade, estado, tipo, finalidade, área, imagem |
-| `agendar_visita` | Agenda visita criando `lead_followups` + `lead_appointments` | ✅ Corrigida — agora cria appointment no banco |
-| `consultar_agenda_disponibilidade` | Consulta disponibilidade de data/horário | ✅ Nova |
-| `simular_financiamento` | Simula parcelas (Tabela Price) | ✅ Existente |
-| `atualizar_etapa_crm` | Move lead no Kanban | ✅ Existente |
-| `qualificar_lead` | Classifica temperatura do lead | ✅ Existente |
-| `enviar_audio_whatsapp` | Gera áudio TTS | ✅ Existente |
+| Tool                               | Função                                                       | Status                                                                                |
+| ---------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| `buscar_imoveis`                   | Busca imóveis por tipo, cidade, orçamento, quartos           | ✅ Aprimorada — retorna título, preço, cidade, estado, tipo, finalidade, área, imagem |
+| `agendar_visita`                   | Agenda visita criando `lead_followups` + `lead_appointments` | ✅ Corrigida — agora cria appointment no banco                                        |
+| `consultar_agenda_disponibilidade` | Consulta disponibilidade de data/horário                     | ✅ Nova                                                                               |
+| `simular_financiamento`            | Simula parcelas (Tabela Price)                               | ✅ Existente                                                                          |
+| `atualizar_etapa_crm`              | Move lead no Kanban                                          | ✅ Existente                                                                          |
+| `qualificar_lead`                  | Classifica temperatura do lead                               | ✅ Existente                                                                          |
+| `enviar_audio_whatsapp`            | Gera áudio TTS                                               | ✅ Existente                                                                          |
 
 ### 3.2 Guardrails implementadas
 
-| Trava | Finalidade | Status |
-|---|---|---|
-| **Contexto imobiliário** | Bloqueia respostas fora do domínio | ✅ |
-| **Filtro de tópicos sensíveis** | Bloqueia política, religião, futebol, etc. | ✅ |
-| **Detecção de desvio de tópico** | Redireciona após 2 mensagens off-topic | ✅ |
-| **Rate limit** | Limita a 10 msgs/min por telefone | ✅ |
-| **Detecção de spam** | Ignora mensagens repetitivas/garbled | ✅ |
-| **Handoff humano** | Escala para corretor quando necessário | ✅ |
-| **Saudação obrigatória** | Zya se apresenta na primeira mensagem | ✅ Existente |
+| Trava                            | Finalidade                                 | Status       |
+| -------------------------------- | ------------------------------------------ | ------------ |
+| **Contexto imobiliário**         | Bloqueia respostas fora do domínio         | ✅           |
+| **Filtro de tópicos sensíveis**  | Bloqueia política, religião, futebol, etc. | ✅           |
+| **Detecção de desvio de tópico** | Redireciona após 2 mensagens off-topic     | ✅           |
+| **Rate limit**                   | Limita a 10 msgs/min por telefone          | ✅           |
+| **Detecção de spam**             | Ignora mensagens repetitivas/garbled       | ✅           |
+| **Handoff humano**               | Escala para corretor quando necessário     | ✅           |
+| **Saudação obrigatória**         | Zya se apresenta na primeira mensagem      | ✅ Existente |
 
 ### 3.3 Integração Agenda
 
@@ -106,6 +107,6 @@ Eles poderão customizar os nomes, os prompts e os comportamentos dos agentes pa
 
 1. **Aprovação da Identidade**: Validar os nomes dos agentes (_Zya, Otto, Nexus, Max, Íris e Eco_).
 2. **Estrutura no Código**:
-    - Modelar no banco de dados a ativação de _Features/Agents_ por _Tenant_ (permitindo cobrar add-ons por agente).
-    - Criar interface de contratação no Painel Urban/Rural: Uma "loja de funcionários digitais".
+   - Modelar no banco de dados a ativação de _Features/Agents_ por _Tenant_ (permitindo cobrar add-ons por agente).
+   - Criar interface de contratação no Painel Urban/Rural: Uma "loja de funcionários digitais".
 3. **Landing Pages**: Integrar esse discurso no Construtor de Landing Pages que está sendo desenhado.

@@ -14,23 +14,23 @@ Infra confirmada: mesmo VPS da plataforma (207.58.153.219), Traefik com `certRes
 
 Criar 2 registros A no painel de DNS onde o domínio está registrado/hospedado:
 
-| Nome                    | Tipo | Valor           | TTL   |
-|-------------------------|------|-----------------|-------|
-| inovebrokers.com.br     | A    | 207.58.153.219  | 3600  |
-| app.inovebrokers.com.br | A    | 207.58.153.219  | 3600  |
+| Nome                    | Tipo | Valor          | TTL  |
+| ----------------------- | ---- | -------------- | ---- |
+| inovebrokers.com.br     | A    | 207.58.153.219 | 3600 |
+| app.inovebrokers.com.br | A    | 207.58.153.219 | 3600 |
 
 Sem isso o desafio HTTP-01 falha e o certificado não é emitido. Não alterar MX/TXT/mail.
 Verificação rápida: `Resolve-DnsName inovebrokers.com.br -Type A` e `... app.inovebrokers.com.br`.
 
 ## Entregáveis (neste repositório)
 
-| Arquivo | Função |
-|---|---|
-| `coming-soon/index.html` | Página "Em breve" (única, servida nos 2 domínios) |
-| `Dockerfile.coming-soon` | Imagem nginx estática que serve a página |
+| Arquivo                                   | Função                                                                                                            |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `coming-soon/index.html`                  | Página "Em breve" (única, servida nos 2 domínios)                                                                 |
+| `Dockerfile.coming-soon`                  | Imagem nginx estática que serve a página                                                                          |
 | `traefik/dynamic/inovebrokers_com_br.yml` | Routers dos 2 domínios + `certResolver` (SSL) + service `inovebrokers_coming_soon@file` → `http://coming-soon:80` |
-| `docker-compose.yml` | Novo service `coming-soon` na rede `wootech1` (alcançável pelo Traefik) |
-| `.github/workflows/docker-images.yml` | CI builda/publica `ghcr.io/fluowai/inovebrokers-coming-soon` |
+| `docker-compose.yml`                      | Novo service `coming-soon` na rede `wootech1` (alcançável pelo Traefik)                                           |
+| `.github/workflows/docker-images.yml`     | CI builda/publica `ghcr.io/fluowai/inovebrokers-coming-soon`                                                      |
 
 Como o SSL funciona: um único router com `Host(inovebrokers.com.br) || Host(app.inovebrokers.com.br)` no entrypoint `websecure` + `certResolver`. O Traefik responde ao desafio HTTP-01 em `/.well-known/acme-challenge/` na porta 80 (antes do redirect permanente) e emite **1 certificado com os 2 nomes (SAN)** no `traefik/acme.json`. Renovação automática.
 
@@ -51,7 +51,7 @@ Como o SSL funciona: um único router com `Host(inovebrokers.com.br) || Host(app
    - Portainer → volume → upload do arquivo; ou
    - `docker cp traefik/dynamic/inovebrokers_com_br.yml <api-container>:/app/traefik/dynamic/`; ou
    - se o diretório estiver bind-mountado no host, copiar direto.
-   O Traefik detecta o arquivo automaticamente (file provider com `watch: true`). Não é preciso reiniciar o Traefik.
+     O Traefik detecta o arquivo automaticamente (file provider com `watch: true`). Não é preciso reiniciar o Traefik.
 5. **Aguardar emissão do cert**: na primeira requisição HTTPS o Traefik dispara o ACME. Confirmar em `traefik/acme.json` os domínios `inovebrokers.com.br` e `app.inovebrokers.com.br`.
 
 ## Verificação

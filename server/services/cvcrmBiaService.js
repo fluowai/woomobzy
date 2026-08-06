@@ -101,55 +101,69 @@ export async function sendLeadToBia(cvcrmLead, biaKey, biaBaseUrl) {
  * Sincroniza o Lead e adiciona a Interação no CVcrm (CVIO).
  * Cria o lead se não existir, ou edita adicionando a interação se já existir.
  */
-export async function syncLeadAndInteractionCvcrm(biaPayload, summaryText, cvcrmKey, cvcrmEmail, cvcrmBaseUrl) {
+export async function syncLeadAndInteractionCvcrm(
+  biaPayload,
+  summaryText,
+  cvcrmKey,
+  cvcrmEmail,
+  cvcrmBaseUrl
+) {
   if (!cvcrmKey || !cvcrmEmail) {
-    logger.warn('[CVCrm Integration] CVcrm API Token or Email is missing. Aborting sync.');
+    logger.warn(
+      '[CVCrm Integration] CVcrm API Token or Email is missing. Aborting sync.'
+    );
     return null;
   }
 
   try {
-    const endpoint = `${cvcrmBaseUrl.replace(/\/$/, '')}/api/cvio/lead`; 
-    
+    const endpoint = `${cvcrmBaseUrl.replace(/\/$/, '')}/api/cvio/lead`;
+
     const payload = {
       nome: biaPayload.name || 'Lead via WhatsApp (BIA)',
       telefone: biaPayload.phoneNumber || biaPayload.phone || '',
       email: biaPayload.email || '',
       origem: 'WhatsApp BIA',
-      empreendimento: biaPayload.metadata?.empreendimento || 'Bosque dos Pássaros',
+      empreendimento:
+        biaPayload.metadata?.empreendimento || 'Bosque dos Pássaros',
       permitir_alteracao: 'true', // CVIO exige string ou boolean 'true' para alterar
       interacoes: [
         {
           tipo: 'A', // Anotação
-          descricao: summaryText
-        }
-      ]
+          descricao: summaryText,
+        },
+      ],
     };
 
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'email': cvcrmEmail,
-        'token': cvcrmKey, 
+        email: cvcrmEmail,
+        token: cvcrmKey,
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      logger.error(`[CVCrm Integration] Error syncing lead. Status: ${response.status} - ${errorText}`);
+      logger.error(
+        `[CVCrm Integration] Error syncing lead. Status: ${response.status} - ${errorText}`
+      );
       throw new Error(`CVcrm API error (Sync Lead): ${response.status}`);
     }
 
     const textData = await response.text();
     const data = textData ? JSON.parse(textData) : {};
-    
+
     // CVIO retorna { id: X } ou { idlead: X }
-    const leadId = data.id || data.idlead || data.id_lead || 'lead_simulado_' + Date.now();
+    const leadId =
+      data.id || data.idlead || data.id_lead || 'lead_simulado_' + Date.now();
     logger.info(`[CVCrm Integration] Lead synced on CVcrm. ID: ${leadId}`);
     return leadId;
   } catch (error) {
-    logger.error(`[CVCrm Integration] Failed to sync lead on CVcrm: ${error.message}`);
+    logger.error(
+      `[CVCrm Integration] Failed to sync lead on CVcrm: ${error.message}`
+    );
     throw error;
   }
 }
@@ -173,13 +187,20 @@ export async function handleCvcrmWebhook(tenantId, payload) {
  */
 export async function handleBiaWebhook(tenantId, payload) {
   logger.info(`[BIA Webhook] Received chat summary for tenant ${tenantId}`);
-  
-  const { cvcrmKey, cvcrmEmail, cvcrmBaseUrl } = await getTenantIntegrationConfigs(tenantId);
+
+  const { cvcrmKey, cvcrmEmail, cvcrmBaseUrl } =
+    await getTenantIntegrationConfigs(tenantId);
 
   const summaryText = payload.summary || payload.message;
 
   // A nova lógica do CVIO permite enviar tudo em uma única requisição.
   // Se o lead já existe (por email ou telefone), ele adiciona a interação.
   // Se não existe, ele cria e já adiciona a interação.
-  return syncLeadAndInteractionCvcrm(payload, summaryText, cvcrmKey, cvcrmEmail, cvcrmBaseUrl);
+  return syncLeadAndInteractionCvcrm(
+    payload,
+    summaryText,
+    cvcrmKey,
+    cvcrmEmail,
+    cvcrmBaseUrl
+  );
 }

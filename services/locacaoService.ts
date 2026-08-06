@@ -15,7 +15,16 @@ export interface Contract {
   monthly_rent: number;
   adjustment_index?: string;
   payment_status: 'em_dia' | 'atrasado' | 'inadimplente';
-  status: 'draft' | 'cadastral_analysis' | 'income_analysis' | 'pending_signatures' | 'active' | 'suspended' | 'terminated' | 'expired' | 'archived';
+  status:
+    | 'draft'
+    | 'cadastral_analysis'
+    | 'income_analysis'
+    | 'pending_signatures'
+    | 'active'
+    | 'suspended'
+    | 'terminated'
+    | 'expired'
+    | 'archived';
   guarantee_type?: string;
   guarantee_document?: string;
   observation?: string;
@@ -64,17 +73,26 @@ export class LocacaoService {
     search?: string;
     page?: number;
     limit?: number;
-  }): Promise<{ success: boolean; data: Contract[]; count: number; page: number; totalPages: number }> {
+  }): Promise<{
+    success: boolean;
+    data: Contract[];
+    count: number;
+    page: number;
+    totalPages: number;
+  }> {
     try {
       const params = new URLSearchParams();
       if (filters?.status) params.set('status', filters.status);
-      if (filters?.payment_status) params.set('payment_status', filters.payment_status);
+      if (filters?.payment_status)
+        params.set('payment_status', filters.payment_status);
       if (filters?.property_id) params.set('property_id', filters.property_id);
       if (filters?.search) params.set('search', filters.search);
       if (filters?.page) params.set('page', String(filters.page));
       if (filters?.limit) params.set('limit', String(filters.limit));
 
-      const result = await callApi(`/api/locacao/leases${params.toString() ? '?' + params.toString() : ''}`);
+      const result = await callApi(
+        `/api/locacao/leases${params.toString() ? '?' + params.toString() : ''}`
+      );
       return result;
     } catch (error) {
       logger.error('Erro ao listar contratos:', error);
@@ -92,7 +110,9 @@ export class LocacaoService {
     }
   }
 
-  async createContract(data: Partial<Contract>): Promise<{ success: boolean; data: Contract }> {
+  async createContract(
+    data: Partial<Contract>
+  ): Promise<{ success: boolean; data: Contract }> {
     try {
       const result = await callApi('/api/locacao/leases', {
         method: 'POST',
@@ -139,20 +159,23 @@ export class LocacaoService {
       return result;
     } catch (error) {
       logger.error('Erro ao buscar dashboard:', error);
-      return { success: false, data: {
-        total: 0,
-        ativos: 0,
-        em_andamento: 0,
-        encerrados: 0,
-        receita_mensal: 0,
-        receita_anual: 0,
-        inadimplentes: 0,
-        atrasados: 0,
-        em_dia: 0,
-        valor_inadimplencia: 0,
-        vencendo_30_dias: 0,
-        vencendo_90_dias: 0,
-      }};
+      return {
+        success: false,
+        data: {
+          total: 0,
+          ativos: 0,
+          em_andamento: 0,
+          encerrados: 0,
+          receita_mensal: 0,
+          receita_anual: 0,
+          inadimplentes: 0,
+          atrasados: 0,
+          em_dia: 0,
+          valor_inadimplencia: 0,
+          vencendo_30_dias: 0,
+          vencendo_90_dias: 0,
+        },
+      };
     }
   }
 

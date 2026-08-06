@@ -85,7 +85,11 @@ router.get('/:id', verifyMegaAdmin, async (req, res) => {
 // POST /api/mega/licenses — criar licença para uma organização
 router.post('/', verifyMegaAdmin, async (req, res) => {
   try {
-    const result = await createLicense(supabase, req.body || {}, adminContext(req));
+    const result = await createLicense(
+      supabase,
+      req.body || {},
+      adminContext(req)
+    );
     return res.status(201).json({ success: true, ...result });
   } catch (error) {
     return handleError(res, error);
@@ -167,7 +171,13 @@ router.post(
 );
 
 // Transições de status
-for (const transition of ['activate', 'suspend', 'revoke', 'block', 'unblock']) {
+for (const transition of [
+  'activate',
+  'suspend',
+  'revoke',
+  'block',
+  'unblock',
+]) {
   router.post(`/:id/${transition}`, verifyMegaAdmin, async (req, res) => {
     try {
       const license = await setLicenseStatus(

@@ -689,7 +689,7 @@ function storagePublicBaseURL() {
       if (!value.includes('n.woopanel.com.br')) return value;
     }
   }
-  return 'https://nb.consultio.com.br';
+  return 'https://s.wootech.com.br';
 }
 
 function getDatabaseEnvStatus() {

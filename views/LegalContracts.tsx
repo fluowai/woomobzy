@@ -90,9 +90,13 @@ const LegalContracts: React.FC = () => {
   } | null>(null);
 
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
-  const [signatureRecipient, setSignatureRecipient] = useState({ email: '', name: '' });
+  const [signatureRecipient, setSignatureRecipient] = useState({
+    email: '',
+    name: '',
+  });
   const [isSendingSignature, setIsSendingSignature] = useState(false);
-  const [contractForSignature, setContractForSignature] = useState<Contract | null>(null);
+  const [contractForSignature, setContractForSignature] =
+    useState<Contract | null>(null);
 
   useEffect(() => {
     loadContracts();
@@ -216,88 +220,92 @@ const LegalContracts: React.FC = () => {
     }
   };
 
-   const sendViaWhatsApp = async (contract: Contract) => {
-     if (!settings.integrations?.evolutionApi?.enabled) {
-       setWhatsappStatus({
-         type: 'error',
-         message: 'Evolution API não configurada ou desativada.',
-       });
-       return;
-     }
+  const sendViaWhatsApp = async (contract: Contract) => {
+    if (!settings.integrations?.evolutionApi?.enabled) {
+      setWhatsappStatus({
+        type: 'error',
+        message: 'Evolution API não configurada ou desativada.',
+      });
+      return;
+    }
 
-     setIsSendingWhatsApp(true);
-     setWhatsappStatus(null);
+    setIsSendingWhatsApp(true);
+    setWhatsappStatus(null);
 
-     const content = getGeneratedContent(contract);
-     const message = `*DOCUMENTO JURÍDICO - ${contract.title.toUpperCase()}*\n\nOlá ${contract.clientName}, segue a minuta do contrato para sua análise:\n\n${content}`;
+    const content = getGeneratedContent(contract);
+    const message = `*DOCUMENTO JURÍDICO - ${contract.title.toUpperCase()}*\n\nOlá ${contract.clientName}, segue a minuta do contrato para sua análise:\n\n${content}`;
 
-     try {
-       const result = await callApi('/api/whatsapp-proxy/send-text', {
-         method: 'POST',
-         body: JSON.stringify({
-           phone: contract.clientPhone,
-           message,
-         }),
-       });
+    try {
+      const result = await callApi('/api/whatsapp-proxy/send-text', {
+        method: 'POST',
+        body: JSON.stringify({
+          phone: contract.clientPhone,
+          message,
+        }),
+      });
 
-       if (result.success) {
-         setWhatsappStatus({
-           type: 'success',
-           message: 'Contrato enviado com sucesso via WhatsApp!',
-         });
-       } else {
-         setWhatsappStatus({
-           type: 'error',
-           message: result.error || 'Erro ao enviar mensagem.',
-         });
-       }
-     } catch (error: any) {
-       logger.error('Erro ao enviar WhatsApp:', error);
-       setWhatsappStatus({
-         type: 'error',
-         message: error.message || 'Falha de conexão com o servidor.',
-       });
-     } finally {
-       setIsSendingWhatsApp(false);
-       setTimeout(() => setWhatsappStatus(null), 8000);
-     }
-   };
+      if (result.success) {
+        setWhatsappStatus({
+          type: 'success',
+          message: 'Contrato enviado com sucesso via WhatsApp!',
+        });
+      } else {
+        setWhatsappStatus({
+          type: 'error',
+          message: result.error || 'Erro ao enviar mensagem.',
+        });
+      }
+    } catch (error: any) {
+      logger.error('Erro ao enviar WhatsApp:', error);
+      setWhatsappStatus({
+        type: 'error',
+        message: error.message || 'Falha de conexão com o servidor.',
+      });
+    } finally {
+      setIsSendingWhatsApp(false);
+      setTimeout(() => setWhatsappStatus(null), 8000);
+    }
+  };
 
-   const handleSendForSignature = async () => {
-     if (!contractForSignature || !signatureRecipient.email || !signatureRecipient.name) {
-       toast.error('Preencha o e-mail e nome do signatário');
-       return;
-     }
+  const handleSendForSignature = async () => {
+    if (
+      !contractForSignature ||
+      !signatureRecipient.email ||
+      !signatureRecipient.name
+    ) {
+      toast.error('Preencha o e-mail e nome do signatário');
+      return;
+    }
 
-     setIsSendingSignature(true);
-     try {
-       const result = await callApi(
-         `/api/contracts/${contractForSignature.id}/send-for-signature`,
-           {
-             method: 'POST',
-             body: JSON.stringify({
-               recipientEmail: signatureRecipient.email,
-               recipientName: signatureRecipient.name,
-             }),
-           }
-         );
+    setIsSendingSignature(true);
+    try {
+      const result = await callApi(
+        `/api/contracts/${contractForSignature.id}/send-for-signature`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            recipientEmail: signatureRecipient.email,
+            recipientName: signatureRecipient.name,
+          }),
+        }
+      );
 
-       if (result.success) {
-         toast.success('Contrato enviado para assinatura com sucesso!');
-         setIsSignatureModalOpen(false);
-         setSignatureRecipient({ email: '', name: '' });
-         setContractForSignature(null);
-         await loadContracts();
-       } else {
-         toast.error(result.error || 'Erro ao enviar para assinatura');
-       }
-     } catch (error: any) {
-       logger.error('Erro ao enviar para assinatura:', error);
-       toast.error(error.message || 'Falha ao enviar para assinatura');
-     } finally {
-       setIsSendingSignature(false);
-     }
-   };
+      if (result.success) {
+        toast.success('Contrato enviado para assinatura com sucesso!');
+        setIsSignatureModalOpen(false);
+        setSignatureRecipient({ email: '', name: '' });
+        setContractForSignature(null);
+        await loadContracts();
+      } else {
+        toast.error(result.error || 'Erro ao enviar para assinatura');
+      }
+    } catch (error: any) {
+      logger.error('Erro ao enviar para assinatura:', error);
+      toast.error(error.message || 'Falha ao enviar para assinatura');
+    } finally {
+      setIsSendingSignature(false);
+    }
+  };
 
   const handleDownload = async (contract: Contract) => {
     try {
@@ -1230,7 +1238,10 @@ const LegalContracts: React.FC = () => {
                     className="w-full px-8 py-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-black/5 outline-none font-bold text-sm"
                     value={signatureRecipient.name}
                     onChange={(e) =>
-                      setSignatureRecipient({ ...signatureRecipient, name: e.target.value })
+                      setSignatureRecipient({
+                        ...signatureRecipient,
+                        name: e.target.value,
+                      })
                     }
                   />
                 </div>
@@ -1246,14 +1257,18 @@ const LegalContracts: React.FC = () => {
                     className="w-full px-8 py-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-black/5 outline-none font-bold text-sm"
                     value={signatureRecipient.email}
                     onChange={(e) =>
-                      setSignatureRecipient({ ...signatureRecipient, email: e.target.value })
+                      setSignatureRecipient({
+                        ...signatureRecipient,
+                        email: e.target.value,
+                      })
                     }
                   />
                 </div>
 
                 <div className="bg-purple-50 border border-purple-100 rounded-2xl p-4">
                   <p className="text-xs font-semibold text-purple-800">
-                    O documento será gerado em PDF e enviado para assinatura digital via WooSign.
+                    O documento será gerado em PDF e enviado para assinatura
+                    digital via WooSign.
                   </p>
                 </div>
 
@@ -1262,7 +1277,9 @@ const LegalContracts: React.FC = () => {
                   disabled={isSendingSignature}
                   className="w-full py-5 bg-purple-600 text-white rounded-2xl font-bold uppercase text-xs tracking-[0.3em] shadow-xl hover:scale-[1.02] active:scale-95 transition-all mt-6 disabled:opacity-50"
                 >
-                  {isSendingSignature ? 'Enviando...' : 'Enviar para Assinatura'}
+                  {isSendingSignature
+                    ? 'Enviando...'
+                    : 'Enviar para Assinatura'}
                 </button>
               </div>
             </div>

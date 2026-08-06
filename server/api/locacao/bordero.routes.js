@@ -111,4 +111,3 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
 });
 
 export default router;
-

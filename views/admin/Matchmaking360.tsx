@@ -28,7 +28,11 @@ interface Match {
   reasons: string[];
 }
 
-function MatchMetric({ icon: Icon, value, label }: {
+function MatchMetric({
+  icon: Icon,
+  value,
+  label,
+}: {
   icon: React.ComponentType<{ size?: number }>;
   value: string | number;
   label: string;
@@ -36,8 +40,13 @@ function MatchMetric({ icon: Icon, value, label }: {
   return (
     <div className="wootech-status-card">
       <div>
-        <span className="wootech-status-icon"><Icon size={19} /></span>
-        <div><strong>{value}</strong><span>{label}</span></div>
+        <span className="wootech-status-icon">
+          <Icon size={19} />
+        </span>
+        <div>
+          <strong>{value}</strong>
+          <span>{label}</span>
+        </div>
       </div>
     </div>
   );
@@ -120,23 +129,76 @@ const Matchmaking360: React.FC = () => {
     <div className="wootech-reference-screen space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="wootech-page-heading">
         <div>
-          <div className="wootech-breadcrumb"><strong>Inteligência</strong><span>/</span><span>Matchmaking 360</span></div>
+          <div className="wootech-breadcrumb">
+            <strong>Inteligência</strong>
+            <span>/</span>
+            <span>Matchmaking 360</span>
+          </div>
           <h1>Matchmaking 360</h1>
-          <p>Cruze leads, imóveis e intenção de compra com IA para gerar próximas ações.</p>
+          <p>
+            Cruze leads, imóveis e intenção de compra com IA para gerar próximas
+            ações.
+          </p>
         </div>
         <div className="wootech-action-row">
-          <span className="wootech-secondary-action text-emerald-700"><i className="h-2 w-2 rounded-full bg-emerald-500" /> IA ativa</span>
-          <button className="wootech-secondary-action" onClick={() => toast.info('Os critérios de match podem ser ajustados na seção abaixo.')}><SlidersHorizontal size={17} /> Configurar critérios</button>
-          <button className="wootech-primary-action" onClick={loadMatches}><Sparkles size={17} /> Gerar sugestões</button>
+          <span className="wootech-secondary-action text-emerald-700">
+            <i className="h-2 w-2 rounded-full bg-emerald-500" /> IA ativa
+          </span>
+          <button
+            className="wootech-secondary-action"
+            onClick={() =>
+              toast.info(
+                'Os critérios de match podem ser ajustados na seção abaixo.'
+              )
+            }
+          >
+            <SlidersHorizontal size={17} /> Configurar critérios
+          </button>
+          <button className="wootech-primary-action" onClick={loadMatches}>
+            <Sparkles size={17} /> Gerar sugestões
+          </button>
         </div>
       </div>
 
       <div className="wootech-status-grid">
-        <MatchMetric icon={Target} value={matches.length} label="Matches encontrados" />
-        <MatchMetric icon={Building2} value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(matches.reduce((sum, match) => sum + Number(match.property.price || 0), 0))} label="VGV recomendado" />
-        <MatchMetric icon={Users} value={new Set(matches.map((match) => match.lead.id)).size} label="Leads com imóvel ideal" />
-        <MatchMetric icon={Zap} value={matches.filter((match) => match.score >= 80).length} label="Oportunidades quentes" />
-        <MatchMetric icon={Bot} value={matches.length ? `${Math.round(matches.reduce((sum, match) => sum + match.score, 0) / matches.length)}%` : '—'} label="Eficácia média" />
+        <MatchMetric
+          icon={Target}
+          value={matches.length}
+          label="Matches encontrados"
+        />
+        <MatchMetric
+          icon={Building2}
+          value={new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL',
+            notation: 'compact',
+          }).format(
+            matches.reduce(
+              (sum, match) => sum + Number(match.property.price || 0),
+              0
+            )
+          )}
+          label="VGV recomendado"
+        />
+        <MatchMetric
+          icon={Users}
+          value={new Set(matches.map((match) => match.lead.id)).size}
+          label="Leads com imóvel ideal"
+        />
+        <MatchMetric
+          icon={Zap}
+          value={matches.filter((match) => match.score >= 80).length}
+          label="Oportunidades quentes"
+        />
+        <MatchMetric
+          icon={Bot}
+          value={
+            matches.length
+              ? `${Math.round(matches.reduce((sum, match) => sum + match.score, 0) / matches.length)}%`
+              : '—'
+          }
+          label="Eficácia média"
+        />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">

@@ -59,8 +59,14 @@ const VALID_LICENSE_STATUSES = new Set([
 const STATUS_TRANSITIONS = {
   activate: { target: 'active', from: ['draft', 'expired', 'suspended'] },
   suspend: { target: 'suspended', from: ['active'] },
-  revoke: { target: 'revoked', from: ['draft', 'active', 'suspended', 'expired'] },
-  block: { target: 'blocked', from: ['draft', 'active', 'suspended', 'expired'] },
+  revoke: {
+    target: 'revoked',
+    from: ['draft', 'active', 'suspended', 'expired'],
+  },
+  block: {
+    target: 'blocked',
+    from: ['draft', 'active', 'suspended', 'expired'],
+  },
   unblock: { target: 'active', from: ['blocked'] },
 };
 
@@ -77,7 +83,11 @@ const UUID_RE =
 
 function assertUuid(value, field) {
   if (typeof value !== 'string' || !UUID_RE.test(value.trim())) {
-    throw new LicenseAdminError(`Campo ${field} inválido`, 'LICENSE_INVALID_BODY', 400);
+    throw new LicenseAdminError(
+      `Campo ${field} inválido`,
+      'LICENSE_INVALID_BODY',
+      400
+    );
   }
   return value.trim();
 }
@@ -168,7 +178,11 @@ async function findLicenseOrThrow(supabase, licenseId) {
     .maybeSingle();
   if (error) throw error;
   if (!data) {
-    throw new LicenseAdminError('Licença não encontrada', 'LICENSE_NOT_FOUND', 404);
+    throw new LicenseAdminError(
+      'Licença não encontrada',
+      'LICENSE_NOT_FOUND',
+      404
+    );
   }
   return data;
 }
@@ -192,14 +206,10 @@ async function findInstallationOrThrow(supabase, licenseId, installationId) {
   return data;
 }
 
-async function logGlobalAudit(supabase, {
-  actorId,
-  tenantId,
-  resource,
-  action,
-  details,
-  ipAddress,
-}) {
+async function logGlobalAudit(
+  supabase,
+  { actorId, tenantId, resource, action, details, ipAddress }
+) {
   try {
     await supabase.from('audit_logs').insert([
       {
@@ -212,20 +222,26 @@ async function logGlobalAudit(supabase, {
       },
     ]);
   } catch (error) {
-    console.error('[LicensingAdmin] Falha ao registrar auditoria global:', error);
+    console.error(
+      '[LicensingAdmin] Falha ao registrar auditoria global:',
+      error
+    );
   }
 }
 
-async function writeAudit(supabase, {
-  license,
-  action,
-  severity = 'info',
-  eventData,
-  actorId,
-  ipAddress,
-  now,
-  installationId,
-}) {
+async function writeAudit(
+  supabase,
+  {
+    license,
+    action,
+    severity = 'info',
+    eventData,
+    actorId,
+    ipAddress,
+    now,
+    installationId,
+  }
+) {
   await appendAuditEvent(supabase, {
     licenseId: license.id,
     organizationId: license.organization_id,
@@ -311,10 +327,18 @@ export async function listLicenses(supabase, options = {}) {
   const offset = clampInt(options.offset, 0, 0, 100_000);
 
   if (options.status && !VALID_LICENSE_STATUSES.has(options.status)) {
-    throw new LicenseAdminError('Status inválido', 'LICENSE_INVALID_STATUS', 400);
+    throw new LicenseAdminError(
+      'Status inválido',
+      'LICENSE_INVALID_STATUS',
+      400
+    );
   }
   if (options.edition && !VALID_EDITIONS.has(options.edition)) {
-    throw new LicenseAdminError('Edição inválida', 'LICENSE_INVALID_EDITION', 400);
+    throw new LicenseAdminError(
+      'Edição inválida',
+      'LICENSE_INVALID_EDITION',
+      400
+    );
   }
 
   let query = supabase
@@ -419,12 +443,19 @@ export async function getLicenseDetail(supabase, licenseId) {
 
 export async function createLicense(supabase, input = {}, context = {}) {
   const now = context.now || Date.now();
-  const organizationId = requireString(input.organization_id, 'organization_id');
+  const organizationId = requireString(
+    input.organization_id,
+    'organization_id'
+  );
   assertUuid(organizationId, 'organization_id');
 
   const edition = input.edition || 'standard';
   if (!VALID_EDITIONS.has(edition)) {
-    throw new LicenseAdminError('Edição inválida', 'LICENSE_INVALID_EDITION', 400);
+    throw new LicenseAdminError(
+      'Edição inválida',
+      'LICENSE_INVALID_EDITION',
+      400
+    );
   }
   const maxInstallations = parsePositiveInt(
     input.max_installations,
@@ -445,7 +476,11 @@ export async function createLicense(supabase, input = {}, context = {}) {
     input.metadata && typeof input.metadata === 'object' ? input.metadata : {};
   const status = input.status || 'draft';
   if (!VALID_LICENSE_STATUSES.has(status)) {
-    throw new LicenseAdminError('Status inválido', 'LICENSE_INVALID_STATUS', 400);
+    throw new LicenseAdminError(
+      'Status inválido',
+      'LICENSE_INVALID_STATUS',
+      400
+    );
   }
 
   let plan = null;
@@ -459,7 +494,11 @@ export async function createLicense(supabase, input = {}, context = {}) {
       .maybeSingle();
     if (planResult.error) throw planResult.error;
     if (!planResult.data) {
-      throw new LicenseAdminError('Plano não encontrado', 'PLAN_NOT_FOUND', 404);
+      throw new LicenseAdminError(
+        'Plano não encontrado',
+        'PLAN_NOT_FOUND',
+        404
+      );
     }
     plan = planResult.data;
   }
@@ -591,7 +630,12 @@ export async function createLicense(supabase, input = {}, context = {}) {
   return { license, licenseKey };
 }
 
-export async function updateLicense(supabase, licenseId, input = {}, context = {}) {
+export async function updateLicense(
+  supabase,
+  licenseId,
+  input = {},
+  context = {}
+) {
   const now = context.now || Date.now();
   const license = await findLicenseOrThrow(supabase, licenseId);
 
@@ -610,12 +654,20 @@ export async function updateLicense(supabase, licenseId, input = {}, context = {
         break;
       case 'edition':
         if (!VALID_EDITIONS.has(value)) {
-          throw new LicenseAdminError('Edição inválida', 'LICENSE_INVALID_EDITION', 400);
+          throw new LicenseAdminError(
+            'Edição inválida',
+            'LICENSE_INVALID_EDITION',
+            400
+          );
         }
         patch.edition = value;
         break;
       case 'max_installations':
-        patch.max_installations = parsePositiveInt(value, 'max_installations', 1);
+        patch.max_installations = parsePositiveInt(
+          value,
+          'max_installations',
+          1
+        );
         break;
       case 'grace_days':
         patch.grace_days = parseNonNegativeInt(value, 'grace_days', 0);
@@ -643,7 +695,11 @@ export async function updateLicense(supabase, licenseId, input = {}, context = {
   }
 
   if (Object.keys(patch).length === 0) {
-    throw new LicenseAdminError('Nada para atualizar', 'LICENSE_NOTHING_TO_UPDATE', 400);
+    throw new LicenseAdminError(
+      'Nada para atualizar',
+      'LICENSE_NOTHING_TO_UPDATE',
+      400
+    );
   }
 
   patch.updated_at = new Date(now).toISOString();
@@ -670,11 +726,20 @@ export async function updateLicense(supabase, licenseId, input = {}, context = {
   return updated;
 }
 
-export async function setLicenseStatus(supabase, licenseId, transition, context = {}) {
+export async function setLicenseStatus(
+  supabase,
+  licenseId,
+  transition,
+  context = {}
+) {
   const now = context.now || Date.now();
   const config = STATUS_TRANSITIONS[transition];
   if (!config) {
-    throw new LicenseAdminError('Transição inválida', 'LICENSE_INVALID_TRANSITION', 400);
+    throw new LicenseAdminError(
+      'Transição inválida',
+      'LICENSE_INVALID_TRANSITION',
+      400
+    );
   }
 
   const license = await findLicenseOrThrow(supabase, licenseId);
@@ -724,7 +789,10 @@ export async function setLicenseStatus(supabase, licenseId, transition, context 
   await writeAudit(supabase, {
     license: updated,
     action: AUDIT_ACTIONS[transition],
-    severity: config.target === 'blocked' || config.target === 'revoked' ? 'critical' : 'warn',
+    severity:
+      config.target === 'blocked' || config.target === 'revoked'
+        ? 'critical'
+        : 'warn',
     eventData: {
       from: license.status,
       to: config.target,
@@ -737,7 +805,12 @@ export async function setLicenseStatus(supabase, licenseId, transition, context 
   return updated;
 }
 
-export async function revokeInstallation(supabase, licenseId, installationId, context = {}) {
+export async function revokeInstallation(
+  supabase,
+  licenseId,
+  installationId,
+  context = {}
+) {
   const now = context.now || Date.now();
   const license = await findLicenseOrThrow(supabase, licenseId);
   const installation = await findInstallationOrThrow(
@@ -873,7 +946,10 @@ export async function provisionLicenseForOrganization(
   input = {},
   context = {}
 ) {
-  const organizationId = requireString(input.organization_id, 'organization_id');
+  const organizationId = requireString(
+    input.organization_id,
+    'organization_id'
+  );
   assertUuid(organizationId, 'organization_id');
 
   const existingResult = await supabase

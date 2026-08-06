@@ -32,7 +32,13 @@ import SupportPortal from './admin/SupportPortal';
 import ChannelsSettings from './admin/ChannelsSettings';
 import SmtpSettings from './admin/SmtpSettings';
 
-function SettingsStatus({ icon: Icon, title, status, detail, tone = 'success' }: {
+function SettingsStatus({
+  icon: Icon,
+  title,
+  status,
+  detail,
+  tone = 'success',
+}: {
   icon: React.ComponentType<{ size?: number }>;
   title: string;
   status: string;
@@ -42,10 +48,16 @@ function SettingsStatus({ icon: Icon, title, status, detail, tone = 'success' }:
   return (
     <div className="wootech-status-card">
       <div className="mb-3">
-        <span className="wootech-status-icon"><Icon size={19} /></span>
+        <span className="wootech-status-icon">
+          <Icon size={19} />
+        </span>
         <strong className="!text-base">{title}</strong>
       </div>
-      <span className={tone === 'warning' ? '!text-amber-600' : '!text-emerald-700'}>● {status}</span>
+      <span
+        className={tone === 'warning' ? '!text-amber-600' : '!text-emerald-700'}
+      >
+        ● {status}
+      </span>
       <span>{detail}</span>
     </div>
   );
@@ -341,12 +353,24 @@ const SystemSettings: React.FC = () => {
     <div className="wootech-reference-screen max-w-[1400px] mx-auto space-y-8">
       <div className="wootech-page-heading">
         <div>
-          <div className="wootech-breadcrumb"><strong>Administração</strong><span>/</span><span>Configurações</span></div>
+          <div className="wootech-breadcrumb">
+            <strong>Administração</strong>
+            <span>/</span>
+            <span>Configurações</span>
+          </div>
           <h1>Central de configurações</h1>
-          <p>Gerencie identidade, publicação, canais, acessos e integrações da sua imobiliária.</p>
+          <p>
+            Gerencie identidade, publicação, canais, acessos e integrações da
+            sua imobiliária.
+          </p>
         </div>
         <div className="wootech-action-row">
-          <button className="wootech-secondary-action" onClick={() => setActiveTab('tracking')}><History size={17} /> Ver histórico</button>
+          <button
+            className="wootech-secondary-action"
+            onClick={() => setActiveTab('tracking')}
+          >
+            <History size={17} /> Ver histórico
+          </button>
           <button
             onClick={handleSave}
             disabled={saving}
@@ -368,11 +392,38 @@ const SystemSettings: React.FC = () => {
       </div>
 
       <div className="wootech-status-grid">
-        <SettingsStatus icon={Palette} title="Site" status="Em manutenção" detail="Publicação controlada" tone="warning" />
-        <SettingsStatus icon={Globe} title="Domínio" status="Conectado" detail="Domínio personalizado" />
-        <SettingsStatus icon={MessageCircle} title="WhatsApp" status="Conectado" detail="1 instância conectada" />
-        <SettingsStatus icon={Mail} title="E-mail" status="DNS pendente" detail="Configure os registros" tone="warning" />
-        <SettingsStatus icon={Building2} title="Portais" status="Ativos" detail="Integrações de anúncios" />
+        <SettingsStatus
+          icon={Palette}
+          title="Site"
+          status="Em manutenção"
+          detail="Publicação controlada"
+          tone="warning"
+        />
+        <SettingsStatus
+          icon={Globe}
+          title="Domínio"
+          status="Conectado"
+          detail="Domínio personalizado"
+        />
+        <SettingsStatus
+          icon={MessageCircle}
+          title="WhatsApp"
+          status="Conectado"
+          detail="1 instância conectada"
+        />
+        <SettingsStatus
+          icon={Mail}
+          title="E-mail"
+          status="DNS pendente"
+          detail="Configure os registros"
+          tone="warning"
+        />
+        <SettingsStatus
+          icon={Building2}
+          title="Portais"
+          status="Ativos"
+          detail="Integrações de anúncios"
+        />
       </div>
 
       {/* Modern Tabs */}

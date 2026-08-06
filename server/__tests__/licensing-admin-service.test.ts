@@ -1,8 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import {
-  generateKeyPair,
-  verifyLicenseKey,
-} from '../lib/licensing/crypto.js';
+import { generateKeyPair, verifyLicenseKey } from '../lib/licensing/crypto.js';
 import {
   createLicense,
   bindDomainToLicenseViaSetupToken,
@@ -26,15 +23,17 @@ let keyPair: ReturnType<typeof generateKeyPair>;
 let orgId: string;
 let planId: string;
 
-function createMock(seed: {
-  licenses?: Row[];
-  installations?: Row[];
-  organizations?: Row[];
-  plans?: Row[];
-  domains?: Row[];
-  orgDomains?: Row[];
-  entitlements?: Row[];
-} = {}) {
+function createMock(
+  seed: {
+    licenses?: Row[];
+    installations?: Row[];
+    organizations?: Row[];
+    plans?: Row[];
+    domains?: Row[];
+    orgDomains?: Row[];
+    entitlements?: Row[];
+  } = {}
+) {
   const state: {
     licenses: Row[];
     installations: Row[];
@@ -99,7 +98,11 @@ function createMock(seed: {
       }
     }
     for (const [col, pattern] of Object.entries(filters.ilike)) {
-      if (!String(row[col] || '').toLowerCase().includes(normalizePattern(pattern))) {
+      if (
+        !String(row[col] || '')
+          .toLowerCase()
+          .includes(normalizePattern(pattern))
+      ) {
         return false;
       }
     }
@@ -118,7 +121,15 @@ function createMock(seed: {
       rows = [...rows].sort((a, b) => {
         const av = String(a[q.orderCol] || '');
         const bv = String(b[q.orderCol] || '');
-        return q.ascending ? (av < bv ? -1 : av > bv ? 1 : 0) : av < bv ? 1 : -1;
+        return q.ascending
+          ? av < bv
+            ? -1
+            : av > bv
+              ? 1
+              : 0
+          : av < bv
+            ? 1
+            : -1;
       });
     }
     if (q.rangeStart !== undefined && q.rangeEnd !== undefined) {
@@ -180,14 +191,18 @@ function createMock(seed: {
         const rows = filtered(table, filters, q);
         const total = all.length;
         if (q.head) {
-          return Promise.resolve({ data: null, count: total, error: null }).then(
-            resolve
-          );
+          return Promise.resolve({
+            data: null,
+            count: total,
+            error: null,
+          }).then(resolve);
         }
         if (q.countMode) {
-          return Promise.resolve({ data: rows, count: total, error: null }).then(
-            resolve
-          );
+          return Promise.resolve({
+            data: rows,
+            count: total,
+            error: null,
+          }).then(resolve);
         }
         return Promise.resolve({ data: rows, error: null }).then(resolve);
       },
@@ -218,7 +233,9 @@ function createMock(seed: {
             };
           },
           then(resolve: (v: { data: Row[]; error: null }) => void) {
-            return Promise.resolve({ data: inserted, error: null }).then(resolve);
+            return Promise.resolve({ data: inserted, error: null }).then(
+              resolve
+            );
           },
         };
       },
@@ -252,7 +269,9 @@ function createMock(seed: {
             };
           },
           then(resolve: (v: { data: Row[]; error: null }) => void) {
-            return Promise.resolve({ data: inserted, error: null }).then(resolve);
+            return Promise.resolve({ data: inserted, error: null }).then(
+              resolve
+            );
           },
         };
       },
@@ -297,9 +316,13 @@ function createMock(seed: {
                 };
               },
               then(resolve: (v: { data: Row[]; error: null }) => void) {
-                const rows = tables[table].filter((r) => matches(r, nextFilters));
+                const rows = tables[table].filter((r) =>
+                  matches(r, nextFilters)
+                );
                 rows.forEach((r) => Object.assign(r, patch));
-                return Promise.resolve({ data: rows, error: null }).then(resolve);
+                return Promise.resolve({ data: rows, error: null }).then(
+                  resolve
+                );
               },
             };
           },
@@ -430,7 +453,9 @@ describe('license admin service', () => {
         installations: [
           { id: 'inst-1', license_id: licenseId, status: 'active' },
         ],
-        domains: [{ id: 'dom-1', license_id: licenseId, domain: 'imob.com.br' }],
+        domains: [
+          { id: 'dom-1', license_id: licenseId, domain: 'imob.com.br' },
+        ],
         entitlements: [
           {
             id: 'ent-1',
@@ -534,7 +559,11 @@ describe('license admin service', () => {
         organizations: [{ id: orgId, name: 'Imob Empresa' }],
       });
       await expect(
-        createLicense(mock as never, { organization_id: orgId, edition: 'free' }, context)
+        createLicense(
+          mock as never,
+          { organization_id: orgId, edition: 'free' },
+          context
+        )
       ).rejects.toMatchObject({ code: 'LICENSE_INVALID_EDITION', status: 400 });
     });
   });
@@ -608,7 +637,9 @@ describe('license admin service', () => {
     });
 
     it('unblocks a blocked license back to active', async () => {
-      const mock = createMock({ licenses: [baseLicense({ status: 'blocked' })] });
+      const mock = createMock({
+        licenses: [baseLicense({ status: 'blocked' })],
+      });
       const updated = await setLicenseStatus(
         mock as never,
         'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
@@ -620,7 +651,9 @@ describe('license admin service', () => {
     });
 
     it('rejects activating a blocked license', async () => {
-      const mock = createMock({ licenses: [baseLicense({ status: 'blocked' })] });
+      const mock = createMock({
+        licenses: [baseLicense({ status: 'blocked' })],
+      });
       await expect(
         setLicenseStatus(
           mock as never,
@@ -628,7 +661,10 @@ describe('license admin service', () => {
           'activate',
           context
         )
-      ).rejects.toMatchObject({ code: 'LICENSE_STATUS_TRANSITION', status: 409 });
+      ).rejects.toMatchObject({
+        code: 'LICENSE_STATUS_TRANSITION',
+        status: 409,
+      });
     });
   });
 

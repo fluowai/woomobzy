@@ -16,7 +16,9 @@ router.post('/cancel', verifyAuth, verifyAdmin, async (req, res) => {
   try {
     const parsed = cancelSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ error: parsed.error.flatten(), code: 'INVALID_CANCEL' });
+      return res
+        .status(400)
+        .json({ error: parsed.error.flatten(), code: 'INVALID_CANCEL' });
     }
 
     const { asaasSubscriptionId } = parsed.data;
@@ -29,19 +31,29 @@ router.post('/cancel', verifyAuth, verifyAdmin, async (req, res) => {
       .single();
 
     if (orgError || !org) {
-      return res.status(404).json({ error: 'Organizacao nao encontrada', code: 'ORG_NOT_FOUND' });
+      return res
+        .status(404)
+        .json({ error: 'Organizacao nao encontrada', code: 'ORG_NOT_FOUND' });
     }
 
     const subscriptionId = asaasSubscriptionId || org.asaas_subscription_id;
     if (!subscriptionId) {
-      return res.status(400).json({ error: 'Assinatura nao encontrada', code: 'SUBSCRIPTION_NOT_FOUND' });
+      return res
+        .status(400)
+        .json({
+          error: 'Assinatura nao encontrada',
+          code: 'SUBSCRIPTION_NOT_FOUND',
+        });
     }
 
     let asaasResponse = null;
     try {
       asaasResponse = await AsaasService.deleteSubscription(subscriptionId);
     } catch (error) {
-      logger.warn('[SubscriptionCancel] Falha ao cancelar no Asaas:', error.message);
+      logger.warn(
+        '[SubscriptionCancel] Falha ao cancelar no Asaas:',
+        error.message
+      );
     }
 
     const { data: updatedOrg, error: updateError } = await supabase
@@ -56,8 +68,16 @@ router.post('/cancel', verifyAuth, verifyAdmin, async (req, res) => {
       .single();
 
     if (updateError) {
-      logger.error('[SubscriptionCancel] Erro ao atualizar organizacao:', updateError);
-      return res.status(500).json({ error: 'Falha ao atualizar assinatura', code: 'DB_UPDATE_FAILED' });
+      logger.error(
+        '[SubscriptionCancel] Erro ao atualizar organizacao:',
+        updateError
+      );
+      return res
+        .status(500)
+        .json({
+          error: 'Falha ao atualizar assinatura',
+          code: 'DB_UPDATE_FAILED',
+        });
     }
 
     return res.json({

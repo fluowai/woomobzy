@@ -53,7 +53,9 @@ export class PaymentService {
 
   async getInvoiceStatus(paymentId: string): Promise<string> {
     try {
-      const res = await fetch(`/api/subscription/invoices?paymentId=${encodeURIComponent(paymentId)}`);
+      const res = await fetch(
+        `/api/subscription/invoices?paymentId=${encodeURIComponent(paymentId)}`
+      );
       if (!res.ok) return 'PENDING';
       const data = await res.json();
       const invoice = data.data?.local?.[0] || data.data?.asaas?.[0];

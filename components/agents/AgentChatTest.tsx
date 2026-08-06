@@ -147,9 +147,7 @@ async function simulateAgentReply(
     `Voce e ${agentName}, um agente imobiliario da WooTech Imob.`,
     `Sua funcao: ${role}.`,
     `Estilo: ${draft.response_style || 'consultivo'}.`,
-    draft.instructions
-      ? `Instrucoes adicionais: ${draft.instructions}`
-      : '',
+    draft.instructions ? `Instrucoes adicionais: ${draft.instructions}` : '',
     'Responda como um corretor humano real, nunca como IA ou robo.',
     'Em saudacoes (oi, bom dia, ola), apresente seu nome e funcao e faca UMA pergunta de qualificacao.',
     'Mensagens curtas, no maximo 2 perguntas por vez, sem repetir perguntas ja respondidas.',
@@ -160,14 +158,17 @@ async function simulateAgentReply(
 
   const payload = () =>
     JSON.stringify({
-      agent: { name: agentName, role, style: draft.response_style || 'consultivo' },
+      agent: {
+        name: agentName,
+        role,
+        style: draft.response_style || 'consultivo',
+      },
       conversation: history.slice(-8).map((item) => ({
         role: item.side === 'agent' ? 'broker' : 'lead',
         content: item.content,
       })),
       lead_message: message,
-      task:
-        'Continue a conversa respondendo apenas como o agente imobiliario, conduzindo o lead.',
+      task: 'Continue a conversa respondendo apenas como o agente imobiliario, conduzindo o lead.',
     });
 
   // Retry para falhas transientes (rate limit, rede, 5xx).
@@ -279,7 +280,10 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
     const seed = input.trim() || 'oi bom dia';
     setInput('');
     setIsSimulating(true);
-    setMessages((prev) => [...prev, { id: `lead-seed-${Date.now()}`, side: 'lead', content: seed }]);
+    setMessages((prev) => [
+      ...prev,
+      { id: `lead-seed-${Date.now()}`, side: 'lead', content: seed },
+    ]);
 
     try {
       if (agent) {
@@ -302,25 +306,43 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
         }
       } else {
         const maxTurns = 6;
-        const seedMessage: TestMessage = { id: `lead-seed-${Date.now()}`, side: 'lead', content: seed };
+        const seedMessage: TestMessage = {
+          id: `lead-seed-${Date.now()}`,
+          side: 'lead',
+          content: seed,
+        };
         let currentMessages: TestMessage[] = [...messages, seedMessage];
         setMessages(currentMessages);
 
         for (let i = 0; i < maxTurns; i++) {
           const history: TestMessage[] = currentMessages.map((m) => ({ ...m }));
-          const lastLead = [...history].reverse().find((m) => m.side === 'lead');
+          const lastLead = [...history]
+            .reverse()
+            .find((m) => m.side === 'lead');
           if (!lastLead) break;
 
           await new Promise((resolve) => setTimeout(resolve, 500));
-          const agentReply = await simulateAgentReply(draft, lastLead.content, history);
-          const agentMessage: TestMessage = { id: `agent-${Date.now()}-${i}`, side: 'agent', content: agentReply || '...' };
+          const agentReply = await simulateAgentReply(
+            draft,
+            lastLead.content,
+            history
+          );
+          const agentMessage: TestMessage = {
+            id: `agent-${Date.now()}-${i}`,
+            side: 'agent',
+            content: agentReply || '...',
+          };
           currentMessages = [...currentMessages, agentMessage];
           setMessages([...currentMessages]);
 
           await new Promise((resolve) => setTimeout(resolve, 700));
           const leadHistory: TestMessage[] = [...history, agentMessage];
           const leadReply = await simulateLeadReply(draft, '', leadHistory);
-          const leadMessage: TestMessage = { id: `lead-${Date.now()}-${i}`, side: 'lead', content: leadReply || '...' };
+          const leadMessage: TestMessage = {
+            id: `lead-${Date.now()}-${i}`,
+            side: 'lead',
+            content: leadReply || '...',
+          };
           currentMessages = [...currentMessages, leadMessage];
           setMessages([...currentMessages]);
         }
@@ -328,7 +350,11 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
     } catch {
       setMessages((prev) => [
         ...prev,
-        { id: `agent-error-${Date.now()}`, side: 'agent', content: 'Erro na simulacao. Tente novamente.' },
+        {
+          id: `agent-error-${Date.now()}`,
+          side: 'agent',
+          content: 'Erro na simulacao. Tente novamente.',
+        },
       ]);
     } finally {
       setIsSimulating(false);
@@ -513,7 +539,7 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
               }
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
             >
-              {(loading || isSimulating) ? (
+              {loading || isSimulating ? (
                 <Loader2 className="animate-spin" size={17} />
               ) : (
                 <Send size={17} />

@@ -32,10 +32,12 @@ function nextOrg() {
  *  - audit_logs (insert)
  * Contador por tabela permite verificar uso de cache (zero queries).
  */
-function createMock(seed: {
-  license?: Row | null;
-  licenseError?: boolean;
-} = {}) {
+function createMock(
+  seed: {
+    license?: Row | null;
+    licenseError?: boolean;
+  } = {}
+) {
   const tables: Record<string, Row[]> = {
     licenses: seed.license ? [seed.license] : [],
     license_audit_events: [],
@@ -85,7 +87,10 @@ function createMock(seed: {
           return { data: null, error: { message: 'boom' } };
         }
         const rows = tables[table];
-        return { data: rows.find((r) => matches(r, filters)) ?? null, error: null };
+        return {
+          data: rows.find((r) => matches(r, filters)) ?? null,
+          error: null,
+        };
       },
       insert(rows: Row[]) {
         const inserted = rows.map((row) => ({
@@ -96,7 +101,9 @@ function createMock(seed: {
         tables[table].push(...inserted);
         return {
           then(resolve: (v: { data: Row[]; error: null }) => void) {
-            return Promise.resolve({ data: inserted, error: null }).then(resolve);
+            return Promise.resolve({ data: inserted, error: null }).then(
+              resolve
+            );
           },
         };
       },
@@ -108,7 +115,8 @@ function createMock(seed: {
     state,
     calls,
     from(table: string) {
-      if (!(table in tables)) throw new Error(`Unexpected table in test: ${table}`);
+      if (!(table in tables))
+        throw new Error(`Unexpected table in test: ${table}`);
       return buildQuery(table);
     },
   };
@@ -201,13 +209,9 @@ async function runMiddleware({
     mode,
     legacyTenants,
   });
-  await middleware(
-    req as never,
-    res as never,
-    () => {
-      nextCalled = true;
-    }
-  );
+  await middleware(req as never, res as never, () => {
+    nextCalled = true;
+  });
   return nextCalled;
 }
 
@@ -538,7 +542,11 @@ describe('license enforcement', () => {
 
     it('perfil sem org é isento (onboarding/first-login)', async () => {
       const mock = createMock({ license: null });
-      const req = makeReq({ userRole: 'user', isImpersonating: false, orgId: null });
+      const req = makeReq({
+        userRole: 'user',
+        isImpersonating: false,
+        orgId: null,
+      });
       const res = makeRes();
 
       const nextCalled = await runMiddleware({ mock, mode: 'hard', req, res });
@@ -638,8 +646,16 @@ describe('license enforcement', () => {
 
     it('blocked em modo off degrada; em soft bloqueia', () => {
       const license = baseLicense({ status: 'blocked' });
-      const off = buildEnforcementDecision({ mode: 'off', license, legacyTenants: false });
-      const soft = buildEnforcementDecision({ mode: 'soft', license, legacyTenants: false });
+      const off = buildEnforcementDecision({
+        mode: 'off',
+        license,
+        legacyTenants: false,
+      });
+      const soft = buildEnforcementDecision({
+        mode: 'soft',
+        license,
+        legacyTenants: false,
+      });
       expect(off.allow).toBe(true);
       expect(off.degraded).toBe(true);
       expect(soft.allow).toBe(false);

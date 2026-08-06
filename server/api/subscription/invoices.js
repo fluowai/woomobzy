@@ -8,7 +8,9 @@ import { AsaasService } from '../../services/asaasService.js';
 const router = Router();
 
 const listSchema = z.object({
-  status: z.enum(['pending', 'received', 'overdue', 'canceled', 'all']).default('all'),
+  status: z
+    .enum(['pending', 'received', 'overdue', 'canceled', 'all'])
+    .default('all'),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(50),
 });
@@ -17,7 +19,9 @@ router.get('/invoices', verifyAuth, async (req, res) => {
   try {
     const parsed = listSchema.safeParse(req.query);
     if (!parsed.success) {
-      return res.status(400).json({ error: parsed.error.flatten(), code: 'INVALID_QUERY' });
+      return res
+        .status(400)
+        .json({ error: parsed.error.flatten(), code: 'INVALID_QUERY' });
     }
 
     const { status, page, limit } = parsed.data;
@@ -30,7 +34,9 @@ router.get('/invoices', verifyAuth, async (req, res) => {
       .single();
 
     if (orgError || !org) {
-      return res.status(404).json({ error: 'Organizacao nao encontrada', code: 'ORG_NOT_FOUND' });
+      return res
+        .status(404)
+        .json({ error: 'Organizacao nao encontrada', code: 'ORG_NOT_FOUND' });
     }
 
     let asaasInvoices = [];
@@ -49,7 +55,10 @@ router.get('/invoices', verifyAuth, async (req, res) => {
         });
       }
     } catch (error) {
-      logger.warn('[SubscriptionInvoices] Falha ao consultar Asaas:', error.message);
+      logger.warn(
+        '[SubscriptionInvoices] Falha ao consultar Asaas:',
+        error.message
+      );
     }
 
     const supabaseQuery = supabase
@@ -60,15 +69,30 @@ router.get('/invoices', verifyAuth, async (req, res) => {
       .range((page - 1) * limit, page * limit - 1);
 
     if (status !== 'all') {
-      supabaseQuery.eq('status', status === 'received' ? 'pago' : status === 'pending' ? 'pendente' : status === 'overdue' ? 'vencido' : status === 'canceled' ? 'cancelado' : status);
+      supabaseQuery.eq(
+        'status',
+        status === 'received'
+          ? 'pago'
+          : status === 'pending'
+            ? 'pendente'
+            : status === 'overdue'
+              ? 'vencido'
+              : status === 'canceled'
+                ? 'cancelado'
+                : status
+      );
     }
 
-    const { data: localInvoices, error: localError, count } = await supabaseQuery;
+    const {
+      data: localInvoices,
+      error: localError,
+      count,
+    } = await supabaseQuery;
 
     return res.json({
       success: true,
       data: {
-        local: localError ? [] : (localInvoices || []),
+        local: localError ? [] : localInvoices || [],
         asaas: asaasInvoices,
         pagination: {
           total: count || 0,
@@ -80,7 +104,9 @@ router.get('/invoices', verifyAuth, async (req, res) => {
     });
   } catch (error) {
     logger.error('[SubscriptionInvoices] Error:', error);
-    return res.status(500).json({ error: error.message, code: 'INVOICES_ERROR' });
+    return res
+      .status(500)
+      .json({ error: error.message, code: 'INVOICES_ERROR' });
   }
 });
 
@@ -97,15 +123,22 @@ router.get('/invoices/:id', verifyAuth, async (req, res) => {
       .single();
 
     if (error || !invoice) {
-      return res.status(404).json({ error: 'Fatura nao encontrada', code: 'INVOICE_NOT_FOUND' });
+      return res
+        .status(404)
+        .json({ error: 'Fatura nao encontrada', code: 'INVOICE_NOT_FOUND' });
     }
 
     let asaasPayment = null;
     if (invoice.gateway_payment_id) {
       try {
-        asaasPayment = await AsaasService.getPayment(invoice.gateway_payment_id);
+        asaasPayment = await AsaasService.getPayment(
+          invoice.gateway_payment_id
+        );
       } catch (error) {
-        logger.warn('[SubscriptionInvoice] Falha ao consultar Asaas:', error.message);
+        logger.warn(
+          '[SubscriptionInvoice] Falha ao consultar Asaas:',
+          error.message
+        );
       }
     }
 
@@ -118,7 +151,9 @@ router.get('/invoices/:id', verifyAuth, async (req, res) => {
     });
   } catch (error) {
     logger.error('[SubscriptionInvoice] Error:', error);
-    return res.status(500).json({ error: error.message, code: 'INVOICE_ERROR' });
+    return res
+      .status(500)
+      .json({ error: error.message, code: 'INVOICE_ERROR' });
   }
 });
 

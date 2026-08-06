@@ -11,14 +11,25 @@ describe('validation envelope (cache offline assinado)', () => {
   const keys = generateKeyPair();
 
   it('cria e verifica envelope', () => {
-    const payload = { status: 'valid', org: 'org-1', validUntil: Date.now() + 3600_000 };
+    const payload = {
+      status: 'valid',
+      org: 'org-1',
+      validUntil: Date.now() + 3600_000,
+    };
     const envelope = createValidationEnvelope(keys.privateKeyPem, payload);
-    expect(verifyValidationEnvelope(keys.publicKeyPem, envelope)).toEqual(payload);
+    expect(verifyValidationEnvelope(keys.publicKeyPem, envelope)).toEqual(
+      payload
+    );
   });
 
   it('rejeita envelope adulterado', () => {
-    const envelope = createValidationEnvelope(keys.privateKeyPem, { status: 'valid' });
-    const tampered = { payload: { status: 'blocked' }, signature: envelope.signature };
+    const envelope = createValidationEnvelope(keys.privateKeyPem, {
+      status: 'valid',
+    });
+    const tampered = {
+      payload: { status: 'blocked' },
+      signature: envelope.signature,
+    };
     expect(() => verifyValidationEnvelope(keys.publicKeyPem, tampered)).toThrow(
       LicenseEnvelopeError
     );
@@ -28,17 +39,14 @@ describe('validation envelope (cache offline assinado)', () => {
     expect(() => verifyValidationEnvelope(keys.publicKeyPem, null)).toThrow(
       LicenseEnvelopeError
     );
-    expect(() => verifyValidationEnvelope(keys.publicKeyPem, { payload: {} })).toThrow(
-      LicenseEnvelopeError
-    );
+    expect(() =>
+      verifyValidationEnvelope(keys.publicKeyPem, { payload: {} })
+    ).toThrow(LicenseEnvelopeError);
   });
 
   it('classifica usabilidade fresh, stale e expired', () => {
     const now = Date.now();
-    const fresh = envelopeUsability(
-      { validUntil: now + 60_000 },
-      { now }
-    );
+    const fresh = envelopeUsability({ validUntil: now + 60_000 }, { now });
     expect(fresh.usable).toBe(true);
     expect(fresh.state).toBe('fresh');
 

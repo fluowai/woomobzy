@@ -234,31 +234,37 @@ const BIRural: React.FC = () => {
   return (
     <div className="wootech-reference-screen w-full max-w-[1600px] mx-auto space-y-8 pb-12 font-sans text-gray-900">
       <div className="wootech-page-heading">
-          <div>
-            <div className="wootech-breadcrumb"><strong>Rural</strong><span>/</span><span>BI Rural Select</span></div>
-            <h1 className="flex items-center gap-3"><Activity className="text-emerald-600" size={30} /> BI Rural Select</h1>
-            <p>Análise de performance, portfólio e mercado do segmento rural em tempo real.</p>
+        <div>
+          <div className="wootech-breadcrumb">
+            <strong>Rural</strong>
+            <span>/</span>
+            <span>BI Rural Select</span>
           </div>
+          <h1 className="flex items-center gap-3">
+            <Activity className="text-emerald-600" size={30} /> BI Rural Select
+          </h1>
+          <p>
+            Análise de performance, portfólio e mercado do segmento rural em
+            tempo real.
+          </p>
+        </div>
 
-          <div className="wootech-action-row">
-            <div className="flex rounded-lg border border-slate-200 bg-white p-1">
-              {['Mensal', 'Semestral', 'Anual'].map((range) => (
-                <button
-                  key={range}
-                  onClick={() => setTimeRange(range)}
-                  className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${timeRange === range ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
-                >
-                  {range}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={exportReport}
-              className="wootech-secondary-action"
-            >
-              <Download size={18} /> Exportar relatório
-            </button>
+        <div className="wootech-action-row">
+          <div className="flex rounded-lg border border-slate-200 bg-white p-1">
+            {['Mensal', 'Semestral', 'Anual'].map((range) => (
+              <button
+                key={range}
+                onClick={() => setTimeRange(range)}
+                className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${timeRange === range ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+              >
+                {range}
+              </button>
+            ))}
           </div>
+          <button onClick={exportReport} className="wootech-secondary-action">
+            <Download size={18} /> Exportar relatório
+          </button>
+        </div>
       </div>
 
       {/* KPI Cloud */}

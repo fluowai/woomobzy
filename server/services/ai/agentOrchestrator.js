@@ -128,8 +128,7 @@ const allTools = [
       properties: {
         data: {
           type: 'string',
-          description:
-            'Data desejada para consulta (YYYY-MM-DD ou ISO 8601).',
+          description: 'Data desejada para consulta (YYYY-MM-DD ou ISO 8601).',
         },
         corretor_id: {
           type: 'string',
@@ -204,7 +203,10 @@ export class AgentOrchestrator {
         allTools.find((t) => t.name === 'enviar_audio_whatsapp')
       );
     }
-    if (agentToolsConfig?.includes('agenda') || agentToolsConfig?.includes('agendar_visita')) {
+    if (
+      agentToolsConfig?.includes('agenda') ||
+      agentToolsConfig?.includes('agendar_visita')
+    ) {
       activeFunctionDeclarations.push(
         allTools.find((t) => t.name === 'consultar_agenda_disponibilidade')
       );
@@ -297,7 +299,11 @@ export class AgentOrchestrator {
 
         const propertyId = args.property_id || null;
         const propertyTitle = propertyId
-          ? await this._resolvePropertyTitle(supabase, organizationId, propertyId)
+          ? await this._resolvePropertyTitle(
+              supabase,
+              organizationId,
+              propertyId
+            )
           : null;
         const visitTitle = propertyTitle
           ? `Visita Agendada: ${propertyTitle}`
@@ -439,7 +445,9 @@ export class AgentOrchestrator {
       }
 
       if (name === 'consultar_agenda_disponibilidade') {
-        const dateStr = args.data ? new Date(args.data).toISOString().split('T')[0] : null;
+        const dateStr = args.data
+          ? new Date(args.data).toISOString().split('T')[0]
+          : null;
         if (!dateStr)
           return {
             erro: 'Informe a data no formato YYYY-MM-DD ou ISO 8601.',
@@ -564,7 +572,12 @@ DIRETRIZES DE FERRAMENTAS (apenas quando aplicavel ao contexto):
     return data?.title || null;
   }
 
-  async _checkAgendaConflicts(supabase, organizationId, dateStr, excludeLeadId = null) {
+  async _checkAgendaConflicts(
+    supabase,
+    organizationId,
+    dateStr,
+    excludeLeadId = null
+  ) {
     const startOfDay = new Date(dateStr);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(dateStr);

@@ -469,8 +469,7 @@ export function useWhatsAppInbox(
           ? data.find((i) => i.id === deepLinkInstanceId)
           : null;
         const connected = data.find((i) => i.status === 'connected');
-        const nextInstance =
-          linkedInstance || connected || data[0];
+        const nextInstance = linkedInstance || connected || data[0];
         if (
           !selectedInstance ||
           nextInstance.id !== selectedInstance.id ||
@@ -529,7 +528,8 @@ export function useWhatsAppInbox(
       }
       if (err?.status === 403) {
         toast.error(
-          err.message || 'Sem permissao para carregar conversas desta instancia.'
+          err.message ||
+            'Sem permissao para carregar conversas desta instancia.'
         );
       }
       if (err?.message?.includes('WHATSAPP_UNAVAILABLE')) {

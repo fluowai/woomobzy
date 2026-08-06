@@ -880,8 +880,7 @@ router.put('/organizations/:id', verifySuperAdmin, async (req, res) => {
     const { id } = req.params;
     if (!(await isOrgWithinScope(req, id))) {
       return res.status(403).json({
-        error:
-          'Nao autorizado: imobiliaria fora do escopo da sua organizacao',
+        error: 'Nao autorizado: imobiliaria fora do escopo da sua organizacao',
       });
     }
     const {
@@ -1377,8 +1376,7 @@ router.delete('/organizations/:id', verifySuperAdmin, async (req, res) => {
     const { id } = req.params;
     if (!(await isOrgWithinScope(req, id))) {
       return res.status(403).json({
-        error:
-          'Nao autorizado: imobiliaria fora do escopo da sua organizacao',
+        error: 'Nao autorizado: imobiliaria fora do escopo da sua organizacao',
       });
     }
     const { data, error } = await supabase

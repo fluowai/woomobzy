@@ -313,4 +313,3 @@ router.patch('/:id/status', verifyAuth, requireTenant, async (req, res) => {
 });
 
 export default router;
-

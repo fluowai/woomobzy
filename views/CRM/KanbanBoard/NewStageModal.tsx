@@ -83,7 +83,9 @@ const NewStageModal: React.FC<NewStageModalProps> = ({
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
           <div>
-            <h3 className="text-lg font-bold text-slate-950">Etapas do Kanban</h3>
+            <h3 className="text-lg font-bold text-slate-950">
+              Etapas do Kanban
+            </h3>
             <p className="text-xs font-semibold text-slate-400">
               Gerencie as colunas do funil: criar, renomear e excluir.
             </p>

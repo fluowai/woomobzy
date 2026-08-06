@@ -280,15 +280,13 @@ router.patch('/leads/:id', verifyAuth, requireTenant, async (req, res) => {
       if (deleteError) throw deleteError;
 
       if (tagValues.length) {
-        const { error: insertError } = await supabase
-          .from('lead_tags')
-          .insert(
-            tagValues.map((tag) => ({
-              lead_id: id,
-              organization_id: req.orgId,
-              tag,
-            }))
-          );
+        const { error: insertError } = await supabase.from('lead_tags').insert(
+          tagValues.map((tag) => ({
+            lead_id: id,
+            organization_id: req.orgId,
+            tag,
+          }))
+        );
 
         if (insertError) throw insertError;
       }

@@ -2,7 +2,11 @@ import express from 'express';
 import multer from 'multer';
 import { verifyMegaAdmin } from '../../middleware/auth.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
-import { uploadObject, getMinioPublicUrl, getConfiguredBucketName } from '../../lib/minio-storage.js';
+import {
+  uploadObject,
+  getMinioPublicUrl,
+  getConfiguredBucketName,
+} from '../../lib/minio-storage.js';
 import axios from 'axios';
 import dotenv from 'dotenv';
 import puppeteer from 'puppeteer';
@@ -27,13 +31,20 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+    const allowed = [
+      'application/pdf',
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+    ];
     if (allowed.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Tipo de arquivo não permitido. Use PDF, JPG, PNG ou WebP.'));
+      cb(
+        new Error('Tipo de arquivo não permitido. Use PDF, JPG, PNG ou WebP.')
+      );
     }
-  }
+  },
 });
 
 function getAIProvider() {
@@ -41,8 +52,10 @@ function getAIProvider() {
   const groqKey = process.env.GROQ_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
 
-  if (geminiKey && !geminiKey.includes('YOUR_') && geminiKey.length >= 20) return 'gemini';
-  if (openaiKey && !openaiKey.includes('YOUR_') && openaiKey.length >= 20) return 'openai';
+  if (geminiKey && !geminiKey.includes('YOUR_') && geminiKey.length >= 20)
+    return 'gemini';
+  if (openaiKey && !openaiKey.includes('YOUR_') && openaiKey.length >= 20)
+    return 'openai';
   if (groqKey && groqKey.length >= 20) return 'groq';
   return null;
 }
@@ -53,7 +66,8 @@ async function analyzeContractWithAI(text) {
     return {
       provider: 'none',
       analysis: null,
-      error: 'Nenhum provedor de IA configurado. Configure GEMINI_API_KEY, GROQ_API_KEY ou OPENAI_API_KEY.'
+      error:
+        'Nenhum provedor de IA configurado. Configure GEMINI_API_KEY, GROQ_API_KEY ou OPENAI_API_KEY.',
     };
   }
 
@@ -75,11 +89,13 @@ ${text.substring(0, 15000)}`;
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
         {
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 2000 }
+          generationConfig: { temperature: 0.3, maxOutputTokens: 2000 },
         },
         { timeout: 30000 }
       );
-      const analysis = response.data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sem resposta da IA';
+      const analysis =
+        response.data.candidates?.[0]?.content?.parts?.[0]?.text ||
+        'Sem resposta da IA';
       return { provider: 'gemini', analysis };
     } else if (provider === 'groq') {
       const response = await axios.post(
@@ -88,14 +104,15 @@ ${text.substring(0, 15000)}`;
           model: 'llama-3.1-8b-instant',
           messages: [{ role: 'user', content: prompt }],
           max_tokens: 2000,
-          temperature: 0.3
+          temperature: 0.3,
         },
         {
           headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
-          timeout: 30000
+          timeout: 30000,
         }
       );
-      const analysis = response.data.choices?.[0]?.message?.content || 'Sem resposta da IA';
+      const analysis =
+        response.data.choices?.[0]?.message?.content || 'Sem resposta da IA';
       return { provider: 'groq', analysis };
     } else if (provider === 'openai') {
       const response = await axios.post(
@@ -104,14 +121,15 @@ ${text.substring(0, 15000)}`;
           model: 'gpt-4o-mini',
           messages: [{ role: 'user', content: prompt }],
           max_tokens: 2000,
-          temperature: 0.3
+          temperature: 0.3,
         },
         {
           headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-          timeout: 30000
+          timeout: 30000,
         }
       );
-      const analysis = response.data.choices?.[0]?.message?.content || 'Sem resposta da IA';
+      const analysis =
+        response.data.choices?.[0]?.message?.content || 'Sem resposta da IA';
       return { provider: 'openai', analysis };
     }
   } catch (err) {
@@ -119,7 +137,7 @@ ${text.substring(0, 15000)}`;
     return {
       provider,
       analysis: null,
-      error: `Erro na análise: ${err.message}`
+      error: `Erro na análise: ${err.message}`,
     };
   }
 }
@@ -159,7 +177,7 @@ router.post('/', verifyMegaAdmin, async (req, res) => {
   try {
     const payload = {
       ...req.body,
-      created_by: req.user.id
+      created_by: req.user.id,
     };
 
     const { data, error } = await supabase
@@ -208,57 +226,63 @@ router.delete('/:id', verifyMegaAdmin, async (req, res) => {
   }
 });
 
-router.post('/upload', verifyMegaAdmin, upload.single('file'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'Arquivo não enviado' });
-    }
+router.post(
+  '/upload',
+  verifyMegaAdmin,
+  upload.single('file'),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'Arquivo não enviado' });
+      }
 
-    const logicalBucket = 'contracts';
-    const bucket = getConfiguredBucketName('contracts');
-    const filePath = `${req.user.id}/${Date.now()}_${req.file.originalname}`;
-    const mimeType = req.file.mimetype;
+      const logicalBucket = 'contracts';
+      const bucket = getConfiguredBucketName('contracts');
+      const filePath = `${req.user.id}/${Date.now()}_${req.file.originalname}`;
+      const mimeType = req.file.mimetype;
 
-    const result = await uploadObject({
-      bucket,
-      key: filePath,
-      body: req.file.buffer,
-      contentType: mimeType,
-      logicalBucket,
-    });
-
-    const publicUrl = getMinioPublicUrl({ bucket, key: result.path });
-
-    const { error: dbError } = await supabase
-      .from('storage_objects')
-      .upsert({
-        tenant_id: req.user.id,
+      const result = await uploadObject({
         bucket,
-        object_key: result.path,
-        sha256: req.file.buffer.toString('hex'),
-        size_bytes: req.file.size,
-        mime_type: mimeType,
-        filename: req.file.originalname,
-        source: 'contract_upload',
-        entity_type: 'system_contract'
-      }, {
-        onConflict: ['bucket', 'object_key']
+        key: filePath,
+        body: req.file.buffer,
+        contentType: mimeType,
+        logicalBucket,
       });
 
-    if (dbError) console.error('Storage object log error:', dbError);
+      const publicUrl = getMinioPublicUrl({ bucket, key: result.path });
 
-    res.json({
-      success: true,
-      url: publicUrl,
-      path: result.path,
-      mimeType,
-      size: req.file.size
-    });
-  } catch (err) {
-    console.error('[SystemContracts] Upload error:', err);
-    res.status(500).json({ error: 'Erro ao enviar arquivo' });
+      const { error: dbError } = await supabase.from('storage_objects').upsert(
+        {
+          tenant_id: req.user.id,
+          bucket,
+          object_key: result.path,
+          sha256: req.file.buffer.toString('hex'),
+          size_bytes: req.file.size,
+          mime_type: mimeType,
+          filename: req.file.originalname,
+          source: 'contract_upload',
+          entity_type: 'system_contract',
+        },
+        {
+          onConflict: ['bucket', 'object_key'],
+        }
+      );
+
+      if (dbError) console.error('Storage object log error:', dbError);
+
+      res.json({
+        success: true,
+        url: publicUrl,
+        path: result.path,
+        mimeType,
+        size: req.file.size,
+      });
+    } catch (err) {
+      console.error('[SystemContracts] Upload error:', err);
+      res.status(500).json({ error: 'Erro ao enviar arquivo' });
+    }
   }
-});
+);
 
 router.post('/:id/analyze', verifyMegaAdmin, async (req, res) => {
   try {
@@ -274,9 +298,12 @@ router.post('/:id/analyze', verifyMegaAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Contrato não encontrado' });
     }
 
-    const contractText = JSON.stringify(contract.contratante_details || '') + ' ' +
-                        JSON.stringify(contract.contratada_details || '') + ' ' +
-                        JSON.stringify(contract);
+    const contractText =
+      JSON.stringify(contract.contratante_details || '') +
+      ' ' +
+      JSON.stringify(contract.contratada_details || '') +
+      ' ' +
+      JSON.stringify(contract);
 
     const analysis = await analyzeContractWithAI(contractText);
 
@@ -285,7 +312,7 @@ router.post('/:id/analyze', verifyMegaAdmin, async (req, res) => {
       .update({
         analysis_result: analysis,
         analyzed_at: new Date().toISOString(),
-        analyzed_by: req.user.id
+        analyzed_by: req.user.id,
       })
       .eq('id', contractId);
 
@@ -298,40 +325,45 @@ router.post('/:id/analyze', verifyMegaAdmin, async (req, res) => {
   }
 });
 
-router.post('/:id/analyze-file', verifyMegaAdmin, upload.single('file'), async (req, res) => {
-  try {
-    const contractId = req.params.id;
+router.post(
+  '/:id/analyze-file',
+  verifyMegaAdmin,
+  upload.single('file'),
+  async (req, res) => {
+    try {
+      const contractId = req.params.id;
 
-    if (!req.file) {
-      return res.status(400).json({ error: 'Arquivo não enviado' });
+      if (!req.file) {
+        return res.status(400).json({ error: 'Arquivo não enviado' });
+      }
+
+      const text = req.file.buffer.toString('utf-8').substring(0, 15000);
+
+      const analysis = await analyzeContractWithAI(text);
+
+      const { error: updateError } = await supabase
+        .from('system_contracts')
+        .update({
+          analysis_result: analysis,
+          analyzed_at: new Date().toISOString(),
+          analyzed_by: req.user.id,
+        })
+        .eq('id', contractId);
+
+      if (updateError) throw updateError;
+
+      res.json({ success: true, analysis });
+    } catch (err) {
+      console.error('[SystemContracts] Analyze file error:', err);
+      res.status(500).json({ error: 'Erro ao analisar arquivo' });
     }
-
-    const text = req.file.buffer.toString('utf-8').substring(0, 15000);
-
-    const analysis = await analyzeContractWithAI(text);
-
-    const { error: updateError } = await supabase
-      .from('system_contracts')
-      .update({
-        analysis_result: analysis,
-        analyzed_at: new Date().toISOString(),
-        analyzed_by: req.user.id
-      })
-      .eq('id', contractId);
-
-    if (updateError) throw updateError;
-
-    res.json({ success: true, analysis });
-  } catch (err) {
-    console.error('[SystemContracts] Analyze file error:', err);
-    res.status(500).json({ error: 'Erro ao analisar arquivo' });
   }
-});
+);
 
 async function generateContractPdf(htmlContent) {
   const browser = await puppeteer.launch({
     headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
   try {
     const page = await browser.newPage();
@@ -339,7 +371,7 @@ async function generateContractPdf(htmlContent) {
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
-      margin: { top: '20mm', right: '20mm', bottom: '20mm', left: '20mm' }
+      margin: { top: '20mm', right: '20mm', bottom: '20mm', left: '20mm' },
     });
     return pdfBuffer;
   } finally {
@@ -353,7 +385,9 @@ router.post('/:id/send-for-signature', verifyMegaAdmin, async (req, res) => {
     const { recipientEmail, recipientName } = req.body;
 
     if (!recipientEmail || !recipientName) {
-      return res.status(400).json({ error: 'E-mail e nome do signatário são obrigatórios' });
+      return res
+        .status(400)
+        .json({ error: 'E-mail e nome do signatário são obrigatórios' });
     }
 
     const { data: contract, error: contractError } = await supabase
@@ -366,8 +400,10 @@ router.post('/:id/send-for-signature', verifyMegaAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Contrato não encontrado' });
     }
 
-    const contractText = JSON.stringify(contract.contratante_details || '') + ' ' +
-                        JSON.stringify(contract.contratada_details || '');
+    const contractText =
+      JSON.stringify(contract.contratante_details || '') +
+      ' ' +
+      JSON.stringify(contract.contratada_details || '');
 
     const analysis = await analyzeContractWithAI(contractText);
     const generatedContent = analysis.analysis || contractText;
@@ -410,14 +446,13 @@ router.post('/:id/send-for-signature', verifyMegaAdmin, async (req, res) => {
       key: filePath,
       body: pdfBuffer,
       contentType: 'application/pdf',
-      logicalBucket: 'contracts'
+      logicalBucket: 'contracts',
     });
 
     const publicUrl = getMinioPublicUrl({ bucket, key: uploadResult.path });
 
-    const { error: dbError } = await supabase
-      .from('storage_objects')
-      .upsert({
+    const { error: dbError } = await supabase.from('storage_objects').upsert(
+      {
         tenant_id: req.user.id,
         bucket,
         object_key: uploadResult.path,
@@ -426,10 +461,12 @@ router.post('/:id/send-for-signature', verifyMegaAdmin, async (req, res) => {
         mime_type: 'application/pdf',
         filename: `${contract.title || 'contrato'}.pdf`,
         source: 'woosign_contract',
-        entity_type: 'system_contract'
-      }, {
-        onConflict: ['bucket', 'object_key']
-      });
+        entity_type: 'system_contract',
+      },
+      {
+        onConflict: ['bucket', 'object_key'],
+      }
+    );
 
     if (dbError) console.error('Storage object log error:', dbError);
 
@@ -440,11 +477,13 @@ router.post('/:id/send-for-signature', verifyMegaAdmin, async (req, res) => {
       userId: req.user.id,
       pdfUrl: publicUrl,
       recipients: [{ email: recipientEmail, name: recipientName }],
-      title: contract.title || 'Contrato'
+      title: contract.title || 'Contrato',
     });
 
     if (!envelope) {
-      return res.status(500).json({ error: 'Falha ao criar envelope de assinatura' });
+      return res
+        .status(500)
+        .json({ error: 'Falha ao criar envelope de assinatura' });
     }
 
     await supabase
@@ -452,7 +491,7 @@ router.post('/:id/send-for-signature', verifyMegaAdmin, async (req, res) => {
       .update({
         status: 'PENDING_SIGNATURES',
         woosign_envelope_id: envelope.id,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq('id', contractId);
 
@@ -460,11 +499,13 @@ router.post('/:id/send-for-signature', verifyMegaAdmin, async (req, res) => {
       success: true,
       envelopeId: envelope.id,
       pdfUrl: publicUrl,
-      status: 'PENDING_SIGNATURES'
+      status: 'PENDING_SIGNATURES',
     });
   } catch (err) {
     console.error('[SystemContracts] Send for signature error:', err);
-    res.status(500).json({ error: err.message || 'Erro ao enviar para assinatura' });
+    res
+      .status(500)
+      .json({ error: err.message || 'Erro ao enviar para assinatura' });
   }
 });
 

@@ -54,7 +54,11 @@ export function computeLicenseState({
       valid: false,
       severity: 'error',
       checks: {
-        licenseExists: okCheck('licenseExists', false, 'Licença não encontrada'),
+        licenseExists: okCheck(
+          'licenseExists',
+          false,
+          'Licença não encontrada'
+        ),
       },
     };
   }
@@ -66,7 +70,11 @@ export function computeLicenseState({
       valid: false,
       severity: 'warn',
       checks: {
-        licenseState: okCheck('licenseState', false, 'Licença aguardando ativação'),
+        licenseState: okCheck(
+          'licenseState',
+          false,
+          'Licença aguardando ativação'
+        ),
       },
     };
   }
@@ -77,7 +85,9 @@ export function computeLicenseState({
       code: 'LICENSE_REVOKED',
       valid: false,
       severity: 'critical',
-      checks: { licenseState: okCheck('licenseState', false, 'Licença revogada') },
+      checks: {
+        licenseState: okCheck('licenseState', false, 'Licença revogada'),
+      },
     };
   }
 
@@ -87,7 +97,9 @@ export function computeLicenseState({
       code: 'LICENSE_BLOCKED',
       valid: false,
       severity: 'critical',
-      checks: { licenseState: okCheck('licenseState', false, 'Licença bloqueada') },
+      checks: {
+        licenseState: okCheck('licenseState', false, 'Licença bloqueada'),
+      },
     };
   }
 
@@ -97,13 +109,17 @@ export function computeLicenseState({
       code: 'LICENSE_SUSPENDED',
       valid: false,
       severity: 'warn',
-      checks: { licenseState: okCheck('licenseState', false, 'Licença suspensa') },
+      checks: {
+        licenseState: okCheck('licenseState', false, 'Licença suspensa'),
+      },
     };
   }
 
   const blockingPolicy = license.blocking_policy || 'soft';
   const graceMs = Number(license.grace_days || 0) * 24 * 60 * 60 * 1000;
-  const expiresAtMs = license.expires_at ? new Date(license.expires_at).getTime() : null;
+  const expiresAtMs = license.expires_at
+    ? new Date(license.expires_at).getTime()
+    : null;
   const expiredAtMs = expiresAtMs ? expiresAtMs + opts.clockSkewMs : null;
 
   if (expiredAtMs !== null && now > expiredAtMs) {
@@ -116,7 +132,11 @@ export function computeLicenseState({
           valid: false,
           severity: 'critical',
           checks: {
-            expiry: okCheck('expiry', false, 'Licença expirada (política hard)'),
+            expiry: okCheck(
+              'expiry',
+              false,
+              'Licença expirada (política hard)'
+            ),
           },
         };
       }
@@ -126,7 +146,11 @@ export function computeLicenseState({
         valid: blockingPolicy === 'none',
         severity: blockingPolicy === 'none' ? 'warn' : 'error',
         checks: {
-          expiry: okCheck('expiry', blockingPolicy === 'none', 'Licença expirada'),
+          expiry: okCheck(
+            'expiry',
+            blockingPolicy === 'none',
+            'Licença expirada'
+          ),
         },
         actions: blockingPolicy === 'none' ? ['degraded_mode'] : ['soft_block'],
       };
@@ -137,7 +161,9 @@ export function computeLicenseState({
       valid: false,
       severity: 'warn',
       graceRemainingMs: expiredAtMs + graceMs - now,
-      checks: { expiry: okCheck('expiry', false, 'Licença em período de carência') },
+      checks: {
+        expiry: okCheck('expiry', false, 'Licença em período de carência'),
+      },
       actions: ['degraded_mode', 'notify_renewal'],
     };
   }
@@ -277,14 +303,18 @@ export function evaluateLicense({
     }
   }
 
-  const normalizedDomain = String(requestDomain || '').toLowerCase().trim();
+  const normalizedDomain = String(requestDomain || '')
+    .toLowerCase()
+    .trim();
   const domainOk =
     allowedDomains.length === 0 ||
     allowedDomains.some((d) => d.toLowerCase().trim() === normalizedDomain);
   checks.domain = okCheck(
     'domain',
     domainOk,
-    domainOk ? `Domínio ${normalizedDomain || '(não informado)'} vinculado` : `Domínio ${normalizedDomain} não vinculado`
+    domainOk
+      ? `Domínio ${normalizedDomain || '(não informado)'} vinculado`
+      : `Domínio ${normalizedDomain} não vinculado`
   );
   if (!domainOk) {
     return {
@@ -316,8 +346,9 @@ export function evaluateLicense({
     };
   }
 
-  const entitlementChecks = Object.entries(entitlements || {}).map(([key, value]) =>
-    okCheck(`entitlement_${key}`, value !== false, `Entitlement ${key}`)
+  const entitlementChecks = Object.entries(entitlements || {}).map(
+    ([key, value]) =>
+      okCheck(`entitlement_${key}`, value !== false, `Entitlement ${key}`)
   );
   const entitlementsOk = entitlementChecks.every((c) => c.ok);
   entitlementChecks.forEach((c) => {
@@ -356,7 +387,8 @@ export function buildBlockingDirectives({ state, license }) {
     return {
       hardBlock: true,
       degrade: false,
-      message: 'Licença bloqueada. Acesso administrativo mantido; dados preservados.',
+      message:
+        'Licença bloqueada. Acesso administrativo mantido; dados preservados.',
     };
   }
   if (state === LICENSE_STATES.GRACE || state === LICENSE_STATES.EXPIRED) {

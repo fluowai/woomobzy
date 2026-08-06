@@ -408,14 +408,23 @@ router.get('/public/signature/:signatureId', async (req, res) => {
 router.post('/public/signature/:signatureId/sign', async (req, res) => {
   try {
     const { signatureId } = req.params;
-    const { signer_name, signer_cpf, ip_address, user_agent, signature_hash, acceptance_method } = req.body;
+    const {
+      signer_name,
+      signer_cpf,
+      ip_address,
+      user_agent,
+      signature_hash,
+      acceptance_method,
+    } = req.body;
 
     if (!isValidUUID(signatureId)) {
       return res.status(400).json({ error: 'ID inválido' });
     }
 
     if (!signer_name || !signature_hash) {
-      return res.status(400).json({ error: 'Nome e hash da assinatura são obrigatórios' });
+      return res
+        .status(400)
+        .json({ error: 'Nome e hash da assinatura são obrigatórios' });
     }
 
     const supabase = getSupabaseServer();
@@ -460,7 +469,8 @@ router.post('/public/signature/:signatureId/sign', async (req, res) => {
       .eq('lease_id', sig.lease_id);
 
     const totalSigners = allSignatures?.length || 0;
-    const signedCount = allSignatures?.filter((s) => s.status === 'signed').length || 0;
+    const signedCount =
+      allSignatures?.filter((s) => s.status === 'signed').length || 0;
 
     if (totalSigners > 0 && signedCount === totalSigners) {
       await supabase
@@ -493,7 +503,10 @@ router.get('/providers/config', verifyAuth, requireTenant, async (req, res) => {
       .from('signature_provider_configs')
       .select('*')
       .eq('organization_id', req.orgId)
-      .or('user_id.is.null,user_id.eq.' + (req.user?.id || '00000000-0000-0000-0000-000000000000'))
+      .or(
+        'user_id.is.null,user_id.eq.' +
+          (req.user?.id || '00000000-0000-0000-0000-000000000000')
+      )
       .order('provider', { ascending: true });
 
     if (error) throw error;
@@ -508,8 +521,11 @@ router.put('/providers/config', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { provider, api_key, webhook_secret, api_url, is_active } = req.body;
 
-    if (!provider || !['clicksign', 'zapsign', 'docusign', 'woosign'].includes(provider)) {
-      return res.status(400).json({ error: 'Provedor inv�lido' });
+    if (
+      !provider ||
+      !['clicksign', 'zapsign', 'docusign', 'woosign'].includes(provider)
+    ) {
+      return res.status(400).json({ error: 'Provedor inv�lido' });
     }
 
     const supabase = getSupabaseServer();
@@ -517,18 +533,21 @@ router.put('/providers/config', verifyAuth, requireTenant, async (req, res) => {
 
     const { data, error } = await supabase
       .from('signature_provider_configs')
-      .upsert({
-        organization_id: req.orgId,
-        user_id: userId,
-        provider,
-        api_key: api_key || null,
-        webhook_secret: webhook_secret || null,
-        api_url: api_url || null,
-        is_active: is_active ?? true,
-        updated_at: new Date().toISOString(),
-      }, {
-        onConflict: ['organization_id', 'user_id', 'provider'],
-      })
+      .upsert(
+        {
+          organization_id: req.orgId,
+          user_id: userId,
+          provider,
+          api_key: api_key || null,
+          webhook_secret: webhook_secret || null,
+          api_url: api_url || null,
+          is_active: is_active ?? true,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: ['organization_id', 'user_id', 'provider'],
+        }
+      )
       .select()
       .single();
 
@@ -540,25 +559,29 @@ router.put('/providers/config', verifyAuth, requireTenant, async (req, res) => {
   }
 });
 
-router.delete('/providers/config/:provider', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const { provider } = req.params;
-    const supabase = getSupabaseServer();
+router.delete(
+  '/providers/config/:provider',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { provider } = req.params;
+      const supabase = getSupabaseServer();
 
-    const { error } = await supabase
-      .from('signature_provider_configs')
-      .delete()
-      .eq('organization_id', req.orgId)
-      .eq('user_id', req.user?.id)
-      .eq('provider', provider);
+      const { error } = await supabase
+        .from('signature_provider_configs')
+        .delete()
+        .eq('organization_id', req.orgId)
+        .eq('user_id', req.user?.id)
+        .eq('provider', provider);
 
-    if (error) throw error;
-    res.json({ success: true });
-  } catch (error) {
-    logger.error('[SignatureProviders] Delete config error:', error);
-    res.status(500).json({ error: error.message });
+      if (error) throw error;
+      res.json({ success: true });
+    } catch (error) {
+      logger.error('[SignatureProviders] Delete config error:', error);
+      res.status(500).json({ error: error.message });
+    }
   }
-});
+);
 
 export default router;
-

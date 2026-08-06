@@ -187,4 +187,3 @@ router.get('/timeline', verifyAuth, requireTenant, async (req, res) => {
 });
 
 export default router;
-

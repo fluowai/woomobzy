@@ -23,16 +23,16 @@ async function run() {
     .eq('organization_id', PAMAS_ID)
     .not('images', 'is', null)
     .limit(5);
-    
-  pamasWithImages?.forEach(prop => {
+
+  pamasWithImages?.forEach((prop) => {
     console.log(`Title: ${prop.title.substring(0, 60)}`);
     console.log(`Images (${prop.images?.length || 0}):`);
-    (prop.images || []).slice(0, 2).forEach(img => {
+    (prop.images || []).slice(0, 2).forEach((img) => {
       console.log(`  ${img}`);
     });
     console.log('');
   });
-  
+
   console.log('=== PAMAS PROPERTIES SEM IMAGENS (sample) ===\n');
   const { data: pamasWithoutImages } = await supabase
     .from('properties')
@@ -40,20 +40,20 @@ async function run() {
     .eq('organization_id', PAMAS_ID)
     .or('images.is.null,eq.images.{ }')
     .limit(5);
-    
-  pamasWithoutImages?.forEach(prop => {
+
+  pamasWithoutImages?.forEach((prop) => {
     console.log(`Title: ${prop.title.substring(0, 60)}`);
     console.log(`Images: ${prop.images}`);
     console.log('');
   });
-  
+
   console.log('=== MEGA PROPERTIES (all) ===\n');
   const { data: megaProps } = await supabase
     .from('properties')
     .select('id, title, images, external_id')
     .eq('organization_id', MEGA_ID);
-    
-  megaProps?.forEach(prop => {
+
+  megaProps?.forEach((prop) => {
     console.log(`Title: ${prop.title.substring(0, 60)}`);
     console.log(`Images: ${prop.images?.length || 0}`);
     console.log(`External: ${prop.external_id?.substring(0, 80)}`);

@@ -392,8 +392,8 @@ const PropertyTabContent: React.FC<PropertyTabContentProps> = ({
           </div>
           {(!config.propertyIds || config.propertyIds.length === 0) && (
             <p className="text-sm text-gray-500">
-              Nenhum imóvel selecionado. Clique em &quot;Selecionar Imóveis&quot; para
-              escolher.
+              Nenhum imóvel selecionado. Clique em &quot;Selecionar
+              Imóveis&quot; para escolher.
             </p>
           )}
         </div>
@@ -593,8 +593,8 @@ const DevelopmentTabContent: React.FC<DevelopmentTabContentProps> = ({
           </h4>
           {(!config.developmentIds || config.developmentIds.length === 0) && (
             <p className="text-sm text-gray-500 mt-2">
-              Nenhum lançamento selecionado. Use o modo &quot;Todos Ativos&quot; ou &quot;Por
-              Filtro&quot; para exibir lançamentos.
+              Nenhum lançamento selecionado. Use o modo &quot;Todos Ativos&quot;
+              ou &quot;Por Filtro&quot; para exibir lançamentos.
             </p>
           )}
         </div>

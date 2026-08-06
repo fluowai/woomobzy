@@ -59,7 +59,8 @@ export class ConversationSimulator {
       .catch(() => ({ data: null }));
 
     const finalKey = saasSettings?.global_gemini_key;
-    if (!finalKey) throw new Error('Nenhuma chave Gemini disponivel para simulacao.');
+    if (!finalKey)
+      throw new Error('Nenhuma chave Gemini disponivel para simulacao.');
     const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(finalKey);
     return genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
@@ -76,7 +77,12 @@ export class ConversationSimulator {
           },
         ],
       });
-      contents.push({ role: 'model', parts: [{ text: 'Entendido. Vou responder de acordo com as instrucoes.' }] });
+      contents.push({
+        role: 'model',
+        parts: [
+          { text: 'Entendido. Vou responder de acordo com as instrucoes.' },
+        ],
+      });
     }
 
     const mappedHistory = (history || []).map((m) => ({
@@ -160,7 +166,8 @@ export class ConversationSimulator {
       channel: 'WhatsApp',
     });
 
-    const hasActiveTools = Array.isArray(agent?.tools) && agent.tools.length > 0;
+    const hasActiveTools =
+      Array.isArray(agent?.tools) && agent.tools.length > 0;
     if ((provider === 'gemini' || !provider) && hasActiveTools) {
       try {
         const orchestrator = new AgentOrchestrator(apiKey || null);
@@ -173,14 +180,22 @@ export class ConversationSimulator {
         });
         if (reply) return reply;
       } catch (err) {
-        logger.warn('[Sim] Orquestrador indisponivel, usando fluxo padrao:', err.message);
+        logger.warn(
+          '[Sim] Orquestrador indisponivel, usando fluxo padrao:',
+          err.message
+        );
       }
     }
 
     if (provider === 'gemini' || !provider) {
       try {
         const model = await this._ensureGemini(apiKey, organizationId);
-        return this._callGemini(model, systemInstruction, history.slice(0, -1), history[history.length - 1]?.content || '');
+        return this._callGemini(
+          model,
+          systemInstruction,
+          history.slice(0, -1),
+          history[history.length - 1]?.content || ''
+        );
       } catch (err) {
         logger.warn('[Sim] Gemini falhou, usando Groq:', err.message);
       }
@@ -188,7 +203,12 @@ export class ConversationSimulator {
 
     if (provider === 'openai' && apiKey) {
       try {
-        return await this._callOpenAI(apiKey, systemInstruction, history.slice(0, -1), history[history.length - 1]?.content || '');
+        return await this._callOpenAI(
+          apiKey,
+          systemInstruction,
+          history.slice(0, -1),
+          history[history.length - 1]?.content || ''
+        );
       } catch (err) {
         logger.warn('[Sim] OpenAI falhou, usando Groq:', err.message);
       }
@@ -197,7 +217,12 @@ export class ConversationSimulator {
     const groqKey = process.env.GROQ_API_KEY;
     if (groqKey) {
       try {
-        return await this._callGroq(groqKey, systemInstruction, history.slice(0, -1), history[history.length - 1]?.content || '');
+        return await this._callGroq(
+          groqKey,
+          systemInstruction,
+          history.slice(0, -1),
+          history[history.length - 1]?.content || ''
+        );
       } catch (err) {
         logger.warn('[Sim] Groq falhou:', err.message);
       }
@@ -207,13 +232,20 @@ export class ConversationSimulator {
   }
 
   async _generateLeadReply(provider, apiKey, history) {
-    const lastAgentMessage = [...history].reverse().find((m) => m.role === 'assistant');
+    const lastAgentMessage = [...history]
+      .reverse()
+      .find((m) => m.role === 'assistant');
     if (!lastAgentMessage) return '';
 
     if (provider === 'gemini' || !provider) {
       try {
         const model = await this._ensureGemini(apiKey, '');
-        const text = await this._callGemini(model, LEAD_SIMULATION_PROMPT, history, lastAgentMessage.content);
+        const text = await this._callGemini(
+          model,
+          LEAD_SIMULATION_PROMPT,
+          history,
+          lastAgentMessage.content
+        );
         if (text) return text;
       } catch {
         // fallback Groq
@@ -223,7 +255,12 @@ export class ConversationSimulator {
     const groqKey = process.env.GROQ_API_KEY;
     if (groqKey) {
       try {
-        const text = await this._callGroq(groqKey, LEAD_SIMULATION_PROMPT, history, lastAgentMessage.content);
+        const text = await this._callGroq(
+          groqKey,
+          LEAD_SIMULATION_PROMPT,
+          history,
+          lastAgentMessage.content
+        );
         if (text) return text;
       } catch {
         // fallback OpenAI
@@ -232,7 +269,12 @@ export class ConversationSimulator {
 
     if (provider === 'openai' && apiKey) {
       try {
-        const text = await this._callOpenAI(apiKey, LEAD_SIMULATION_PROMPT, history, lastAgentMessage.content);
+        const text = await this._callOpenAI(
+          apiKey,
+          LEAD_SIMULATION_PROMPT,
+          history,
+          lastAgentMessage.content
+        );
         if (text) return text;
       } catch {
         // ignore
@@ -275,9 +317,19 @@ export class ConversationSimulator {
     const history = [];
     const transcript = [];
 
-    await this._saveMemory(organizationId, agent.id, sessionId, 'user', seedMessage);
+    await this._saveMemory(
+      organizationId,
+      agent.id,
+      sessionId,
+      'user',
+      seedMessage
+    );
     history.push({ role: 'user', content: seedMessage });
-    transcript.push({ role: 'lead', content: seedMessage, timestamp: new Date().toISOString() });
+    transcript.push({
+      role: 'lead',
+      content: seedMessage,
+      timestamp: new Date().toISOString(),
+    });
 
     for (let i = 0; i < turns; i++) {
       const agentReply = await this._generateAgentReply({
@@ -290,16 +342,40 @@ export class ConversationSimulator {
 
       if (!agentReply) break;
 
-      await this._saveMemory(organizationId, agent.id, sessionId, 'assistant', agentReply);
+      await this._saveMemory(
+        organizationId,
+        agent.id,
+        sessionId,
+        'assistant',
+        agentReply
+      );
       history.push({ role: 'assistant', content: agentReply });
-      transcript.push({ role: 'agent', content: agentReply, timestamp: new Date().toISOString() });
+      transcript.push({
+        role: 'agent',
+        content: agentReply,
+        timestamp: new Date().toISOString(),
+      });
 
-      const leadReply = await this._generateLeadReply(provider, apiKey, history);
+      const leadReply = await this._generateLeadReply(
+        provider,
+        apiKey,
+        history
+      );
       if (!leadReply) break;
 
-      await this._saveMemory(organizationId, agent.id, sessionId, 'user', leadReply);
+      await this._saveMemory(
+        organizationId,
+        agent.id,
+        sessionId,
+        'user',
+        leadReply
+      );
       history.push({ role: 'user', content: leadReply });
-      transcript.push({ role: 'lead', content: leadReply, timestamp: new Date().toISOString() });
+      transcript.push({
+        role: 'lead',
+        content: leadReply,
+        timestamp: new Date().toISOString(),
+      });
     }
 
     return { success: true, transcript, session_id: sessionId };

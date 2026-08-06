@@ -137,7 +137,10 @@ export function createLicenseKey(privateKeyPem, payload) {
  */
 export function parseLicenseKey(licenseKey) {
   if (typeof licenseKey !== 'string') {
-    throw new LicenseCryptoError('Chave de licença ausente', 'LICENSE_KEY_MISSING');
+    throw new LicenseCryptoError(
+      'Chave de licença ausente',
+      'LICENSE_KEY_MISSING'
+    );
   }
   const parts = licenseKey.split('.');
   if (parts.length !== 3 || parts[0] !== LICENSE_KEY_PREFIX) {
@@ -177,6 +180,10 @@ export function verifyLicenseKey(licenseKey, publicKeyPem) {
 /**
  * Verifica se o campo de tempo (exp) ainda é válido, com tolerância de relógio.
  */
-export function isNotExpired(expUnixSeconds, nowMs = Date.now(), skewMs = 60_000) {
+export function isNotExpired(
+  expUnixSeconds,
+  nowMs = Date.now(),
+  skewMs = 60_000
+) {
   return expUnixSeconds * 1000 + skewMs > nowMs;
 }

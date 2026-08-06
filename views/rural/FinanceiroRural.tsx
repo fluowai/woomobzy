@@ -137,14 +137,33 @@ const FinanceiroRural: React.FC = () => {
     <div className="wootech-reference-screen space-y-8 animate-in fade-in duration-500">
       <div className="wootech-page-heading">
         <div>
-          <div className="wootech-breadcrumb"><strong>Rural</strong><span>/</span><span>Metas &amp; Vendas</span></div>
+          <div className="wootech-breadcrumb">
+            <strong>Rural</strong>
+            <span>/</span>
+            <span>Metas &amp; Vendas</span>
+          </div>
           <h1>Metas e vendas rurais</h1>
           <p>Acompanhe VGV, comissão, pipeline e performance por território.</p>
         </div>
         <div className="wootech-action-row">
-          <button className="wootech-secondary-action" onClick={() => document.getElementById('meta-rural-vgv')?.focus()}><Target size={17} /> Definir meta</button>
-          <button className="wootech-secondary-action" onClick={() => navigate('/rural/reports')}><Download size={17} /> Exportar relatório</button>
-          <button className="wootech-primary-action" onClick={() => navigate('/rural/kanban')}><Plus size={17} /> Nova oportunidade</button>
+          <button
+            className="wootech-secondary-action"
+            onClick={() => document.getElementById('meta-rural-vgv')?.focus()}
+          >
+            <Target size={17} /> Definir meta
+          </button>
+          <button
+            className="wootech-secondary-action"
+            onClick={() => navigate('/rural/reports')}
+          >
+            <Download size={17} /> Exportar relatório
+          </button>
+          <button
+            className="wootech-primary-action"
+            onClick={() => navigate('/rural/kanban')}
+          >
+            <Plus size={17} /> Nova oportunidade
+          </button>
         </div>
       </div>
 
@@ -187,8 +206,16 @@ const FinanceiroRural: React.FC = () => {
           </button>
         </div>
         <div className="min-w-[240px] flex-1 sm:max-w-md">
-          <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-500"><span>Meta mensal</span><span>{goalProgress.toFixed(0)}% atingido</span></div>
-          <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-emerald-600 transition-all" style={{ width: `${goalProgress}%` }} /></div>
+          <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-500">
+            <span>Meta mensal</span>
+            <span>{goalProgress.toFixed(0)}% atingido</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+            <div
+              className="h-full rounded-full bg-emerald-600 transition-all"
+              style={{ width: `${goalProgress}%` }}
+            />
+          </div>
         </div>
       </div>
 

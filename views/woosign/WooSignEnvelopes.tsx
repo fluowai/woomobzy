@@ -56,8 +56,12 @@ const WooSignEnvelopes: React.FC = () => {
               {items.map((item) => (
                 <tr key={item.id} className="border-t border-slate-100">
                   <td className="px-4 py-3 font-medium">{item.title}</td>
-                  <td className="px-4 py-3">{STATUS_LABELS[item.status] || item.status}</td>
-                  <td className="px-4 py-3">{new Date(item.createdAt).toLocaleString('pt-BR')}</td>
+                  <td className="px-4 py-3">
+                    {STATUS_LABELS[item.status] || item.status}
+                  </td>
+                  <td className="px-4 py-3">
+                    {new Date(item.createdAt).toLocaleString('pt-BR')}
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <button
                       onClick={async () => {
@@ -84,7 +88,10 @@ const WooSignEnvelopes: React.FC = () => {
               ))}
               {!loading && items.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
+                  <td
+                    colSpan={4}
+                    className="px-4 py-6 text-center text-slate-500"
+                  >
                     Nenhum envelope encontrado.
                   </td>
                 </tr>

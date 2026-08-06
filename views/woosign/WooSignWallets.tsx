@@ -63,13 +63,18 @@ const WooSignWallets: React.FC = () => {
                   <td className="px-4 py-3 font-mono text-xs">{wallet.id}</td>
                   <td className="px-4 py-3">{wallet.organizationId}</td>
                   <td className="px-4 py-3 text-right">{wallet.balance}</td>
-                  <td className="px-4 py-3 text-right">{wallet.reservedBalance}</td>
+                  <td className="px-4 py-3 text-right">
+                    {wallet.reservedBalance}
+                  </td>
                   <td className="px-4 py-3 text-right">{wallet.currency}</td>
                 </tr>
               ))}
               {!loading && wallets.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
+                  <td
+                    colSpan={5}
+                    className="px-4 py-6 text-center text-slate-500"
+                  >
                     Nenhuma wallet encontrada.
                   </td>
                 </tr>
@@ -101,12 +106,17 @@ const WooSignWallets: React.FC = () => {
                   <td className="px-4 py-3">{pkg.creditAmount}</td>
                   <td className="px-4 py-3 text-right">{pkg.price}</td>
                   <td className="px-4 py-3">{pkg.currency}</td>
-                  <td className="px-4 py-3">{pkg.isActive ? 'Ativo' : 'Inativo'}</td>
+                  <td className="px-4 py-3">
+                    {pkg.isActive ? 'Ativo' : 'Inativo'}
+                  </td>
                 </tr>
               ))}
               {!loading && packages.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
+                  <td
+                    colSpan={5}
+                    className="px-4 py-6 text-center text-slate-500"
+                  >
                     Nenhum pacote encontrado.
                   </td>
                 </tr>

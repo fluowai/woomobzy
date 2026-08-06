@@ -22,9 +22,7 @@ export class AsaasService {
     if (!secret) return true;
     if (!signatureHeader) return false;
 
-    const expected = createHmac('sha256', secret)
-      .update(rawBody)
-      .digest('hex');
+    const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
 
     return signatureHeader === expected;
   }
@@ -41,7 +39,10 @@ export class AsaasService {
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      const message = data.errors?.map((e) => e.description).join(', ') || data.message || JSON.stringify(data);
+      const message =
+        data.errors?.map((e) => e.description).join(', ') ||
+        data.message ||
+        JSON.stringify(data);
       throw new Error(`Asaas [${res.status}] ${path}: ${message}`);
     }
 
@@ -58,7 +59,13 @@ export class AsaasService {
       if (params.offset === undefined) query.set('offset', String(offset));
       if (params.limit) query.set('limit', String(limit));
       Object.entries(params).forEach(([key, value]) => {
-        if (key !== 'offset' && key !== 'limit' && value !== undefined && value !== null && value !== '') {
+        if (
+          key !== 'offset' &&
+          key !== 'limit' &&
+          value !== undefined &&
+          value !== null &&
+          value !== ''
+        ) {
           query.set(key, String(value));
         }
       });
@@ -105,7 +112,13 @@ export class AsaasService {
     });
   }
 
-  static async getOrCreateCustomer({ name, cpfCnpj, email, mobilePhone, ...rest }) {
+  static async getOrCreateCustomer({
+    name,
+    cpfCnpj,
+    email,
+    mobilePhone,
+    ...rest
+  }) {
     if (cpfCnpj) {
       const list = await this.listCustomers({ cpfCnpj, limit: 1 });
       if (list.length > 0) return list[0];
@@ -141,20 +154,28 @@ export class AsaasService {
   }
 
   static async updateSubscription(subscriptionId, payload) {
-    return this.request(`/subscriptions/${encodeURIComponent(subscriptionId)}`, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
+    return this.request(
+      `/subscriptions/${encodeURIComponent(subscriptionId)}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }
+    );
   }
 
   static async deleteSubscription(subscriptionId) {
-    return this.request(`/subscriptions/${encodeURIComponent(subscriptionId)}`, {
-      method: 'DELETE',
-    });
+    return this.request(
+      `/subscriptions/${encodeURIComponent(subscriptionId)}`,
+      {
+        method: 'DELETE',
+      }
+    );
   }
 
   static async getSubscriptionInvoice(subscriptionId) {
-    return this.request(`/subscriptions/${encodeURIComponent(subscriptionId)}/invoice`);
+    return this.request(
+      `/subscriptions/${encodeURIComponent(subscriptionId)}/invoice`
+    );
   }
 
   /**
@@ -215,13 +236,16 @@ export class AsaasService {
   }
 
   static async receivePaymentInCash(paymentId, payload = {}) {
-    return this.request(`/payments/${encodeURIComponent(paymentId)}/receiveInCash`, {
-      method: 'POST',
-      body: JSON.stringify({
-        value: payload.value || undefined,
-        paymentDate: payload.paymentDate || undefined,
-      }),
-    });
+    return this.request(
+      `/payments/${encodeURIComponent(paymentId)}/receiveInCash`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          value: payload.value || undefined,
+          paymentDate: payload.paymentDate || undefined,
+        }),
+      }
+    );
   }
 
   static async undoPayment(paymentId) {
@@ -241,17 +265,22 @@ export class AsaasService {
    * PAYMENT NOTIFICATIONS
    */
   static async sendPaymentNotification(paymentId, payload = {}) {
-    return this.request(`/payments/${encodeURIComponent(paymentId)}/sendNotification`, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
+    return this.request(
+      `/payments/${encodeURIComponent(paymentId)}/sendNotification`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }
+    );
   }
 
   /**
    * QRCODE
    */
   static async getPaymentQrcode(paymentId) {
-    return this.request(`/payments/${encodeURIComponent(paymentId)}/identificationField`);
+    return this.request(
+      `/payments/${encodeURIComponent(paymentId)}/identificationField`
+    );
   }
 
   static async getQrcodeImage(encodedImage) {
@@ -291,13 +320,16 @@ export class AsaasService {
   }
 
   static async reverseTransfer(transferId, payload = {}) {
-    return this.request(`/transfers/${encodeURIComponent(transferId)}/reverse`, {
-      method: 'POST',
-      body: JSON.stringify({
-        value: payload.value || undefined,
-        description: payload.description || undefined,
-      }),
-    });
+    return this.request(
+      `/transfers/${encodeURIComponent(transferId)}/reverse`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          value: payload.value || undefined,
+          description: payload.description || undefined,
+        }),
+      }
+    );
   }
 
   /**
@@ -391,7 +423,11 @@ export class AsaasService {
       newStatus = 'pago';
     } else if (event === 'PAYMENT_OVERDUE') {
       newStatus = 'vencido';
-    } else if (event === 'PAYMENT_DELETED' || event === 'PAYMENT_REFUNDED' || event === 'PAYMENT_DUNNING_RECEIVED') {
+    } else if (
+      event === 'PAYMENT_DELETED' ||
+      event === 'PAYMENT_REFUNDED' ||
+      event === 'PAYMENT_DUNNING_RECEIVED'
+    ) {
       newStatus = 'cancelado';
     }
 

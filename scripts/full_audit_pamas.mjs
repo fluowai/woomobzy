@@ -25,9 +25,17 @@ async function run() {
       .order('created_at');
 
     const total = allProps?.length || 0;
-    const withExternal = allProps?.filter(p => p.external_id && p.external_id.includes('pamasimoveis.com.br')) || [];
-    const withOtherExternal = allProps?.filter(p => p.external_id && !p.external_id.includes('pamasimoveis.com.br')) || [];
-    const withoutExternal = allProps?.filter(p => !p.external_id || p.external_id.length === 0) || [];
+    const withExternal =
+      allProps?.filter(
+        (p) => p.external_id && p.external_id.includes('pamasimoveis.com.br')
+      ) || [];
+    const withOtherExternal =
+      allProps?.filter(
+        (p) => p.external_id && !p.external_id.includes('pamasimoveis.com.br')
+      ) || [];
+    const withoutExternal =
+      allProps?.filter((p) => !p.external_id || p.external_id.length === 0) ||
+      [];
 
     console.log(`Total properties: ${total}`);
     console.log(`With pamasimoveis.com.br external_id: ${withExternal.length}`);
@@ -36,7 +44,7 @@ async function run() {
 
     if (withOtherExternal.length > 0) {
       console.log('\nProperties with unexpected external_id:');
-      withOtherExternal.forEach(p => {
+      withOtherExternal.forEach((p) => {
         console.log(`  ${p.id}: ${p.external_id?.substring(0, 80)}`);
       });
     }
@@ -44,23 +52,32 @@ async function run() {
     // Check creation dates
     console.log('\n=== CREATION DATE ANALYSIS ===');
     const byDate = new Map();
-    allProps?.forEach(p => {
+    allProps?.forEach((p) => {
       const date = new Date(p.created_at).toLocaleDateString('pt-BR');
       if (!byDate.has(date)) byDate.set(date, []);
       byDate.get(date).push(p);
     });
 
     byDate.forEach((props, date) => {
-      const withExt = props.filter(p => p.external_id && p.external_id.length > 0).length;
-      console.log(`${date}: ${props.length} props (${withExt} with external_id)`);
+      const withExt = props.filter(
+        (p) => p.external_id && p.external_id.length > 0
+      ).length;
+      console.log(
+        `${date}: ${props.length} props (${withExt} with external_id)`
+      );
     });
 
     // Summary of what needs to be done
     console.log('\n=== ACTION ITEMS ===');
-    console.log(`1. Remove ${withoutExternal.length} properties without external_id (likely duplicates or test data)`);
-    console.log(`2. Keep ${withExternal.length} properties with valid external_id`);
-    console.log(`3. Fix ${withOtherExternal.length} properties with unexpected external_id if any`);
-
+    console.log(
+      `1. Remove ${withoutExternal.length} properties without external_id (likely duplicates or test data)`
+    );
+    console.log(
+      `2. Keep ${withExternal.length} properties with valid external_id`
+    );
+    console.log(
+      `3. Fix ${withOtherExternal.length} properties with unexpected external_id if any`
+    );
   } catch (err) {
     console.error('Erro:', err);
   }

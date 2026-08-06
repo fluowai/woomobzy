@@ -1045,22 +1045,22 @@ const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
                                     apt.appointment_date
                                   ).toLocaleString('pt-BR')}
                                 </span>
-                                  <span className="capitalize border px-1.5 py-0.5 rounded text-[10px] font-bold">
-                                    {apt.type === 'reuniao'
-                                      ? 'Reunião'
-                                      : 'Retorno'}
-                                  </span>
-                                </div>
-                                {apt.property?.title && (
-                                  <p className="text-xs font-semibold text-emerald-700 mt-1">
-                                    <Home size={12} className="inline mr-1" />
-                                    {apt.property.title}
-                                    {apt.property.city
-                                      ? ` — ${apt.property.city}`
-                                      : ''}
-                                  </p>
-                                )}
-                                {apt.notes && (
+                                <span className="capitalize border px-1.5 py-0.5 rounded text-[10px] font-bold">
+                                  {apt.type === 'reuniao'
+                                    ? 'Reunião'
+                                    : 'Retorno'}
+                                </span>
+                              </div>
+                              {apt.property?.title && (
+                                <p className="text-xs font-semibold text-emerald-700 mt-1">
+                                  <Home size={12} className="inline mr-1" />
+                                  {apt.property.title}
+                                  {apt.property.city
+                                    ? ` — ${apt.property.city}`
+                                    : ''}
+                                </p>
+                              )}
+                              {apt.notes && (
                                 <p className="text-xs text-slate-400 mt-1">
                                   {apt.notes}
                                 </p>

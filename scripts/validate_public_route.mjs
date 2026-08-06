@@ -24,7 +24,7 @@ async function run() {
       .select('id, name, slug, parent_id, is_reseller')
       .in('id', [PAMAS_ID, MEGA_ID]);
 
-    const orgMap = new Map(orgs?.map(o => [o.id, o]) || []);
+    const orgMap = new Map(orgs?.map((o) => [o.id, o]) || []);
     const pamasOrg = orgMap.get(PAMAS_ID);
     const megaOrg = orgMap.get(MEGA_ID);
 
@@ -70,12 +70,12 @@ async function run() {
 
     if (pamasProps && pamasProps.length > 0) {
       console.log('ERROR: Found cross-contamination in Pamas!');
-      pamasProps.forEach(p => console.log(`  ${p.id}: ${p.title}`));
+      pamasProps.forEach((p) => console.log(`  ${p.id}: ${p.title}`));
     }
 
     if (megaProps && megaProps.length > 0) {
       console.log('ERROR: Found cross-contamination in Mega!');
-      megaProps.forEach(p => console.log(`  ${p.id}: ${p.title}`));
+      megaProps.forEach((p) => console.log(`  ${p.id}: ${p.title}`));
     }
 
     // 4. Simulate PublicLandingPage data fetch for Pamas
@@ -89,12 +89,17 @@ async function run() {
       .maybeSingle();
 
     if (landingPage) {
-      console.log(`Found landing page: ${landingPage.name} (${landingPage.slug})`);
+      console.log(
+        `Found landing page: ${landingPage.name} (${landingPage.slug})`
+      );
       console.log(`Organization ID: ${landingPage.organization_id}`);
 
       // Simulate getPageProperties
       const pageId = landingPage.id;
-      const config = landingPage.property_selection || { mode: 'all', limit: 20 };
+      const config = landingPage.property_selection || {
+        mode: 'all',
+        limit: 20,
+      };
 
       let query = supabase
         .from('properties')
@@ -113,8 +118,10 @@ async function run() {
 
       console.log(`Properties that would be shown: ${pageProps?.length || 0}`);
       console.log('Sample:');
-      pageProps?.slice(0, 3).forEach(p => {
-        console.log(`  - ${p.title.substring(0, 60)} | ${p.images?.length || 0} imgs`);
+      pageProps?.slice(0, 3).forEach((p) => {
+        console.log(
+          `  - ${p.title.substring(0, 60)} | ${p.images?.length || 0} imgs`
+        );
       });
     } else {
       console.log('No published landing page found for Pamas');
@@ -137,17 +144,18 @@ async function run() {
       .eq('organization_id', PAMAS_ID)
       .or('external_id.is.null,external_id.eq.');
 
-    console.log(`Pamas properties without external_id: ${missingExternal?.length || 0}`);
+    console.log(
+      `Pamas properties without external_id: ${missingExternal?.length || 0}`
+    );
 
     if (missingExternal && missingExternal.length > 0) {
       console.log('These need to be scraped:');
-      missingExternal.slice(0, 5).forEach(p => {
+      missingExternal.slice(0, 5).forEach((p) => {
         console.log(`  ${p.id}: ${p.title.substring(0, 60)}`);
       });
     }
 
     console.log('\n=== VALIDATION COMPLETE ===');
-
   } catch (err) {
     console.error('Erro:', err);
   }

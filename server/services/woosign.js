@@ -1,9 +1,12 @@
 import { getSupabaseServer } from '../lib/supabase-server.js';
 import { logger } from '../utils/logger.js';
 
-const DOCUMENSO_API_URL = process.env.DOCUMENSO_API_URL || 'http://localhost:3000/api/v2';
+const DOCUMENSO_API_URL =
+  process.env.DOCUMENSO_API_URL || 'http://localhost:3000/api/v2';
 const DOCUMENSO_API_TOKEN = process.env.DOCUMENSO_API_TOKEN || '';
-const DOCUMENSO_INTEGRATION_ENABLED = Boolean(DOCUMENSO_API_URL && DOCUMENSO_API_TOKEN);
+const DOCUMENSO_INTEGRATION_ENABLED = Boolean(
+  DOCUMENSO_API_URL && DOCUMENSO_API_TOKEN
+);
 
 class DocumensoApiError extends Error {
   constructor(status, message, body) {
@@ -172,7 +175,9 @@ class WooSignService {
       return [];
     }
 
-    const envelopeIds = data.map((item) => item.documenso_envelope_id).filter(Boolean);
+    const envelopeIds = data
+      .map((item) => item.documenso_envelope_id)
+      .filter(Boolean);
 
     if (envelopeIds.length === 0) {
       return [];
@@ -182,7 +187,9 @@ class WooSignService {
       await Promise.all(envelopeIds.map((id) => this.getEnvelope(id)))
     ).filter(Boolean);
 
-    return status ? envelopes.filter((envelope) => envelope.status === status) : envelopes;
+    return status
+      ? envelopes.filter((envelope) => envelope.status === status)
+      : envelopes;
   }
 
   async listTemplates() {
@@ -260,7 +267,10 @@ class WooSignService {
   }
 
   async handleDocumensoWebhook(payload) {
-    logger.info('Received Documenso webhook', { event: payload.event, envelopeId: payload.envelopeId });
+    logger.info('Received Documenso webhook', {
+      event: payload.event,
+      envelopeId: payload.envelopeId,
+    });
 
     const supabase = getSupabaseServer();
 
@@ -299,7 +309,11 @@ class WooSignService {
         return;
       }
 
-      await this.releaseCreditReservation(mapping.wallet_id, envelopeId, `Envelope ${payload.event.toLowerCase()}`);
+      await this.releaseCreditReservation(
+        mapping.wallet_id,
+        envelopeId,
+        `Envelope ${payload.event.toLowerCase()}`
+      );
     }
   }
 

@@ -52,7 +52,18 @@ export interface Wallet {
 export interface CreditLedgerEntry {
   id: string;
   walletId: string;
-  type: 'purchase' | 'credit' | 'reservation' | 'consumption' | 'release' | 'refund' | 'transfer' | 'expiration' | 'bonus' | 'adjustment' | 'chargeback';
+  type:
+    | 'purchase'
+    | 'credit'
+    | 'reservation'
+    | 'consumption'
+    | 'release'
+    | 'refund'
+    | 'transfer'
+    | 'expiration'
+    | 'bonus'
+    | 'adjustment'
+    | 'chargeback';
   amount: number;
   currency: string;
   description?: string;

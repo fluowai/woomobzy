@@ -22,7 +22,9 @@ test.describe('Smoke test das rotas públicas', () => {
   });
 
   for (const route of publicRoutes) {
-    test(`renderiza a rota ${route} sem controles inválidos`, async ({ page }) => {
+    test(`renderiza a rota ${route} sem controles inválidos`, async ({
+      page,
+    }) => {
       await page.goto(route);
       await expect(page.locator('#root')).toBeVisible();
       await expect(page.locator('body')).not.toContainText(

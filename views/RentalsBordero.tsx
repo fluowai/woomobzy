@@ -51,7 +51,9 @@ export default function RentalsBordero() {
       );
       const data = await res.json();
       if (data.success) {
-        toast.success(`Borderô gerado: repasse de R$ ${data.data.total_to_repass}`);
+        toast.success(
+          `Borderô gerado: repasse de R$ ${data.data.total_to_repass}`
+        );
       } else {
         toast.error('Nenhuma fatura paga encontrada para este período');
       }

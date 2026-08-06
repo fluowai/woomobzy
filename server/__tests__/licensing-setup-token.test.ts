@@ -65,7 +65,9 @@ describe('licensing setup token', () => {
       privateKeyPem: keys.privateKeyPem,
       now: NOW,
     });
-    expect(parseSetupToken(a).claims.jti).not.toBe(parseSetupToken(b).claims.jti);
+    expect(parseSetupToken(a).claims.jti).not.toBe(
+      parseSetupToken(b).claims.jti
+    );
   });
 
   it('rejeita payload adulterado', () => {
@@ -75,7 +77,9 @@ describe('licensing setup token', () => {
     });
     const parts = token.split('.');
     const tamperedPayload = Buffer.from(
-      JSON.stringify(makePayload({ organizationId: '00000000-0000-0000-0000-000000000000' }))
+      JSON.stringify(
+        makePayload({ organizationId: '00000000-0000-0000-0000-000000000000' })
+      )
     ).toString('base64url');
     const tampered = [parts[0], tamperedPayload, parts[2]].join('.');
     expect(() =>
@@ -109,9 +113,9 @@ describe('licensing setup token', () => {
 
   it('rejeita formato inválido e ausência de token', () => {
     expect(() => parseSetupToken('not-a-token')).toThrow(SetupTokenError);
-    expect(() => verifySetupToken('x', { publicKeyPem: keys.publicKeyPem })).toThrow(
-      SetupTokenError
-    );
+    expect(() =>
+      verifySetupToken('x', { publicKeyPem: keys.publicKeyPem })
+    ).toThrow(SetupTokenError);
   });
 
   it('falha quando não há chave privada configurada', () => {

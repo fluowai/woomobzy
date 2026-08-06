@@ -5,13 +5,13 @@ Escopo: análise estática (código + banco) do bug relatado na revenda Delazari
 
 ## 1. Contexto (identidade dos envolvidos)
 
-| Papel | Registro | Detalhe |
-|---|---|---|
-| Revenda | `e2403fc5-fabd-4715-a6e6-eae5d0603106` | Delazari Imóveis, `is_reseller=true`, niche `traditional`, slug `"Delazari Imóveis "` (espaço final) |
-| Filho (cliente) | `52757ffb-...` | Mega Investimentos (traditional → painel urbano) |
-| Filho (cliente) | `836c2313-...` | Pamas Imóveis (rural → painel rural) |
-| Filho (cliente) | `b007f557-...` | Vapt Imóveis |
-| Ator do teste | `suporte@alexandredelazari.com.br` | `role=superadmin` na org Delazari |
+| Papel           | Registro                               | Detalhe                                                                                              |
+| --------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Revenda         | `e2403fc5-fabd-4715-a6e6-eae5d0603106` | Delazari Imóveis, `is_reseller=true`, niche `traditional`, slug `"Delazari Imóveis "` (espaço final) |
+| Filho (cliente) | `52757ffb-...`                         | Mega Investimentos (traditional → painel urbano)                                                     |
+| Filho (cliente) | `836c2313-...`                         | Pamas Imóveis (rural → painel rural)                                                                 |
+| Filho (cliente) | `b007f557-...`                         | Vapt Imóveis                                                                                         |
+| Ator do teste   | `suporte@alexandredelazari.com.br`     | `role=superadmin` na org Delazari                                                                    |
 
 Prova no banco: o POST de impersonação **funciona**. Existem sessões ativas no `impersonation_sessions` criadas pelo ator `e3d30425` → tenant Mega `52757ffb` (active, 15 min, hoje 12:16Z), e ontem `df587a67` (fluowai) → `8f9bf0f1`. Ou seja, o elo quebrado não está na criação da sessão no backend.
 
@@ -58,6 +58,7 @@ Prova no banco: o POST de impersonação **funciona**. Existem sessões ativas n
 **O fix está em produção (frontend).** O bundle servido (`/assets/index-D0eZEUaE.js`, 336.621 bytes) contém `getPanelHomePath` já com a lógica de `is_reseller` (impersonando revenda → `/superadmin`; cliente não-revenda → `/rural`/`/urban`) e o fluxo de sessões curtas (`imobzy_impersonation_session`, `x-impersonation-session-id`, "Erro ao iniciar o modo suporte"). A hipótese 1 da seção 3 (produção sem o fix) fica **descartada** para o frontend servido pelo servidor.
 
 **Mas o `main` não tem o fix — produção roda build da PR #66 (aberta).**
+
 - `214595a` ("fix: impersonacao de revenda direciona para /superadmin em vez de /urban", 08-01 17:29:41Z, `Imobzy Dev`) **não é ancestral do `origin/main`**: `compare 214595a...e7d546b` → `diverged, behind_by=68`. No main, o `NicheRedirect.tsx` do commit `c1741da` (28/07) ainda não tem `is_reseller` (match só de `/superadmin`).
 - `214595a` existe **somente** na branch `codex/main-whatsapp-media-hotfix` → **PR #66 aberta**. O head do último build de imagens (`c3e927cae3`, 08-03 12:45Z, run 30814913784) é dessa branch e **contém** o fix: `compare 214595a...c3e927cae3` → `ahead, behind_by=0`; `c3e927cae3` está na branch local (`git branch --contains`).
 - **Deploy automático**: o workflow `docker-images.yml` dispara em push para `main` **e** para `codex/main-whatsapp-media-hotfix`; `deploy-portainer` só roda em `refs/heads/main`. O último run em `main` que acionou o Portainer foi 30/07 16:43-16:45Z (head `e7d546b`, merge da PR #65) — `deploy-portainer` executou **com sucesso** (webhook `PORTAINER_WEBHOOK_URL` configurado). Esse deploy **não contém** o fix (anterior a 08-01). Único run `workflow_dispatch` já feito: 28/07 (`badde6c1`).
@@ -65,6 +66,7 @@ Prova no banco: o POST de impersonação **funciona**. Existem sessões ativas n
 - **Corroboração por uptime**: `GET /api/system-status` → `uptime: 57346s` (timestamp 13:21:08Z) → processo da API iniciado ~**08-02 21:25:22Z**, logo após builds da branch às 21:11Z (`57abb8e6`) e 21:21Z (`34abbaa9`) — padrão de redeploy manual logo após push da branch. `/env-config.js` confirma os mesmos build-args do workflow (`VITE_API_URL=same-origin`, `VITE_SUPABASE_URL=runtime` resolvida para `epgaftsjmqmpczvzsrcc`, etc.).
 
 **Implicações**
+
 1. **Risco operacional (alto)**: o próximo push no `main` refaz o build a partir do main (sem `is_reseller`) e o `deploy-portainer` automático **reverteria** o fix em produção. Tornar o fix oficial e durável = mergear a PR #66 no `main`.
 2. **Diagnóstico do sintoma 2**: com o fix no ar, a persistência do sintoma não é por código desatualizado no servidor. Causas restantes (exigem repro no navegador): **cache do navegador do usuário** (PWA/service worker/`index.html` em cache servindo bundle antigo — provável, dado que o usuário re-clica no mesmo ator), perda da sessão no reload (`sessionStorage` + TTL 15 min), desvio de relógio > 15 min, ou aba antiga.
 3. **Backend**: versão sem fingerprint direto; o alias `woomobzy-api:5daaa4a05b3d...` (tag fixa que o Portainer referencia) é republicado em todo build (inclusive da branch), então um redeploy manual da stack em 02/08 também subiria o api para o build da branch (cadeia de impersonação correta).
@@ -74,6 +76,7 @@ Prova no banco: o POST de impersonação **funciona**. Existem sessões ativas n
 **Decisão de produto confirmada:** a revenda deve ver **apenas os filhos** (`parent_id = org`). O relato "as demais entradas somem" é o comportamento correto de isolamento, e a RLS em produção já o impõe:
 
 `pg_policies` de `organizations` (produção, PERMISSIVE/OR):
+
 - `Organizations isolation` (SELECT): `id = get_my_org_id()`
 - `Public read organizations` (SELECT, anon): `status = 'active'`
 - `Reseller insert sub-organizations` (INSERT): `with_check: parent_id = get_auth_organization_id()`
@@ -87,10 +90,10 @@ União para um reseller = própria org + filhos; **clientes diretos (`parent_id 
 **Problema encontrado:** o backend usa **service role** (`server/lib/supabase-server.js`, bypassa RLS) → o isolamento precisa ser forçado no código, mas só existia no filtro do GET principal. Fallbacks e mutações estavam abertos para revenda acessar orgs fora do grupo.
 
 **Correção aplicada** (`server/routes/admin.js`, nenhum commit/push):
+
 - Novos helpers centralizados: `resolveAdminOrgScope(req)` (escopo efetivo: revenda → `parent_id`; impersonando tenant comum → `id`; mega admin → global), `isOrgWithinScope(req, orgId)` e `areOrgsWithinScope(req, ids)`.
 - `GET /organizations`: refatorado para usar o helper (comportamento idêntico) e o fallback direct-DB (`queryOrganizationsWithDirectDb`) ganhou parâmetro `parentId` — em estado degradado, uma revenda deixa de enxergar todas as orgs.
 - `POST /organizations`: `parent_id` agora vem do escopo (antes só de `req.realOrgId`) — cobre também impersonação de uma revenda (nova org fica sob a revenda, não vira cliente direto).
 - `PUT /organizations/:id`, `DELETE /organizations/:id` e `POST /organizations/bulk-delete`: **403** se a org alvo estiver fora do escopo da revenda (antes qualquer org era editável/excluível).
 
 **Nota RLS:** `queryOrganizationsWithUserToken` (fallback) usa o JWT do usuário → RLS já restringe revenda a filhos. Sob impersonação, o JWT é do superadmin → policy "Superadmins can view all" prevalece no fallback (estado degradado, não mitigado).
-

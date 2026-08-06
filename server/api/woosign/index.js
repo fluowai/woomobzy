@@ -6,7 +6,8 @@ const router = Router();
 
 router.get('/envelopes', async (req, res) => {
   try {
-    const status = typeof req.query.status === 'string' ? req.query.status : undefined;
+    const status =
+      typeof req.query.status === 'string' ? req.query.status : undefined;
     const items = await woosignService.listEnvelopes(status);
     res.json({ ok: true, data: items });
   } catch (error) {
@@ -74,13 +75,25 @@ router.get('/wallets', async (req, res) => {
 router.post('/webhook/woosign', async (req, res) => {
   try {
     const rawBody = JSON.stringify(req.body);
-    const signature = String(req.headers['x-woosign-signature'] || req.headers['x-documenso-signature'] || '').trim();
-    const secret = process.env.DOCUMENSO_WEBHOOK_SECRET || process.env.WOOSIGN_WEBHOOK_SECRET || '';
+    const signature = String(
+      req.headers['x-woosign-signature'] ||
+        req.headers['x-documenso-signature'] ||
+        ''
+    ).trim();
+    const secret =
+      process.env.DOCUMENSO_WEBHOOK_SECRET ||
+      process.env.WOOSIGN_WEBHOOK_SECRET ||
+      '';
 
     if (!secret) {
       logger.warn('WooSign webhook received but secret is not configured');
-    } else if (signature && !verifyDocumensoWebhookSignature(rawBody, signature, secret)) {
-      return res.status(401).json({ ok: false, error: 'Invalid webhook signature' });
+    } else if (
+      signature &&
+      !verifyDocumensoWebhookSignature(rawBody, signature, secret)
+    ) {
+      return res
+        .status(401)
+        .json({ ok: false, error: 'Invalid webhook signature' });
     }
 
     await woosignService.handleDocumensoWebhook(req.body);

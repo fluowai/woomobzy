@@ -26,7 +26,8 @@ const TOKEN_PREFIX = 'WOLKS1';
 const DEFAULT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 function resolvePrivateKey(options) {
-  const privateKeyPem = options.privateKeyPem || process.env.LICENSE_SIGNING_PRIVATE_KEY;
+  const privateKeyPem =
+    options.privateKeyPem || process.env.LICENSE_SIGNING_PRIVATE_KEY;
   if (!privateKeyPem) {
     throw new SetupTokenError(
       'LICENSE_SIGNING_PRIVATE_KEY não configurada',
@@ -37,7 +38,8 @@ function resolvePrivateKey(options) {
 }
 
 function resolvePublicKey(options) {
-  const publicKeyPem = options.publicKeyPem || process.env.LICENSE_SIGNING_PUBLIC_KEY;
+  const publicKeyPem =
+    options.publicKeyPem || process.env.LICENSE_SIGNING_PUBLIC_KEY;
   if (!publicKeyPem) {
     throw new SetupTokenError(
       'LICENSE_SIGNING_PUBLIC_KEY não configurada',
@@ -131,10 +133,7 @@ export function verifySetupToken(token, options = {}) {
     throw new SetupTokenError('Token de setup expirado', 'TOKEN_EXPIRED');
   }
   if (claims.kind !== 'license-setup') {
-    throw new SetupTokenError(
-      'Tipo de token inválido',
-      'TOKEN_KIND'
-    );
+    throw new SetupTokenError('Tipo de token inválido', 'TOKEN_KIND');
   }
 
   return claims;

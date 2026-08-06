@@ -55,7 +55,9 @@ export default function RentalsManagement() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [aiChatOpen, setAiChatOpen] = useState(false);
-  const [aiMessages, setAiMessages] = useState<{ role: 'user' | 'assistant'; text: string }[]>([]);
+  const [aiMessages, setAiMessages] = useState<
+    { role: 'user' | 'assistant'; text: string }[]
+  >([]);
   const [aiInput, setAiInput] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
 
@@ -89,10 +91,11 @@ export default function RentalsManagement() {
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      result = result.filter((c) =>
-        (c.tenant_name || '').toLowerCase().includes(q) ||
-        (c.property_title || '').toLowerCase().includes(q) ||
-        (c.contract_number || '').toLowerCase().includes(q)
+      result = result.filter(
+        (c) =>
+          (c.tenant_name || '').toLowerCase().includes(q) ||
+          (c.property_title || '').toLowerCase().includes(q) ||
+          (c.contract_number || '').toLowerCase().includes(q)
       );
     }
 
@@ -102,7 +105,11 @@ export default function RentalsManagement() {
   // MOCK DATA for Recharts
   const fluxoData = dashboard
     ? [
-        { name: 'Previsto', value: dashboard.receita_mensal || 0, color: '#10b981' },
+        {
+          name: 'Previsto',
+          value: dashboard.receita_mensal || 0,
+          color: '#10b981',
+        },
         {
           name: 'Recebido',
           value: Math.round((dashboard.receita_anual || 0) / 12),
@@ -110,7 +117,7 @@ export default function RentalsManagement() {
         },
         {
           name: 'Repassado',
-          value: Math.round((dashboard.receita_anual || 0) / 12 * 0.9),
+          value: Math.round(((dashboard.receita_anual || 0) / 12) * 0.9),
           color: '#10b981',
         },
       ]
@@ -120,10 +127,29 @@ export default function RentalsManagement() {
         { name: 'Repassado', value: 0, color: '#10b981' },
       ];
 
-  const emDiaCount = useMemo(() => contracts.filter((c) => c.payment_status === 'em_dia').length, [contracts]);
-  const atrasadosCount = useMemo(() => contracts.filter((c) => c.payment_status === 'atrasado').length, [contracts]);
-  const inadimplentesCount = useMemo(() => contracts.filter((c) => c.payment_status === 'inadimplente').length, [contracts]);
-  const valorAtrasado = useMemo(() => contracts.filter((c) => c.payment_status === 'inadimplente' || c.payment_status === 'atrasado').reduce((sum, c) => sum + (c.monthly_rent || 0), 0), [contracts]);
+  const emDiaCount = useMemo(
+    () => contracts.filter((c) => c.payment_status === 'em_dia').length,
+    [contracts]
+  );
+  const atrasadosCount = useMemo(
+    () => contracts.filter((c) => c.payment_status === 'atrasado').length,
+    [contracts]
+  );
+  const inadimplentesCount = useMemo(
+    () => contracts.filter((c) => c.payment_status === 'inadimplente').length,
+    [contracts]
+  );
+  const valorAtrasado = useMemo(
+    () =>
+      contracts
+        .filter(
+          (c) =>
+            c.payment_status === 'inadimplente' ||
+            c.payment_status === 'atrasado'
+        )
+        .reduce((sum, c) => sum + (c.monthly_rent || 0), 0),
+    [contracts]
+  );
 
   const vencendo60Dias = useMemo(() => {
     const now = new Date();
@@ -135,12 +161,12 @@ export default function RentalsManagement() {
     }).length;
   }, [contracts]);
 
-const formatCompactCurrency = (val: number) =>
-  val.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    maximumFractionDigits: 0,
-  });
+  const formatCompactCurrency = (val: number) =>
+    val.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      maximumFractionDigits: 0,
+    });
 
   const handleAiSend = async () => {
     if (!aiInput.trim() || aiLoading) return;
@@ -151,10 +177,22 @@ const formatCompactCurrency = (val: number) =>
     try {
       const context = `Carteira com ${contracts.length} contratos. ${dashboard ? `Receita mensal: R$ ${dashboard.receita_mensal}. ` : ''}Inadimplentes: ${dashboard?.inadimplentes || 0}. Atrasados: ${dashboard?.atrasados || 0}.`;
       const response = await generateLeaseAssistantResponse(question, context);
-      setAiMessages((prev) => [...prev, { role: 'assistant', text: response || 'Não consegui gerar uma resposta no momento.' }]);
+      setAiMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          text: response || 'Não consegui gerar uma resposta no momento.',
+        },
+      ]);
     } catch (error) {
       logger.error('Erro no assistente IA:', error);
-      setAiMessages((prev) => [...prev, { role: 'assistant', text: 'Ocorreu um erro ao consultar o assistente.' }]);
+      setAiMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          text: 'Ocorreu um erro ao consultar o assistente.',
+        },
+      ]);
     } finally {
       setAiLoading(false);
     }
@@ -343,7 +381,9 @@ const formatCompactCurrency = (val: number) =>
                     {monthName.charAt(0).toUpperCase() + monthName.slice(1)}
                   </p>
                   <p className="text-lg font-medium text-slate-700">
-                    {new Date(agendaYear, agendaMonth).toLocaleString('pt-BR', { month: 'short' })}
+                    {new Date(agendaYear, agendaMonth).toLocaleString('pt-BR', {
+                      month: 'short',
+                    })}
                   </p>
                 </div>
               </div>
@@ -589,7 +629,9 @@ const formatCompactCurrency = (val: number) =>
                     filteredContracts.map((contract) => (
                       <tr
                         key={contract.id}
-                        onClick={() => navigate(`/urban/locacao/${contract.id}`)}
+                        onClick={() =>
+                          navigate(`/urban/locacao/${contract.id}`)
+                        }
                         className="hover:bg-slate-50/50 transition-colors cursor-pointer group"
                       >
                         <td className="py-4 pl-6 pr-4">
@@ -678,7 +720,9 @@ const formatCompactCurrency = (val: number) =>
                   </p>
                 </div>
                 <button
-                  onClick={() => navigate('/urban/locacao?filter=inadimplentes')}
+                  onClick={() =>
+                    navigate('/urban/locacao?filter=inadimplentes')
+                  }
                   className="text-xs font-bold text-emerald-600 whitespace-nowrap mt-0.5"
                 >
                   Ver detalhes {'>'}
@@ -716,12 +760,12 @@ const formatCompactCurrency = (val: number) =>
                     Atualize os valores
                   </p>
                 </div>
-                  <button
-                    onClick={handleViewAdjustments}
-                    className="text-xs font-bold text-emerald-600 whitespace-nowrap mt-0.5"
-                  >
-                    Ver reajustes {'>'}
-                  </button>
+                <button
+                  onClick={handleViewAdjustments}
+                  className="text-xs font-bold text-emerald-600 whitespace-nowrap mt-0.5"
+                >
+                  Ver reajustes {'>'}
+                </button>
               </div>
             </div>
           </div>
@@ -810,12 +854,12 @@ const formatCompactCurrency = (val: number) =>
                   <p className="text-xl font-bold text-slate-900">R$ 28.460</p>
                 </div>
               </div>
-                <button
-                  onClick={() => navigate('/urban/locacao/bordero')}
-                  className="px-4 py-2 bg-white border border-emerald-600 text-emerald-600 font-bold text-sm rounded-lg hover:bg-emerald-50 transition-colors"
-                >
-                  Ver borderô
-                </button>
+              <button
+                onClick={() => navigate('/urban/locacao/bordero')}
+                className="px-4 py-2 bg-white border border-emerald-600 text-emerald-600 font-bold text-sm rounded-lg hover:bg-emerald-50 transition-colors"
+              >
+                Ver borderô
+              </button>
             </div>
           </div>
 
@@ -871,28 +915,47 @@ const formatCompactCurrency = (val: number) =>
         <div className="fixed bottom-6 right-6 w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl flex flex-col z-50">
           <div className="flex items-center justify-between p-4 border-b border-slate-100">
             <div className="flex items-center gap-2">
-              <div className="p-2 bg-indigo-600 rounded-xl text-white"><Sparkles size={18} /></div>
+              <div className="p-2 bg-indigo-600 rounded-xl text-white">
+                <Sparkles size={18} />
+              </div>
               <div>
-                <p className="text-sm font-bold text-slate-900">Assistente IA</p>
+                <p className="text-sm font-bold text-slate-900">
+                  Assistente IA
+                </p>
                 <p className="text-[10px] text-slate-500">Gestão de locações</p>
               </div>
             </div>
-            <button onClick={() => setAiChatOpen(false)} className="p-1 hover:bg-slate-100 rounded-lg"><X size={18} className="text-slate-500" /></button>
+            <button
+              onClick={() => setAiChatOpen(false)}
+              className="p-1 hover:bg-slate-100 rounded-lg"
+            >
+              <X size={18} className="text-slate-500" />
+            </button>
           </div>
           <div className="flex-1 min-h-[300px] max-h-[400px] overflow-y-auto p-4 space-y-3">
             {aiMessages.length === 0 && (
-              <p className="text-xs text-slate-400 text-center py-8">Pergunte sobre inadimplência, reajustes, renovações ou dúvidas do módulo.</p>
+              <p className="text-xs text-slate-400 text-center py-8">
+                Pergunte sobre inadimplência, reajustes, renovações ou dúvidas
+                do módulo.
+              </p>
             )}
             {aiMessages.map((msg, idx) => (
-              <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] px-3 py-2 rounded-xl text-xs ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'}`}>
+              <div
+                key={idx}
+                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-[80%] px-3 py-2 rounded-xl text-xs ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'}`}
+                >
                   {msg.text}
                 </div>
               </div>
             ))}
             {aiLoading && (
               <div className="flex justify-start">
-                <div className="px-3 py-2 rounded-xl bg-slate-100 text-xs text-slate-500">Digitando...</div>
+                <div className="px-3 py-2 rounded-xl bg-slate-100 text-xs text-slate-500">
+                  Digitando...
+                </div>
               </div>
             )}
           </div>
@@ -905,7 +968,11 @@ const formatCompactCurrency = (val: number) =>
               placeholder="Digite sua pergunta..."
               className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-indigo-500"
             />
-            <button onClick={handleAiSend} disabled={aiLoading} className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white rounded-lg">
+            <button
+              onClick={handleAiSend}
+              disabled={aiLoading}
+              className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white rounded-lg"
+            >
               <Send size={14} />
             </button>
           </div>

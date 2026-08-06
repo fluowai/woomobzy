@@ -77,7 +77,11 @@ interface Appointment {
   property_id?: string | null;
   lead_id?: string | null;
   lead?: { name?: string } | null;
-  property?: { title?: string; city?: string | null; state?: string | null } | null;
+  property?: {
+    title?: string;
+    city?: string | null;
+    state?: string | null;
+  } | null;
 }
 
 const KIND_LABEL: Record<string, string> = {
@@ -207,7 +211,9 @@ const Agenda = () => {
     try {
       let query = supabase
         .from('lead_appointments')
-        .select('*, lead:leads(name), property:properties(id, title, city, state)')
+        .select(
+          '*, lead:leads(name), property:properties(id, title, city, state)'
+        )
         .order('appointment_date', { ascending: true });
 
       if (filterStatus !== 'all') {

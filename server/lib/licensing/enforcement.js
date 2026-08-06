@@ -101,7 +101,8 @@ export function buildEnforcementDecision({ mode, license, legacyTenants }) {
         degraded: false,
         audit: true,
         severity: 'error',
-        message: 'Licença não encontrada para esta organização. Contate o suporte.',
+        message:
+          'Licença não encontrada para esta organização. Contate o suporte.',
       };
     }
     return {
@@ -140,7 +141,8 @@ export function buildEnforcementDecision({ mode, license, legacyTenants }) {
         degraded: true,
         audit: true,
         severity: 'warn',
-        message: 'Licença em período de carência. Renove para evitar interrupção.',
+        message:
+          'Licença em período de carência. Renove para evitar interrupção.',
       };
 
     case LICENSE_STATES.EXPIRED:
@@ -209,7 +211,10 @@ function auditStateKey(orgId, state) {
  * Com licença → license_audit_events (hash encadeado); sem licença → audit_logs.
  * Falhas de auditoria são logadas, nunca bloqueiam a request.
  */
-async function auditDecision(supabase, { orgId, license, decision, actorId, ipAddress }) {
+async function auditDecision(
+  supabase,
+  { orgId, license, decision, actorId, ipAddress }
+) {
   const stateKey = auditStateKey(orgId, decision.state);
   if (lastAuditedState.get(stateKey) === decision.state) return;
   lastAuditedState.set(stateKey, decision.state);
@@ -245,7 +250,10 @@ async function auditDecision(supabase, { orgId, license, decision, actorId, ipAd
       ]);
     }
   } catch (error) {
-    console.error('[LicensingEnforcement] falha ao registrar auditoria:', error);
+    console.error(
+      '[LicensingEnforcement] falha ao registrar auditoria:',
+      error
+    );
   }
 }
 
@@ -283,7 +291,11 @@ export function enforceLicenseAccess(options = {}) {
         return next();
       }
 
-      const decision = buildEnforcementDecision({ mode, license, legacyTenants });
+      const decision = buildEnforcementDecision({
+        mode,
+        license,
+        legacyTenants,
+      });
       req.licenseState = {
         state: decision.state,
         code: decision.code,
@@ -318,7 +330,10 @@ export function enforceLicenseAccess(options = {}) {
 
       return next();
     } catch (error) {
-      console.error('[LicensingEnforcement] falha inesperada (fail-open):', error);
+      console.error(
+        '[LicensingEnforcement] falha inesperada (fail-open):',
+        error
+      );
       return next();
     }
   };

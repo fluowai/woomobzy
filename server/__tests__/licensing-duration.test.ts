@@ -47,17 +47,20 @@ describe('licensing duration presets', () => {
 
   it('data do calendário sobrescreve o preset', () => {
     const custom = new Date('2029-12-01T00:00:00.000Z');
-    expect(computeExpiry({ presetId: 'lifetime', customDate: custom, from: FIXED })).toBe(
-      '2029-12-01T00:00:00.000Z'
-    );
-    expect(computeExpiry({ presetId: 'year5', customDate: custom, from: FIXED })).toBe(
-      '2029-12-01T00:00:00.000Z'
-    );
+    expect(
+      computeExpiry({ presetId: 'lifetime', customDate: custom, from: FIXED })
+    ).toBe('2029-12-01T00:00:00.000Z');
+    expect(
+      computeExpiry({ presetId: 'year5', customDate: custom, from: FIXED })
+    ).toBe('2029-12-01T00:00:00.000Z');
   });
 
   it('aceita customDate como string ISO', () => {
     expect(
-      computeExpiry({ presetId: 'year1', customDate: '2029-12-01T00:00:00.000Z' })
+      computeExpiry({
+        presetId: 'year1',
+        customDate: '2029-12-01T00:00:00.000Z',
+      })
     ).toBe('2029-12-01T00:00:00.000Z');
   });
 

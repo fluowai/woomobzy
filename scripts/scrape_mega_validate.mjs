@@ -20,10 +20,12 @@ async function scrapeMegaPropertyPage(url) {
   try {
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Accept:
+          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       },
-      timeout: 15000
+      timeout: 15000,
     });
 
     if (!response.ok) return null;
@@ -31,9 +33,10 @@ async function scrapeMegaPropertyPage(url) {
     const html = await response.text();
     const $ = cheerio.load(html);
 
-    const title = $('h1').first().text().trim() ||
-                  $('meta[property="og:title"]').attr('content') ||
-                  $('title').text().trim();
+    const title =
+      $('h1').first().text().trim() ||
+      $('meta[property="og:title"]').attr('content') ||
+      $('title').text().trim();
 
     const images = new Set();
 
@@ -41,7 +44,11 @@ async function scrapeMegaPropertyPage(url) {
       const src = $(el).attr('src') || $(el).attr('data-src');
       if (!src) return;
       const lower = src.toLowerCase();
-      if (lower.includes('imovel') || lower.includes('fotos') || lower.includes('megainvest')) {
+      if (
+        lower.includes('imovel') ||
+        lower.includes('fotos') ||
+        lower.includes('megainvest')
+      ) {
         if (src.startsWith('/')) {
           images.add('https://megainvestimoveis.com.br' + src);
         } else {
@@ -51,10 +58,15 @@ async function scrapeMegaPropertyPage(url) {
     });
 
     const scripts = $('script').text();
-    const imgMatches = scripts.match(/https?:\/\/[^\s"']+\.(jpg|jpeg|png|webp)/gi) || [];
-    imgMatches.forEach(url => {
+    const imgMatches =
+      scripts.match(/https?:\/\/[^\s"']+\.(jpg|jpeg|png|webp)/gi) || [];
+    imgMatches.forEach((url) => {
       const lower = url.toLowerCase();
-      if (lower.includes('imovel') || lower.includes('fotos') || lower.includes('megainvest')) {
+      if (
+        lower.includes('imovel') ||
+        lower.includes('fotos') ||
+        lower.includes('megainvest')
+      ) {
         images.add(url);
       }
     });
@@ -62,7 +74,7 @@ async function scrapeMegaPropertyPage(url) {
     return {
       url,
       title: title || '',
-      images: Array.from(images)
+      images: Array.from(images),
     };
   } catch (err) {
     return null;
@@ -81,7 +93,7 @@ async function run() {
     console.log(`DB properties: ${props?.length || 0}`);
 
     const byTitle = new Map();
-    props?.forEach(p => {
+    props?.forEach((p) => {
       const key = p.title.toLowerCase().trim();
       if (!byTitle.has(key)) byTitle.set(key, []);
       byTitle.get(key).push(p);
@@ -89,7 +101,7 @@ async function run() {
 
     const pagesToScrape = [
       'https://megainvestimoveis.com.br/venda',
-      'https://megainvestimoveis.com.br/aluguel'
+      'https://megainvestimoveis.com.br/aluguel',
     ];
 
     const propertyLinks = new Set();
@@ -97,12 +109,13 @@ async function run() {
     for (const pageUrl of pagesToScrape) {
       console.log(`Scraping list page: ${pageUrl}`);
       try {
-        const html = await fetch(pageUrl).then(r => r.text());
+        const html = await fetch(pageUrl).then((r) => r.text());
         const $ = cheerio.load(html);
 
         $('a[href*="/imovel/"]').each((i, el) => {
           let link = $(el).attr('href');
-          if (link.startsWith('/')) link = 'https://megainvestimoveis.com.br' + link;
+          if (link.startsWith('/'))
+            link = 'https://megainvestimoveis.com.br' + link;
           propertyLinks.add(link);
         });
       } catch (err) {
@@ -120,7 +133,9 @@ async function run() {
     const urls = Array.from(propertyLinks);
     for (let i = 0; i < urls.length; i++) {
       const url = urls[i];
-      process.stdout.write(`[${i + 1}/${urls.length}] ${url.substring(0, 70)}... `);
+      process.stdout.write(
+        `[${i + 1}/${urls.length}] ${url.substring(0, 70)}... `
+      );
 
       const data = await scrapeMegaPropertyPage(url);
       if (!data || !data.title) {
@@ -143,7 +158,10 @@ async function run() {
               .eq('id', match.id);
           }
 
-          if ((!match.images || match.images.length === 0) && data.images.length > 0) {
+          if (
+            (!match.images || match.images.length === 0) &&
+            data.images.length > 0
+          ) {
             await supabase
               .from('properties')
               .update({ images: data.images.slice(0, 20) })
@@ -153,7 +171,9 @@ async function run() {
         }
       } else {
         unmatched++;
-        console.log(`NEW: "${data.title.substring(0, 50)}" (${data.images.length} images)`);
+        console.log(
+          `NEW: "${data.title.substring(0, 50)}" (${data.images.length} images)`
+        );
 
         if (data.images.length > 0) {
           const { data: newProp, error } = await supabase
@@ -166,7 +186,7 @@ async function run() {
               status: 'Disponível',
               purpose: 'Venda',
               property_type: 'Apartamento',
-              niche: 'urbano'
+              niche: 'urbano',
             })
             .select()
             .single();
@@ -178,7 +198,7 @@ async function run() {
         }
       }
 
-      await new Promise(r => setTimeout(r, 300));
+      await new Promise((r) => setTimeout(r, 300));
     }
 
     console.log('\n=== RESULTS ===');

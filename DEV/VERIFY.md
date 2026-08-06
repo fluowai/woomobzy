@@ -3,7 +3,7 @@
 ## 2026-08-05 — Change set: MinIO dentro da stack — FRESH START (MinIO novo)
 
 - YAML validado com `js-yaml` (Node): `docker-compose.yml`, `portainer-stack.yml`, `portainer-stack-imobfluow-filled.yml` parseiam sem erro; serviços incluem `minio` e `minio-init`; volume `minio_data` declarado nos 3.
-- Entrypoint do `minio-init` revisado (renderizado do YAML): retry de até 120s no `mc alias set`, `mc mb --ignore-existing` nos 7 buckets, policy `imobzy-rw` (s3:* em `imobzy*`), `mc admin user add` + attach com `|| true` (idempotente). `$$` preserva `$` literal para o shell do container após interpolação do Compose.
+- Entrypoint do `minio-init` revisado (renderizado do YAML): retry de até 120s no `mc alias set`, `mc mb --ignore-existing` nos 7 buckets, policy `imobzy-rw` (s3:_ em `imobzy_`), `mc admin user add`+ attach com`|| true`(idempotente).`$$` preserva `$` literal para o shell do container após interpolação do Compose.
 - Revisão do contrato de código (sem mudança): `server/lib/minio-storage.js` `normalizeEndpoint` mantém `http://minio:9000` e usa `MINIO_PUBLIC_URL` para a URL pública; `whatsapp-service` `config.go`/`media.go` derivam `secure=false` de `http://`. Ambos passam a apontar para a rede interna após o deploy.
 - Root creds do MinIO **embutidas** no YAML (`wootechadmin` / `<minio-root-password>`) nas 3 stacks (serviço `minio` e `minio-init`) — nenhuma variável a definir no Portainer; `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` sem placeholder restante (grep confirmou).
 - Docker indisponível nesta máquina Windows: `docker compose config` não executado (gate a rodar no servidor).
@@ -34,7 +34,7 @@
 
 - Fix TLS em produção: `https://nb.consultio.com.br/minio/health/live` → 200; `openssl s_client` → `subject=CN=nb.consultio.com.br`, `issuer=Let's Encrypt YR1`; router via labels `minio_nb` na stack minio (Traefik só tem provider Swarm — `traefik/dynamic/nb_consultio_com_br.yml` é inerte).
 - Buckets criados via root S3 API: `imobzycrm`, `imobzywhatsapp`, `imobzy-media`, `imobzy-documents`, `imobzy-exports`, `imobzy-backups`.
-- Policy `imobzy-rw` (s3:* nos 6 buckets) + user `8aHPnW4JQsRWhbKld9Yw` (status enabled, policy attachada) criados via API console MinIO (auth `Cookie: token=...`).
+- Policy `imobzy-rw` (s3:\* nos 6 buckets) + user `8aHPnW4JQsRWhbKld9Yw` (status enabled, policy attachada) criados via API console MinIO (auth `Cookie: token=...`).
 - Verificado com a key do app (`8aHP...`): ListBuckets OK nos 6 buckets; PUT/DELETE OK em `imobzywhatsapp` e `imobzy-media` (probe removido).
 - Assinatura SigV4 manual idêntica a `server/lib/minio-storage.js` (`uploadObject`) executada no container `api` com env de produção: PUT 200 em `imobzywhatsapp` e `imobzy-media`.
 - Env real do stack: `MINIO_WHATSAPP_BUCKET=imobzywhatsapp`, sem `MINIO_MEDIA_BUCKET`; `storage_integrations` sem row (config = env puro).

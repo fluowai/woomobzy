@@ -279,7 +279,8 @@ router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
 
     // Agentes com ferramentas configuradas usam o orquestrador (ReAct/function
     // calling) no chat de teste, para a conversa se comportar igual ao WhatsApp.
-    const hasActiveTools = Array.isArray(agent?.tools) && agent.tools.length > 0;
+    const hasActiveTools =
+      Array.isArray(agent?.tools) && agent.tools.length > 0;
     if ((provider === 'gemini' || !provider) && hasActiveTools) {
       try {
         const orchestrator = new AgentOrchestrator(apiKey || null);
@@ -400,39 +401,44 @@ router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
   }
 });
 
-router.post('/agents/:id/simulate', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const supabase = getSupabaseServer();
-    const { id } = req.params;
-    const { seed_message, turns = 6, session_id } = req.body;
-    const organizationId = req.orgId;
+router.post(
+  '/agents/:id/simulate',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const supabase = getSupabaseServer();
+      const { id } = req.params;
+      const { seed_message, turns = 6, session_id } = req.body;
+      const organizationId = req.orgId;
 
-    const { data: agent, error: agentError } = await supabase
-      .from('ai_agents')
-      .select('*')
-      .eq('id', id)
-      .eq('organization_id', organizationId)
-      .maybeSingle();
+      const { data: agent, error: agentError } = await supabase
+        .from('ai_agents')
+        .select('*')
+        .eq('id', id)
+        .eq('organization_id', organizationId)
+        .maybeSingle();
 
-    if (agentError || !agent) {
-      return res.status(404).json({ error: 'Agente nao encontrado.' });
+      if (agentError || !agent) {
+        return res.status(404).json({ error: 'Agente nao encontrado.' });
+      }
+
+      const simulator = new ConversationSimulator();
+      const result = await simulator.run({
+        agent,
+        organizationId,
+        seedMessage: seed_message || 'oi',
+        turns: Math.min(Number(turns) || 6, 12),
+        sessionId: session_id,
+      });
+
+      res.json({ ...result, agent: { name: agent.name, role: agent.role } });
+    } catch (error) {
+      console.error('[AgentSimulate] Erro:', error.message);
+      res.status(500).json({ error: error.message });
     }
-
-    const simulator = new ConversationSimulator();
-    const result = await simulator.run({
-      agent,
-      organizationId,
-      seedMessage: seed_message || 'oi',
-      turns: Math.min(Number(turns) || 6, 12),
-      sessionId: session_id,
-    });
-
-    res.json({ ...result, agent: { name: agent.name, role: agent.role } });
-  } catch (error) {
-    console.error('[AgentSimulate] Erro:', error.message);
-    res.status(500).json({ error: error.message });
   }
-});
+);
 
 router.get(
   '/agents/:id/memory',

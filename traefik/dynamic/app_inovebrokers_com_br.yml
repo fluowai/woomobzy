@@ -4,7 +4,7 @@
 http:
   routers:
     app_inovebrokers_com_br_api:
-      rule: "Host(`app.inovebrokers.com.br`) && PathPrefix(`/api`)"
+      rule: 'Host(`app.inovebrokers.com.br`) && PathPrefix(`/api`)'
       entryPoints:
         - websecure
       priority: 1000
@@ -13,7 +13,7 @@ http:
       service: imobzy_api@file
 
     app_inovebrokers_com_br_frontend:
-      rule: "Host(`app.inovebrokers.com.br`)"
+      rule: 'Host(`app.inovebrokers.com.br`)'
       entryPoints:
         - websecure
       priority: 100

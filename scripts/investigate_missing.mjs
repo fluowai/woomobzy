@@ -25,8 +25,11 @@ async function run() {
       .eq('organization_id', PAMAS_ID)
       .order('created_at');
 
-    const withExternal = allProps?.filter(p => p.external_id && p.external_id.length > 0) || [];
-    const withoutExternal = allProps?.filter(p => !p.external_id || p.external_id.length === 0) || [];
+    const withExternal =
+      allProps?.filter((p) => p.external_id && p.external_id.length > 0) || [];
+    const withoutExternal =
+      allProps?.filter((p) => !p.external_id || p.external_id.length === 0) ||
+      [];
 
     console.log(`Total: ${allProps?.length}`);
     console.log(`With external_id: ${withExternal.length}`);
@@ -34,21 +37,24 @@ async function run() {
 
     // Check when these were created
     console.log('\n=== PROPERTIES WITHOUT EXTERNAL_ID ===');
-    withoutExternal.forEach(p => {
+    withoutExternal.forEach((p) => {
       const date = new Date(p.created_at).toLocaleDateString('pt-BR');
       console.log(`[${date}] ${p.title.substring(0, 70)}`);
     });
 
     // Check if these might be from a different source/manual entry
     console.log('\n=== ANALYZING TITLES ===');
-    withoutExternal.forEach(p => {
+    withoutExternal.forEach((p) => {
       const title = p.title.toLowerCase();
-      const hasMarketing = title.includes('oportunidade') || 
-                          title.includes('imperdível') || 
-                          title.includes('excepcional') ||
-                          title.includes('lindo') ||
-                          title.includes('luxo');
-      console.log(`${hasMarketing ? 'MARKETING' : 'NORMAL'}: ${p.title.substring(0, 60)}`);
+      const hasMarketing =
+        title.includes('oportunidade') ||
+        title.includes('imperdível') ||
+        title.includes('excepcional') ||
+        title.includes('lindo') ||
+        title.includes('luxo');
+      console.log(
+        `${hasMarketing ? 'MARKETING' : 'NORMAL'}: ${p.title.substring(0, 60)}`
+      );
     });
 
     // Check if any of these might actually be Mega properties
@@ -58,15 +64,18 @@ async function run() {
       .select('title')
       .eq('organization_id', '52757ffb-dd3a-4106-8783-31ebe01a1455');
 
-    const megaTitles = new Set((megaProps || []).map(p => p.title.toLowerCase().trim()));
-    
-    const possiblyMega = withoutExternal.filter(p => megaTitles.has(p.title.toLowerCase().trim()));
-    
+    const megaTitles = new Set(
+      (megaProps || []).map((p) => p.title.toLowerCase().trim())
+    );
+
+    const possiblyMega = withoutExternal.filter((p) =>
+      megaTitles.has(p.title.toLowerCase().trim())
+    );
+
     console.log(`Properties that match Mega titles: ${possiblyMega.length}`);
-    possiblyMega.forEach(p => {
+    possiblyMega.forEach((p) => {
       console.log(`  ${p.title}`);
     });
-
   } catch (err) {
     console.error('Erro:', err);
   }

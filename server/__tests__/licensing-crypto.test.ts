@@ -13,7 +13,10 @@ import {
   verifyLicenseKey,
   verifyMessage,
 } from '../lib/licensing/crypto.js';
-import { ReplayDetectedError, ReplayGuard } from '../lib/licensing/replay-guard.js';
+import {
+  ReplayDetectedError,
+  ReplayGuard,
+} from '../lib/licensing/replay-guard.js';
 
 describe('licensing crypto', () => {
   const keys = generateKeyPair();
@@ -26,7 +29,9 @@ describe('licensing crypto', () => {
 
   it('rejeita mensagem adulterada', () => {
     const signature = signMessage(keys.privateKeyPem, 'mensagem');
-    expect(verifyMessage(keys.publicKeyPem, 'mensagem2', signature)).toBe(false);
+    expect(verifyMessage(keys.publicKeyPem, 'mensagem2', signature)).toBe(
+      false
+    );
   });
 
   it('gera fingerprints estáveis e distintos por chave', () => {
@@ -59,7 +64,10 @@ describe('licensing crypto', () => {
   });
 
   it('rejeita chave de licença adulterada', () => {
-    const payload = { sub: 'org-123', exp: Math.floor(Date.now() / 1000) + 3600 };
+    const payload = {
+      sub: 'org-123',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    };
     const licenseKey = createLicenseKey(keys.privateKeyPem, payload);
     const parts = licenseKey.split('.');
     const tamperedPayload = Buffer.from(

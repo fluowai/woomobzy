@@ -32,12 +32,12 @@ Fatos de infraestrutura:
 
 ## Entregáveis (neste repositório)
 
-| Arquivo | Função |
-|---|---|
+| Arquivo                                   | Função                                                                                                                                               |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `traefik/dynamic/nb_consultio_com_br.yml` | Router `Host(nb.consultio.com.br)` → `websecure` + `certResolver letsencryptresolver` → service file `nb_consultio_minio@file` → `http://minio:9000` |
-| `docker-compose.yml` | `ALLOW_SUPABASE_STORAGE_FALLBACK: 'true'` no `api` e no `whatsapp-service` (rede de segurança) |
-| `portainer-stack-imobfluow-filled.yml` | `ALLOW_SUPABASE_STORAGE_FALLBACK: "true"` no `x-backend-env` (api + whatsapp-service) |
-| `.env.production.template` | Já documenta `ALLOW_SUPABASE_STORAGE_FALLBACK=true` (linha 22) — nenhuma mudança necessária |
+| `docker-compose.yml`                      | `ALLOW_SUPABASE_STORAGE_FALLBACK: 'true'` no `api` e no `whatsapp-service` (rede de segurança)                                                       |
+| `portainer-stack-imobfluow-filled.yml`    | `ALLOW_SUPABASE_STORAGE_FALLBACK: "true"` no `x-backend-env` (api + whatsapp-service)                                                                |
+| `.env.production.template`                | Já documenta `ALLOW_SUPABASE_STORAGE_FALLBACK=true` (linha 22) — nenhuma mudança necessária                                                          |
 
 O router segue o padrão dos demais arquivos de `traefik/dynamic/` (ex.: `inovebrokers_com_br.yml`, `oka-imoveis_consultio_com_br.yml`). Como funciona o SSL: na primeira requisição HTTPS o Traefik dispara o desafio HTTP-01 em `/.well-known/acme-challenge/` na porta 80 e emite o cert no `traefik/acme.json`; renovação automática.
 
@@ -48,7 +48,7 @@ O router segue o padrão dos demais arquivos de `traefik/dynamic/` (ex.: `inoveb
    - Portainer → volume → upload do arquivo; ou
    - `docker cp traefik/dynamic/nb_consultio_com_br.yml <api-container>:/app/traefik/dynamic/`; ou
    - se o diretório estiver bind-mountado no host, copiar direto.
-   O Traefik detecta o arquivo automaticamente (`watch: true`). Não é preciso reiniciar o Traefik.
+     O Traefik detecta o arquivo automaticamente (`watch: true`). Não é preciso reiniciar o Traefik.
 3. **Garantir que o serviço `minio` esteja na rede do Traefik** (ex.: `wootech1`). O URL `http://minio:9000` é resolvido pelo Traefik na rede Docker compartilhada. Se o MinIO publicar a porta 9000 no host, ela pode ficar fechada no firewall sem impacto — o acesso é via rede interna Docker.
 4. **Fallback Supabase (rede de segurança)**: no `.env.production` do deploy, adicionar `ALLOW_SUPABASE_STORAGE_FALLBACK=true` (o `.env.production.template` já documenta). Em deploy via Portainer, atualizar a stack `portainer-stack-imobfluow-filled.yml` (o `x-backend-env` já recebeu a var) para que api e whatsapp-service carreguem o fallback.
 5. **Aguardar emissão do cert**: na primeira requisição HTTPS o Traefik dispara o ACME. Confirmar em `traefik/acme.json` o domínio `nb.consultio.com.br`.
@@ -66,6 +66,7 @@ curl.exe -s https://nb.consultio.com.br/minio/health/live
 ```
 
 Esperado:
+
 - `subject=CN=nb.consultio.com.br`, `issuer` Let's Encrypt, verify return code 0.
 - `GET /minio/health/live` responde 200 (não mais o 404 do Traefik).
 - Upload real: `POST /api/storage/upload` responde 200 com `provider: minio`.

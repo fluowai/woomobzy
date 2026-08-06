@@ -37,15 +37,15 @@ Pontos positivos:
 
 ### 2.2 Fontes paralelas e inconsistências
 
-| Área | Fonte declarada | Situação |
-| --- | --- | --- |
-| Produto global | Plus Jakarta Sans | Correta e carregada |
-| `components/Layout.tsx` | Inter | Forçada inline; Inter não é carregada globalmente |
-| WhatsApp | Inter | Forçada no CSS; pode cair em fonte de sistema |
-| Detalhe de imóvel | Poppins | Declarada inline; não carregada globalmente |
-| Landing page legada | Poppins + Playfair Display | Declarações locais; carregamento não garantido nessa superfície |
-| Sites/templates de clientes | Inter, Lora, Montserrat, Raleway, Merriweather, Space Grotesk, Nunito, IBM Plex Sans, DM Sans, Outfit, Playfair Display, Manrope, Syne e outras | Variação intencional do construtor de sites |
-| Logos SVG | Inter ou Outfit | Dependem de fallback quando a fonte não está disponível |
+| Área                        | Fonte declarada                                                                                                                                 | Situação                                                        |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Produto global              | Plus Jakarta Sans                                                                                                                               | Correta e carregada                                             |
+| `components/Layout.tsx`     | Inter                                                                                                                                           | Forçada inline; Inter não é carregada globalmente               |
+| WhatsApp                    | Inter                                                                                                                                           | Forçada no CSS; pode cair em fonte de sistema                   |
+| Detalhe de imóvel           | Poppins                                                                                                                                         | Declarada inline; não carregada globalmente                     |
+| Landing page legada         | Poppins + Playfair Display                                                                                                                      | Declarações locais; carregamento não garantido nessa superfície |
+| Sites/templates de clientes | Inter, Lora, Montserrat, Raleway, Merriweather, Space Grotesk, Nunito, IBM Plex Sans, DM Sans, Outfit, Playfair Display, Manrope, Syne e outras | Variação intencional do construtor de sites                     |
+| Logos SVG                   | Inter ou Outfit                                                                                                                                 | Dependem de fallback quando a fonte não está disponível         |
 
 Conclusão: **o painel interno deveria usar uma única família**. As variações tipográficas fazem sentido nos sites dos clientes, mas não na aplicação operacional.
 
@@ -53,18 +53,18 @@ Conclusão: **o painel interno deveria usar uma única família**. As variaçõe
 
 Os tokens globais redefinem a escala Tailwind:
 
-| Token | Tamanho efetivo |
-| --- | ---: |
-| `text-xs` | 12 px |
-| `text-sm` | 13 px |
-| `text-base` | 14 px |
-| `text-lg` | 16 px |
-| `text-xl` | 18 px |
-| `text-2xl` | 20 px |
-| `text-3xl` | 24 px |
-| `text-4xl` | 32 px |
-| `text-5xl` | 40 px |
-| `text-6xl` | 48 px |
+| Token       | Tamanho efetivo |
+| ----------- | --------------: |
+| `text-xs`   |           12 px |
+| `text-sm`   |           13 px |
+| `text-base` |           14 px |
+| `text-lg`   |           16 px |
+| `text-xl`   |           18 px |
+| `text-2xl`  |           20 px |
+| `text-3xl`  |           24 px |
+| `text-4xl`  |           32 px |
+| `text-5xl`  |           40 px |
+| `text-6xl`  |           48 px |
 
 Na amostra do produto:
 
@@ -104,20 +104,20 @@ Também foram encontradas 1.129 ocorrências de `uppercase` e 785 usos de tracki
 
 ### 3.1 Tokens oficiais
 
-| Papel | Cor | Uso pretendido |
-| --- | --- | --- |
-| Primária | `#16A34A` | ações, marca, seleção |
-| Primária hover | `#15803D` | interação |
-| Primária clara | `#22C55E` | estados leves e destaque |
-| Accent | `#052E1A` | verde profundo |
-| Accent hover | `#021A0F` | interação escura |
-| Fundo principal | `#F8FAFC` | canvas da aplicação |
-| Cartão/input | `#FFFFFF` | superfícies |
-| Hover | `#F1F5F9` | estados neutros |
-| Texto principal | `#111111` | conteúdo prioritário |
-| Texto secundário | `#475569` | descrições |
-| Texto terciário | `#94A3B8` | metadados |
-| Borda | `#E2E8F0` | separação |
+| Papel            | Cor       | Uso pretendido           |
+| ---------------- | --------- | ------------------------ |
+| Primária         | `#16A34A` | ações, marca, seleção    |
+| Primária hover   | `#15803D` | interação                |
+| Primária clara   | `#22C55E` | estados leves e destaque |
+| Accent           | `#052E1A` | verde profundo           |
+| Accent hover     | `#021A0F` | interação escura         |
+| Fundo principal  | `#F8FAFC` | canvas da aplicação      |
+| Cartão/input     | `#FFFFFF` | superfícies              |
+| Hover            | `#F1F5F9` | estados neutros          |
+| Texto principal  | `#111111` | conteúdo prioritário     |
+| Texto secundário | `#475569` | descrições               |
+| Texto terciário  | `#94A3B8` | metadados                |
+| Borda            | `#E2E8F0` | separação                |
 
 A direção cromática é correta: verde comunica crescimento, território, confiança e mercado imobiliário; os neutros frios mantêm aparência corporativa.
 
@@ -126,17 +126,17 @@ A direção cromática é correta: verde comunica crescimento, território, conf
 Em 14.094 ocorrências de classes cromáticas diretas do núcleo analisado:
 
 | Família | Ocorrências | Participação aproximada |
-| --- | ---: | ---: |
-| Slate | 4.981 | 35,3% |
-| Gray | 2.222 | 15,8% |
-| White | 1.752 | 12,4% |
-| Emerald | 1.050 | 7,4% |
-| Indigo | 906 | 6,4% |
-| Blue | 829 | 5,9% |
-| Red | 559 | 4,0% |
-| Amber | 369 | 2,6% |
-| Green | 321 | 2,3% |
-| Purple | 191 | 1,4% |
+| ------- | ----------: | ----------------------: |
+| Slate   |       4.981 |                   35,3% |
+| Gray    |       2.222 |                   15,8% |
+| White   |       1.752 |                   12,4% |
+| Emerald |       1.050 |                    7,4% |
+| Indigo  |         906 |                    6,4% |
+| Blue    |         829 |                    5,9% |
+| Red     |         559 |                    4,0% |
+| Amber   |         369 |                    2,6% |
+| Green   |         321 |                    2,3% |
+| Purple  |         191 |                    1,4% |
 
 Classes mais frequentes:
 
@@ -179,22 +179,22 @@ O módulo WhatsApp usa duas camadas próprias:
 
 Referência: WCAG AA exige 4,5:1 para texto normal e 3:1 para texto grande.
 
-| Combinação | Contraste | Avaliação |
-| --- | ---: | --- |
-| Branco sobre `#16A34A` | 3,30:1 | Falha para texto normal; passa somente para texto grande |
-| Branco sobre `#15803D` | 5,02:1 | Passa AA |
-| Branco sobre `#079455` | 3,91:1 | Falha para texto normal |
-| Branco sobre `#087747` | 5,61:1 | Passa AA |
-| Branco sobre `#052E1A` | 14,87:1 | Passa AAA |
-| Preto sobre `#052E1A` | 1,41:1 | Falha crítica |
-| `#94A3B8` sobre branco | 2,56:1 | Falha |
-| `#64748B` sobre branco | 4,76:1 | Passa AA |
-| `#475569` sobre branco | 7,58:1 | Passa AAA |
-| `#079455` sobre `#EAF7F0` | 3,55:1 | Falha para texto normal |
-| `#00855C` sobre branco | 4,66:1 | Passa AA |
-| Branco sobre `#3B82F6` | 3,68:1 | Falha para texto normal |
-| Branco sobre `#6366F1` | 4,47:1 | Limítrofe; abaixo de 4,5 |
-| Branco sobre `#10B981` | 2,54:1 | Falha |
+| Combinação                | Contraste | Avaliação                                                |
+| ------------------------- | --------: | -------------------------------------------------------- |
+| Branco sobre `#16A34A`    |    3,30:1 | Falha para texto normal; passa somente para texto grande |
+| Branco sobre `#15803D`    |    5,02:1 | Passa AA                                                 |
+| Branco sobre `#079455`    |    3,91:1 | Falha para texto normal                                  |
+| Branco sobre `#087747`    |    5,61:1 | Passa AA                                                 |
+| Branco sobre `#052E1A`    |   14,87:1 | Passa AAA                                                |
+| Preto sobre `#052E1A`     |    1,41:1 | Falha crítica                                            |
+| `#94A3B8` sobre branco    |    2,56:1 | Falha                                                    |
+| `#64748B` sobre branco    |    4,76:1 | Passa AA                                                 |
+| `#475569` sobre branco    |    7,58:1 | Passa AAA                                                |
+| `#079455` sobre `#EAF7F0` |    3,55:1 | Falha para texto normal                                  |
+| `#00855C` sobre branco    |    4,66:1 | Passa AA                                                 |
+| Branco sobre `#3B82F6`    |    3,68:1 | Falha para texto normal                                  |
+| Branco sobre `#6366F1`    |    4,47:1 | Limítrofe; abaixo de 4,5                                 |
+| Branco sobre `#10B981`    |    2,54:1 | Falha                                                    |
 
 Riscos práticos:
 
@@ -222,18 +222,18 @@ Recomendação editorial:
 
 ## 6. Diagnóstico por qualidade
 
-| Critério | Estado | Diagnóstico |
-| --- | --- | --- |
-| Direção visual | Boa | Verde + neutros forma uma base coerente |
-| Fonte principal | Boa | Plus Jakarta Sans é adequada e está carregada |
-| Escala tipográfica | Atenção alta | Excesso de 8–13 px e pouco uso do corpo base |
-| Hierarquia por peso | Atenção | Bold e uppercase usados em excesso |
-| Tokens semânticos | Crítico | Cerca de 3% do uso cromático rastreado passa por tokens |
-| Contraste | Crítico | Falhas em ações primárias, tertiary text e `.btn-accent` |
-| White-label | Atenção alta | Só parte da UI responde à configuração da organização |
+| Critério                   | Estado       | Diagnóstico                                                 |
+| -------------------------- | ------------ | ----------------------------------------------------------- |
+| Direção visual             | Boa          | Verde + neutros forma uma base coerente                     |
+| Fonte principal            | Boa          | Plus Jakarta Sans é adequada e está carregada               |
+| Escala tipográfica         | Atenção alta | Excesso de 8–13 px e pouco uso do corpo base                |
+| Hierarquia por peso        | Atenção      | Bold e uppercase usados em excesso                          |
+| Tokens semânticos          | Crítico      | Cerca de 3% do uso cromático rastreado passa por tokens     |
+| Contraste                  | Crítico      | Falhas em ações primárias, tertiary text e `.btn-accent`    |
+| White-label                | Atenção alta | Só parte da UI responde à configuração da organização       |
 | Consistência entre módulos | Atenção alta | Verde, azul, índigo, Slate e Gray coexistem sem regra única |
-| Identidade nominal | Atenção | WooTech Imob, Imobzy e ImobFluow aparecem na experiência |
-| Sites de clientes | Adequado | Variação de fontes e cores é intencional nessa camada |
+| Identidade nominal         | Atenção      | WooTech Imob, Imobzy e ImobFluow aparecem na experiência    |
+| Sites de clientes          | Adequado     | Variação de fontes e cores é intencional nessa camada       |
 
 ## 7. Sistema recomendado
 
@@ -241,35 +241,35 @@ Recomendação editorial:
 
 Manter Plus Jakarta Sans como única fonte da aplicação operacional.
 
-| Papel | Tamanho | Peso | Altura de linha |
-| --- | ---: | ---: | ---: |
-| Display/dashboard | 32 px | 700 | 1,15 |
-| Título de página | 24 px | 700 | 1,20 |
-| Título de seção | 18–20 px | 600 | 1,30 |
-| Título de card | 16 px | 600 | 1,35 |
-| Corpo | 14 px | 400 | 1,50 |
-| Controle/label | 13 px | 500 | 1,40 |
-| Metadado | 12 px | 500 | 1,35 |
-| Microtexto | 11 px | 600 | 1,30 |
+| Papel             |  Tamanho | Peso | Altura de linha |
+| ----------------- | -------: | ---: | --------------: |
+| Display/dashboard |    32 px |  700 |            1,15 |
+| Título de página  |    24 px |  700 |            1,20 |
+| Título de seção   | 18–20 px |  600 |            1,30 |
+| Título de card    |    16 px |  600 |            1,35 |
+| Corpo             |    14 px |  400 |            1,50 |
+| Controle/label    |    13 px |  500 |            1,40 |
+| Metadado          |    12 px |  500 |            1,35 |
+| Microtexto        |    11 px |  600 |            1,30 |
 
 Regra: 10 px ou menos apenas para elementos decorativos, nunca para informação necessária à decisão ou à operação.
 
 ### 7.2 Paleta funcional
 
-| Papel | Recomendação |
-| --- | --- |
-| Marca/decorativo | manter `#16A34A` |
+| Papel                  | Recomendação                                                     |
+| ---------------------- | ---------------------------------------------------------------- |
+| Marca/decorativo       | manter `#16A34A`                                                 |
 | Botão com texto branco | usar tom com contraste mínimo 4,5:1, como `#15803D` ou `#087747` |
-| Texto principal | unificar `#111827` ou `#10221D` |
-| Texto secundário | `#475569` |
-| Texto auxiliar mínimo | `#64748B`; evitar `#94A3B8` para texto |
-| Canvas | `#F8FAFC` |
-| Superfície | `#FFFFFF` |
-| Borda | `#E2E8F0` |
-| Sucesso | verde semântico distinto da ação somente quando necessário |
-| Informação | azul reservado a informação, links ou integrações |
-| Alerta | âmbar |
-| Erro | vermelho |
+| Texto principal        | unificar `#111827` ou `#10221D`                                  |
+| Texto secundário       | `#475569`                                                        |
+| Texto auxiliar mínimo  | `#64748B`; evitar `#94A3B8` para texto                           |
+| Canvas                 | `#F8FAFC`                                                        |
+| Superfície             | `#FFFFFF`                                                        |
+| Borda                  | `#E2E8F0`                                                        |
+| Sucesso                | verde semântico distinto da ação somente quando necessário       |
+| Informação             | azul reservado a informação, links ou integrações                |
+| Alerta                 | âmbar                                                            |
+| Erro                   | vermelho                                                         |
 
 ### 7.3 Arquitetura de tokens
 

@@ -45,8 +45,13 @@ function PipelineMetric({
   return (
     <div className="wootech-status-card">
       <div>
-        <span className="wootech-status-icon"><Icon size={19} /></span>
-        <div><strong>{value}</strong><span>{label}</span></div>
+        <span className="wootech-status-icon">
+          <Icon size={19} />
+        </span>
+        <div>
+          <strong>{value}</strong>
+          <span>{label}</span>
+        </div>
       </div>
     </div>
   );
@@ -386,35 +391,72 @@ const KanbanBoard: React.FC = () => {
         <div className="wootech-page-heading mb-5">
           <div>
             <div className="wootech-breadcrumb">
-              <strong>CRM</strong><span>/</span><span>Funil comercial</span>
+              <strong>CRM</strong>
+              <span>/</span>
+              <span>Funil comercial</span>
             </div>
             <h1>Pipeline comercial</h1>
-            <p>Priorize leads, acompanhe SLA e avance oportunidades com inteligência.</p>
+            <p>
+              Priorize leads, acompanhe SLA e avance oportunidades com
+              inteligência.
+            </p>
           </div>
           <div className="wootech-action-row">
-            <button className="wootech-secondary-action" onClick={() => toast.info('Importação de leads em breve.')}>
+            <button
+              className="wootech-secondary-action"
+              onClick={() => toast.info('Importação de leads em breve.')}
+            >
               <UploadCloud size={16} /> Importar leads
             </button>
-            <button className="wootech-primary-action" onClick={() => setIsModalOpen(true)}>
+            <button
+              className="wootech-primary-action"
+              onClick={() => setIsModalOpen(true)}
+            >
               <Plus size={17} /> Novo lead
             </button>
           </div>
         </div>
         <div className="wootech-status-grid mb-0">
-          <PipelineMetric icon={Users} value={leads.length} label="Leads ativos" />
+          <PipelineMetric
+            icon={Users}
+            value={leads.length}
+            label="Leads ativos"
+          />
           <PipelineMetric
             icon={BriefcaseBusiness}
-            value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(leads.reduce((total, lead) => total + Number(lead.budget || 0), 0))}
+            value={new Intl.NumberFormat('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+              notation: 'compact',
+            }).format(
+              leads.reduce((total, lead) => total + Number(lead.budget || 0), 0)
+            )}
             label="VGV potencial"
           />
-          <PipelineMetric icon={Flame} value={leads.filter((lead) => ['quente', 'hot'].includes(String(lead.classification || '').toLowerCase())).length} label="Leads quentes" />
-          <PipelineMetric icon={Clock3} value={leads.filter((lead) => !lead.notes).length} label="Sem próximo passo" />
-          <PipelineMetric icon={LayoutGrid} value={pipelineStages.length} label="Etapas do funil" />
+          <PipelineMetric
+            icon={Flame}
+            value={
+              leads.filter((lead) =>
+                ['quente', 'hot'].includes(
+                  String(lead.classification || '').toLowerCase()
+                )
+              ).length
+            }
+            label="Leads quentes"
+          />
+          <PipelineMetric
+            icon={Clock3}
+            value={leads.filter((lead) => !lead.notes).length}
+            label="Sem próximo passo"
+          />
+          <PipelineMetric
+            icon={LayoutGrid}
+            value={pipelineStages.length}
+            label="Etapas do funil"
+          />
         </div>
       </div>
-      <div
-        className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-200 bg-white px-4 py-3 gap-3 md:px-6"
-      >
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-200 bg-white px-4 py-3 gap-3 md:px-6">
         <div className="flex items-center gap-4 w-full sm:w-auto">
           <div className="relative flex-1 sm:flex-none">
             <Search

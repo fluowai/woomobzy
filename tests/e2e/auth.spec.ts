@@ -41,8 +41,6 @@ test.describe('Autenticação e cadastro', () => {
     await expect(
       page.getByRole('heading', { name: /perfil da sua imobiliária/i })
     ).toBeVisible();
-    await expect(
-      page.getByRole('button', { name: /avançar/i })
-    ).toBeVisible();
+    await expect(page.getByRole('button', { name: /avançar/i })).toBeVisible();
   });
 });

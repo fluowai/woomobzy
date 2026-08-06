@@ -11,27 +11,37 @@ router.get('/status', verifyAuth, async (req, res) => {
     const supabase = getSupabaseServer();
     const { data: org, error } = await supabase
       .from('organizations')
-      .select('id, name, plan_id, subscription_status, trial_ends_at, selected_plan_at, asaas_customer_id, asaas_subscription_id')
+      .select(
+        'id, name, plan_id, subscription_status, trial_ends_at, selected_plan_at, asaas_customer_id, asaas_subscription_id'
+      )
       .eq('id', req.orgId)
       .single();
 
     if (error || !org) {
-      return res.status(404).json({ error: 'Organizacao nao encontrada', code: 'ORG_NOT_FOUND' });
+      return res
+        .status(404)
+        .json({ error: 'Organizacao nao encontrada', code: 'ORG_NOT_FOUND' });
     }
 
     let asaasSubscription = null;
     if (org.asaas_subscription_id) {
       try {
-        asaasSubscription = await AsaasService.getSubscription(org.asaas_subscription_id);
+        asaasSubscription = await AsaasService.getSubscription(
+          org.asaas_subscription_id
+        );
       } catch (error) {
-        logger.warn('[SubscriptionStatus] Falha ao consultar Asaas:', error.message);
+        logger.warn(
+          '[SubscriptionStatus] Falha ao consultar Asaas:',
+          error.message
+        );
       }
     }
 
     const isActive = org.subscription_status === 'active';
     const isTrial = org.subscription_status === 'trial';
     const trialEndsAt = org.trial_ends_at ? new Date(org.trial_ends_at) : null;
-    const trialExpired = isTrial && trialEndsAt && trialEndsAt.getTime() < Date.now();
+    const trialExpired =
+      isTrial && trialEndsAt && trialEndsAt.getTime() < Date.now();
 
     return res.json({
       success: true,
@@ -48,7 +58,11 @@ router.get('/status', verifyAuth, async (req, res) => {
         },
         access: {
           allowed: isActive || !trialExpired,
-          reason: trialExpired ? 'TRIAL_EXPIRED' : org.subscription_status === 'payment_required' ? 'PAYMENT_REQUIRED' : 'OK',
+          reason: trialExpired
+            ? 'TRIAL_EXPIRED'
+            : org.subscription_status === 'payment_required'
+              ? 'PAYMENT_REQUIRED'
+              : 'OK',
         },
         asaas: asaasSubscription,
       },

@@ -8,7 +8,10 @@ export function verifyDocumensoWebhookSignature(payload, signature, secret) {
 
   try {
     const crypto = require('crypto');
-    const expected = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+    const expected = crypto
+      .createHmac('sha256', secret)
+      .update(payload)
+      .digest('hex');
     return signature === expected;
   } catch (error) {
     logger.error('Failed to verify Documenso webhook signature', error);

@@ -39,18 +39,24 @@ describe('computeLicenseState', () => {
   });
 
   it('draft, revogada, bloqueada e suspensa', () => {
-    expect(computeLicenseState({ license: makeLicense({ status: 'draft' }), now }).state).toBe(
-      LICENSE_STATES.DRAFT
-    );
-    expect(computeLicenseState({ license: makeLicense({ status: 'revoked' }), now }).state).toBe(
-      LICENSE_STATES.REVOKED
-    );
-    expect(computeLicenseState({ license: makeLicense({ status: 'blocked' }), now }).state).toBe(
-      LICENSE_STATES.BLOCKED
-    );
-    expect(computeLicenseState({ license: makeLicense({ status: 'suspended' }), now }).state).toBe(
-      LICENSE_STATES.SUSPENDED
-    );
+    expect(
+      computeLicenseState({ license: makeLicense({ status: 'draft' }), now })
+        .state
+    ).toBe(LICENSE_STATES.DRAFT);
+    expect(
+      computeLicenseState({ license: makeLicense({ status: 'revoked' }), now })
+        .state
+    ).toBe(LICENSE_STATES.REVOKED);
+    expect(
+      computeLicenseState({ license: makeLicense({ status: 'blocked' }), now })
+        .state
+    ).toBe(LICENSE_STATES.BLOCKED);
+    expect(
+      computeLicenseState({
+        license: makeLicense({ status: 'suspended' }),
+        now,
+      }).state
+    ).toBe(LICENSE_STATES.SUSPENDED);
   });
 
   it('expirada sem carência', () => {
@@ -64,7 +70,10 @@ describe('computeLicenseState', () => {
   });
 
   it('expirada em carência', () => {
-    const license = makeLicense({ expires_at: new Date(now - day).toISOString(), grace_days: 3 });
+    const license = makeLicense({
+      expires_at: new Date(now - day).toISOString(),
+      grace_days: 3,
+    });
     const result = computeLicenseState({ license, now });
     expect(result.state).toBe(LICENSE_STATES.GRACE);
     expect(result.graceRemainingMs).toBeGreaterThan(0);
@@ -96,16 +105,25 @@ describe('computeLicenseState', () => {
 describe('checkHeartbeatFreshness', () => {
   it('classifica fresh, stale e silent', () => {
     const opts = DEFAULT_POLICY_OPTIONS;
-    expect(checkHeartbeatFreshness({ lastHeartbeatAt: new Date(now - 1000).toISOString(), now }).ok).toBe(true);
     expect(
       checkHeartbeatFreshness({
-        lastHeartbeatAt: new Date(now - opts.heartbeatStaleAfterMs - 1000).toISOString(),
+        lastHeartbeatAt: new Date(now - 1000).toISOString(),
+        now,
+      }).ok
+    ).toBe(true);
+    expect(
+      checkHeartbeatFreshness({
+        lastHeartbeatAt: new Date(
+          now - opts.heartbeatStaleAfterMs - 1000
+        ).toISOString(),
         now,
       }).state
     ).toBe('stale');
     expect(
       checkHeartbeatFreshness({
-        lastHeartbeatAt: new Date(now - opts.heartbeatGraceAfterMs - 1000).toISOString(),
+        lastHeartbeatAt: new Date(
+          now - opts.heartbeatGraceAfterMs - 1000
+        ).toISOString(),
         now,
       }).state
     ).toBe('silent');
@@ -206,7 +224,10 @@ describe('evaluateLicense', () => {
   });
 
   it('em carência mantém acesso degradado', () => {
-    const expired = makeLicense({ expires_at: new Date(now - day).toISOString(), grace_days: 3 });
+    const expired = makeLicense({
+      expires_at: new Date(now - day).toISOString(),
+      grace_days: 3,
+    });
     const result = evaluateLicense({
       license: expired,
       installation: {
@@ -224,13 +245,19 @@ describe('evaluateLicense', () => {
 
 describe('buildBlockingDirectives', () => {
   it('bloqueio é não destrutivo', () => {
-    const directives = buildBlockingDirectives({ state: LICENSE_STATES.BLOCKED, license: {} });
+    const directives = buildBlockingDirectives({
+      state: LICENSE_STATES.BLOCKED,
+      license: {},
+    });
     expect(directives.hardBlock).toBe(true);
     expect(directives.message).toContain('dados preservados');
   });
 
   it('carência degrada sem bloquear', () => {
-    const directives = buildBlockingDirectives({ state: LICENSE_STATES.GRACE, license: {} });
+    const directives = buildBlockingDirectives({
+      state: LICENSE_STATES.GRACE,
+      license: {},
+    });
     expect(directives.hardBlock).toBe(false);
     expect(directives.degrade).toBe(true);
   });

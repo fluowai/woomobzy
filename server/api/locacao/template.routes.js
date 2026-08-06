@@ -251,4 +251,3 @@ router.post('/validate', verifyAuth, requireTenant, async (req, res) => {
 });
 
 export default router;
-

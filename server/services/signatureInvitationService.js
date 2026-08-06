@@ -24,7 +24,9 @@ async function getProviderConfig(orgId, userId, provider) {
     .select('api_key, webhook_secret, api_url')
     .eq('organization_id', orgId)
     .eq('provider', provider)
-    .or(`user_id.is.null,user_id.eq.${userId || '00000000-0000-0000-0000-000000000000'}`)
+    .or(
+      `user_id.is.null,user_id.eq.${userId || '00000000-0000-0000-0000-000000000000'}`
+    )
     .eq('is_active', true)
     .order('user_id', { ascending: false })
     .limit(1)
@@ -277,8 +279,7 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
     }
   }
 
-  static async _sendWooSign(sig, documentUrl, lease, orgId, userId) {
-  }
+  static async _sendWooSign(sig, documentUrl, lease, orgId, userId) {}
 
   static async _sendClickSign(sig, documentUrl, orgId, userId) {
     const config = await getProviderConfig(orgId, userId, 'clicksign');

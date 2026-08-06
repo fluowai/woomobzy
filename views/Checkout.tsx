@@ -45,7 +45,9 @@ const Checkout: React.FC = () => {
       }
     } catch (error) {
       setStep('error');
-      toast.error(error instanceof Error ? error.message : 'Erro ao processar pagamento');
+      toast.error(
+        error instanceof Error ? error.message : 'Erro ao processar pagamento'
+      );
     } finally {
       setLoading(false);
     }
@@ -72,7 +74,9 @@ const Checkout: React.FC = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-950 p-4">
       <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl md:p-8">
-        <h1 className="text-2xl font-bold text-slate-950">Finalizar Assinatura</h1>
+        <h1 className="text-2xl font-bold text-slate-950">
+          Finalizar Assinatura
+        </h1>
         <p className="mt-1 text-sm font-medium text-slate-500">
           Escolha o metodo de pagamento para liberar o acesso.
         </p>
@@ -85,12 +89,18 @@ const Checkout: React.FC = () => {
                 type="button"
                 onClick={() => setMethod(m)}
                 className={`flex w-full items-center gap-3 rounded-2xl border p-4 text-left transition ${
-                  method === m ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-blue-300'
+                  method === m
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-slate-200 hover:border-blue-300'
                 }`}
               >
                 {m === 'PIX' && <QrCode className="text-blue-600" size={24} />}
-                {m === 'BOLETO' && <CreditCard className="text-blue-600" size={24} />}
-                {m === 'CREDIT_CARD' && <CreditCard className="text-blue-600" size={24} />}
+                {m === 'BOLETO' && (
+                  <CreditCard className="text-blue-600" size={24} />
+                )}
+                {m === 'CREDIT_CARD' && (
+                  <CreditCard className="text-blue-600" size={24} />
+                )}
                 <span className="text-sm font-bold text-slate-950">{m}</span>
               </button>
             ))}
@@ -109,7 +119,9 @@ const Checkout: React.FC = () => {
         {step === 'processing' && (
           <div className="mt-10 flex flex-col items-center gap-3">
             <Loader2 className="animate-spin text-blue-600" size={48} />
-            <p className="text-sm font-semibold text-slate-500">Processando pagamento...</p>
+            <p className="text-sm font-semibold text-slate-500">
+              Processando pagamento...
+            </p>
           </div>
         )}
 
@@ -122,9 +134,13 @@ const Checkout: React.FC = () => {
 
             {method === 'PIX' && payment.pixCode && (
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-semibold text-slate-500">PIX Copia e Cola</p>
+                <p className="text-xs font-semibold text-slate-500">
+                  PIX Copia e Cola
+                </p>
                 <div className="mt-2 flex items-center gap-2">
-                  <code className="flex-1 break-all rounded-xl bg-white p-2 text-xs">{payment.pixCode}</code>
+                  <code className="flex-1 break-all rounded-xl bg-white p-2 text-xs">
+                    {payment.pixCode}
+                  </code>
                   <button
                     type="button"
                     onClick={copyPix}

@@ -1,5 +1,95 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-07] Página "Em breve" personalizada por revenda — RPC APLICADA em produção + verificação
+
+- **Continuidade**: change set anterior (RPC `get_reseller_branding` + `ComingSoon` com `resellerBranding` + `PublicLandingPage` carregando a RPC) pronto.
+- **Aplicado em produção** (`epgaftsjmqmpczvzsrcc`) via `exec_sql`: migration `20260807_reseller_branding_rpc.sql` **5/5 statements OK**.
+- **Verificação REST anon**: `{"slug_input":"lalbero"}` → Delazari (`primary_color=#064e3b`, `secondary_color=#d4af37`, `logo_url=null`); `{"slug_input":"okaimoveis"}` → vazio (HTTP 200) → cliente direto mantém padrão WooTech Imob.
+- **Build bloqueado por WIP de outra sessão**: `components/RuralLayout.tsx` com `isWorkspaceRoute` duplicada (linhas 61 e 156) — não é deste change set; não corrigir sem alinhar com a sessão dona.
+- **Pendente (maestro)**: validação visual (`imob.wootech.com.br/lalbero` → marca Delazari; cliente direto → WooTech Imob); definir logo da Delazari (`logo_url` null); revisar contraste do botão com cores claras. Nenhum commit/push.
+
+## [2026-08-07] Página "Em breve" personalizada por revenda (ComingSoon com marca da revenda)
+
+- **Solicitação (maestro)**: quando uma revenda cria um cliente, o site público (ex.: `https://imob.wootech.com.br/enzo-imoveis`) deve mostrar uma página "em breve" que promove a nova tecnologia (WooTech Imob) e fica **personalizada com a marca da revenda** (logo, cores e nome) quando o cliente foi criado sob uma revenda.
+- **Decisões (maestro)**: marca a promover = **WooTech Imob** (`COMMERCIAL_PRODUCT_NAME`); personalização = **marca da revenda** (logo+cores+nome) resolvida via `parent_id`; escopo = plano + implementação.
+- **Implementação**:
+  1. `migrations/20260807_reseller_branding_rpc.sql` (novo): RPC `public.get_reseller_branding(TEXT)` — resolve a org pai (`parent_id`) de um tenant (slug/subdomain/custom_domain), exige `is_reseller=true`, retorna `id, name, slug, logo_url, primary_color, secondary_color`. SECURITY DEFINER + grants anon/authenticated + `NOTIFY pgrst`.
+  2. `scripts/run-migrations.mjs`: migration adicionada à lista canônica.
+  3. `components/ComingSoon.tsx`: nova prop `resellerBranding` (`{ name, logoUrl, primaryColor, secondaryColor }`). Quando presente, a página usa **logo e nome da revenda** no rodapé ("Desenvolvido por") e aplica **cores da revenda** via CSS variables (`--cs-*`) em badge, acentos, botão de captura e glows; sem revenda, mantém o padrão WooTech Imob (indigo/violeta + `logo-wootech-imob.svg`).
+  4. `views/PublicLandingPage.tsx`: após resolver a org, chama `get_reseller_branding` (silencioso) e passa o resultado ao `ComingSoon`.
+- **Gates**: `npm run type-check` ✓; `npx eslint components/ComingSoon.tsx views/PublicLandingPage.tsx` ✓ (0 erros; 3 warnings pré-existentes em PublicLandingPage). Sem commit/push.
+- **Pendente (maestro)**: aplicar a migration em produção via `exec_sql` (ou rodar `run-migrations.mjs`); validar visualmente um cliente de revenda (ex.: criar cliente sob a Delazari e conferir logo/cores/nome da Delazari na página) e um cliente direto (padrão WooTech Imob). Ajustar cores se o contraste do botão com a cor primária da revenda ficar ruim.
+
+## [2026-08-07] Ocultar QR Code do WhatsApp do DevTools (F12) — token de pareamento exposto como credencial
+
+- **Motivação**: ao pressionar F12, o código cru do QR (token de pareamento do WhatsApp) ficava visível em 3 pontos: (1) **DOM** — `QRCodeModal.tsx` renderizava via `QRCodeSVG`, colocando o token como `<path>` legível na árvore de elementos; (2) **listagem de instâncias** — `server/api/whatsapp/index.js` retornava o `qr_code` persistido no banco em `GET /api/whatsapp/instances`; (3) **respostas de instância do Go** — o modelo `Instance` serializava `qr_code`.
+- **Correção**:
+  1. `views/WhatsApp/QRCodeModal.tsx`: trocado `QRCodeSVG` → `QRCodeCanvas` (qrcode.react v4), removendo o token como texto/`<path>` do DOM; removido `title` descritivo.
+  2. `server/api/whatsapp/index.js`: listagem de instâncias não seleciona nem devolve `qr_code` (o token persistido/velho não aparece mais a cada carga do painel).
+  3. `whatsapp-service/internal/models/models.go`: `Instance.QRCode` agora `json:"-"` — instâncias serializadas pelo Go não expõem mais o token (repo continua gravando via `db`).
+- **Mantido de propósito**: `GET /instances/:id/qrcode` e os eventos WS `qr_code` continuam entregando o token — é o fluxo ativo de pareamento (necessário para gerar o QR). Limitação honesta: o token cru segue presente na aba Network durante o pareamento ativo (validade curta); ocultar 100% exigiria renderizar o QR como imagem no servidor.
+- **Gates**: `npm run type-check` ✓; `npx eslint views/WhatsApp/QRCodeModal.tsx` ✓ (0 erros, 1 warning pré-existente de exhaustive-deps); `npm run test` ✓ 36 arquivos / 254 testes; `node --check server/api/whatsapp/index.js` ✓; Go `go build ./...` + `go vet` + `go test` (handlers/whatsapp/models) ✓ via cópia ASCII em temp (path com acento corrompe o módulo Go no Windows).
+- **Pendente (maestro)**: validação visual do QR no navegador (continuar escaneando normalmente) e decisão se quer o passo extra de renderizar o QR como imagem no servidor. Nenhum commit/push.
+
+## [2026-08-07] UserManagement: 400 ao aprovar/desativar usuário — coluna `approved` ausente em profiles
+
+- **Sintoma**: console em `/urban/settings` mostra `profiles?id=eq.<uuid>` → **400** e `[ERROR] Error updating user: Object`.
+- **Causa raiz**: `views/admin/UserManagement.tsx` faz `supabase.from('profiles').update({ approved: true/false })` (linhas 394, 498, 593) e `{ role }`; a coluna **`approved` não existe** em `profiles` (confirmado em todos os schemas base + migrations; worklog 06/08 já apontava o mesmo problema no onboarding) → PostgREST devolve 400 "could not find the 'approved' column" → `alert('Erro ao atualizar usuário')`.
+- **Problema secundário**: única policy de UPDATE em profiles era self-only (`auth.uid() = id`) → admin não conseguia alterar role/aprovação de **outros** usuários da mesma org (200 sem afetar linhas, falha silenciosa).
+- **Correção** (`migrations/20260807_fix_admin_approved_column_rls.sql`, novo):
+  1. `ALTER TABLE profiles ADD COLUMN IF NOT EXISTS approved boolean NOT NULL DEFAULT false` + `UPDATE profiles SET approved = true WHERE approved = false` (backfill: usuários existentes ficam aprovados; novos signups nascem `approved=false` → aparecem como pendentes).
+  2. Helper `public.is_org_admin()` (SECURITY DEFINER, espelha `is_superadmin()`) para checar `role IN ('admin','superadmin')` sem RLS recursivo.
+  3. Policy `"Admins can update profiles in their organization"` FOR UPDATE: admins/superadmins da própria org podem atualizar perfis; `WITH CHECK` impede escalada para `role='superadmin'` por quem não é superadmin.
+  4. **Hardening extra**: policy pré-existente `"Profiles isolation"` (FOR ALL, WITH CHECK implícito = USING) permitia que qualquer membro da org alterasse role (inclusive para `superadmin`) — adicionado `WITH CHECK` que só permite gravar role privilegiado se o ator for admin/superadmin (`role='admin'` exige `is_org_admin()`; `role='superadmin'` exige `is_superadmin()`).
+  - Adicionada à lista canônica de `scripts/run-migrations.mjs`.
+- **APLICADA EM PRODUÇÃO** (`epgaftsjmqmpczvzsrcc`) via `exec_sql` (service role): **7/7 statements OK** (2a execução: 5/5 da 1a passada, corrigindo `UPDATE` sem WHERE e `NEW.role` — inexistente em policy RLS → usa coluna direta).
+- **Verificação (pg direto, transações revertidas)**: coluna `approved` presente; **19/19 perfis `approved=true`**; função `is_org_admin()` e policy presentes em `pg_policies`. Simulação RLS como `authenticated`: admin atualiza `approved` de outro usuário da org (rowCount 1), **escalada para `superadmin` BLOQUEADA** (RLS error), promoção broker→admin OK, mudança de nome OK. ROLLBACK confirmado (nada persistido além da migration).
+- **Pendente**: validação visual no navegador (`/urban/settings` → usuários: aprovar/mudar role/desativar). Nenhum commit/push.
+
+## [2026-08-06] DomainRouter: 406 ao acessar via IP da LAN
+
+- **Sintoma**: acessando `http://192.168.15.2:3006` o console mostra `get_tenant_by_any_domain → 406` e `[Router] Domain not found in DB`.
+- **Causa**: IP da LAN não era `localhost`/`127.0.0.1` nem host da plataforma → router tratava como domínio customizado e chamava a RPC. Ela retorna 0 rows para um IP → PostgREST responde `406 PGRST116` ("Cannot coerce the result to a single JSON object"). O `.maybeSingle()` do supabase-js engole, mas o 406 polui o console.
+- **Correção**: nova helper `isIpAddress` em `components/DomainRouter.tsx`; IP literal (IPv4/IPv6) conta como `isSystemDomain`. Semântica correta: IP não é domínio de tenant.
+- **Validação**: `npx eslint components/DomainRouter.tsx` sem erros.
+
+## [2026-08-06] Onboarding: WhatsApp 500 — whatsapp-service apontava para o projeto Supabase errado
+
+- **Sintoma**: após o onboarding criar o profile/org corretamente, `POST /api/whatsapp/instances` → **500** (antes 403). Porta 3100 no ar.
+- **Causa raiz**: `whatsapp-service/.env` apontava para `lkzcsaydpcnypdevoikr` (projeto dev antigo) enquanto a app usa `epgaftsjmqmpczvzsrcc` (produção). O Go valida `SELECT EXISTS(... FROM organizations WHERE id=$1)` e a org recém-criada não existia no banco dele → `invalid tenant: organization not found` → 500.
+- **Correção**: alinhei `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` e `SUPABASE_DB_URL` do `whatsapp-service/.env` com o `.env` da app. Reiniciei o `whatsapp-service.exe` (PID antigo 16904 → novo 19956) a partir de `whatsapp-service/` (godotenv lê `.env` do cwd), com stdout/stderr em `run_stdout.txt`/`run_stderr.txt`.
+- **Validação**: `POST /api/instances` direto no Go com tenant `902d0153-...` → **201** (antes 500); instância de teste criada e deletada.
+- **Nota**: `.env` da app aponta para PRODUÇÃO — cuidado ao testar onboarding com dados reais.
+
+## [2026-08-06] Onboarding: profile nunca criado (upsert com colunas inexistentes) + envio triplo
+
+- **Sintoma**: onboarding "funcionava" (criava usuário + org) mas o novo usuário ficava **sem profile** → AuthContext não achava perfil, `/api/whatsapp/instances` dava **403** (`requireTenant` sem org), e o painel não iniciava.
+- **Causa raiz**: o upsert de `profiles` em `server/routes/onboarding.js` enviava `phone`, `creci` e `approved` — colunas que **não existem** na tabela `profiles` (confirmado via `information_schema.columns` no banco; `profiles` só tem `id, organization_id, name, email, role, avatar_url, created_at, updated_at`; a migração `20260729` adiciona `phone`/`creci` em **organizations**, não em profiles). O erro 42703 era engolido por `console.warn` → request retornava 200 sem profile. O `.env` aponta para a produção (`epgaftsjmqmpczvzsrcc`).
+- **Causa 2**: o form de onboarding disparava **3 POSTs simultâneos** (Enter/cliques rápidos — `handleCreateAccount` sem guard de `loading`, o `disabled` do botão não basta no mesmo frame) → corrida que criava orgs duplicadas.
+- **Correção**:
+  1. `server/routes/onboarding.js`: upsert de profile agora só com colunas reais (`id, organization_id, role, name, email`); erro do upsert passou a `console.error`.
+  2. `views/Onboarding.tsx`: `handleCreateAccount` com `if (loading) return;`.
+- **Gates**: `node --check` OK; eslint sem erros (warnings de destructuring pré-existentes). Sem commit/push.
+
+## [2026-08-06] Onboarding: slug duplicado (organizations_slug_key) + retomada de conta órfã
+
+- **Sintoma**: `POST /api/onboarding` → 400 `Erro ao criar organização: duplicate key value violates unique constraint "organizations_slug_key"` (slug derivado do nome da agência já existia no banco).
+- **Causa raiz**: slug gerado deterministicamente a partir do `agencyName` sem verificar colisão; além disso, o fluxo cria o usuário no auth **antes** do insert da org → tentativa que falha no slug deixa usuário criado sem organização (conta órfã), e o retry com o mesmo e-mail caía em "já cadastrado" (loop).
+- **Correção** (`server/routes/onboarding.js`):
+  1. `ensureUniqueSlug` + `slugifyAgencyName`: gera slug único (sufixo `-2`, `-3`, ...) consultando `organizations` antes de inserir.
+  2. Retomada de onboarding: se `createUser` retornar "already registered" **e** o perfil não tiver `organization_id`, busca o id no `auth.users` via `server/lib/pg.js` (`DATABASE_URL`) e continua o fluxo (cria org + profile). Se o perfil já tiver org, mantém o erro amigável de "e-mail já cadastrado".
+- **Gates**: `node --check` OK. Sem commit/push.
+
+## [2026-08-06] Rate limit 429 bloqueando onboarding e `/api/public/texts` (dev local)
+
+- **Sintoma**: `POST /api/onboarding` e `GET /api/public/texts` retornando `429 Too Many Requests` mesmo em uso normal.
+- **Causa raiz**: (1) limiter global (`server/index.js`, 1000 req/15min por IP) era exaurido pelo tráfego legítimo do dashboard (polling WhatsApp, múltiplas abas — tudo compartilha o mesmo bucket de IP atrás do proxy do Vite), e então bloqueava até reads públicos baratos como `GET /api/public/texts`; (2) `authLimiter` do onboarding (`server/routes/onboarding.js`, max 10/15min por IP) **consumia cota em tentativas falhas** — cada retry após erro 400/500 esgotava a quota e trancava o usuário.
+- **Correção**:
+  1. `server/index.js` — global limiter: max 1000 → 3000, `standardHeaders`, e `skip` para `/api/public/*` e `/api/onboarding` (já têm limiters próprios mais rígidos; não devem ser vítima de tráfego agregado).
+  2. `server/routes/onboarding.js` — `authLimiter`: max 10 → 20, `requestWasSuccessful` (falhas não consomem cota), `keyGenerator` por IP+email (anti criação em massa), `standardHeaders`.
+- **Gates**: `node --check` OK nos 2 arquivos; `requestWasSuccessful` disponível (express-rate-limit 7.5.1).
+- Nenhum commit/push executado.
+
 ## [2026-08-06] Domínios InoveBrokers (inovebrokers.com.br / app.inovebrokers.com.br) — diagnóstico + correção
 
 - **Sintoma**: os 2 domínios apontavam para o VPS (DNS A → 207.58.153.219) mas davam **erro SSL** e **404** em vez do sistema. Probes: HTTPS responde com `CN=TRAEFIK DEFAULT CERT` (self-signed) + 404 → **nenhum router Traefik ativo** para esses hosts.

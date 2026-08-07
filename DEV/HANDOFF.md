@@ -1,5 +1,28 @@
 # Handoff
 
+## 2026-08-07 — "Em breve" personalizado por revenda: RPC aplicada em produção + frontend pronto
+
+- **RPC `get_reseller_branding` APLICADA em produção** (`epgaftsjmqmpczvzsrcc`) via `exec_sql`: 5/5 OK. Verificada via REST anon: `lalbero` → Delazari (cores `#064e3b`/`#d4af37`, logo null); `okaimoveis` → vazio (padrão WooTech Imob).
+- **Mudanças no working tree (sem commit)**: `migrations/20260807_reseller_branding_rpc.sql` (novo), `scripts/run-migrations.mjs` (lista canônica), `components/ComingSoon.tsx` (prop `resellerBranding`), `views/PublicLandingPage.tsx` (carrega RPC).
+- **Gates**: type-check ✓, eslint 0 erros ✓. **Build bloqueado por WIP de outra sessão** em `components/RuralLayout.tsx` (`isWorkspaceRoute` duplicada nas linhas 61/156) — arquivo não tocado nesta tarefa.
+- **Pendente (maestro)**: validar visualmente um cliente de revenda (ex.: `imob.wootech.com.br/lalbero` → logo/cores/nome Delazari na página "Em breve") e um cliente direto; configurar logo da Delazari (`logo_url` null hoje); revisar contraste do botão com cores claras.
+- **Atenção**: working tree tem WIP de várias sessões — conferir `git status`; não misturar este change set com outros no commit.
+
+## 2026-08-07 — QR Code do WhatsApp ocultado do DevTools (F12)
+
+- **Sintoma**: ao abrir o F12, o token cru do QR de pareamento aparecia como texto no DOM (SVG) e nas respostas de instâncias.
+- **Correção** (working tree, sem commit): `QRCodeModal.tsx` renderiza em `<canvas>` (sem texto legível no DOM); listagem de instâncias (`server/api/whatsapp/index.js`) e serialização Go (`models.Instance.QRCode` → `json:"-"`) não devolvem mais o `qr_code`. Fluxo de pareamento ativo (`/qrcode` + WS `qr_code`) mantido.
+- **Verificado**: type-check, eslint (1 warning pré-existente), 254 testes vitest, `node --check`, Go build/vet/test via cópia ASCII em temp.
+- **Próxima ação (maestro)**: validar o QR no navegador (continuar escaneando) e decidir se quer renderizar o QR como imagem no servidor para esconder também da aba Network. Nenhum commit/push.
+
+## 2026-08-07 — UserManagement 400: migration aplicada e verificada em produção
+
+- **Sintoma**: `/urban/settings` → `profiles?id=eq.<uuid>` 400 + `[ERROR] Error updating user` (aprovar/rejeitar/desativar/mudar role em Gestão de Usuários).
+- **Causa raiz**: coluna `approved` não existia em `profiles` (PATCH → 400); e a policy `"Profiles isolation"` (FOR ALL sem WITH CHECK) permitia escalada de role por qualquer membro da org.
+- **Aplicado em produção** (`epgaftsjmqmpczvzsrcc`) via `exec_sql`: `migrations/20260807_fix_admin_approved_column_rls.sql` **7/7 statements OK** — coluna `approved` (backfill true), helper `is_org_admin()`, policy `"Admins can update profiles in their organization"`, e hardening da `"Profiles isolation"` (WITH CHECK: role privilegiado só por admin/superadmin).
+- **Verificado (pg + simulação RLS revertida)**: 19/19 perfis `approved=true`; admin atualiza `approved`/role/nome de usuário da org OK; escalada para `superadmin` BLOQUEADA; promoção broker→admin OK.
+- **Pendente (maestro)**: validação visual em `/urban/settings` → usuários (aprovar pendente, mudar role, desativar) e decisão de commit/push. Migration já está na lista canônica de `scripts/run-migrations.mjs`. Nenhum commit/push executado.
+
 ## 2026-08-06 — Domínios InoveBrokers: causa raiz encontrada + correção no repo — falta redeploy no Portainer
 
 - **Sintoma**: `inovebrokers.com.br` e `app.inovebrokers.com.br` davam **erro SSL** (`CN=TRAEFIK DEFAULT CERT`, self-signed) e **404** em vez do sistema. DNS A OK nos 2 (207.58.153.219).

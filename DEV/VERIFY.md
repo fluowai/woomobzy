@@ -1,5 +1,33 @@
 # Verificação
 
+## 2026-08-07 — "Em breve" personalizado por revenda: RPC APLICADA e VERIFICADA em produção
+
+- **RPC aplicada em produção** (`epgaftsjmqmpczvzsrcc`) via `exec_sql` (service role): `migrations/20260807_reseller_branding_rpc.sql` → **5/5 statements OK**.
+- **Verificação REST anon**:
+  - `get_reseller_branding {"slug_input":"lalbero"}` → retorna a revenda Delazari (`e2403fc5...`, `primary_color=#064e3b`, `secondary_color=#d4af37`, `logo_url=null`) — cliente `lalbero` tem `parent_id` = Delazari.
+  - `get_reseller_branding {"slug_input":"okaimoveis"}` → `Object[]` vazio (HTTP 200) — cliente sem revenda → página mantém o padrão WooTech Imob.
+- **Código**: `components/ComingSoon.tsx` (prop `resellerBranding`; logo/nome da revenda no rodapé + cores via CSS vars `--cs-*`; fallback WooTech Imob) e `views/PublicLandingPage.tsx` (carrega `get_reseller_branding`).
+- **Evidência local**: `npm run type-check` OK; eslint dos 2 arquivos OK (0 erros; 3 warnings pré-existentes em PublicLandingPage).
+- **Build BLOQUEADO por WIP de outra sessão**: `components/RuralLayout.tsx` declara `isWorkspaceRoute` 2x (linhas 61 e 156) — arquivo não tocado nesta tarefa; não corrigir sem alinhar com a sessão dona.
+- **Risco restante**: `logo_url` da Delazari é `null` (fallback para `logo-wootech-imob.svg`); contraste do botão com cores claras de revenda a validar visualmente.
+
+## 2026-08-07 — QR do WhatsApp fora do DevTools (DOM/API) — verificado em build/testes
+
+- **F12 antes**: `QRCodeModal.tsx` usava `QRCodeSVG` (qrcode.react) → o token de pareamento cru virava `<path>` no DOM (selecionável/copiável); `GET /api/whatsapp/instances` retornava o `qr_code` persistido; `GET /instances/:id` do Go também.
+- **Depois**: `QRCodeCanvas` (apenas pixels no canvas, token só em memória React); listagem do Node sem `qr_code`; Go `Instance.QRCode` `json:"-"`.
+- **Evidência**: `npm run type-check` OK; eslint 0 erros (1 warning pré-existente); vitest 36 arquivos / 254 testes OK; `node --check` OK; Go `go build ./...` + `go vet` + `go test ./internal/{handlers,whatsapp,models}` OK (build via cópia ASCII em temp).
+- **Limitação documentada**: a aba Network ainda mostra o token no endpoint `/instances/:id/qrcode` e nos frames WS `qr_code` durante o pareamento ativo. Solução 100% = gerar a imagem do QR no servidor (proposta, não implementada).
+
+## 2026-08-07 — Fix do 400 em UserManagement (coluna `approved` + RLS de admin) — APLICADO e VERIFICADO em produção
+
+- **Causa confirmada por código**: `views/admin/UserManagement.tsx` envia `{ approved }`/`{ role }` via `supabase.from('profiles').update(...)`; nenhum schema do repo tinha `approved` em `profiles` → PATCH 400 do PostgREST (coluna inexistente) dispara `Error updating user` (logger.ts:101).
+- **RLS original**: única policy de UPDATE self-only (`auth.uid() = id`) + `"Profiles isolation"` FOR ALL (WITH CHECK implícito = USING) que deixava qualquer membro da org alterar role (inclusive para `superadmin`).
+- **Migration** `migrations/20260807_fix_admin_approved_column_rls.sql`: 1) `ADD COLUMN approved` + backfill `true`; 2) helper `is_org_admin()` SECURITY DEFINER; 3) policy FOR UPDATE (admin/superadmin da org; bloqueia escalada a `superadmin`); 4) hardening da `"Profiles isolation"` com WITH CHECK (role privilegiado só gravável por admin/superadmin).
+- **APLICADA em produção** via `exec_sql` (service role): 2ª execução **7/7 statements OK** (1ª execução falhou 2: `UPDATE` sem WHERE — guarda do `exec_sql` — e `NEW.role` inexistente em policy RLS; corrigidos para `WHERE approved = false` e coluna direta `role`).
+- **Verificação pg direto**: `has_approved_col=1`, `approved_true=19`, `approved_false=0`, `has_fn=1`, `has_policy=1`. `pg_policies` confirma USING/WITH CHECK das policies.
+- **Simulação RLS (transações revertidas, como `authenticated` com JWT do admin)**: admin→org `approved=true` rowCount **1**; escalada broker→`superadmin` **BLOQUEADA** (RLS error); promoção broker→admin rowCount **1**; mudança de nome rowCount **1**. ROLLBACK OK — apenas a migration persistiu.
+- `scripts/run-migrations.mjs` com a migration na lista canônica; `node --check` OK. Sem mudança TS. Sem commit/push.
+
 ## 2026-08-06 — Domínios InoveBrokers: RPC aplicada em produção + stack atualizada
 
 - Probes externas antes do fix: `https://inovebrokers.com.br` e `https://app.inovebrokers.com.br` → HTTPS com `CN=TRAEFIK DEFAULT CERT` (verify return code 18, self-signed) e HTTP 404 (`curl -k`). DNS A OK → 207.58.153.219 nos 2.

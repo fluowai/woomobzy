@@ -36,6 +36,12 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
   const [organization, setOrganization] = useState<any>(null);
   const [showMainSite, setShowMainSite] = useState(false);
   const [properties, setProperties] = useState<any[]>([]);
+  const [resellerBranding, setResellerBranding] = useState<{
+    name?: string | null;
+    logoUrl?: string | null;
+    primaryColor?: string | null;
+    secondaryColor?: string | null;
+  } | null>(null);
   const isImmediateOkaSite = activeSlug === 'okaimoveis';
 
   const page = landingPage;
@@ -153,6 +159,27 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
 
       setOrganization(resolvedOrg);
       const orgId = resolvedOrg.id;
+
+      // 1.5 Resolve branding da revenda (se o cliente for filho de uma revenda)
+      try {
+        const { data: resellerData } = await supabase.rpc(
+          'get_reseller_branding',
+          { slug_input: slugOrOrg }
+        );
+        const resellerRow = resellerData?.[0];
+        if (resellerRow) {
+          setResellerBranding({
+            name: resellerRow.name,
+            logoUrl: resellerRow.logo_url,
+            primaryColor: resellerRow.primary_color,
+            secondaryColor: resellerRow.secondary_color,
+          });
+        } else {
+          setResellerBranding(null);
+        }
+      } catch {
+        setResellerBranding(null);
+      }
 
       // 2. Load Settings
       if (orgId) {
@@ -299,6 +326,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
       <ComingSoon
         organizationId={organization?.id || ''}
         agencyName={agencyName}
+        resellerBranding={resellerBranding}
       />
     );
   }

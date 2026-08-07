@@ -82,7 +82,14 @@ router.post('/accounts/test', async (req, res) => {
       message: 'Conexao IMAP/SMTP validada com sucesso.',
     });
   } catch (error) {
-    res.status(error.statusCode || 400).json({ error: error.message });
+    console.error(
+      `[Email] POST /api/email/accounts/test falhou (org ${req.orgId}, ${req.body?.email || '?'}):`,
+      error.message
+    );
+    const errorMessage = error instanceof z.ZodError
+      ? 'Preencha todos os campos corretamente: ' + error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+      : error.message;
+    res.status(error.statusCode || 400).json({ error: errorMessage });
   }
 });
 
@@ -139,7 +146,14 @@ router.post('/accounts', async (req, res) => {
     if (error) throw error;
     res.status(201).json({ success: true, account: data });
   } catch (error) {
-    res.status(error.statusCode || 400).json({ error: error.message });
+    console.error(
+      `[Email] POST /api/email/accounts falhou (org ${req.orgId}, ${req.body?.email || '?'}):`,
+      error.message
+    );
+    const errorMessage = error instanceof z.ZodError
+      ? 'Preencha todos os campos corretamente: ' + error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+      : error.message;
+    res.status(error.statusCode || 400).json({ error: errorMessage });
   }
 });
 

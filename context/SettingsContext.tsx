@@ -56,6 +56,11 @@ export const SettingsProvider: React.FC<{
 }> = ({ children, organizationId: propsOrgId }) => {
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
   const [settingsLoading, setSettingsLoading] = useState(true);
+  // After the first successful load, subsequent reloads (ex.: org becomes
+  // available right after onboarding auto-login) must run in background. Flipping
+  // settingsLoading back to true unmounts AppRoutes (AppContent spinner gate),
+  // which destroys Onboarding's local step state and restarts the wizard (loop).
+  const hasLoadedOnce = React.useRef(false);
 
   const authContext = useAuth();
   const platformTenant = useContext(PlatformTenantContext);
@@ -72,7 +77,9 @@ export const SettingsProvider: React.FC<{
     }
 
     try {
-      setSettingsLoading(true);
+      if (!hasLoadedOnce.current) {
+        setSettingsLoading(true);
+      }
 
       if (!activeOrgId) {
         logger.info(
@@ -137,6 +144,7 @@ export const SettingsProvider: React.FC<{
       logger.error('❌ [SettingsContext] Unexpected error:', e);
     } finally {
       logger.info('🏁 [SettingsContext] finished loading cycle.');
+      hasLoadedOnce.current = true;
       setSettingsLoading(false);
     }
   }, [propsOrgId, profileOrgId, platformTenant?.id, authLoading]);

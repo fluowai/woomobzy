@@ -1,8 +1,9 @@
 import { Queue } from 'bullmq';
-import { redisConfig } from '../index.js';
+
+const redisUrl = process.env.REDIS_URL || 'redis://redis:6379';
 
 export const instagramQueue = new Queue('instagram-worker-tasks', {
-  connection: redisConfig.connection,
+  connection: redisUrl,
   defaultJobOptions: {
     removeOnComplete: { count: 50 },
     removeOnFail: { count: 100 },

@@ -62,12 +62,10 @@ router.post('/checkout', verifyAuth, verifyAdmin, async (req, res) => {
       plan.price_monthly === undefined ||
       Number(plan.price_monthly) <= 0
     ) {
-      return res
-        .status(400)
-        .json({
-          error: 'Plano sem preco configurado',
-          code: 'PLAN_WITHOUT_PRICE',
-        });
+      return res.status(400).json({
+        error: 'Plano sem preco configurado',
+        code: 'PLAN_WITHOUT_PRICE',
+      });
     }
 
     let customer = null;

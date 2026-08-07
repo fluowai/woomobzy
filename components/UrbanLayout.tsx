@@ -1,5 +1,5 @@
 import { logger } from '@/utils/logger';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -61,6 +61,12 @@ const UrbanLayout: React.FC = () => {
   const isWorkspaceRoute =
     pathname.startsWith('/urban/whatsapp') ||
     pathname.startsWith('/urban/email');
+
+  useEffect(() => {
+    if (isWorkspaceRoute) {
+      setIsDesktopSidebarOpen(false);
+    }
+  }, [isWorkspaceRoute]);
   const isLandingPageEditor =
     (pathname.includes('/landing-pages/') ||
       pathname.includes('/site/pages/')) &&

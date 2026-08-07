@@ -3,6 +3,7 @@ version: '3.8'
 services:
   frontend:
     image: ghcr.io/fluowai/woomobzy-frontend:latest
+    pull_policy: always
     environment:
       VITE_API_URL: 'same-origin'
       VITE_WHATSAPP_API_URL: '/api/whatsapp'
@@ -32,6 +33,7 @@ services:
 
   api:
     image: ghcr.io/fluowai/woomobzy-api:latest
+    pull_policy: always
     environment:
       NODE_ENV: production
       PORT: 3002
@@ -100,6 +102,7 @@ services:
 
   whatsapp-service:
     image: ghcr.io/fluowai/woomobzy-whatsapp:latest
+    pull_policy: always
     environment:
       NODE_ENV: production
       PORT: 3100
@@ -185,7 +188,7 @@ services:
       MINIO_APP_SECRET_KEY: '${MINIO_SECRET_KEY}'
     networks:
       - imobfluow_internal
-    restart: "no"
+    restart: 'no'
 
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
@@ -205,6 +208,7 @@ services:
 
   agro-intelligence:
     image: ghcr.io/fluowai/woomobzy-agro:latest
+    pull_policy: always
     networks:
       - imobfluow_internal
 

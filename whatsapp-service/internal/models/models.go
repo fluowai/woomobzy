@@ -22,7 +22,7 @@ type Instance struct {
 	TenantID  *uuid.UUID     `json:"tenant_id,omitempty" db:"tenant_id"`
 	Name      string         `json:"name" db:"name"`
 	Status    InstanceStatus `json:"status" db:"status"`
-	QRCode    string         `json:"qr_code,omitempty" db:"qr_code"`
+	QRCode    string         `json:"-" db:"qr_code"`
 	Phone     string         `json:"phone,omitempty" db:"phone"`
 	JID       string         `json:"jid,omitempty" db:"jid"`
 	CreatedAt time.Time      `json:"created_at" db:"created_at"`

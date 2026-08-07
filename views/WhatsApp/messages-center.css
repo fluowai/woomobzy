@@ -166,10 +166,18 @@
 
 .wa-message-center .wa-chat-window {
   display: grid;
-  grid-template-columns: minmax(460px, 1fr) 340px;
+  grid-template-columns: minmax(460px, 1fr);
   grid-template-rows: minmax(0, 1fr);
   min-width: 0;
   background: #fff;
+}
+
+.wa-message-center .wa-chat-window.details-open {
+  grid-template-columns: minmax(460px, 1fr) 340px;
+}
+
+.wa-chat-window:not(.details-open) .wa-lead-panel {
+  display: none;
 }
 
 .wa-conversation-column {
@@ -372,71 +380,109 @@
   background: #effbf4;
 }
 
-.wa-composer {
+.wa-composer-whatsapp {
   position: relative;
   margin: 0 14px 12px;
-  padding: 12px 14px 9px;
-  border: 1px solid #dce4e0;
-  border-radius: 10px;
-  background: #fff;
+  background: transparent;
 }
 
-.wa-composer textarea {
+.wa-composer-whatsapp .wa-composer-inner {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  min-height: 52px;
+}
+
+.wa-composer-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+}
+
+.wa-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #54656f;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.wa-icon-btn:hover {
+  background: #f0f2f5;
+}
+
+.wa-composer-input-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #dce4e0;
+  border-radius: 8px;
+  padding: 0 40px 0 12px;
+  min-height: 42px;
+}
+
+.wa-composer-whatsapp textarea {
   width: 100%;
-  min-height: 46px;
+  max-height: 120px;
+  padding: 12px 0;
   resize: none;
   border: 0;
   background: transparent;
-  color: #253129;
+  color: #111b21;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 0.93rem;
+  line-height: 20px;
   outline: none;
 }
 
-.wa-composer textarea::placeholder {
-  color: #9aa39e;
-  font-style: italic;
+.wa-composer-whatsapp textarea::placeholder {
+  color: #8696a0;
 }
-.wa-composer-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.wa-composer-toolbar > div {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.wa-composer-toolbar button {
-  display: inline-flex;
-  min-width: 30px;
-  height: 30px;
-  padding: 0 7px;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
+
+.wa-ai-button-inline {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
   border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: #647168;
-}
-.wa-composer-toolbar button:hover {
-  background: #f1f7f3;
-  color: var(--mc-green-dark);
-}
-.wa-composer-toolbar .wa-ai-button {
-  margin-left: 4px;
+  border-radius: 6px;
   background: #f1f4f2;
-  font-size: 0.7rem;
+  color: var(--mc-green);
+  cursor: pointer;
 }
-.wa-composer-toolbar .wa-send-btn {
+
+.wa-ai-button-inline:hover {
+  background: #e4e9e6;
+}
+
+.wa-composer-right {
+  padding-bottom: 8px;
+}
+
+.wa-composer-right .wa-send-btn {
+  display: grid;
+  place-items: center;
   width: 40px;
   height: 40px;
-  border-radius: 9px;
+  border: 0;
+  border-radius: 50%;
   background: var(--mc-green);
   color: #fff;
+  cursor: pointer;
 }
-.wa-composer-toolbar .wa-send-btn:disabled {
+
+.wa-composer-right .wa-send-btn:disabled {
   background: #c9d5ce;
   cursor: not-allowed;
 }
@@ -517,16 +563,40 @@
   border-radius: 9px;
   background: #fff;
 }
-.wa-lead-card > header {
+details.wa-accordion summary {
   display: flex;
-  height: 34px;
+  height: 38px;
   padding: 0 10px;
   align-items: center;
-  gap: 7px;
-  border-bottom: 1px solid #edf1ef;
+  justify-content: space-between;
+  border-bottom: 1px solid transparent;
   color: #36423b;
-  font-size: 0.69rem;
+  font-size: 0.72rem;
   font-weight: 750;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+details.wa-accordion[open] summary {
+  border-bottom-color: #edf1ef;
+}
+details.wa-accordion summary::-webkit-details-marker {
+  display: none;
+}
+details.wa-accordion summary > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+details.wa-accordion .wa-accordion-icon {
+  color: #6f7b74;
+  transition: transform 0.2s;
+}
+details.wa-accordion[open] .wa-accordion-icon {
+  transform: rotate(180deg);
+}
+.wa-accordion-content {
+  padding-bottom: 8px;
 }
 .wa-lead-identity {
   padding-top: 10px;

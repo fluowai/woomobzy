@@ -38,12 +38,10 @@ router.post('/cancel', verifyAuth, verifyAdmin, async (req, res) => {
 
     const subscriptionId = asaasSubscriptionId || org.asaas_subscription_id;
     if (!subscriptionId) {
-      return res
-        .status(400)
-        .json({
-          error: 'Assinatura nao encontrada',
-          code: 'SUBSCRIPTION_NOT_FOUND',
-        });
+      return res.status(400).json({
+        error: 'Assinatura nao encontrada',
+        code: 'SUBSCRIPTION_NOT_FOUND',
+      });
     }
 
     let asaasResponse = null;
@@ -72,12 +70,10 @@ router.post('/cancel', verifyAuth, verifyAdmin, async (req, res) => {
         '[SubscriptionCancel] Erro ao atualizar organizacao:',
         updateError
       );
-      return res
-        .status(500)
-        .json({
-          error: 'Falha ao atualizar assinatura',
-          code: 'DB_UPDATE_FAILED',
-        });
+      return res.status(500).json({
+        error: 'Falha ao atualizar assinatura',
+        code: 'DB_UPDATE_FAILED',
+      });
     }
 
     return res.json({

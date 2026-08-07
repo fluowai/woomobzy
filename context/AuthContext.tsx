@@ -154,7 +154,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           'id, email, name, role, avatar_url, organization_id, created_at'
         )
         .eq('id', userId)
-        .single();
+        .limit(1)
+        .maybeSingle();
 
       const timeoutPromise = new Promise(
         (_, reject) =>
@@ -345,6 +346,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     setUser(null);
     setProfile(null);
     setIsImpersonating(false);
+
+    // Forcefully clear known Supabase auth keys from localStorage
+    if (typeof window !== 'undefined' && window.localStorage) {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+          localStorage.removeItem(key);
+        }
+      }
+    }
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   ChevronDown,
   Globe2,
@@ -51,6 +51,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [groups, setGroups] = useState(false);
   const [newestFirst, setNewestFirst] = useState(true);
   const [erroredAvatars, setErroredAvatars] = useState<Set<string>>(new Set());
+  const [displayedChatsCount, setDisplayedChatsCount] = useState(50);
   const metrics = useMemo(() => getInboxMetrics(chats), [chats]);
   const visibleChats = useMemo(() => {
     const filtered = filterInboxChats(chats, {
@@ -62,11 +63,16 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     return newestFirst ? filtered : [...filtered].reverse();
   }, [attentionOnly, chats, groups, newestFirst, platform, queue]);
 
+  useEffect(() => {
+    setDisplayedChatsCount(50);
+  }, [searchQuery, platform, queue, groups, attentionOnly]);
+
   const resetFilters = () => {
     setPlatform('all');
     setQueue('all');
     setGroups(false);
     onSearchChange('');
+    setDisplayedChatsCount(50);
   };
 
   return (
@@ -186,7 +192,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             </button>
           </div>
         ) : (
-          visibleChats.map((chat) => {
+          visibleChats.slice(0, displayedChatsCount).map((chat) => {
             const name = getChatName(chat);
             const overdue = isSlaOverdue(chat);
             return (
@@ -258,9 +264,20 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         )}
       </div>
 
-      <button type="button" className="wa-view-all" onClick={resetFilters}>
-        Ver todas as conversas
-      </button>
+      <div className="wa-sidebar-footer">
+        {visibleChats.length > displayedChatsCount && (
+          <button
+            type="button"
+            className="wa-load-more"
+            onClick={() => setDisplayedChatsCount((prev) => prev + 50)}
+          >
+            Carregar mais conversas <ChevronDown size={14} />
+          </button>
+        )}
+        <button type="button" className="wa-view-all" onClick={resetFilters}>
+          Ver todas as conversas
+        </button>
+      </div>
     </aside>
   );
 };

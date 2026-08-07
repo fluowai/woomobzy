@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, LogOut } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
 import FullScreenSpinner from './FullScreenSpinner';
@@ -18,7 +18,7 @@ const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const navigate = useNavigate();
-  const { profile, loading } = useAuth();
+  const { profile, loading, signOut } = useAuth();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [saving, setSaving] = useState(false);
   const [requestedPlanId, setRequestedPlanId] = useState<string | null>(null);
@@ -51,7 +51,10 @@ const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({
     org.subscription_status === 'trial' &&
     trialEndsAt &&
     trialEndsAt.getTime() < Date.now();
-  const missingPlan = !org.plan_id && org.subscription_status !== 'active';
+  const missingPlan =
+    !org.plan_id &&
+    org.subscription_status !== 'active' &&
+    org.subscription_status !== 'trial';
   const mustChoosePlan =
     expiredTrial ||
     missingPlan ||
@@ -92,13 +95,30 @@ const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-950">
-              Seu teste gratuito terminou
+              {expiredTrial
+                ? 'Seu teste gratuito terminou'
+                : missingPlan
+                  ? 'Escolha um plano para continuar'
+                  : 'Acesso suspenso ou pagamento pendente'}
             </h1>
             <p className="mt-1 max-w-2xl text-sm font-medium text-slate-500">
-              Para acessar o painel novamente, escolha um plano. O acesso fica
-              bloqueado até a confirmação do pagamento.
+              {expiredTrial
+                ? 'Para acessar o painel novamente, escolha um plano. O acesso fica bloqueado até a confirmação do pagamento.'
+                : missingPlan
+                  ? 'Você precisa selecionar um plano para acessar o sistema. Você não será cobrado durante o período de teste, se aplicável.'
+                  : 'Regularize sua assinatura para retomar o acesso ao painel.'}
             </p>
           </div>
+          <button
+            onClick={async () => {
+              await signOut();
+              navigate('/login');
+            }}
+            className="ml-auto flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-200"
+          >
+            <LogOut size={16} />
+            Sair da conta
+          </button>
         </div>
 
         {effectiveRequestedPlanId && (

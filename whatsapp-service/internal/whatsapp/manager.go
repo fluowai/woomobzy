@@ -727,10 +727,15 @@ func (m *Manager) GetQRCode(ctx context.Context, instanceID uuid.UUID) (string, 
 		}
 	}
 
-	// Try from database
+	// Try from database. Only rendered QR images are served; any legacy raw
+	// pairing token stored before the image-only migration is dropped so the
+	// credential never reaches the client through this endpoint.
 	inst, err := m.instanceRepo.GetByID(ctx, instanceID)
 	if err != nil {
 		return "", err
+	}
+	if !isQRImageDataURL(inst.QRCode) {
+		return "", nil
 	}
 	return inst.QRCode, nil
 }

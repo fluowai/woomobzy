@@ -170,8 +170,19 @@ func (c *Client) Connect(ctx context.Context) error {
 		for evt := range qrChan {
 			switch evt.Event {
 			case whatsmeow.QRChannelEventCode:
+				// Render the pairing QR as a PNG data URL so the raw pairing
+				// token never leaves the service (no DOM, no API, no WS).
+				qrImage, imgErr := qrImageDataURL(evt.Code)
+				if imgErr != nil {
+					c.logger.Error("Failed to render QR image",
+						zap.String("instance", c.instanceID.String()),
+						zap.Error(imgErr),
+					)
+					break
+				}
+
 				c.mu.Lock()
-				c.qrCode = evt.Code
+				c.qrCode = qrImage
 				c.pairingError = ""
 				c.pairingRecoverable = false
 				c.mu.Unlock()
@@ -181,7 +192,7 @@ func (c *Client) Connect(ctx context.Context) error {
 				)
 
 				// Save to DB
-				if err := c.instanceRepo.UpdateQRCode(ctx, c.instanceID, evt.Code); err != nil {
+				if err := c.instanceRepo.UpdateQRCode(ctx, c.instanceID, qrImage); err != nil {
 					c.logger.Error("Failed to persist QR code",
 						zap.String("instance", c.instanceID.String()),
 						zap.Error(err),
@@ -191,7 +202,7 @@ func (c *Client) Connect(ctx context.Context) error {
 				// Broadcast to WebSocket
 				c.broadcastEvent("qr_code", models.QRCodeEvent{
 					InstanceID: c.instanceID,
-					QRCode:     evt.Code,
+					QRCode:     qrImage,
 					ExpiresAt:  time.Now().Add(evt.Timeout),
 				})
 				c.generatePendingPairCode(ctx, evt.Timeout)

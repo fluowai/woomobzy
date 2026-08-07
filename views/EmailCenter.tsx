@@ -428,6 +428,7 @@ const EmailCenter: React.FC = () => {
                 <input
                   className="input-field md:col-span-2"
                   type="email"
+                  autoComplete="username"
                   placeholder="email@dominio.com"
                   value={accountForm.email}
                   onChange={(e) =>
@@ -437,6 +438,7 @@ const EmailCenter: React.FC = () => {
                 <input
                   className="input-field md:col-span-2"
                   type="password"
+                  autoComplete="new-password"
                   placeholder="Senha do email"
                   value={accountForm.password}
                   onChange={(e) =>
@@ -898,6 +900,8 @@ const EmailCenter: React.FC = () => {
               <input
                 className="input-field md:col-span-2"
                 type="email"
+                required
+                autoComplete="username"
                 placeholder="email@dominio.com"
                 value={accountForm.email}
                 onChange={(e) =>
@@ -907,6 +911,8 @@ const EmailCenter: React.FC = () => {
               <input
                 className="input-field md:col-span-2"
                 type="password"
+                required
+                autoComplete="new-password"
                 placeholder="Senha do email"
                 value={accountForm.password}
                 onChange={(e) =>
@@ -915,7 +921,8 @@ const EmailCenter: React.FC = () => {
               />
               <input
                 className="input-field"
-                placeholder="Servidor IMAP"
+                required
+                placeholder="Servidor IMAP (ex: imap.hostgator.com.br)"
                 value={accountForm.imap_host}
                 onChange={(e) =>
                   setAccountForm({ ...accountForm, imap_host: e.target.value })
@@ -924,6 +931,7 @@ const EmailCenter: React.FC = () => {
               <input
                 className="input-field"
                 type="number"
+                required
                 placeholder="Porta IMAP"
                 value={accountForm.imap_port}
                 onChange={(e) => {
@@ -937,7 +945,8 @@ const EmailCenter: React.FC = () => {
               />
               <input
                 className="input-field"
-                placeholder="Servidor SMTP"
+                required
+                placeholder="Servidor SMTP (ex: smtp.hostgator.com.br)"
                 value={accountForm.smtp_host}
                 onChange={(e) =>
                   setAccountForm({ ...accountForm, smtp_host: e.target.value })
@@ -946,6 +955,7 @@ const EmailCenter: React.FC = () => {
               <input
                 className="input-field"
                 type="number"
+                required
                 placeholder="Porta SMTP"
                 value={accountForm.smtp_port}
                 onChange={(e) => {

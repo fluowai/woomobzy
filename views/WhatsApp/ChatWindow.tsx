@@ -9,6 +9,7 @@ import {
   CalendarDays,
   Check,
   CheckSquare2,
+  ChevronDown,
   ClipboardList,
   FileText,
   House,
@@ -16,6 +17,7 @@ import {
   Loader2,
   Mail,
   MapPin,
+  PanelRight,
   Paperclip,
   Plus,
   Save,
@@ -130,6 +132,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [sendingMessage, setSendingMessage] = useState(false);
   const [showScrollDown, setShowScrollDown] = useState(false);
   const [showEmojis, setShowEmojis] = useState(false);
+  const [isLeadPanelOpen, setIsLeadPanelOpen] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [contactNameDraft, setContactNameDraft] = useState('');
   const [avatarError, setAvatarError] = useState(false);
@@ -375,7 +378,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       : '';
 
   return (
-    <main className="wa-chat-window details-open" id="chat-window">
+    <main
+      className={`wa-chat-window ${isLeadPanelOpen ? 'details-open' : ''}`}
+      id="chat-window"
+    >
       <section className="wa-conversation-column">
         <header className="wa-chat-header wa-center-chat-header">
           <button
@@ -424,6 +430,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 ))}
               </select>
             </label>
+            <button
+              type="button"
+              className="wa-header-panel-toggle"
+              onClick={() => setIsLeadPanelOpen((prev) => !prev)}
+              title="Detalhes do lead"
+            >
+              <PanelRight size={20} />
+            </button>
           </div>
         </header>
 
@@ -504,7 +518,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           ))}
         </div>
 
-        <form className="wa-composer" onSubmit={submitMessage}>
+        <form className="wa-composer wa-composer-whatsapp" onSubmit={submitMessage}>
           {pendingFile ? (
             <div className="wa-file-chip">
               <Paperclip size={14} />
@@ -514,70 +528,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               </button>
             </div>
           ) : null}
-          <textarea
-            value={inputText}
-            onChange={(event) => setInputText(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                void submitMessage();
-              }
-            }}
-            placeholder="Digite uma mensagem ou use / para templates..."
-            rows={2}
-          />
-          <div className="wa-composer-toolbar">
-            <div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                hidden
-                onChange={(event) =>
-                  setPendingFile(event.target.files?.[0] || null)
-                }
-              />
-              <button
-                type="button"
-                onClick={() => openFilePicker('*/*')}
-                title="Anexar arquivo"
-              >
-                <Paperclip size={18} />
-              </button>
-              <button
-                type="button"
-                onClick={() => openFilePicker('image/*,video/*')}
-                title="Enviar mídia"
-              >
-                <ImageIcon size={18} />
-              </button>
-              <button
-                type="button"
-                onClick={() => openFilePicker('.pdf,.doc,.docx,.xls,.xlsx')}
-                title="Enviar documento"
-              >
-                <FileText size={18} />
-              </button>
-              <button
-                type="button"
-                className="wa-ai-button"
-                onClick={() =>
-                  setInputText(
-                    crmLead?.ai_next_action ||
-                      'Olá! Separei uma sugestão personalizada para você. Posso enviar os detalhes?'
-                  )
-                }
-              >
-                <Sparkles size={16} /> IA
-              </button>
-            </div>
-            <div className="wa-composer-send">
+          
+          <div className="wa-composer-inner">
+            <div className="wa-composer-left">
               <div className="wa-emoji-wrap">
                 <button
                   type="button"
                   onClick={() => setShowEmojis((value) => !value)}
                   title="Emoji"
+                  className="wa-icon-btn"
                 >
-                  <Smile size={20} />
+                  <Smile size={24} />
                 </button>
                 {showEmojis ? (
                   <div className="wa-emoji-menu">
@@ -597,14 +558,61 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 ) : null}
               </div>
               <button
+                type="button"
+                onClick={() => openFilePicker('*/*')}
+                title="Anexar arquivo"
+                className="wa-icon-btn"
+              >
+                <Plus size={24} />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                hidden
+                onChange={(event) =>
+                  setPendingFile(event.target.files?.[0] || null)
+                }
+              />
+            </div>
+            
+            <div className="wa-composer-input-wrap">
+              <textarea
+                value={inputText}
+                onChange={(event) => setInputText(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    void submitMessage();
+                  }
+                }}
+                placeholder="Mensagem"
+                rows={1}
+              />
+              <button
+                type="button"
+                className="wa-ai-button-inline"
+                onClick={() =>
+                  setInputText(
+                    crmLead?.ai_next_action ||
+                      'Olá! Separei uma sugestão personalizada para você. Posso enviar os detalhes?'
+                  )
+                }
+                title="Sugerir mensagem com IA"
+              >
+                <Sparkles size={18} />
+              </button>
+            </div>
+
+            <div className="wa-composer-right">
+              <button
                 type="submit"
                 className="wa-send-btn active"
                 disabled={sendingMessage || (!inputText.trim() && !pendingFile)}
               >
                 {sendingMessage ? (
-                  <Loader2 size={20} className="animate-spin" />
+                  <Loader2 size={24} className="animate-spin" />
                 ) : (
-                  <Send size={20} />
+                  <Send size={24} />
                 )}
               </button>
             </div>
@@ -617,8 +625,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <span>Dados do lead</span>
           <Check size={16} />
         </div>
-        <section className="wa-lead-card wa-lead-identity">
-          <div className="wa-lead-profile-row">
+        <details className="wa-lead-card wa-accordion" open>
+          <summary>
+            <span>Resumo do lead</span>
+            <ChevronDown size={16} className="wa-accordion-icon" />
+          </summary>
+          <div className="wa-accordion-content wa-lead-identity">
+            <div className="wa-lead-profile-row">
             <Avatar
               chat={chat}
               name={chatName}
@@ -733,13 +746,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               </button>
             </div>
           </div>
-        </section>
+          </div>
+        </details>
 
-        <section className="wa-lead-card">
-          <header>
-            <CalendarDays size={16} /> Próxima ação
-          </header>
-          <div className="wa-next-action">
+        <details className="wa-lead-card wa-accordion">
+          <summary>
+            <span><CalendarDays size={16} /> Próxima ação</span>
+            <ChevronDown size={16} className="wa-accordion-icon" />
+          </summary>
+          <div className="wa-accordion-content wa-next-action">
             <strong>
               {crmLead?.ai_next_action ||
                 pendingTasks[0]?.title ||
@@ -752,13 +767,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             </span>
             <b>Em andamento</b>
           </div>
-        </section>
+        </details>
 
-        <section className="wa-lead-card">
-          <header>
-            <House size={16} /> Imóvel de interesse
-          </header>
-          {crmProperty ? (
+        <details className="wa-lead-card wa-accordion">
+          <summary>
+            <span><House size={16} /> Imóvel de interesse</span>
+            <ChevronDown size={16} className="wa-accordion-icon" />
+          </summary>
+          <div className="wa-accordion-content">
+            {crmProperty ? (
             <div className="wa-property-summary">
               {propertyImage ? (
                 <img src={propertyImage} alt="" />
@@ -798,13 +815,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               <Plus size={15} /> Selecionar imóvel
             </button>
           )}
-        </section>
+          </div>
+        </details>
 
-        <section className="wa-lead-card">
-          <header>
-            <CheckSquare2 size={16} /> Tarefas ({crmTasks.length})
-          </header>
-          <div className="wa-task-list">
+        <details className="wa-lead-card wa-accordion">
+          <summary>
+            <span><CheckSquare2 size={16} /> Tarefas ({crmTasks.length})</span>
+            <ChevronDown size={16} className="wa-accordion-icon" />
+          </summary>
+          <div className="wa-accordion-content wa-task-list">
             {crmTasks.length ? (
               crmTasks.slice(0, 3).map((task) => (
                 <label
@@ -826,11 +845,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               <span className="wa-panel-empty">Nenhuma tarefa cadastrada.</span>
             )}
           </div>
-        </section>
+        </details>
 
-        <section className="wa-lead-card">
-          <header>Ações rápidas</header>
-          <div className="wa-panel-action-grid">
+        <details className="wa-lead-card wa-accordion" open>
+          <summary>
+            <span>Ações rápidas</span>
+            <ChevronDown size={16} className="wa-accordion-icon" />
+          </summary>
+          <div className="wa-accordion-content wa-panel-action-grid">
             <button type="button" onClick={() => void createTask()}>
               <ClipboardList size={15} /> Criar tarefa
             </button>
@@ -863,7 +885,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               <ArrowRightLeft size={15} /> Transferir atendimento
             </button>
           </div>
-        </section>
+        </details>
 
         <section className="wa-insight-card">
           <header>

@@ -1,0 +1,8 @@
+HTTP/1.1 401 Unauthorized
+Content-Type: application/json
+www-authenticate: Bearer realm="https://ghcr.io/token",service="ghcr.io",scope="repository:fluowai/woomobzy-agro:pull"
+Date: Thu, 06 Aug 2026 11:46:36 GMT
+Content-Length: 73
+X-GitHub-Request-Id: E969:C304:568B91:95738C:6A74741C
+x-github-edge-region: brazilsouth
+

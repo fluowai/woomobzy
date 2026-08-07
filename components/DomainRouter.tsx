@@ -82,6 +82,10 @@ function cleanDomain(domain: string) {
   return domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
 }
 
+function isIpAddress(host: string) {
+  return /^(\d{1,3}\.){3}\d{1,3}$/.test(host) || host.includes(':');
+}
+
 const PUBLIC_DOMAIN_SLUGS: Record<string, string> = {
   'okaimoveis.com.br': 'okaimoveis',
   'www.okaimoveis.com.br': 'okaimoveis',
@@ -146,6 +150,7 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
         const isSystemDomain =
           hostname.includes('localhost') ||
           hostname === '127.0.0.1' ||
+          isIpAddress(hostname) ||
           isKnownPlatformHost;
 
         if (!isSystemDomain) {

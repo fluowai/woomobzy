@@ -12,7 +12,7 @@ import {
   KeyRound,
   Phone,
 } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { logger } from '@/utils/logger';
 
 interface QRCodeModalProps {
@@ -27,6 +27,15 @@ export function didQRCodeWaitTimeout(
   now = Date.now()
 ): boolean {
   return now - startedAt >= QR_CODE_WAIT_TIMEOUT_MS;
+}
+
+const QR_IMAGE_DATA_URL_PREFIX = 'data:image/png;base64,';
+
+export function isQrImageDataUrl(value: string): boolean {
+  return (
+    value.length > QR_IMAGE_DATA_URL_PREFIX.length &&
+    value.startsWith(QR_IMAGE_DATA_URL_PREFIX)
+  );
 }
 
 const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
@@ -376,14 +385,21 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
                 </div>
               ) : qrCode ? (
                 <div className="wa-qr-image-wrapper">
-                  <QRCodeSVG
-                    value={qrCode}
-                    size={280}
-                    level="M"
-                    marginSize={2}
-                    title="QR Code para conectar o WhatsApp"
-                    className="wa-qr-image"
-                  />
+                  {isQrImageDataUrl(qrCode) ? (
+                    <img
+                      src={qrCode}
+                      alt="QR Code para conectar o WhatsApp"
+                      className="wa-qr-image"
+                    />
+                  ) : (
+                    <QRCodeCanvas
+                      value={qrCode}
+                      size={280}
+                      level="M"
+                      marginSize={2}
+                      className="wa-qr-image"
+                    />
+                  )}
                   <div className="wa-qr-phone-icon">
                     <Smartphone size={24} className="text-[#25D366]" />
                   </div>

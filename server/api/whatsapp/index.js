@@ -288,7 +288,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
         const { data, error } = await supabase
           .from('whatsapp_instances')
           .select(
-            'id, tenant_id, name, status, qr_code, phone, jid, provider, created_at, updated_at'
+            'id, tenant_id, name, status, phone, jid, provider, created_at, updated_at'
           )
           .eq('tenant_id', req.orgId)
           .order('created_at', { ascending: false });
@@ -643,7 +643,6 @@ function normalizeInstanceRow(row) {
     tenant_id: row.tenant_id || undefined,
     name: row.name || 'WhatsApp',
     status: row.status || 'disconnected',
-    qr_code: row.qr_code || undefined,
     phone: row.phone || undefined,
     jid: row.jid || undefined,
     provider: row.provider || 'whatsmeow',

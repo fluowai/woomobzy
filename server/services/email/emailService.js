@@ -52,6 +52,13 @@ function isImplicitTlsPort(port, implicitTlsPort) {
   return Number(port) === implicitTlsPort;
 }
 
+function isCertMismatchError(error = {}) {
+  const msg = String(error?.message || error?.code || '');
+  return /does not match certificate|altnames|self.signed certificate|unable to verify the first certificate|ERR_TLS_CERT_ALTNAME_INVALID/i.test(
+    msg
+  );
+}
+
 export function normalizeEmailConnectionConfig(account = {}) {
   const imapPort = Number(account.imap_port || 993);
   const smtpPort = Number(account.smtp_port || 465);
@@ -267,7 +274,11 @@ async function findLeadByEmail(supabase, organizationId, email) {
   return data;
 }
 
-export function createImapClient(account, password) {
+export function createImapClient(
+  account,
+  password,
+  { allowInsecureTls = false } = {}
+) {
   const config = normalizeEmailConnectionConfig(account);
   return new ImapFlow({
     host: config.imap_host,
@@ -278,16 +289,26 @@ export function createImapClient(account, password) {
       pass: password,
     },
     logger: false,
+    tls: allowInsecureTls
+      ? { rejectUnauthorized: false, servername: config.imap_host }
+      : undefined,
   });
 }
 
-function createSmtpTransport(account, password) {
+function createSmtpTransport(
+  account,
+  password,
+  { allowInsecureTls = false } = {}
+) {
   const config = normalizeEmailConnectionConfig(account);
   return nodemailer.createTransport({
     host: config.smtp_host,
     port: config.smtp_port,
     secure: config.smtp_secure,
     requireTLS: !config.smtp_secure,
+    tls: allowInsecureTls
+      ? { rejectUnauthorized: false, servername: config.smtp_host }
+      : undefined,
     auth: {
       user: config.email,
       pass: password,
@@ -297,14 +318,21 @@ function createSmtpTransport(account, password) {
 
 export async function testEmailConnection(accountConfig) {
   const config = normalizeEmailConnectionConfig(accountConfig);
-
-  try {
-    const imapClient = createImapClient(config, config.password);
+  const attempt = async (allowInsecureTls) => {
+    const imapClient = createImapClient(config, config.password, {
+      allowInsecureTls,
+    });
     await imapClient.connect();
     await imapClient.logout();
 
-    const smtpTransport = createSmtpTransport(config, config.password);
+    const smtpTransport = createSmtpTransport(config, config.password, {
+      allowInsecureTls,
+    });
     await smtpTransport.verify();
+  };
+
+  try {
+    await attempt(false);
   } catch (error) {
     if (String(error?.message || '').includes('wrong version number')) {
       const friendly = new Error(
@@ -312,6 +340,19 @@ export async function testEmailConnection(accountConfig) {
       );
       friendly.statusCode = 400;
       throw friendly;
+    }
+    if (isCertMismatchError(error)) {
+      try {
+        await attempt(true);
+        return;
+      } catch (retryError) {
+        if (
+          String(retryError?.message || '').includes('wrong version number')
+        ) {
+          throw error;
+        }
+        throw retryError;
+      }
     }
     throw error;
   }
@@ -353,11 +394,21 @@ export async function syncEmailAccount({
       .update({ sync_status: 'syncing', sync_error: null })
       .eq('id', accountId);
 
-    const client = createImapClient(
-      account,
-      decryptEmailSecret(account.encrypted_password)
-    );
-    await client.connect();
+    const password = decryptEmailSecret(account.encrypted_password);
+    let client = createImapClient(account, password);
+    try {
+      await client.connect();
+    } catch (error) {
+      if (isCertMismatchError(error)) {
+        await client.logout().catch(() => {});
+        client = createImapClient(account, password, {
+          allowInsecureTls: true,
+        });
+        await client.connect();
+      } else {
+        throw error;
+      }
+    }
 
     let maxUid = Number(account.last_inbox_uid || 0);
     let synced = 0;
@@ -542,10 +593,19 @@ export async function sendEmail({
   }
 
   const cleanHtml = sanitizeEmailHtml(html);
-  const transport = createSmtpTransport(
-    account,
-    decryptEmailSecret(account.encrypted_password)
-  );
+  const smtpPassword = decryptEmailSecret(account.encrypted_password);
+  let transport = createSmtpTransport(account, smtpPassword);
+  try {
+    await transport.verify();
+  } catch (error) {
+    if (isCertMismatchError(error)) {
+      transport = createSmtpTransport(account, smtpPassword, {
+        allowInsecureTls: true,
+      });
+    } else {
+      throw error;
+    }
+  }
   const info = await transport.sendMail({
     from: account.email,
     to: cleanTo,

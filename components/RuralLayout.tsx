@@ -58,6 +58,15 @@ const RuralLayout: React.FC = () => {
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const { pathname } = useLocation();
+  const isWorkspaceRoute =
+    pathname.startsWith('/rural/whatsapp') ||
+    pathname.startsWith('/rural/email');
+
+  useEffect(() => {
+    if (isWorkspaceRoute) {
+      setIsDesktopSidebarOpen(false);
+    }
+  }, [isWorkspaceRoute]);
 
   const handleLogout = async () => {
     try {

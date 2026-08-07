@@ -17,6 +17,10 @@ import {
   Zap,
   Globe,
   Smartphone,
+  Brain,
+  Link,
+  FileText,
+  Sparkles,
 } from 'lucide-react';
 import { getTenantBaseUrl } from '../utils/platform';
 import { instanceApi, type Instance } from './WhatsApp/hooks/api';
@@ -67,6 +71,15 @@ const SITE_TEMPLATES = {
 
 const WHATSAPP_INSTANCE_NAME = 'WhatsApp';
 
+interface OnboardingPlan {
+  id: string;
+  name: string;
+  slug?: string | null;
+  price_monthly?: number | null;
+  features?: string[];
+  trial_days?: number | null;
+}
+
 const Onboarding: React.FC = () => {
   const navigate = useNavigate();
   const { settings } = useSettings();
@@ -75,10 +88,23 @@ const Onboarding: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState<any>(null);
 
+  // Planos disponíveis (Etapa 1)
+  const [plans, setPlans] = useState<OnboardingPlan[]>([]);
+  const [plansLoading, setPlansLoading] = useState(true);
+  const [selectedPlanId, setSelectedPlanId] = useState('');
+
+  // IA Config (Etapa 3)
+  const [aiProvider, setAiProvider] = useState<'openai' | 'groq' | 'gemini'>(
+    'openai'
+  );
+  const [aiKey, setAiKey] = useState('');
+  const [savingAi, setSavingAi] = useState(false);
+
   // WhatsApp (Etapa 2)
   const [qrInstance, setQrInstance] = useState<Instance | null>(null);
   const [qrLoading, setQrLoading] = useState(false);
   const [qrDone, setQrDone] = useState(false);
+  const [qrAttempted, setQrAttempted] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -86,6 +112,7 @@ const Onboarding: React.FC = () => {
     password: '',
     agencyName: '',
     cnpj: '',
+    domain: '',
     niche: 'urban' as 'rural' | 'urban',
     template: '',
   });
@@ -95,7 +122,33 @@ const Onboarding: React.FC = () => {
     setError('');
   };
 
+  // Carrega planos ativos para a seleção na etapa 1 (rota pública; a tabela
+  // `plans` tem RLS restrita a superadmin, então usa o endpoint público).
+  useEffect(() => {
+    let cancelled = false;
+    callApi('/api/public/plans')
+      .then((data: any) => {
+        if (cancelled) return;
+        const list: OnboardingPlan[] = (data?.plans || []).filter(
+          (p: OnboardingPlan) => (p.slug || '').toLowerCase() !== 'free'
+        );
+        setPlans(list);
+        if (list.length > 0) setSelectedPlanId(list[0].id);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setPlans([]);
+      })
+      .finally(() => {
+        if (!cancelled) setPlansLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleCreateAccount = async () => {
+    if (loading) return;
     if (
       !formData.name ||
       !formData.email ||
@@ -121,7 +174,10 @@ const Onboarding: React.FC = () => {
           email: formData.email,
           password: formData.password,
           agencyName: formData.agencyName,
+          cnpj: formData.cnpj,
+          domain: formData.domain,
           profileType: formData.niche === 'rural' ? 'rural' : 'traditional',
+          planId: selectedPlanId || undefined,
           plan: 'pro',
           parent_id: settings.id, // Reseller ID
         }),
@@ -150,10 +206,11 @@ const Onboarding: React.FC = () => {
 
   // Cria a instância do WhatsApp ao entrar na etapa 2
   useEffect(() => {
-    if (step !== 2 || qrDone || qrInstance || qrLoading) return;
+    if (step !== 2 || qrDone || qrInstance || qrLoading || qrAttempted) return;
     if (!success?.organization) return;
 
     const boot = async () => {
+      setQrAttempted(true);
       setQrLoading(true);
       setError('');
       try {
@@ -169,7 +226,7 @@ const Onboarding: React.FC = () => {
       }
     };
     boot();
-  }, [step, qrDone, qrInstance, qrLoading, success]);
+  }, [step, qrDone, qrInstance, qrLoading, success, qrAttempted]);
 
   const handleQrClose = async () => {
     setQrDone(true);
@@ -183,12 +240,54 @@ const Onboarding: React.FC = () => {
     }
   };
 
+  const handleSaveAi = async () => {
+    if (!aiKey) {
+      setStep(4);
+      return;
+    }
+    setSavingAi(true);
+    try {
+      // Call settings API since user is already logged in
+      const integrationsUpdate: any = {};
+      if (aiProvider === 'openai') {
+        integrationsUpdate.openai = { apiKey: aiKey, model: 'gpt-4o' };
+      } else if (aiProvider === 'groq') {
+        integrationsUpdate.groq = {
+          apiKey: aiKey,
+          model: 'llama-3.3-70b-versatile',
+        };
+      } else if (aiProvider === 'gemini') {
+        integrationsUpdate.gemini = { apiKey: aiKey };
+      }
+
+      await callApi('/api/settings', {
+        method: 'PUT',
+        body: JSON.stringify({
+          integrations: integrationsUpdate,
+        }),
+      });
+      setStep(4);
+    } catch (err: any) {
+      setError(err.message || 'Erro ao salvar configurações de IA.');
+    } finally {
+      setSavingAi(false);
+    }
+  };
+
   // =====================================
   // UI STEPS
   // =====================================
 
   const renderStep1 = () => (
-    <div className="animate-fade-in-slide space-y-6">
+    <form
+      id="onboarding-step1-form"
+      className="animate-fade-in-slide space-y-6"
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleCreateAccount();
+      }}
+    >
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-slate-900">
           Crie a sua Imobiliária Digital
@@ -212,6 +311,7 @@ const Onboarding: React.FC = () => {
               type="text"
               value={formData.name}
               onChange={(e) => update('name', e.target.value)}
+              autoComplete="name"
               className="w-full pl-11 pr-4 py-3 bg-white rounded-xl border border-slate-200 outline-none focus:border-blue-500 transition-colors"
               placeholder="Nome completo"
             />
@@ -230,9 +330,52 @@ const Onboarding: React.FC = () => {
               type="email"
               value={formData.email}
               onChange={(e) => update('email', e.target.value)}
+              autoComplete="email"
               className="w-full pl-11 pr-4 py-3 bg-white rounded-xl border border-slate-200 outline-none focus:border-blue-500 transition-colors"
               placeholder="seu@email.com.br"
             />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
+            CNPJ da Imobiliária
+          </label>
+          <div className="relative">
+            <FileText
+              size={16}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+            <input
+              type="text"
+              value={formData.cnpj}
+              onChange={(e) => update('cnpj', e.target.value)}
+              className="w-full pl-11 pr-4 py-3 bg-white rounded-xl border border-slate-200 outline-none focus:border-blue-500 transition-colors"
+              placeholder="00.000.000/0000-00"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
+            Domínio Personalizado (Link)
+          </label>
+          <div className="relative">
+            <Link
+              size={16}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+            <input
+              type="text"
+              value={formData.domain}
+              onChange={(e) => update('domain', e.target.value)}
+              className="w-full pl-11 pr-4 py-3 bg-white rounded-xl border border-slate-200 outline-none focus:border-blue-500 transition-colors font-mono text-sm"
+              placeholder="suaimobiliaria"
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-mono">
+              .imobzy.com
+            </span>
           </div>
         </div>
       </div>
@@ -251,6 +394,7 @@ const Onboarding: React.FC = () => {
               type="text"
               value={formData.agencyName}
               onChange={(e) => update('agencyName', e.target.value)}
+              autoComplete="organization"
               className="w-full pl-11 pr-4 py-3 bg-white rounded-xl border border-slate-200 outline-none focus:border-blue-500 transition-colors"
               placeholder="Ex: Nobre Imóveis"
             />
@@ -269,6 +413,7 @@ const Onboarding: React.FC = () => {
               type="password"
               value={formData.password}
               onChange={(e) => update('password', e.target.value)}
+              autoComplete="new-password"
               className="w-full pl-11 pr-4 py-3 bg-white rounded-xl border border-slate-200 outline-none focus:border-blue-500 transition-colors"
               placeholder="Mínimo 6 caracteres"
             />
@@ -322,6 +467,77 @@ const Onboarding: React.FC = () => {
 
       <div>
         <label className="block text-xs font-bold text-slate-500 uppercase mb-3">
+          Escolha o seu Plano *
+        </label>
+        {plansLoading ? (
+          <div className="flex items-center gap-2 text-slate-400 text-sm font-semibold py-3">
+            <Loader2 size={16} className="animate-spin" />
+            Carregando planos...
+          </div>
+        ) : plans.length === 0 ? (
+          <div className="text-slate-400 text-sm font-semibold py-3">
+            Planos indisponíveis no momento. Tente novamente em instantes.
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-4">
+            {plans.map((plan) => (
+              <button
+                key={plan.id}
+                type="button"
+                onClick={() => setSelectedPlanId(plan.id)}
+                className={`p-4 rounded-xl border-2 text-left transition-all ${
+                  selectedPlanId === plan.id
+                    ? 'border-[var(--color-primary)] bg-[var(--color-primary-alpha-10)]'
+                    : 'border-slate-100 bg-white hover:border-slate-200'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-800">{plan.name}</span>
+                  <Sparkles
+                    size={18}
+                    className={
+                      selectedPlanId === plan.id
+                        ? 'text-[var(--color-primary)]'
+                        : 'text-slate-300'
+                    }
+                  />
+                </div>
+                <div className="mt-2 flex items-baseline gap-1">
+                  <span className="text-2xl font-black text-slate-900">
+                    R$ {Number(plan.price_monthly || 0).toLocaleString('pt-BR')}
+                  </span>
+                  <span className="text-xs font-bold text-slate-400">/mês</span>
+                </div>
+                <div className="mt-2 text-xs font-semibold text-slate-500">
+                  {plan.features?.length
+                    ? plan.features
+                        .map((f) =>
+                          f === 'ia_chat'
+                            ? 'IA'
+                            : f === 'whatsapp'
+                              ? 'WhatsApp'
+                              : f === 'site'
+                                ? 'Site'
+                                : f === 'crm'
+                                  ? 'CRM'
+                                  : f
+                        )
+                        .join(' · ')
+                    : 'Recursos inclusos'}
+                </div>
+                {plan.trial_days ? (
+                  <p className="mt-2 text-xs font-bold text-emerald-600">
+                    {plan.trial_days} dias grátis
+                  </p>
+                ) : null}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <label className="block text-xs font-bold text-slate-500 uppercase mb-3">
           Escolha o Tema do seu Site *
         </label>
         <div className="grid grid-cols-3 gap-3">
@@ -353,14 +569,12 @@ const Onboarding: React.FC = () => {
           ))}
         </div>
       </div>
-    </div>
+    </form>
   );
 
   const renderStep2 = () => {
     if (qrInstance && !qrDone) {
-      return (
-        <QRCodeModal instance={qrInstance} onClose={handleQrClose} />
-      );
+      return <QRCodeModal instance={qrInstance} onClose={handleQrClose} />;
     }
 
     return renderStep2Content();
@@ -429,7 +643,63 @@ const Onboarding: React.FC = () => {
     </div>
   );
 
-  const renderStep3 = () => {
+  const renderStep3 = () => (
+    <div className="animate-fade-in-slide space-y-6">
+      <div className="text-center mb-8">
+        <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <Brain size={32} className="text-blue-600" />
+        </div>
+        <h2 className="text-2xl font-bold text-slate-900">
+          Inteligência Artificial
+        </h2>
+        <p className="text-slate-500 mt-2">
+          Conecte sua API de IA favorita para habilitar o atendimento automático
+          e resumos.
+        </p>
+      </div>
+
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 space-y-6">
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-3">
+            Provedor de IA
+          </label>
+          <div className="grid grid-cols-3 gap-3">
+            {['openai', 'groq', 'gemini'].map((provider) => (
+              <button
+                key={provider}
+                onClick={() => setAiProvider(provider as any)}
+                className={`p-3 rounded-xl border-2 text-center transition-all ${
+                  aiProvider === provider
+                    ? 'border-blue-500 bg-blue-50 text-blue-700 font-bold'
+                    : 'border-slate-100 bg-white hover:border-slate-200 text-slate-600'
+                }`}
+              >
+                {provider.charAt(0).toUpperCase() + provider.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
+            API Key do Provedor
+          </label>
+          <input
+            type="password"
+            value={aiKey}
+            onChange={(e) => setAiKey(e.target.value)}
+            className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 outline-none focus:border-blue-500 transition-colors font-mono"
+            placeholder="Cole sua chave de API aqui"
+          />
+          <p className="text-xs text-slate-400 mt-2">
+            Deixe em branco se quiser configurar isso depois.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderStep4 = () => {
     const slug = formData.agencyName
       .toLowerCase()
       .normalize('NFD')
@@ -437,7 +707,8 @@ const Onboarding: React.FC = () => {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '');
 
-    const panelUrl = success?.panelUrl || (formData.niche === 'rural' ? '/rural' : '/urban');
+    const panelUrl =
+      success?.panelUrl || (formData.niche === 'rural' ? '/rural' : '/urban');
 
     return (
       <div className="animate-fade-in-scale text-center space-y-6 py-8">
@@ -494,21 +765,22 @@ const Onboarding: React.FC = () => {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 selection:bg-blue-100">
       <div className="w-full max-w-2xl">
         {/* Header Progress */}
-        {step < 3 && (
+        {step < 4 && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                Passo {step} de 2
+                Passo {step} de 3
               </span>
               <span className="text-xs font-bold text-[var(--color-primary)]">
                 {step === 1 && 'Conta'}
                 {step === 2 && 'WhatsApp'}
+                {step === 3 && 'Inteligência Artificial'}
               </span>
             </div>
             <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
               <div
                 className="h-full bg-[var(--color-primary)] rounded-full transition-all duration-500"
-                style={{ width: `${(step / 2) * 100}%` }}
+                style={{ width: `${(step / 3) * 100}%` }}
               />
             </div>
           </div>
@@ -516,7 +788,7 @@ const Onboarding: React.FC = () => {
 
         {/* Content Box */}
         <div
-          className={`bg-white rounded-[2rem] shadow-2xl shadow-slate-900/5 p-8 md:p-10 border border-slate-100 ${step === 3 ? 'border-emerald-100 bg-gradient-to-b from-emerald-50/50 to-white' : ''}`}
+          className={`bg-white rounded-[2rem] shadow-2xl shadow-slate-900/5 p-8 md:p-10 border border-slate-100 ${step === 4 ? 'border-emerald-100 bg-gradient-to-b from-emerald-50/50 to-white' : ''}`}
         >
           {error && step !== 2 && (
             <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl text-sm font-bold border border-red-100 flex items-center gap-2">
@@ -528,14 +800,18 @@ const Onboarding: React.FC = () => {
           {step === 1 && renderStep1()}
           {step === 2 && renderStep2()}
           {step === 3 && renderStep3()}
+          {step === 4 && renderStep4()}
 
           {/* Footer Controls */}
           {step === 1 && (
             <div className="mt-10 flex items-center justify-between pt-6 border-t border-slate-100">
-              <span className="text-xs text-slate-300">Seguro e criptografado</span>
+              <span className="text-xs text-slate-300">
+                Seguro e criptografado
+              </span>
 
               <button
-                onClick={handleCreateAccount}
+                type="submit"
+                form="onboarding-step1-form"
                 disabled={loading}
                 className="bg-[var(--color-primary)] text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:opacity-90 transition-all active:scale-95 disabled:opacity-70 shadow-lg shadow-black/10"
               >
@@ -589,6 +865,25 @@ const Onboarding: React.FC = () => {
                   <ArrowRight size={18} />
                 </button>
               )}
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="mt-8 flex items-center justify-end pt-6 border-t border-slate-100">
+              <button
+                onClick={handleSaveAi}
+                disabled={savingAi}
+                className="bg-[var(--color-primary)] text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:opacity-90 transition-all active:scale-95 disabled:opacity-70 shadow-lg shadow-black/10"
+              >
+                {savingAi ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  <>
+                    {aiKey ? 'Salvar e Concluir' : 'Pular por enquanto'}
+                    <ArrowRight size={18} />
+                  </>
+                )}
+              </button>
             </div>
           )}
         </div>

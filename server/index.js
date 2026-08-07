@@ -199,7 +199,14 @@ app.use(cors(corsOptions));
 app.options(/(.*)/, cors(corsOptions));
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 1000, // Generoso para produção inicial
+  max: 3000, // Dashboard legítimo gera muitas requisições (polling etc.)
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Rotas que já possuem limiters próprios/mais rígidos não devem ser
+  // bloqueadas por tráfego agregado (ex.: reads públicos e onboarding).
+  skip: (req) =>
+    req.path.startsWith('/api/public/') ||
+    req.path.startsWith('/api/onboarding'),
   message: { error: 'Muitas requisições. Tente novamente em 15 minutos.' },
 });
 

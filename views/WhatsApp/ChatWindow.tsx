@@ -625,7 +625,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <span>Dados do lead</span>
           <Check size={16} />
         </div>
-        <details className="wa-lead-card wa-accordion" open>
+        <details className="wa-lead-card wa-accordion">
           <summary>
             <span>Resumo do lead</span>
             <ChevronDown size={16} className="wa-accordion-icon" />
@@ -847,7 +847,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
         </details>
 
-        <details className="wa-lead-card wa-accordion" open>
+        <details className="wa-lead-card wa-accordion">
           <summary>
             <span>Ações rápidas</span>
             <ChevronDown size={16} className="wa-accordion-icon" />

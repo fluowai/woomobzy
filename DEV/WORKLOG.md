@@ -1,5 +1,14 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-07] Fix do 502 "Servico Instagram Indisponivel" na aba de Mensagens (local)
+
+- **Sintoma**: instância WhatsApp conectada, mas ao abrir `/urban/whatsapp` o `GET /api/instagram/conversations` retornava **502** (`Servico Instagram Indisponivel`) e o WS `api/whatsapp/ws` fechava.
+- **Causa raiz 1 (env desatualizado)**: backend Node (3002) iniciado **antes** do `.env` passar a ter `INSTAGRAM_SERVICE_URL=http://127.0.0.1:3200` → processo rodava com o fallback `http://instagram-service:3200` (hostname docker, não resolve local) → proxy 502. O `instagram-service` (3200) já estava no ar.
+- **Causa raiz 2 (path do proxy)**: `server/api/instagram/index.js` montava `app.use('/api/instagram', proxy)` **sem `pathRewrite`** — o Express cortava o prefixo e o proxy encaminhava `/conversations`; o `instagram-service` serve rotas em `/api/instagram/*` (`/api/instagram/conversations`), então o path caía em 404.
+- **Correção**: 1) reiniciado o backend com o `.env` atual (via `Invoke-CimMethod Win32_Process.Create` para sobreviver ao fim do shell); 2) adicionado `pathRewrite: rewriteInstagramPath` no proxy — preserva `/api/instagram` no path HTTP e mantém `/api/instagram/ws` no upgrade (WS do serviço é montado em `/api/instagram/ws`).
+- **Verificação local**: `node --check` OK; `GET 3002/api/instagram/conversations` e `GET 3006/api/instagram/conversations` (via Vite) agora retornam **401** (rota correta alcançada, requer token) em vez de 502/404. Vite (3006) reiniciado (processo 22980 tinha caído).
+- **Pendente (maestro)**: recarregar `/urban/whatsapp` autenticado → `GET /api/instagram/conversations` deve retornar **200**; conferir a aba Mensagens e o WS. Em produção, o mesmo `pathRewrite` precisa ir junto no próximo deploy do `api` (junto com o `instagram-service` do plano de deploy anterior).
+
 ## [2026-08-07] Página "Em breve" personalizada por revenda — RPC APLICADA em produção + verificação
 
 - **Continuidade**: change set anterior (RPC `get_reseller_branding` + `ComingSoon` com `resellerBranding` + `PublicLandingPage` carregando a RPC) pronto.

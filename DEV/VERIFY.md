@@ -1,5 +1,13 @@
 # Verificação
 
+## 2026-08-07 — Fix do 502 do Instagram na aba Mensagens (local, verificado por HTTP)
+
+- **Estado final**: backend Node (3002, PID 6704, `--env-file=.env`) + `instagram-service` (3200, PID 3896) + Vite (3006) no ar.
+- **Causas**: env desatualizado no processo backend (iniciado antes do `.env` com `INSTAGRAM_SERVICE_URL=http://127.0.0.1:3200`) e proxy `/api/instagram` sem `pathRewrite` (enviava `/conversations`; serviço espera `/api/instagram/conversations`).
+- **Fix**: `server/api/instagram/index.js` com `pathRewrite: rewriteInstagramPath` (preserva `/api/instagram` e mantém `/api/instagram/ws` no upgrade).
+- **Evidência**: `node --check server/api/instagram/index.js` OK; `GET http://127.0.0.1:3002/api/instagram/conversations` → **401** (antes 502/404); `GET http://127.0.0.1:3006/api/instagram/conversations` (via Vite) → **401** (requer token — caminho e conectividade confirmados).
+- **Pendente**: validação no navegador autenticado (`200` esperado) e WS `/api/instagram/ws`; replicar o fix no deploy de produção do `api`.
+
 ## 2026-08-07 — "Em breve" personalizado por revenda: RPC APLICADA e VERIFICADA em produção
 
 - **RPC aplicada em produção** (`epgaftsjmqmpczvzsrcc`) via `exec_sql` (service role): `migrations/20260807_reseller_branding_rpc.sql` → **5/5 statements OK**.

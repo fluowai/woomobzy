@@ -1,5 +1,14 @@
 # Handoff
 
+## 2026-08-07 — Fix do 502 "Servico Instagram Indisponivel" na aba Mensagens (local)
+
+- **Sintoma**: WhatsApp conectado, `/urban/whatsapp` logava `GET /api/instagram/conversations` → 502.
+- **Causas**: backend (3002) com env velho (`instagram-service:3200` não resolve local) + proxy `/api/instagram` sem `pathRewrite` (Express cortava o prefixo → `/conversations` no serviço que espera `/api/instagram/conversations`).
+- **Correção**: backend reiniciado com `.env` atual (agora escuta 3002, PID 6704); `server/api/instagram/index.js` ganhou `pathRewrite: rewriteInstagramPath` (preserva `/api/instagram`, mantém `/api/instagram/ws`). Vite (3006) reiniciado.
+- **Verificação**: `GET 3002` e `GET 3006` `/api/instagram/conversations` → **401** (rota certa, requer token) em vez de 502/404.
+- **Próxima ação (maestro)**: recarregar `/urban/whatsapp` autenticado e confirmar `200` + aba Mensagens com conversas do Instagram; em produção, incluir este fix no próximo deploy do `api` (junto ao deploy do `instagram-service`).
+- **Atenção**: working tree tem WIP de outras sessões; mudança desta sessão = só `server/api/instagram/index.js` (+ docs DEV). Nenhum commit/push.
+
 ## 2026-08-07 — "Em breve" personalizado por revenda: RPC aplicada em produção + frontend pronto
 
 - **RPC `get_reseller_branding` APLICADA em produção** (`epgaftsjmqmpczvzsrcc`) via `exec_sql`: 5/5 OK. Verificada via REST anon: `lalbero` → Delazari (cores `#064e3b`/`#d4af37`, logo null); `okaimoveis` → vazio (padrão WooTech Imob).

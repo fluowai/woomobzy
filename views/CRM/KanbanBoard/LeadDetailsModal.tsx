@@ -144,7 +144,7 @@ const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
       toast.success('Informações atualizadas com sucesso');
       setIsEditingSidebar(false);
       if (onUpdateLead) {
-        onUpdateLead({ ...lead, ...payload });
+        onUpdateLead({ ...lead, ...payload } as any);
       } else {
         window.location.reload();
       }

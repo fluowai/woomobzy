@@ -1,6 +1,7 @@
 import { logger } from '@/utils/logger';
 import React, { useState, useEffect, useRef } from 'react';
 import { useSettings } from '../../context/SettingsContext';
+import { useAuth } from '../../context/AuthContext';
 import {
   Globe,
   Plus,
@@ -50,6 +51,7 @@ interface DomainData {
 
 const DomainSettings: React.FC = () => {
   const { settings } = useSettings();
+  const { profile } = useAuth();
 
   const [domain, setDomain] = useState('');
   const [loading, setLoading] = useState(false);
@@ -62,11 +64,19 @@ const DomainSettings: React.FC = () => {
   const verifyIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    fetchCurrentDomain();
+    if (profile?.organization_id) {
+      setOrganizationId(profile.organization_id);
+    }
+  }, [profile]);
+
+  useEffect(() => {
+    if (organizationId) {
+      fetchCurrentDomain(organizationId);
+    }
     return () => {
       if (verifyIntervalRef.current) clearInterval(verifyIntervalRef.current);
     };
-  }, []);
+  }, [organizationId]);
 
   // Auto-verify domain every 10 seconds if pending
   useEffect(() => {
@@ -81,31 +91,16 @@ const DomainSettings: React.FC = () => {
     }
   }, [currentDomain, verifyingDomain, retryCount]);
 
-  const fetchCurrentDomain = async () => {
+  const fetchCurrentDomain = async (orgId: string) => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('id', user.id)
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('custom_domain')
+        .eq('id', orgId)
         .single();
 
-      if (profile?.organization_id) {
-        setOrganizationId(profile.organization_id);
-
-        const { data: org } = await supabase
-          .from('organizations')
-          .select('custom_domain')
-          .eq('id', profile.organization_id)
-          .single();
-
-        if (org?.custom_domain) {
-          checkVerification(org.custom_domain);
-        }
+      if (org?.custom_domain) {
+        checkVerification(org.custom_domain);
       }
     } catch (e) {
       logger.error('Error fetching domain:', e);

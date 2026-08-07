@@ -3,12 +3,23 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 const TARGET =
   process.env.INSTAGRAM_SERVICE_URL || 'http://instagram-service:3200';
 
+const rewriteInstagramPath = (path) => {
+  if (path === '/ws' || path.startsWith('/ws?')) {
+    return path;
+  }
+
+  return path.startsWith('/api/instagram')
+    ? path
+    : `/api/instagram${path}`;
+};
+
 export const setupInstagramProxy = (app, server) => {
   const proxy = createProxyMiddleware({
     target: TARGET,
     changeOrigin: true,
     proxyTimeout: 10000,
     timeout: 10000,
+    pathRewrite: rewriteInstagramPath,
     on: {
       proxyReq: (proxyReq, req) => {
         console.log(

@@ -153,9 +153,7 @@ const RuralLayout: React.FC = () => {
     }
     return isActive;
   };
-  const isWorkspaceRoute =
-    pathname.startsWith('/rural/whatsapp') ||
-    pathname.startsWith('/rural/email');
+
   const isLandingPageEditor =
     (pathname.includes('/landing-pages/') ||
       pathname.includes('/site/pages/')) &&

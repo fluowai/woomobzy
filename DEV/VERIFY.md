@@ -1,5 +1,17 @@
 # Verificação
 
+## 2026-08-07 — RPC `match_properties_to_lead` corrigida e APLICADA em produção
+
+- **Sintoma**: `POST /rest/v1/rpc/match_properties_to_lead` → **400** ao abrir a aba "Matches" do LeadDetailsModal.
+- **Causa raiz (confirmada no banco)**: a função referenciava `p.bedrooms`/`p.area` — colunas que **não existem** em `properties` (imóvel rural: `total_area_ha`, `area_total_ha`, `features->>'areaHectares'`). Além disso, retornava `id`/`match_score`, enquanto o frontend consome `property_id`/`score`/`reasons`.
+- **Fix aplicado em produção** (`epgaftsjmqmpczvzsrcc`): `migrations/20260807_fix_match_properties_to_lead.sql` via conexão direta → **MIGRATION APPLIED OK** (DROP + CREATE com retorno novo; `NOTIFY pgrst, 'reload schema'`).
+- **Evidência (SQL direto)**:
+  - Assinatura: `lead_id uuid, max_results integer` → `TABLE(property_id uuid, title text, property_type text, price numeric, area numeric, address text, neighborhood text, city text, state text, status text, score numeric, reasons text[])`.
+  - Chamada com lead real (`8ff3e48a-...`) → **1 linha, sem erro**: `{ property_id, title: "imovel sao jose", price: 1500, city: "São José", state: "Santa Catarina", score: 50, reasons: ["Dentro do orçamento", "Área compatível"] }`.
+  - Schema validado via `information_schema` antes do fix (colunas `properties`: id, organization_id, title, price, property_type, status, total_area_ha, area_total_ha, city, state, address, neighborhood, features; SEM bedrooms/area).
+- **Gates**: `npm run type-check` ✓; body da função validado por execução real no banco.
+- **Pendente**: validação no navegador autenticado da aba "Matches" (lista com score/reasons); conferir se o lead tem `organization_id` com imóveis para ver mais de 1 resultado.
+
 ## 2026-08-07 — Fix do 502 do Instagram na aba Mensagens (local, verificado por HTTP)
 
 - **Estado final**: backend Node (3002, PID 6704, `--env-file=.env`) + `instagram-service` (3200, PID 3896) + Vite (3006) no ar.

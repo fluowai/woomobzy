@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
+import { Pencil, Save, X as XIcon, 
   MessageCircle,
   Phone,
   Mail,
@@ -93,6 +93,68 @@ const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
   const [isEditing, setIsEditing] = useState(false);
 
   // Agendamentos state
+  
+  const [isEditingSidebar, setIsEditingSidebar] = useState(false);
+  const [sidebarForm, setSidebarForm] = useState({
+    phone: '',
+    email: '',
+    budget: '',
+    type: '',
+    neighborhood: '',
+    aptitude_interest: '',
+  });
+  const [savingSidebar, setSavingSidebar] = useState(false);
+
+  useEffect(() => {
+    if (lead) {
+      setSidebarForm({
+        phone: lead.phone || '',
+        email: lead.email || '',
+        budget: lead.budget ? lead.budget.toString() : '',
+        type: lead.preferences?.type || '',
+        neighborhood: lead.preferences?.neighborhood || '',
+        aptitude_interest: (lead.aptitude_interest || []).join(', '),
+      });
+    }
+  }, [lead]);
+
+  const handleSaveSidebar = async () => {
+    if (!lead?.id) return;
+    setSavingSidebar(true);
+    try {
+      const budget = sidebarForm.budget ? parseFloat(sidebarForm.budget.replace(/[^0-9.-]+/g, '')) : null;
+      const aptitude_interest = sidebarForm.aptitude_interest.split(',').map(s => s.trim()).filter(Boolean);
+      const preferences = {
+        ...(lead.preferences || {}),
+        type: sidebarForm.type,
+        neighborhood: sidebarForm.neighborhood
+      };
+      
+      const payload = {
+        phone: sidebarForm.phone,
+        email: sidebarForm.email,
+        budget,
+        preferences,
+        aptitude_interest
+      };
+
+      const { error } = await supabase.from('leads').update(payload).eq('id', lead.id);
+      if (error) throw error;
+      
+      toast.success('Informações atualizadas com sucesso');
+      setIsEditingSidebar(false);
+      if (onUpdateLead) {
+        onUpdateLead({ ...lead, ...payload });
+      } else {
+        window.location.reload();
+      }
+    } catch (err) {
+      toast.error('Erro ao salvar as informações');
+    } finally {
+      setSavingSidebar(false);
+    }
+  };
+
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
   const [showNewAppointmentForm, setShowNewAppointmentForm] = useState(false);

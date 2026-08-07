@@ -1,5 +1,18 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-07] Fix do RPC `match_properties_to_lead` (400 na aba "Matches" do LeadDetailsModal)
+
+- **Sintoma (maestro)**: ao abrir o detalhe de um lead, o console mostrava `POST /rest/v1/rpc/match_properties_to_lead 400 (Bad Request)`.
+- **Causa raiz 1 (schema inexistente)**: a função criada em `20260729` referenciava `p.bedrooms` e `p.area` na consulta — colunas que **não existem** em `properties` (o módulo é imóvel rural: `total_area_ha`, `area_total_ha`, `area_util_ha`, `features->>'areaHectares'`). Erro em tempo de execução em toda chamada.
+- **Causa raiz 2 (contrato de saída)**: a função retornava `id`/`match_score`, mas `LeadDetailsModal` consome `property_id`, `score` e `reasons` — mesmo sem o erro, a UI renderizaria valores indefinidos.
+- **Correção**:
+  1. `migrations/20260807_fix_match_properties_to_lead.sql` (nova): `DROP` + `CREATE OR REPLACE` da função com corpo alinhado ao schema real — score por tipo de imóvel (+25), preço dentro de budget/budget_min/budget_max (+30), área em hectares via preferences minArea/maxArea com fallback area_min/area_max (+20) e estados de preferência via `preferences->'states'` (+10); retorna `property_id, title, property_type, price, area, address, neighborhood, city, state, status, score, reasons` (reasons com `array_remove` de NULL); `NOTIFY pgrst, 'reload schema'`.
+  2. `migrations/20260729_create_match_properties_to_lead.sql`: definição canônica atualizada com o mesmo corpo corrigido.
+  3. `scripts/run-migrations.mjs`: migration adicionada à lista canônica.
+- **Aplicado em produção** (`epgaftsjmqmpczvzsrcc`) via conexão direta: **MIGRATION APPLIED OK**; assinatura validada (`lead_id uuid, max_results integer`) e retorno testado com lead real — 1 linha, shape `property_id/score/reasons` corretos, sem erro.
+- **Gates**: `npm run type-check` ✓; SQL verificado contra schema real (`information_schema`). Nenhum commit/push/deploy.
+- **Pendente (maestro)**: validar no navegador a aba "Matches" do LeadDetailsModal (lista de imóveis com score e razões); se a lista vier vazia, conferir se o lead tem `organization_id` com imóveis associados.
+
 ## [2026-08-07] Fix do 502 "Servico Instagram Indisponivel" na aba de Mensagens (local)
 
 - **Sintoma**: instância WhatsApp conectada, mas ao abrir `/urban/whatsapp` o `GET /api/instagram/conversations` retornava **502** (`Servico Instagram Indisponivel`) e o WS `api/whatsapp/ws` fechava.

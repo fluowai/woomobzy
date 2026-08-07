@@ -85,6 +85,7 @@ const MIGRATIONS = [
   'migrations/20260804_create_agendas.sql',
   'migrations/20260807_fix_admin_approved_column_rls.sql',
   'migrations/20260807_reseller_branding_rpc.sql',
+  'migrations/20260807_fix_match_properties_to_lead.sql',
 ];
 
 async function executeMigrations() {

@@ -1,5 +1,14 @@
 # Handoff
 
+## 2026-08-07 — RPC `match_properties_to_lead` corrigida (400 na aba Matches) e APLICADA em produção
+
+- **Sintoma**: `match_properties_to_lead` → **400** no LeadDetailsModal. Causas: função referenciando colunas inexistentes (`p.bedrooms`, `p.area`) e contrato de saída divergente (`id`/`match_score` vs `property_id`/`score`/`reasons`).
+- **Mudanças no working tree (sem commit)**: `migrations/20260807_fix_match_properties_to_lead.sql` (nova, aplicada em produção), `migrations/20260729_create_match_properties_to_lead.sql` (definição canônica corrigida), `scripts/run-migrations.mjs` (lista canônica).
+- **Aplicado em produção** (`epgaftsjmqmpczvzsrcc`) via conexão direta: DROP + CREATE + GRANT + `NOTIFY pgrst, 'reload schema'` → OK. Verificado por SQL com lead real (1 linha, `property_id/score/reasons` corretos).
+- **Gates**: `npm run type-check` ✓.
+- **Próxima ação (maestro)**: abrir um lead no CRM → aba **Matches** → conferir lista de imóveis com `% Match` e razões; se vazia, verificar se o `organization_id` do lead tem imóveis (dados de teste têm poucos imóveis por org).
+- **Atenção**: working tree tem WIP de outras sessões — conferir `git status` antes de qualquer commit; este change set = 3 arquivos de migration/script + docs DEV. Nenhum commit/push.
+
 ## 2026-08-07 — Fix do 502 "Servico Instagram Indisponivel" na aba Mensagens (local)
 
 - **Sintoma**: WhatsApp conectado, `/urban/whatsapp` logava `GET /api/instagram/conversations` → 502.

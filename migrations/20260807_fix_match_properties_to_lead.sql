@@ -1,29 +1,27 @@
 -- ============================================================================
--- Migration: Create match_properties_to_lead RPC with correct param names
--- Date: 2026-07-29
--- Fixes: 404 error when LeadDetailsModal calls supabase.rpc('match_properties_to_lead')
--- The frontend calls: supabase.rpc('match_properties_to_lead', { lead_id, max_results })
+-- Migration: Fix match_properties_to_lead RPC (400 error on LeadDetailsModal)
+-- Date: 2026-08-07
+--
+-- Problem:
+--   1. The RPC body referenced columns that do not exist in `properties`
+--      (`p.bedrooms`, `p.area`). The live `properties` table is rural land and
+--      only has `total_area_ha`, `area_total_ha`, `area_util_ha` and
+--      `features->>'areaHectares'`. This raised a runtime error on every call
+--      (surfaced as 400 from PostgREST).
+--   2. The RPC returned `id`/`match_score`, but LeadDetailsModal consumes
+--      `property_id`, `score` and `reasons`.
+--
+-- Fix:
+--   - Score by property_type, price (budget/budget_min/budget_max),
+--     area (preferences minArea/maxArea vs hectares) and preferred states.
+--   - Return the columns expected by the frontend: property_id, title,
+--     property_type, price, area, address, neighborhood, city, state, status,
+--     score, reasons.
 -- ============================================================================
 
--- Drop the function if it exists with old signature
+-- Drop old signature (return type changed, CREATE OR REPLACE cannot alter it)
 DROP FUNCTION IF EXISTS public.match_properties_to_lead;
 
--- Create helper if not exists
-CREATE OR REPLACE FUNCTION public.get_my_org_id()
-RETURNS uuid
-LANGUAGE sql STABLE SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT COALESCE(
-    NULLIF(auth.jwt() -> 'app_metadata' ->> 'organization_id', '')::uuid,
-    (SELECT p.organization_id FROM public.profiles p WHERE p.id = auth.uid() LIMIT 1)
-  );
-$$;
-
--- Create the function with the signature expected by the frontend
--- NOTE: `properties` is a rural-land table. It has NO `bedrooms` or `area`
--- columns; use total_area_ha / area_total_ha / features->>'areaHectares'.
--- Output columns follow what LeadDetailsModal consumes: property_id, score, reasons.
 CREATE OR REPLACE FUNCTION public.match_properties_to_lead(
   lead_id uuid,
   max_results int DEFAULT 5
@@ -142,7 +140,6 @@ BEGIN
 END;
 $$;
 
--- Grant execution to authenticated users
 GRANT EXECUTE ON FUNCTION public.match_properties_to_lead TO authenticated;
 
 -- Reload PostgREST schema cache so the new signature is picked up immediately

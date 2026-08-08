@@ -4,6 +4,7 @@
  */
 import { Router } from 'express';
 import { z } from 'zod';
+import { logger } from '../../utils/logger.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
@@ -41,7 +42,7 @@ router.get('/:lease_id', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true, data: data || [] });
   } catch (error) {
-    console.error('[AdjustmentRoutes] List error:', error);
+    logger.error('[AdjustmentRoutes] List error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -87,7 +88,7 @@ router.post('/calculate', verifyAuth, requireTenant, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('[AdjustmentRoutes] Calculate error:', error);
+    logger.error('[AdjustmentRoutes] Calculate error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -155,7 +156,7 @@ router.post('/apply', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true, data: adjustment });
   } catch (error) {
-    console.error('[AdjustmentRoutes] Apply error:', error);
+    logger.error('[AdjustmentRoutes] Apply error:', error);
     res.status(500).json({ error: error.message });
   }
 });

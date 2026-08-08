@@ -2,6 +2,9 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSupabaseServer } from './supabase-server.js';
 import { matchLeadProperties } from '../services/leadPropertyMatcher.js';
 import { AgentOrchestrator } from '../services/ai/agentOrchestrator.js';
+import { AGENT_BRAND_NAME } from '../services/ai/agentPrompt.js';
+import { guardrails } from '../services/ai/agentGuardrails.js';
+import logger from '../utils/logger.js';
 
 const ENHANCED_LEAD_COLUMNS = [
   'lead_score',
@@ -36,7 +39,7 @@ export class AIAutomationEngine {
     } else {
       this.genAI = null;
       this.model = null;
-      console.warn(
+      logger.warn(
         '[AIAutomation] GEMINI_API_KEY não configurada no .env. Tentarei buscar do banco de dados (saas_settings).'
       );
     }
@@ -88,7 +91,7 @@ export class AIAutomationEngine {
 
       return (data || []).reverse();
     } catch (err) {
-      console.warn('[Memory] Erro ao carregar memoria:', err.message);
+      logger.warn('[Memory] Erro ao carregar memoria:', err.message);
       return [];
     }
   }
@@ -106,7 +109,7 @@ export class AIAutomationEngine {
         content: String(content).slice(0, 3000),
       });
     } catch (err) {
-      console.warn('[Memory] Erro ao salvar memoria:', err.message);
+      logger.warn('[Memory] Erro ao salvar memoria:', err.message);
     }
   }
 
@@ -173,6 +176,8 @@ Filtro obrigatorio:
 - leadName deve ser nome por extenso quando houver nome no contato ou na conversa; nao use apenas iniciais.
 
 Modo operacional:
+- Voce e ${agent?.name || 'um agente imobiliario'} (${agent?.role || 'atendimento imobiliario'}) da ${AGENT_BRAND_NAME}.
+- Quando a conversa estiver apenas comecando (saudacao como "oi", "ola", "bom dia", "boa tarde", "boa noite", "hey", "tudo bem", "pode me ajudar") e o historico ainda nao tiver resposta sua, a "reply" DEVE comecar com uma apresentacao curta: "Ola! Sou ${agent?.name || 'o assistente'}, ${agent?.role || 'atendimento imobiliario'} da ${AGENT_BRAND_NAME}. Como posso ajudar?" seguida de UMA pergunta de qualificacao. NUNCA responda "oi" com outro "oi" seco.
 - Atue primeiro como SDR imobiliario: recepcione, qualifique e avance o lead antes de vender o imovel.
 - Descubra operacao, tipo de imovel, cidade/regiao, faixa de investimento, prazo, forma de pagamento e motivo da busca.
 - Nao despeje lista de imoveis no primeiro contato se faltarem dados essenciais; faca no maximo 2 perguntas objetivas por mensagem.
@@ -233,7 +238,7 @@ Formato:
       const text = result.response.text();
       return JSON.parse(text.replace(/```json|```/g, '').trim());
     } catch (err) {
-      console.error('[AIAutomation] Erro no processamento IA:', err.message);
+      logger.error('[AIAutomation] Erro no processamento IA:', err.message);
       return null;
     }
   }
@@ -286,6 +291,101 @@ Formato:
     const audioData =
       message.type === 'audio' ? await this._downloadMediaForAI(message) : null;
 
+    const _guardrailConfig = guardrails._getGuardrailsConfig(
+      supabase,
+      organizationId,
+      agent?.id
+    );
+
+    const rateLimitResult = await guardrails.checkRateLimit(
+      normalizedPhone,
+      organizationId
+    );
+    if (rateLimitResult.exceeded) {
+      await this._saveConversationMemory(
+        organizationId,
+        agent?.id,
+        normalizedPhone,
+        'assistant',
+        guardrails.buildRateLimitRedirect()
+      );
+      return {
+        skipped: true,
+        reason: 'rate_limit_exceeded',
+        reply: guardrails.buildRateLimitRedirect(),
+        should_reply: true,
+      };
+    }
+
+    if (guardrails.isSpam(content)) {
+      return {
+        skipped: true,
+        reason: 'spam_detected',
+      };
+    }
+
+    let existingLead = await this._findLeadByNormalizedPhone(
+      supabase,
+      organizationId,
+      normalizedPhone
+    );
+    const history = await this._getConversationMemory(
+      organizationId,
+      normalizedPhone,
+      8
+    );
+    const topicDrift = guardrails.detectTopicDrift(history, content);
+
+    if (guardrails.hasSensitiveContent(content)) {
+      await this._saveConversationMemory(
+        organizationId,
+        agent?.id,
+        normalizedPhone,
+        'assistant',
+        guardrails.buildSensitiveTopicRedirect()
+      );
+      return {
+        skipped: true,
+        reason: 'sensitive_content',
+        reply: guardrails.buildSensitiveTopicRedirect(),
+        should_reply: true,
+      };
+    }
+
+    if (topicDrift.drifted && existingLead) {
+      await this._saveConversationMemory(
+        organizationId,
+        agent?.id,
+        normalizedPhone,
+        'assistant',
+        guardrails.buildOffTopicRedirect(agent?.name)
+      );
+      return {
+        skipped: true,
+        reason: 'topic_drift',
+        reply: guardrails.buildOffTopicRedirect(agent?.name),
+        should_reply: true,
+      };
+    }
+
+    if (!existingLead && !guardrails.isRealEstateContext(content)) {
+      if (!this._isGreeting(content)) {
+        await this._saveConversationMemory(
+          organizationId,
+          agent?.id,
+          normalizedPhone,
+          'assistant',
+          guardrails.buildOffTopicRedirect(agent?.name)
+        );
+        return {
+          skipped: true,
+          reason: 'not_real_estate_context',
+          reply: guardrails.buildOffTopicRedirect(agent?.name),
+          should_reply: true,
+        };
+      }
+    }
+
     // Step 1: Executar Agente Autonomo (ReAct/Function Calling) caso existam ferramentas ativas
     let autonomousReply = null;
     if (agent && agent.tools && agent.tools.length > 0) {
@@ -312,7 +412,7 @@ Formato:
           leadId: existingLeadForTools?.id || null,
         });
       } catch (err) {
-        console.error(
+        logger.error(
           '[AIAutomation] Erro ao executar orquestrador de ferramentas:',
           err.message
         );
@@ -350,7 +450,7 @@ Formato:
       content
     );
 
-    const existingLead = await this._findLeadByNormalizedPhone(
+    existingLead = await this._findLeadByNormalizedPhone(
       supabase,
       organizationId,
       normalizedPhone
@@ -486,7 +586,7 @@ Formato:
       lead = await matchLeadProperties({ supabase, lead, organizationId });
       matchAvailable = true;
     } catch (error) {
-      console.warn('[AIAutomation] Matchmaking indisponivel:', error.message);
+      logger.warn('[AIAutomation] Matchmaking indisponivel:', error.message);
     }
 
     const reply = this._buildWhatsAppReply({ lead, actionPlan, content });
@@ -577,7 +677,7 @@ Formato:
         });
         if (result) results.push(result);
       } catch (err) {
-        console.warn(
+        logger.warn(
           '[AIAutomation] Falha ao analisar conversa importada:',
           chat.id,
           err.message
@@ -783,7 +883,7 @@ Formato:
     try {
       lead = await matchLeadProperties({ supabase, lead, organizationId });
     } catch (error) {
-      console.warn(
+      logger.warn(
         '[AIAutomation] Matchmaking da importacao indisponivel:',
         error.message
       );
@@ -874,7 +974,7 @@ Formato:
       const text = result.response.text();
       return JSON.parse(text.replace(/```json|```/g, '').trim());
     } catch (err) {
-      console.error(
+      logger.error(
         '[AIAutomation] Erro ao analisar conversa importada:',
         err.message
       );
@@ -1297,7 +1397,7 @@ Formato:
       .limit(10);
 
     if (error) {
-      console.warn('[AIAutomation] Agentes nao carregados:', error.message);
+      logger.warn('[AIAutomation] Agentes nao carregados:', error.message);
       return null;
     }
 
@@ -1729,7 +1829,7 @@ Formato:
       if (arrayBuffer.byteLength > 12 * 1024 * 1024) return null;
       return Buffer.from(arrayBuffer);
     } catch (error) {
-      console.warn('[AIAutomation] Midia nao baixada para IA:', error.message);
+      logger.warn('[AIAutomation] Midia nao baixada para IA:', error.message);
       return null;
     }
   }
@@ -1969,7 +2069,7 @@ Formato:
       metadata: activity.metadata || {},
     });
     if (error)
-      console.warn('[AIAutomation] Atividade nao registrada:', error.message);
+      logger.warn('[AIAutomation] Atividade nao registrada:', error.message);
   }
 
   async _upsertTags(supabase, { leadId, organizationId, tags }) {
@@ -1983,7 +2083,7 @@ Formato:
       .from('lead_tags')
       .upsert(rows, { onConflict: 'lead_id,tag' });
     if (error)
-      console.warn('[AIAutomation] Tags nao registradas:', error.message);
+      logger.warn('[AIAutomation] Tags nao registradas:', error.message);
   }
 
   async _upsertFollowUp(supabase, { leadId, organizationId, aiResult }) {
@@ -2017,6 +2117,16 @@ Formato:
       status: 'pending',
     });
     if (error)
-      console.warn('[AIAutomation] Follow-up nao registrado:', error.message);
+      logger.warn('[AIAutomation] Follow-up nao registrado:', error.message);
+  }
+
+  _isGreeting(text = '') {
+    const normalized = String(text)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+    return /^(oi|ola|bom dia|boa tarde|boa noite|hey|eai|fala|blz|tudo bem|tudo certo|salve|oie|oii|oiii|teste|test|como esta|como vai|prazer|oi tudo bem)\b/.test(
+      normalized
+    );
   }
 }

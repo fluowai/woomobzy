@@ -21,6 +21,7 @@ import {
   Type,
   Phone,
   ShieldAlert,
+  Signature,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { usePlans } from '../context/PlansContext';
@@ -64,6 +65,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { icon: Type, label: 'Editor de Textos', path: '/admin/texts' },
     { icon: Sparkles, label: 'IA Studio', path: '/admin/ai-assistant' },
     { icon: Database, label: 'Migração', path: '/admin/migration' },
+    { icon: Signature, label: 'WooSign', path: '/woosign' },
   ];
 
   // Define feature requirements

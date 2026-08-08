@@ -70,88 +70,88 @@ export interface CallApiOptions extends RequestInit {
 
 export const callApi = async (path: string, options: CallApiOptions = {}) => {
   try {
-  const url = getApiUrl(path);
+    const url = getApiUrl(path);
 
-  const {
-    data: { session: initialSession },
-  } = await supabase.auth.getSession();
-  const headers = new Headers(options.headers || {});
-  if (initialSession?.access_token) {
-    headers.set('Authorization', `Bearer ${initialSession.access_token}`);
-  }
-
-  for (const [key, value] of Object.entries(getImpersonationHeaders())) {
-    headers.set(key, value);
-  }
-
-  // Inject BYOB tenant domain
-  if (typeof window !== 'undefined') {
-    headers.set('x-tenant-domain', window.location.hostname);
-  }
-
-  const method = (options.method || 'GET').toUpperCase();
-  const isFormData =
-    typeof FormData !== 'undefined' && options.body instanceof FormData;
-  if (
-    !isFormData &&
-    !headers.has('Content-Type') &&
-    (options.body || method !== 'GET')
-  ) {
-    headers.set('Content-Type', 'application/json');
-  }
-
-  const request = () => fetch(url, { ...options, headers });
-  let response = await request();
-
-  // The stored session can expire between getSession() and the API request.
-  let refreshErrorMessage = '';
-  if (response.status === 401 && initialSession?.refresh_token) {
     const {
-      data: { session: refreshedSession },
-      error: refreshError,
-    } = await supabase.auth.refreshSession({
-      refresh_token: initialSession.refresh_token,
-    });
-
-    if (!refreshError && refreshedSession?.access_token) {
-      headers.set('Authorization', `Bearer ${refreshedSession.access_token}`);
-      response = await request();
-    } else {
-      refreshErrorMessage =
-        refreshError?.message || 'nao foi possivel renovar a sessao';
+      data: { session: initialSession },
+    } = await supabase.auth.getSession();
+    const headers = new Headers(options.headers || {});
+    if (initialSession?.access_token) {
+      headers.set('Authorization', `Bearer ${initialSession.access_token}`);
     }
-  }
 
-  if (!response.ok) {
+    for (const [key, value] of Object.entries(getImpersonationHeaders())) {
+      headers.set(key, value);
+    }
+
+    // Inject BYOB tenant domain
+    if (typeof window !== 'undefined') {
+      headers.set('x-tenant-domain', window.location.hostname);
+    }
+
+    const method = (options.method || 'GET').toUpperCase();
+    const isFormData =
+      typeof FormData !== 'undefined' && options.body instanceof FormData;
+    if (
+      !isFormData &&
+      !headers.has('Content-Type') &&
+      (options.body || method !== 'GET')
+    ) {
+      headers.set('Content-Type', 'application/json');
+    }
+
+    const request = () => fetch(url, { ...options, headers });
+    let response = await request();
+
+    // The stored session can expire between getSession() and the API request.
+    let refreshErrorMessage = '';
+    if (response.status === 401 && initialSession?.refresh_token) {
+      const {
+        data: { session: refreshedSession },
+        error: refreshError,
+      } = await supabase.auth.refreshSession({
+        refresh_token: initialSession.refresh_token,
+      });
+
+      if (!refreshError && refreshedSession?.access_token) {
+        headers.set('Authorization', `Bearer ${refreshedSession.access_token}`);
+        response = await request();
+      } else {
+        refreshErrorMessage =
+          refreshError?.message || 'nao foi possivel renovar a sessao';
+      }
+    }
+
+    if (!response.ok) {
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('text/html')) {
+        throw new Error(
+          `Backend indisponível em ${url}: resposta HTML (${response.status})`
+        );
+      }
+
+      if (response.status === 401) {
+        logger.warn(
+          refreshErrorMessage
+            ? `[API] Falha de autenticacao detectada (401); renovacao falhou: ${refreshErrorMessage}`
+            : '[API] Falha de autenticacao detectada (401) apos renovar a sessao.'
+        );
+        // Revertido o logout automatico para nao deslogar o usuario se o servidor estiver mal configurado
+      }
+
+      const errorData = await response.json().catch(() => ({}));
+      if (isImpersonationErrorCode(errorData.code)) {
+        clearImpersonationSession();
+      }
+      throw new Error(errorData.error || `Erro na API: ${response.statusText}`);
+    }
+
     const contentType = response.headers.get('content-type') || '';
     if (contentType.includes('text/html')) {
-      throw new Error(
-        `Backend indisponível em ${url}: resposta HTML (${response.status})`
-      );
+      throw new Error(`Backend indisponível em ${url}: resposta HTML`);
     }
 
-    if (response.status === 401) {
-      logger.warn(
-        refreshErrorMessage
-          ? `[API] Falha de autenticacao detectada (401); renovacao falhou: ${refreshErrorMessage}`
-          : '[API] Falha de autenticacao detectada (401) apos renovar a sessao.'
-      );
-      // Revertido o logout automatico para nao deslogar o usuario se o servidor estiver mal configurado
-    }
-
-    const errorData = await response.json().catch(() => ({}));
-    if (isImpersonationErrorCode(errorData.code)) {
-      clearImpersonationSession();
-    }
-    throw new Error(errorData.error || `Erro na API: ${response.statusText}`);
-  }
-
-  const contentType = response.headers.get('content-type') || '';
-  if (contentType.includes('text/html')) {
-    throw new Error(`Backend indisponível em ${url}: resposta HTML`);
-  }
-
-  return response.json();
+    return response.json();
   } catch (error: any) {
     if (error.name === 'AbortError') {
       throw error;

@@ -22,28 +22,68 @@ export function isRuralOrganization(
   );
 }
 
+interface PanelHomeProfile {
+  role?: string;
+  organization_id?: string;
+  organization?: {
+    name?: string;
+    slug?: string;
+    niche?: string;
+    is_reseller?: boolean;
+  };
+}
+
+export function getPanelHomePath(
+  profile: PanelHomeProfile | null | undefined,
+  opts?: { isImpersonating?: boolean }
+): string {
+  if (!profile) return '/';
+
+  const role = String(profile.role || '').toLowerCase();
+  const isImpersonating = opts?.isImpersonating;
+
+  if (role === 'superadmin' || role === 'super_admin') {
+    if (!isImpersonating) {
+      return !profile.organization?.is_reseller ? '/megaadmin' : '/superadmin';
+    }
+    if (profile.organization) {
+      if (profile.organization.is_reseller) {
+        return '/superadmin';
+      }
+      return isRuralOrganization(
+        profile.organization.niche,
+        profile.organization.name,
+        profile.organization.slug
+      )
+        ? '/rural'
+        : '/urban';
+    }
+    return !profile.organization?.is_reseller ? '/megaadmin' : '/superadmin';
+  }
+
+  if (!profile.organization_id) return '/onboarding';
+
+  if (profile.organization) {
+    return isRuralOrganization(
+      profile.organization.niche,
+      profile.organization.name,
+      profile.organization.slug
+    )
+      ? '/rural'
+      : '/urban';
+  }
+  return '/urban';
+}
+
 const NicheRedirect: React.FC = () => {
   const { profile, isImpersonating, loading } = useAuth();
 
   if (loading) return <FullScreenSpinner />;
 
-  if (profile?.role === 'superadmin' && !isImpersonating) {
-    return <Navigate to="/superadmin" replace />;
-  }
-
-  if (!profile?.organization_id && profile?.role !== 'superadmin') {
-    logger.info('No organization found for user. Redirecting to onboarding.');
-    return <Navigate to="/onboarding" replace />;
-  }
-
-  const rawNiche = (profile?.organization as any)?.niche;
-  const orgName = (profile?.organization as any)?.name;
-  const orgSlug = (profile?.organization as any)?.slug;
-  const rural = isRuralOrganization(rawNiche, orgName, orgSlug);
-  const target = rural ? '/rural' : '/urban';
+  const target = getPanelHomePath(profile, { isImpersonating });
 
   logger.info(
-    `NicheRedirect: Sending ${profile?.email} to ${target} (rawNiche: ${rawNiche}, isRural: ${rural})`
+    `NicheRedirect: Sending ${profile?.email} to ${target} (isImpersonating: ${isImpersonating})`
   );
   return <Navigate to={target} replace />;
 };

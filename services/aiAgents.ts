@@ -146,4 +146,24 @@ export const aiAgentService = {
     });
     return data.learning;
   },
+
+  async simulate(
+    id: string,
+    params: { seed_message?: string; turns?: number; session_id?: string }
+  ) {
+    const data = await callApi(`/api/ai/agents/${id}/simulate`, {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+    return data as {
+      success: boolean;
+      transcript: Array<{
+        role: 'lead' | 'agent';
+        content: string;
+        timestamp: string;
+      }>;
+      session_id: string;
+      agent: { name: string; role: string };
+    };
+  },
 };

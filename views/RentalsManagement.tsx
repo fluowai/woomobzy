@@ -1,347 +1,993 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
+import React, { useState } from 'react';
+import { useEffect, useMemo } from 'react';
+import {
+  locacaoService,
+  type Contract,
+  type DashboardResumo,
+} from '@/services/locacaoService';
 
 import {
   FileText,
   Plus,
-  FileSignature,
-  DollarSign,
-  Calendar,
   Search,
-  ArrowRight,
   ChevronRight,
-  TrendingUp,
-  AlertCircle
+  ChevronLeft,
+  AlertCircle,
+  Clock,
+  Percent,
+  Download,
+  Upload,
+  BarChart3,
+  Wallet,
+  ArrowRightLeft,
+  CheckCircle2,
+  CalendarDays,
+  MoreVertical,
+  Filter,
+  Users,
+  DollarSign,
+  Sparkles,
+  X,
+  Send,
 } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
-import { useSettings } from '@/context/SettingsContext';
-import { supabase } from '@/services/supabase';
-import { logger } from '@/utils/logger';
-import { RentalsContractEditor } from './RentalsContractEditor';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from 'recharts';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { generateLeaseAssistantResponse } from '@/services/geminiService';
 
-interface Lease {
-  id: string;
-  tenant_name: string;
-  contract_number: string;
-  status: string;
-  signature_status: string;
-  monthly_rent: number;
-  start_date: string;
-  end_date: string;
-}
+export default function RentalsManagement() {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('Todos');
+  const [agendaMonth, setAgendaMonth] = useState(new Date().getMonth());
+  const [agendaYear, setAgendaYear] = useState(new Date().getFullYear());
+  const [showFilters, setShowFilters] = useState(false);
 
-interface DashboardStats {
-  receita_mensal: number;
-  valor_inadimplencia: number;
-  ativos: number;
-  pending_signatures: number;
-}
-
-export function RentalsManagement() {
-  const { user } = useAuth();
-  const { settings } = useSettings();
-  const [leases, setLeases] = useState<Lease[]>([]);
+  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [dashboard, setDashboard] = useState<DashboardResumo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isCreatingContract, setIsCreatingContract] = useState(false);
-  const [stats, setStats] = useState<DashboardStats>({
-    receita_mensal: 0,
-    valor_inadimplencia: 0,
-    ativos: 0,
-    pending_signatures: 0,
-  });
-
-  const fetchData = useCallback(async () => {
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const headers = { Authorization: `Bearer ${session?.access_token}` };
-
-      const [leasesRes, dashboardRes] = await Promise.all([
-        fetch('/api/locacao/leases', { headers }),
-        fetch('/api/locacao/dashboard/resumo', { headers }),
-      ]);
-
-      const leasesData = await leasesRes.json();
-      if (leasesData.success) {
-        setLeases(leasesData.data);
-      }
-
-      const dashData = await dashboardRes.json();
-      if (dashData.success) {
-        const allLeases = leasesData.data || [];
-        const pendingSigs = allLeases.filter(
-          (l: Lease) =>
-            l.signature_status === 'pending_signatures' ||
-            l.status === 'pending_signatures'
-        ).length;
-
-        setStats({
-          receita_mensal: dashData.data.receita_mensal || 0,
-          valor_inadimplencia: dashData.data.valor_inadimplencia || 0,
-          ativos: dashData.data.ativos || 0,
-          pending_signatures: pendingSigs,
-        });
-      }
-    } catch (error) {
-      logger.error('Erro ao buscar dados de locações:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [aiMessages, setAiMessages] = useState<
+    { role: 'user' | 'assistant'; text: string }[]
+  >([]);
+  const [aiInput, setAiInput] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
-    if (!isCreatingContract) {
-      fetchData();
-    }
-  }, [fetchData, isCreatingContract]);
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [dashRes, listRes] = await Promise.all([
+          locacaoService.getDashboard(),
+          locacaoService.listContracts(),
+        ]);
+        setDashboard(dashRes.data);
+        setContracts(listRes.data);
+      } catch (e) {
+        logger.error('Erro ao carregar dados do dashboard:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
+  const filteredContracts = useMemo(() => {
+    let result = contracts;
+    if (activeTab === 'Em dia')
+      result = result.filter((c) => c.payment_status === 'em_dia');
+    else if (activeTab === 'Inadimplentes')
+      result = result.filter((c) => c.payment_status === 'inadimplente');
+    else if (activeTab === 'Atenção')
+      result = result.filter((c) => c.payment_status === 'atrasado');
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (c) =>
+          (c.tenant_name || '').toLowerCase().includes(q) ||
+          (c.property_title || '').toLowerCase().includes(q) ||
+          (c.contract_number || '').toLowerCase().includes(q)
+      );
+    }
+
+    return result;
+  }, [contracts, activeTab, searchQuery]);
+
+  // MOCK DATA for Recharts
+  const fluxoData = dashboard
+    ? [
+        {
+          name: 'Previsto',
+          value: dashboard.receita_mensal || 0,
+          color: '#10b981',
+        },
+        {
+          name: 'Recebido',
+          value: Math.round((dashboard.receita_anual || 0) / 12),
+          color: '#10b981',
+        },
+        {
+          name: 'Repassado',
+          value: Math.round(((dashboard.receita_anual || 0) / 12) * 0.9),
+          color: '#10b981',
+        },
+      ]
+    : [
+        { name: 'Previsto', value: 0, color: '#10b981' },
+        { name: 'Recebido', value: 0, color: '#10b981' },
+        { name: 'Repassado', value: 0, color: '#10b981' },
+      ];
+
+  const emDiaCount = useMemo(
+    () => contracts.filter((c) => c.payment_status === 'em_dia').length,
+    [contracts]
+  );
+  const atrasadosCount = useMemo(
+    () => contracts.filter((c) => c.payment_status === 'atrasado').length,
+    [contracts]
+  );
+  const inadimplentesCount = useMemo(
+    () => contracts.filter((c) => c.payment_status === 'inadimplente').length,
+    [contracts]
+  );
+  const valorAtrasado = useMemo(
+    () =>
+      contracts
+        .filter(
+          (c) =>
+            c.payment_status === 'inadimplente' ||
+            c.payment_status === 'atrasado'
+        )
+        .reduce((sum, c) => sum + (c.monthly_rent || 0), 0),
+    [contracts]
+  );
+
+  const vencendo60Dias = useMemo(() => {
+    const now = new Date();
+    const em60Days = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
+    return contracts.filter((c) => {
+      if (!c.end_date || c.status !== 'active') return false;
+      const end = new Date(c.end_date);
+      return end >= now && end <= em60Days;
+    }).length;
+  }, [contracts]);
+
+  const formatCompactCurrency = (val: number) =>
+    val.toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL',
-    }).format(value || 0);
-  };
+      maximumFractionDigits: 0,
+    });
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            Ativo
-          </span>
-        );
-      case 'draft':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-700 ring-1 ring-inset ring-gray-600/20 dark:bg-gray-500/10 dark:text-gray-400 dark:ring-gray-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span>
-            Rascunho
-          </span>
-        );
-      case 'pending_signatures':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-            Aguard. Assinatura
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-600/20 dark:bg-indigo-500/10 dark:text-indigo-400 dark:ring-indigo-500/20">
-            {status}
-          </span>
-        );
+  const handleAiSend = async () => {
+    if (!aiInput.trim() || aiLoading) return;
+    const question = aiInput.trim();
+    setAiInput('');
+    setAiMessages((prev) => [...prev, { role: 'user', text: question }]);
+    setAiLoading(true);
+    try {
+      const context = `Carteira com ${contracts.length} contratos. ${dashboard ? `Receita mensal: R$ ${dashboard.receita_mensal}. ` : ''}Inadimplentes: ${dashboard?.inadimplentes || 0}. Atrasados: ${dashboard?.atrasados || 0}.`;
+      const response = await generateLeaseAssistantResponse(question, context);
+      setAiMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          text: response || 'Não consegui gerar uma resposta no momento.',
+        },
+      ]);
+    } catch (error) {
+      logger.error('Erro no assistente IA:', error);
+      setAiMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          text: 'Ocorreu um erro ao consultar o assistente.',
+        },
+      ]);
+    } finally {
+      setAiLoading(false);
     }
   };
 
-  if (isCreatingContract) {
-    return <RentalsContractEditor onClose={() => setIsCreatingContract(false)} />;
-  }
+  const handlePrevMonth = () => {
+    setAgendaMonth((prev) => {
+      if (prev === 0) {
+        setAgendaYear((y) => y - 1);
+        return 11;
+      }
+      return prev - 1;
+    });
+  };
+
+  const handleNextMonth = () => {
+    setAgendaMonth((prev) => {
+      if (prev === 11) {
+        setAgendaYear((y) => y + 1);
+        return 0;
+      }
+      return prev + 1;
+    });
+  };
+
+  const monthName = new Date(agendaYear, agendaMonth).toLocaleString('pt-BR', {
+    month: 'long',
+  });
+
+  const handleRegisterPayment = (contractId: string) => {
+    navigate(`/urban/locacao/${contractId}`);
+  };
+
+  const handleNewInspection = () => {
+    navigate('/urban/locacao/novo');
+  };
+
+  const handleSendReminder = async () => {
+    try {
+      const res = await fetch('/api/locacao/notifications/due-soon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ days_ahead: 5 }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Lembretes enviados: ${data.data?.length || 0}`);
+      } else {
+        toast.error('Erro ao enviar lembretes');
+      }
+    } catch (e) {
+      toast.error('Erro ao enviar lembretes');
+    }
+  };
+
+  const handleViewAdjustments = () => {
+    navigate('/urban/locacao');
+  };
+
+  const handleGenerateCharge = () => {
+    navigate('/urban/locacao/novo');
+  };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 dark:from-indigo-900/20 dark:to-purple-900/20 p-6 rounded-2xl border border-indigo-100 dark:border-indigo-900/30">
+    <div className="wootech-reference-screen w-full max-w-[1600px] mx-auto pb-12 font-sans text-slate-800 animate-fade-in">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 tracking-tight">
-            Gestão de Aluguéis
+          <div className="flex items-center gap-2 text-sm text-slate-500 mb-2">
+            <span className="font-medium text-slate-400">Imóveis</span>
+            <span className="text-slate-300">/</span>
+            <span className="text-emerald-600 font-semibold">Locações</span>
+          </div>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+            Central de locações
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Controle de contratos, faturas e repasses da {settings.agencyName}
+          <p className="text-sm text-slate-500 mt-1">
+            Recebimentos, repasses, contratos e pendências em um só fluxo.
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+        <div className="flex items-center gap-4">
           <button
-            onClick={() => toast.info('Borderô / Repasses em breve!')}
-            className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-750 hover:border-gray-300 transition-all shadow-sm"
+            onClick={handleGenerateCharge}
+            className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2"
           >
-            <DollarSign className="w-4 h-4 text-emerald-500" />
-            Borderôs
+            <FileText size={18} /> Gerar cobrança
           </button>
           <button
-            onClick={() => setIsCreatingContract(true)}
-            className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
+            onClick={() => navigate('/urban/financeiro-advanced/novo')}
+            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2"
           >
-            <Plus className="w-4 h-4" />
-            Novo Contrato
+            <Plus size={18} /> Nova locação
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <div className="relative overflow-hidden bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <TrendingUp className="w-16 h-16 text-emerald-500" />
+      <div className="flex flex-col xl:flex-row gap-6">
+        {/* Left Column (Main Area) */}
+        <div className="flex-1 flex flex-col gap-6">
+          {/* KPIs */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center">
+                <BarChart3 size={20} className="text-slate-500" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-slate-900">
+                  {formatCompactCurrency(dashboard?.receita_mensal || 0)}
+                </p>
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">
+                  Receita prevista
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center">
+                <Wallet size={20} className="text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-slate-900">
+                  {formatCompactCurrency(dashboard?.receita_anual || 0)}
+                </p>
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">
+                  Recebido
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
+                <AlertCircle size={20} className="text-red-500" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-red-500">
+                  {formatCompactCurrency(dashboard?.valor_inadimplencia || 0)}
+                </p>
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">
+                  Em atraso
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center">
+                <ArrowRightLeft size={20} className="text-emerald-600" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-xl font-bold text-slate-900">
+                    {formatCompactCurrency(
+                      (dashboard?.receita_mensal || 0) * 0.9
+                    )}
+                  </p>
+                  <span className="text-[10px] font-bold text-slate-400">
+                    Julho de 2026
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">
+                  A repassar
+                </p>
+              </div>
+            </div>
           </div>
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-            Receita Prevista
-          </p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {formatCurrency(stats.receita_mensal)}
-          </p>
-          <div className="mt-4 flex items-center text-xs font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-400 w-fit px-2 py-1 rounded-md">
-            + Mensal
+
+          {/* Agenda Financeira */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+            <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+              Agenda financeira{' '}
+              <span className="text-slate-400 text-sm font-medium">
+                • Julho
+              </span>
+            </h3>
+
+            <div className="flex items-center justify-between mb-8">
+              <button
+                onClick={handlePrevMonth}
+                className="p-2 hover:bg-slate-50 rounded-full transition-colors"
+              >
+                <ChevronLeft size={20} className="text-slate-400" />
+              </button>
+
+              <div className="flex gap-8">
+                <div className="text-center">
+                  <p className="text-xs font-bold text-slate-400 uppercase">
+                    {monthName.charAt(0).toUpperCase() + monthName.slice(1)}
+                  </p>
+                  <p className="text-lg font-medium text-slate-700">
+                    {new Date(agendaYear, agendaMonth).toLocaleString('pt-BR', {
+                      month: 'short',
+                    })}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={handleNextMonth}
+                className="p-2 hover:bg-slate-50 rounded-full transition-colors"
+              >
+                <ChevronRight size={20} className="text-slate-400" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors group cursor-pointer border border-transparent hover:border-slate-100">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                    <Download size={18} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">
+                      Recebimento{' '}
+                      <span className="text-slate-400 font-normal">
+                        • Residencial Aurora, Apto 401
+                      </span>
+                    </p>
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-slate-700">R$ 2.850</p>
+                <p className="text-xs font-bold text-emerald-600">Hoje</p>
+                <p className="text-sm font-medium text-emerald-600 group-hover:underline flex items-center gap-1">
+                  Registrar pagamento <ChevronRight size={14} />
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors group cursor-pointer border border-transparent hover:border-slate-100">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+                    <Upload size={18} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">
+                      Repasse{' '}
+                      <span className="text-slate-400 font-normal">
+                        • Carlos Mendes
+                      </span>
+                    </p>
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-slate-700">R$ 2.430</p>
+                <p className="text-xs font-bold text-emerald-600">Hoje</p>
+                <p className="text-sm font-medium text-emerald-600 group-hover:underline flex items-center gap-1">
+                  Realizar repasse <ChevronRight size={14} />
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors group cursor-pointer border border-transparent hover:border-slate-100">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">
+                    <Percent size={18} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">
+                      Reajuste IPCA{' '}
+                      <span className="text-slate-400 font-normal">
+                        • Contrato LOC-0084
+                      </span>
+                    </p>
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-slate-700">+4,23%</p>
+                <p className="text-xs font-bold text-amber-600">Amanhã</p>
+                <p className="text-sm font-medium text-emerald-600 group-hover:underline flex items-center gap-1">
+                  Aplicar reajuste <ChevronRight size={14} />
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors group cursor-pointer border border-transparent hover:border-slate-100">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center text-purple-600">
+                    <Search size={18} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">
+                      Vistoria de saída{' '}
+                      <span className="text-slate-400 font-normal">
+                        • Casa Jardim Europa
+                      </span>
+                    </p>
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-slate-700"></p>
+                <p className="text-xs font-medium text-slate-500">
+                  02 ago, 14:00
+                </p>
+                <p className="text-sm font-medium text-emerald-600 group-hover:underline flex items-center gap-1">
+                  Ver detalhes <ChevronRight size={14} />
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors group cursor-pointer border border-transparent hover:border-slate-100">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
+                    <FileText size={18} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">
+                      Renovação contratual{' '}
+                      <span className="text-slate-400 font-normal">
+                        • Mariana Costa
+                      </span>
+                    </p>
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-slate-700"></p>
+                <p className="text-xs font-medium text-slate-500">Em 12 dias</p>
+                <p className="text-sm font-medium text-emerald-600 group-hover:underline flex items-center gap-1">
+                  Antecipar renovação <ChevronRight size={14} />
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Carteira de locações */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm">
+            <div className="p-6 pb-0 border-b border-slate-100">
+              <h3 className="text-lg font-bold text-slate-900 mb-6">
+                Carteira de locações
+              </h3>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4">
+                <div className="flex items-center gap-6 overflow-x-auto">
+                  <button
+                    onClick={() => setActiveTab('Todos')}
+                    className={`text-sm font-bold border-b-2 pb-2 whitespace-nowrap transition-colors ${activeTab === 'Todos' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                  >
+                    Todos{' '}
+                    <span
+                      className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${activeTab === 'Todos' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100'}`}
+                    >
+                      {contracts.length}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('Em dia')}
+                    className={`text-sm font-bold border-b-2 pb-2 whitespace-nowrap transition-colors ${activeTab === 'Em dia' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                  >
+                    Em dia{' '}
+                    <span
+                      className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${activeTab === 'Em dia' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100'}`}
+                    >
+                      {emDiaCount}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('Atenção')}
+                    className={`text-sm font-bold border-b-2 pb-2 whitespace-nowrap transition-colors ${activeTab === 'Atenção' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                  >
+                    Atenção{' '}
+                    <span
+                      className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${activeTab === 'Atenção' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100'}`}
+                    >
+                      {atrasadosCount}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('Inadimplentes')}
+                    className={`text-sm font-bold border-b-2 pb-2 whitespace-nowrap transition-colors ${activeTab === 'Inadimplentes' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                  >
+                    Inadimplentes{' '}
+                    <span
+                      className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${activeTab === 'Inadimplentes' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100'}`}
+                    >
+                      {inadimplentesCount}
+                    </span>
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <Search
+                      size={16}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                    />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Buscar inquilino ou imóvel..."
+                      className="w-64 pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                    />
+                  </div>
+                  <button
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50"
+                  >
+                    <Filter size={16} /> Filtros
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="py-4 pl-6 pr-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      Inquilino / Imóvel
+                    </th>
+                    <th className="py-4 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      Aluguel
+                    </th>
+                    <th className="py-4 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      Próximo vencimento
+                    </th>
+                    <th className="py-4 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      Situação
+                    </th>
+                    <th className="py-4 pr-6 pl-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      Próxima ação
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {loading ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="py-8 text-center text-slate-500"
+                      >
+                        Carregando locações...
+                      </td>
+                    </tr>
+                  ) : filteredContracts.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="py-8 text-center text-slate-500"
+                      >
+                        Nenhum contrato encontrado.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredContracts.map((contract) => (
+                      <tr
+                        key={contract.id}
+                        onClick={() =>
+                          navigate(`/urban/locacao/${contract.id}`)
+                        }
+                        className="hover:bg-slate-50/50 transition-colors cursor-pointer group"
+                      >
+                        <td className="py-4 pl-6 pr-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold">
+                              {(contract.tenant_name || 'C')
+                                .charAt(0)
+                                .toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-slate-900">
+                                {contract.tenant_name}
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                {(contract as any).property?.title || 'Imóvel'}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4 px-4">
+                          <p className="text-sm font-bold text-slate-700">
+                            {formatCompactCurrency(contract.monthly_rent || 0)}
+                          </p>
+                        </td>
+                        <td className="py-4 px-4">
+                          <p className="text-sm font-medium text-slate-700">
+                            {contract.end_date
+                              ? new Date(contract.end_date).toLocaleDateString()
+                              : 'N/A'}
+                          </p>
+                        </td>
+                        <td className="py-4 px-4">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${locacaoService.getStatusColor(contract.payment_status).bg} ${locacaoService.getStatusColor(contract.payment_status).color}`}
+                          >
+                            {contract.payment_status === 'em_dia'
+                              ? 'Em dia'
+                              : contract.payment_status === 'inadimplente'
+                                ? 'Inadimplente'
+                                : 'Atrasado'}
+                          </span>
+                        </td>
+                        <td className="py-4 pr-6 pl-4">
+                          <div className="flex items-center gap-3 justify-between">
+                            <span className="text-sm font-medium text-emerald-600 flex items-center gap-1.5">
+                              <ChevronRight size={16} /> Ver detalhes
+                            </span>
+                            <MoreVertical
+                              size={16}
+                              className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
-        <div className="relative overflow-hidden bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <AlertCircle className="w-16 h-16 text-rose-500" />
-          </div>
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-            Inadimplência
-          </p>
-          <p className="text-2xl font-bold text-rose-600 dark:text-rose-500">
-            {formatCurrency(stats.valor_inadimplencia)}
-          </p>
-          <div className="mt-4 flex items-center text-xs font-medium text-rose-600 bg-rose-50 dark:bg-rose-500/10 dark:text-rose-400 w-fit px-2 py-1 rounded-md">
-            Atrasados
-          </div>
-        </div>
+        {/* Right Column (Sidebar) */}
+        <div className="w-full xl:w-96 shrink-0 space-y-6">
+          {/* Atenção necessária */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+            <h3 className="text-base font-bold text-slate-900 mb-6">
+              Atenção necessária
+            </h3>
 
-        <div className="relative overflow-hidden bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <FileText className="w-16 h-16 text-indigo-500" />
-          </div>
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-            Contratos Ativos
-          </p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {stats.ativos}
-          </p>
-          <div className="mt-4 flex items-center text-xs font-medium text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10 dark:text-indigo-400 w-fit px-2 py-1 rounded-md">
-            Vigentes
-          </div>
-        </div>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-100 rounded-xl">
+                <AlertCircle
+                  size={20}
+                  className="text-red-500 shrink-0 mt-0.5"
+                />
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-slate-900">
+                    {atrasadosCount + inadimplentesCount} aluguéis em atraso{' '}
+                    <span className="text-red-500 ml-1">
+                      • {formatCompactCurrency(valorAtrasado)}
+                    </span>
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Ação imediata recomendada
+                  </p>
+                </div>
+                <button
+                  onClick={() =>
+                    navigate('/urban/locacao?filter=inadimplentes')
+                  }
+                  className="text-xs font-bold text-emerald-600 whitespace-nowrap mt-0.5"
+                >
+                  Ver detalhes {'>'}
+                </button>
+              </div>
 
-        <div className="relative overflow-hidden bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <FileSignature className="w-16 h-16 text-amber-500" />
+              <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-100 rounded-xl">
+                <Clock size={20} className="text-amber-500 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-slate-900">
+                    {vencendo60Dias} contratos vencem em 60 dias
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Planeje renovações
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigate('/urban/locacao')}
+                  className="text-xs font-bold text-emerald-600 whitespace-nowrap mt-0.5"
+                >
+                  Ver contratos {'>'}
+                </button>
+              </div>
+
+              <div className="flex items-start gap-3 p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
+                <Percent
+                  size={20}
+                  className="text-emerald-600 shrink-0 mt-0.5"
+                />
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-slate-900">
+                    6 reajustes aguardando aplicação
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Atualize os valores
+                  </p>
+                </div>
+                <button
+                  onClick={handleViewAdjustments}
+                  className="text-xs font-bold text-emerald-600 whitespace-nowrap mt-0.5"
+                >
+                  Ver reajustes {'>'}
+                </button>
+              </div>
+            </div>
           </div>
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-            Aguardando Assinatura
-          </p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {stats.pending_signatures}
-          </p>
-          <div className="mt-4 flex items-center text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-400 w-fit px-2 py-1 rounded-md">
-            Pendentes
+
+          {/* Fluxo do mês */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+            <h3 className="text-base font-bold text-slate-900 mb-6">
+              Fluxo do mês
+            </h3>
+
+            <div className="h-40 w-full mb-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={fluxoData} barSize={40}>
+                  <XAxis
+                    dataKey="name"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 10, fill: '#64748b' }}
+                    dy={10}
+                  />
+                  <Tooltip
+                    cursor={{ fill: '#f1f5f9' }}
+                    formatter={(value: number) => [
+                      formatCompactCurrency(value),
+                      '',
+                    ]}
+                    contentStyle={{
+                      borderRadius: '8px',
+                      border: 'none',
+                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                      fontSize: '12px',
+                    }}
+                  />
+                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                    {fluxoData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="flex justify-between text-center px-4">
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase">
+                  Previsto
+                </p>
+                <p className="text-xs font-bold text-slate-700">
+                  {formatCompactCurrency(fluxoData[0]?.value || 0)}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase">
+                  Recebido
+                </p>
+                <p className="text-xs font-bold text-slate-700">
+                  {formatCompactCurrency(fluxoData[1]?.value || 0)}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase">
+                  Repassado
+                </p>
+                <p className="text-xs font-bold text-slate-700">
+                  {formatCompactCurrency(fluxoData[2]?.value || 0)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Repasses */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+            <h3 className="text-base font-bold text-slate-900 mb-6">
+              Repasses aos proprietários
+            </h3>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <Users size={24} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    12 programados hoje
+                  </p>
+                  <p className="text-xl font-bold text-slate-900">R$ 28.460</p>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate('/urban/locacao/bordero')}
+                className="px-4 py-2 bg-white border border-emerald-600 text-emerald-600 font-bold text-sm rounded-lg hover:bg-emerald-50 transition-colors"
+              >
+                Ver borderô
+              </button>
+            </div>
+          </div>
+
+          {/* Ações rápidas */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+            <h3 className="text-base font-bold text-slate-900 mb-6">
+              Ações rápidas
+            </h3>
+
+            <div className="grid grid-cols-3 gap-3">
+              <button
+                onClick={() => navigate('/urban/locacao')}
+                className="flex flex-col items-center justify-center gap-2 p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <DollarSign size={16} />
+                </div>
+                <span className="text-[10px] font-bold text-slate-700 text-center leading-tight">
+                  Registrar pagamento
+                </span>
+              </button>
+
+              <button
+                onClick={handleNewInspection}
+                className="flex flex-col items-center justify-center gap-2 p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <Search size={16} />
+                </div>
+                <span className="text-[10px] font-bold text-slate-700 text-center leading-tight">
+                  Nova vistoria
+                </span>
+              </button>
+
+              <button
+                onClick={handleSendReminder}
+                className="flex flex-col items-center justify-center gap-2 p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <AlertCircle size={16} />
+                </div>
+                <span className="text-[10px] font-bold text-slate-700 text-center leading-tight">
+                  Enviar lembrete
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50/50 dark:bg-gray-800/50">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <FileText className="w-5 h-5 text-indigo-500" />
-            Lista de Contratos
-          </h2>
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+      {/* AI Assistant */}
+      {aiChatOpen && (
+        <div className="fixed bottom-6 right-6 w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl flex flex-col z-50">
+          <div className="flex items-center justify-between p-4 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-indigo-600 rounded-xl text-white">
+                <Sparkles size={18} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-900">
+                  Assistente IA
+                </p>
+                <p className="text-[10px] text-slate-500">Gestão de locações</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setAiChatOpen(false)}
+              className="p-1 hover:bg-slate-100 rounded-lg"
+            >
+              <X size={18} className="text-slate-500" />
+            </button>
+          </div>
+          <div className="flex-1 min-h-[300px] max-h-[400px] overflow-y-auto p-4 space-y-3">
+            {aiMessages.length === 0 && (
+              <p className="text-xs text-slate-400 text-center py-8">
+                Pergunte sobre inadimplência, reajustes, renovações ou dúvidas
+                do módulo.
+              </p>
+            )}
+            {aiMessages.map((msg, idx) => (
+              <div
+                key={idx}
+                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-[80%] px-3 py-2 rounded-xl text-xs ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'}`}
+                >
+                  {msg.text}
+                </div>
+              </div>
+            ))}
+            {aiLoading && (
+              <div className="flex justify-start">
+                <div className="px-3 py-2 rounded-xl bg-slate-100 text-xs text-slate-500">
+                  Digitando...
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="p-3 border-t border-slate-100 flex gap-2">
             <input
               type="text"
-              placeholder="Buscar por inquilino, imóvel..."
-              className="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow shadow-sm"
+              value={aiInput}
+              onChange={(e) => setAiInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAiSend()}
+              placeholder="Digite sua pergunta..."
+              className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-indigo-500"
             />
+            <button
+              onClick={handleAiSend}
+              disabled={aiLoading}
+              className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white rounded-lg"
+            >
+              <Send size={14} />
+            </button>
           </div>
         </div>
+      )}
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">
-            <thead className="bg-gray-50/80 dark:bg-gray-900/80 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">
-              <tr>
-                <th className="px-6 py-4 font-semibold">Inquilino</th>
-                <th className="px-6 py-4 font-semibold">Ref / Imóvel</th>
-                <th className="px-6 py-4 font-semibold">Valor (Mês)</th>
-                <th className="px-6 py-4 font-semibold">Vencimento</th>
-                <th className="px-6 py-4 font-semibold">Status</th>
-                <th className="px-6 py-4 font-semibold text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {loading ? (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="px-6 py-12 text-center text-gray-500"
-                  >
-                    <div className="flex flex-col items-center justify-center space-y-3">
-                      <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                      <p>Carregando contratos...</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : leases.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="px-6 py-16 text-center text-gray-500"
-                  >
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4 border border-gray-100 dark:border-gray-700">
-                        <FileText className="w-8 h-8 text-gray-400" />
-                      </div>
-                      <p className="text-base font-medium text-gray-900 dark:text-white mb-1">
-                        Nenhum contrato encontrado
-                      </p>
-                      <p className="text-sm">
-                        Crie um novo contrato para começar a gerenciar locações.
-                      </p>
-                      <button
-                        onClick={() => setIsCreatingContract(true)}
-                        className="mt-4 px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors"
-                      >
-                        Criar Primeiro Contrato
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                leases.map((lease) => (
-                  <tr
-                    key={lease.id}
-                    className="hover:bg-gray-50/80 dark:hover:bg-gray-750/50 transition-colors group cursor-pointer"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-gray-900 dark:text-white">
-                        {lease.tenant_name}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-gray-500">
-                      {lease.contract_number || 'S/N'}
-                    </td>
-                    <td className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-200">
-                      {formatCurrency(lease.monthly_rent)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-gray-500">
-                        <Calendar className="w-4 h-4 text-gray-400" />
-                        {lease.end_date
-                          ? new Date(lease.end_date).toLocaleDateString('pt-BR')
-                          : '-'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {getStatusBadge(lease.status)}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() =>
-                          toast.info('Gerenciamento de contrato em breve!')
-                        }
-                        className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-500/10 opacity-0 group-hover:opacity-100 transition-all focus:opacity-100"
-                      >
-                        Detalhes
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {!aiChatOpen && (
+        <button
+          onClick={() => setAiChatOpen(true)}
+          className="fixed bottom-6 right-6 p-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg flex items-center gap-2 z-40"
+        >
+          <Sparkles size={20} />
+          <span className="text-xs font-bold">Assistente IA</span>
+        </button>
+      )}
     </div>
   );
 }

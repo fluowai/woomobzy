@@ -251,6 +251,10 @@ router.patch('/leads/:id', verifyAuth, requireTenant, async (req, res) => {
       'campaign',
     ].some((field) => Object.prototype.hasOwnProperty.call(updates, field));
 
+    // Tags vivem na tabela lead_tags, nao em leads.
+    const tags = Array.isArray(updates.tags) ? updates.tags : undefined;
+    delete updates.tags;
+
     const { data, error } = await supabase
       .from('leads')
       .update(updates)
@@ -259,6 +263,34 @@ router.patch('/leads/:id', verifyAuth, requireTenant, async (req, res) => {
       .single();
 
     if (error) throw error;
+
+    if (tags !== undefined) {
+      const tagValues = [
+        ...new Set(
+          tags.map((tag) => String(tag).trim()).filter((tag) => tag.length)
+        ),
+      ];
+
+      const { error: deleteError } = await supabase
+        .from('lead_tags')
+        .delete()
+        .eq('lead_id', id)
+        .eq('organization_id', req.orgId);
+
+      if (deleteError) throw deleteError;
+
+      if (tagValues.length) {
+        const { error: insertError } = await supabase.from('lead_tags').insert(
+          tagValues.map((tag) => ({
+            lead_id: id,
+            organization_id: req.orgId,
+            tag,
+          }))
+        );
+
+        if (insertError) throw insertError;
+      }
+    }
 
     await supabase.from('lead_activities').insert({
       lead_id: id,

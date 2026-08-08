@@ -4,7 +4,17 @@ import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { useNavigate } from 'react-router-dom';
 import { leadService } from '../../services/leads';
 import { Lead } from '../../types';
-import { Search, Plus, Trash2, LayoutGrid } from 'lucide-react';
+import {
+  Search,
+  Plus,
+  Trash2,
+  LayoutGrid,
+  Users,
+  BriefcaseBusiness,
+  Flame,
+  Clock3,
+  UploadCloud,
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 import {
@@ -18,11 +28,34 @@ import {
 import { loadCustomStages, saveCustomStages } from './kanban/helpers';
 
 import NewLeadModal from './KanbanBoard/NewLeadModal';
-import EditLeadModal from './KanbanBoard/EditLeadModal';
 import LeadDetailsModal from './KanbanBoard/LeadDetailsModal';
 import NewStageModal from './KanbanBoard/NewStageModal';
 import LeadCard from './KanbanBoard/LeadCard';
 import KanbanColumn from './KanbanBoard/KanbanColumn';
+
+function PipelineMetric({
+  icon: Icon,
+  value,
+  label,
+}: {
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  value: string | number;
+  label: string;
+}) {
+  return (
+    <div className="wootech-status-card">
+      <div>
+        <span className="wootech-status-icon">
+          <Icon size={19} />
+        </span>
+        <div>
+          <strong>{value}</strong>
+          <span>{label}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const KanbanBoard: React.FC = () => {
   const matchProfile: 'urbano' | 'rural' = window.location.pathname.startsWith(
@@ -48,7 +81,6 @@ const KanbanBoard: React.FC = () => {
   const [isStageModalOpen, setIsStageModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [mobileStageId, setMobileStageId] = useState(pipelineStages[0].id);
@@ -84,6 +116,82 @@ const KanbanBoard: React.FC = () => {
       toast.success('Etapa criada no Kanban.');
     },
     [matchProfile]
+  );
+
+  const handleRenameStage = useCallback(
+    (stageId: string, newLabel: string) => {
+      const normalized = newLabel.trim().replace(/\s+/g, ' ').slice(0, 32);
+      if (!normalized) {
+        toast.error('Informe o nome da etapa.');
+        return;
+      }
+      const alreadyExists = pipelineStages.some(
+        (s) =>
+          s.id !== stageId &&
+          s.label.toLocaleLowerCase('pt-BR') ===
+            normalized.toLocaleLowerCase('pt-BR')
+      );
+      if (alreadyExists) {
+        toast.error('Essa etapa ja existe no Kanban.');
+        return;
+      }
+      setCustomStages((prev) => {
+        const next = prev.map((s) =>
+          s.id === stageId ? { ...s, label: normalized } : s
+        );
+        saveCustomStages(matchProfile, next);
+        return next;
+      });
+      toast.success('Etapa renomeada.');
+    },
+    [matchProfile, pipelineStages]
+  );
+
+  const handleDeleteStage = useCallback(
+    (stageId: string) => {
+      const stage = pipelineStages.find((s) => s.id === stageId);
+      const stageLabel = stage?.label || stageId;
+      if (
+        !window.confirm(
+          `Excluir a etapa "${stageLabel}"? Os leads desta etapa serao movidos para a primeira etapa do funil.`
+        )
+      )
+        return;
+      const firstStageId = pipelineStages[0].id;
+      const affectedIds = leads
+        .filter((l) => l.status === stageId)
+        .map((l) => l.id);
+
+      Promise.all(
+        affectedIds.map((leadId) =>
+          leadService.update(leadId, { status: firstStageId } as any)
+        )
+      )
+        .then(() => {
+          setLeads((prev) =>
+            prev.map((l) =>
+              l.status === stageId
+                ? { ...l, status: firstStageId as Lead['status'] }
+                : l
+            )
+          );
+          setCustomStages((prev) => {
+            const next = prev.filter((s) => s.id !== stageId);
+            saveCustomStages(matchProfile, next);
+            return next;
+          });
+          setStageState((prev) => {
+            const { [stageId]: _removed, ...rest } = prev;
+            return rest;
+          });
+          toast.success('Etapa excluida do Kanban.');
+        })
+        .catch((error) => {
+          logger.error('Failed to delete stage', error);
+          toast.error('Erro ao excluir a etapa.');
+        });
+    },
+    [leads, matchProfile, pipelineStages]
   );
 
   const loadLeads = useCallback(async () => {
@@ -278,27 +386,96 @@ const KanbanBoard: React.FC = () => {
   );
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-slate-50">
-      <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between border-b px-6 py-4 shadow-md gap-4 ${matchProfile === 'rural' ? 'bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 border-emerald-800' : 'bg-gradient-to-r from-indigo-900 via-indigo-800 to-indigo-900 border-indigo-800'}`}>
+    <div className="wootech-reference-screen flex h-screen flex-col overflow-hidden bg-slate-50">
+      <div className="border-b border-slate-200 bg-white px-4 py-5 md:px-6">
+        <div className="wootech-page-heading mb-5">
+          <div>
+            <div className="wootech-breadcrumb">
+              <strong>CRM</strong>
+              <span>/</span>
+              <span>Funil comercial</span>
+            </div>
+            <h1>Pipeline comercial</h1>
+            <p>
+              Priorize leads, acompanhe SLA e avance oportunidades com
+              inteligência.
+            </p>
+          </div>
+          <div className="wootech-action-row">
+            <button
+              className="wootech-secondary-action"
+              onClick={() => toast.info('Importação de leads em breve.')}
+            >
+              <UploadCloud size={16} /> Importar leads
+            </button>
+            <button
+              className="wootech-primary-action"
+              onClick={() => setIsModalOpen(true)}
+            >
+              <Plus size={17} /> Novo lead
+            </button>
+          </div>
+        </div>
+        <div className="wootech-status-grid mb-0">
+          <PipelineMetric
+            icon={Users}
+            value={leads.length}
+            label="Leads ativos"
+          />
+          <PipelineMetric
+            icon={BriefcaseBusiness}
+            value={new Intl.NumberFormat('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+              notation: 'compact',
+            }).format(
+              leads.reduce((total, lead) => total + Number(lead.budget || 0), 0)
+            )}
+            label="VGV potencial"
+          />
+          <PipelineMetric
+            icon={Flame}
+            value={
+              leads.filter((lead) =>
+                ['quente', 'hot'].includes(
+                  String(lead.classification || '').toLowerCase()
+                )
+              ).length
+            }
+            label="Leads quentes"
+          />
+          <PipelineMetric
+            icon={Clock3}
+            value={leads.filter((lead) => !lead.notes).length}
+            label="Sem próximo passo"
+          />
+          <PipelineMetric
+            icon={LayoutGrid}
+            value={pipelineStages.length}
+            label="Etapas do funil"
+          />
+        </div>
+      </div>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-200 bg-white px-4 py-3 gap-3 md:px-6">
         <div className="flex items-center gap-4 w-full sm:w-auto">
           <div className="relative flex-1 sm:flex-none">
             <Search
               size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/50"
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
             />
             <input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-10 w-full sm:w-64 rounded-xl border border-white/20 bg-white/10 pl-10 pr-3 text-sm font-semibold text-white outline-none placeholder:text-white/50 focus:border-white/40 focus:bg-white/20 transition-all backdrop-blur-sm"
-              placeholder="Buscar leads..."
+              className="h-10 w-full sm:w-72 rounded-lg border border-slate-200 bg-white pl-10 pr-3 text-sm font-medium text-slate-800 outline-none placeholder:text-slate-400 focus:border-emerald-500 transition-all"
+              placeholder="Buscar lead, telefone, imóvel ou origem..."
             />
           </div>
-          <div className="hidden items-center gap-1.5 rounded-xl bg-black/20 p-1.5 md:flex backdrop-blur-md border border-white/10">
+          <div className="hidden items-center gap-1 rounded-lg bg-slate-100 p-1 md:flex border border-slate-200">
             {INTENT_FILTERS.map((f) => (
               <button
                 key={f.id}
                 onClick={() => setIntentFilter(f.id)}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all ${intentFilter === f.id ? 'bg-white text-gray-900 shadow-sm' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
+                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-semibold transition-all ${intentFilter === f.id ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
               >
                 <f.icon size={14} /> {f.shortLabel}
               </button>
@@ -317,13 +494,13 @@ const KanbanBoard: React.FC = () => {
           )}
           <button
             onClick={() => setIsStageModalOpen(true)}
-            className="flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-xs font-bold text-white hover:bg-white/20 border border-white/20 transition-all backdrop-blur-sm"
+            className="wootech-secondary-action"
           >
             <LayoutGrid size={14} /> Etapas
           </button>
           <button
             onClick={() => setIsModalOpen(true)}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold text-white transition-all shadow-lg border border-transparent ${matchProfile === 'rural' ? 'bg-amber-500 hover:bg-amber-400 shadow-amber-500/30' : 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/30'}`}
+            className="wootech-primary-action"
           >
             <Plus size={16} /> Novo Lead
           </button>
@@ -434,22 +611,20 @@ const KanbanBoard: React.FC = () => {
         onDelete={handleDelete}
         stages={pipelineStages}
         navigate={navigate}
-      />
-      <EditLeadModal
-        isOpen={isEditOpen}
-        lead={selectedLead}
-        onClose={() => setIsEditOpen(false)}
-        onSaved={(updated) =>
+        onUpdateLead={(updated) => {
           setLeads((prev) =>
             prev.map((l) => (l.id === updated.id ? updated : l))
-          )
-        }
+          );
+          setSelectedLead(updated);
+        }}
       />
       <NewStageModal
         isOpen={isStageModalOpen}
         existingStages={pipelineStages}
         onClose={() => setIsStageModalOpen(false)}
         onCreate={handleCreateStage}
+        onRename={handleRenameStage}
+        onDelete={handleDeleteStage}
       />
     </div>
   );

@@ -4,6 +4,7 @@
  */
 import { Router } from 'express';
 import { z } from 'zod';
+import { logger } from '../../utils/logger.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
@@ -49,7 +50,7 @@ router.get('/:lease_id', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true, data: data || null });
   } catch (error) {
-    console.error('[TerminationRoutes] Get error:', error);
+    logger.error('[TerminationRoutes] Get error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -92,7 +93,7 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
 
     res.status(201).json({ success: true, data });
   } catch (error) {
-    console.error('[TerminationRoutes] Create error:', error);
+    logger.error('[TerminationRoutes] Create error:', error);
     res.status(500).json({ error: error.message });
   }
 });

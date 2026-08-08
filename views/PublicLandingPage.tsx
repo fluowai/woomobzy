@@ -36,6 +36,12 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
   const [organization, setOrganization] = useState<any>(null);
   const [showMainSite, setShowMainSite] = useState(false);
   const [properties, setProperties] = useState<any[]>([]);
+  const [resellerBranding, setResellerBranding] = useState<{
+    name?: string | null;
+    logoUrl?: string | null;
+    primaryColor?: string | null;
+    secondaryColor?: string | null;
+  } | null>(null);
   const isImmediateOkaSite = activeSlug === 'okaimoveis';
 
   const page = landingPage;
@@ -85,16 +91,28 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
 
       if (isDirectLPLink) {
         // Mode A: Search by Landing Page Slug directly
+        // NOTE: We do NOT join organizations here because RLS on the
+        // organizations table blocks anonymous SELECT. Instead we fetch
+        // the landing page first, then resolve the org separately.
         const { data: lpData } = await supabase
           .from('landing_pages')
-          .select('*, organization:organizations(*)')
+          .select('*')
           .eq('slug', slugOrOrg)
           .eq('status', 'published')
           .maybeSingle();
 
         if (lpData) {
           targetPage = lpData;
-          resolvedOrg = lpData.organization;
+          if (lpData.organization_id) {
+            try {
+              const { data: org } = await supabase.rpc('get_tenant_public', {
+                slug_input: slugOrOrg,
+              });
+              resolvedOrg = org?.[0] || { id: lpData.organization_id };
+            } catch {
+              resolvedOrg = { id: lpData.organization_id };
+            }
+          }
         } else {
           logger.error('Landing page not found by slug:', slugOrOrg);
         }
@@ -103,8 +121,10 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
       // Fallback or Mode B: Resolve by Organization first
       if (!resolvedOrg) {
         try {
-          const { data: org, error: orgError } = await supabase
-            .rpc('get_tenant_public', { slug_input: slugOrOrg });
+          const { data: org, error: orgError } = await supabase.rpc(
+            'get_tenant_public',
+            { slug_input: slugOrOrg }
+          );
           const orgRow = org?.[0];
           if (!orgError && orgRow) resolvedOrg = orgRow;
         } catch (e) {
@@ -139,6 +159,27 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
 
       setOrganization(resolvedOrg);
       const orgId = resolvedOrg.id;
+
+      // 1.5 Resolve branding da revenda (se o cliente for filho de uma revenda)
+      try {
+        const { data: resellerData } = await supabase.rpc(
+          'get_reseller_branding',
+          { slug_input: slugOrOrg }
+        );
+        const resellerRow = resellerData?.[0];
+        if (resellerRow) {
+          setResellerBranding({
+            name: resellerRow.name,
+            logoUrl: resellerRow.logo_url,
+            primaryColor: resellerRow.primary_color,
+            secondaryColor: resellerRow.secondary_color,
+          });
+        } else {
+          setResellerBranding(null);
+        }
+      } catch {
+        setResellerBranding(null);
+      }
 
       // 2. Load Settings
       if (orgId) {
@@ -285,6 +326,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
       <ComingSoon
         organizationId={organization?.id || ''}
         agencyName={agencyName}
+        resellerBranding={resellerBranding}
       />
     );
   }

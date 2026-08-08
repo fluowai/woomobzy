@@ -2,6 +2,14 @@ import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 import { verifyMegaAdmin } from '../middleware/auth.js';
 import { getSupabaseServer } from '../lib/supabase-server.js';
+import {
+  DomainProvisioningError,
+  linkDomainToOrganization,
+  normalizeDomain,
+  unlinkDomainFromOrganization,
+} from '../domainService.js';
+import { provisionLicenseForOrganization } from '../lib/licensing/admin-service.js';
+import systemContractsRoutes from '../api/system-contracts/index.js';
 
 const router = express.Router();
 
@@ -95,10 +103,105 @@ router.get('/resellers', verifyMegaAdmin, async (req, res) => {
   }
 });
 
+// POST /api/mega/resellers/:id/domain — Vincular domínio a um whitelabel
+router.post('/resellers/:id/domain', verifyMegaAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { domain, purpose, strictDns } = req.body;
+
+    if (!domain) {
+      return res.status(400).json({ error: 'Domínio é obrigatório' });
+    }
+
+    const { data: reseller } = await supabase
+      .from('organizations')
+      .select('id, name, is_reseller')
+      .eq('id', id)
+      .eq('is_reseller', true)
+      .maybeSingle();
+
+    if (!reseller) {
+      return res.status(404).json({ error: 'Reseller não encontrado' });
+    }
+
+    const result = await linkDomainToOrganization(supabase, {
+      domain,
+      organizationId: id,
+      purpose,
+      strictDns: strictDns !== false,
+    });
+
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.error('[MegaAdmin] Error linking domain:', error);
+    const status =
+      error instanceof DomainProvisioningError ? error.statusCode : 500;
+    res.status(status).json({
+      error: error.message,
+      code: error.code || 'DOMAIN_PROVISIONING_FAILED',
+    });
+  }
+});
+
+// DELETE /api/mega/resellers/:id/domain — Remover domínio de um whitelabel
+router.delete('/resellers/:id/domain', verifyMegaAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { domain, purpose } = req.body;
+
+    if (!domain) {
+      return res.status(400).json({ error: 'Domínio é obrigatório' });
+    }
+
+    const { data: reseller } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('id', id)
+      .eq('is_reseller', true)
+      .maybeSingle();
+
+    if (!reseller) {
+      return res.status(404).json({ error: 'Reseller não encontrado' });
+    }
+
+    const result = await unlinkDomainFromOrganization(supabase, {
+      domain,
+      organizationId: id,
+      purpose,
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('[MegaAdmin] Error removing domain:', error);
+    const status =
+      error instanceof DomainProvisioningError ? error.statusCode : 500;
+    res.status(status).json({
+      error: error.message,
+      code: error.code || 'DOMAIN_REMOVE_FAILED',
+    });
+  }
+});
+
 // POST /api/mega/resellers — Criar novo reseller
 router.post('/resellers', verifyMegaAdmin, async (req, res) => {
   try {
-    const { name, slug, owner_name, owner_email, password, niche, document, phone, creci, address, city, state, zip_code } = req.body;
+    const {
+      name,
+      slug,
+      owner_name,
+      owner_email,
+      password,
+      niche,
+      document,
+      phone,
+      creci,
+      address,
+      city,
+      state,
+      zip_code,
+      site_domain,
+      panel_domain,
+    } = req.body;
 
     if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
     if (!owner_email) {
@@ -202,11 +305,53 @@ router.post('/resellers', verifyMegaAdmin, async (req, res) => {
 
     if (profileError) throw profileError;
 
+    // Domínios do whitelabel (opcionais) — provisionamento tolerante a DNS pendente
+    const domainResults = [];
+    if (site_domain) {
+      try {
+        domainResults.push({
+          purpose: 'site',
+          ...(await linkDomainToOrganization(supabase, {
+            domain: site_domain,
+            organizationId: org.id,
+            purpose: 'site',
+            strictDns: false,
+          })),
+        });
+      } catch (domainError) {
+        domainResults.push({
+          purpose: 'site',
+          domain: normalizeDomain(site_domain),
+          error: domainError.message,
+        });
+      }
+    }
+    if (panel_domain) {
+      try {
+        domainResults.push({
+          purpose: 'panel',
+          ...(await linkDomainToOrganization(supabase, {
+            domain: panel_domain,
+            organizationId: org.id,
+            purpose: 'panel',
+            strictDns: false,
+          })),
+        });
+      } catch (domainError) {
+        domainResults.push({
+          purpose: 'panel',
+          domain: normalizeDomain(panel_domain),
+          error: domainError.message,
+        });
+      }
+    }
+
     res.json({
       success: true,
       reseller: org,
       owner_user_id: authUser.id,
       setup_password: finalPassword, // Usado para o Link de Setup Guiado
+      domains: domainResults,
     });
   } catch (error) {
     console.error('[MegaAdmin] Error creating reseller:', error);
@@ -218,7 +363,21 @@ router.post('/resellers', verifyMegaAdmin, async (req, res) => {
 router.put('/resellers/:id', verifyMegaAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, slug, owner_name, owner_email, status, niche, document, phone, creci, address, city, state, zip_code } = req.body;
+    const {
+      name,
+      slug,
+      owner_name,
+      owner_email,
+      status,
+      niche,
+      document,
+      phone,
+      creci,
+      address,
+      city,
+      state,
+      zip_code,
+    } = req.body;
 
     const updatePayload = {};
     if (name) updatePayload.name = name;
@@ -534,5 +693,7 @@ router.get('/stats', verifyMegaAdmin, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+router.use('/contracts', systemContractsRoutes);
 
 export default router;

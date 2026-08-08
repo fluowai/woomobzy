@@ -33,6 +33,8 @@ import {
   LayoutTemplate,
   FileQuestion,
   LucideIcon,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -50,12 +52,21 @@ type MenuSection = {
 };
 
 const RuralLayout: React.FC = () => {
-  const { settings } = useSettings();
+  useSettings();
   const { profile, signOut, isImpersonating, loading } = useAuth();
-  const niche = (profile?.organization as any)?.niche || 'rural';
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const { pathname } = useLocation();
+  const isWorkspaceRoute =
+    pathname.startsWith('/rural/whatsapp') ||
+    pathname.startsWith('/rural/email');
+
+  useEffect(() => {
+    if (isWorkspaceRoute) {
+      setIsDesktopSidebarOpen(false);
+    }
+  }, [isWorkspaceRoute]);
 
   const handleLogout = async () => {
     try {
@@ -142,20 +153,21 @@ const RuralLayout: React.FC = () => {
     }
     return isActive;
   };
-  const isWorkspaceRoute =
-    pathname.startsWith('/rural/whatsapp') ||
-    pathname.startsWith('/rural/email');
+
   const isLandingPageEditor =
     (pathname.includes('/landing-pages/') ||
       pathname.includes('/site/pages/')) &&
     pathname.split('/').length > 3;
 
-  const renderMenuItem = (item: MenuItem) => (
+  const renderMenuItem = (item: MenuItem, expanded: boolean) => (
     <NavLink
       key={item.path}
       to={item.path}
       end={item.path === '/rural'}
-      onClick={() => setIsMobileMenuOpen(false)}
+      onClick={() => {
+        setIsMobileMenuOpen(false);
+        setIsDesktopSidebarOpen(false);
+      }}
       className={({ isActive }) => {
         const active = isMenuItemActive(item.path, isActive);
         return `workspace-nav-item flex items-center justify-between group ${
@@ -177,9 +189,9 @@ const RuralLayout: React.FC = () => {
                     : 'text-slate-400 group-hover:text-primary shrink-0'
                 }
               />
-              <span className="truncate">{item.label}</span>
+              {expanded && <span className="truncate">{item.label}</span>}
             </div>
-            {item.path !== '/rural' && (
+            {expanded && item.path !== '/rural' && (
               <ChevronRight
                 size={14}
                 className={
@@ -195,82 +207,120 @@ const RuralLayout: React.FC = () => {
     </NavLink>
   );
 
-  const renderSidebarContent = () => (
-    <>
-      <div className="px-6 py-5">
-        <RouterLink
-          to="/rural"
-          className="flex items-center gap-3 group"
-          onClick={() => setIsMobileMenuOpen(false)}
+  const renderSidebarContent = (forceExpanded = false) => {
+    const expanded = forceExpanded || isDesktopSidebarOpen;
+
+    return (
+      <>
+        <div
+          className={`py-5 flex items-center transition-all ${expanded ? 'px-6 justify-between' : 'px-0 justify-center flex-col gap-4'}`}
         >
-          <img
-            src="/logo-wootech-imob.svg"
-            alt="WooTech Imob"
-            className="workspace-logo transition-transform group-hover:scale-[1.02]"
-          />
-        </RouterLink>
-      </div>
-
-      <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-5 custom-scrollbar">
-        {menuSections.map((section) => (
-          <div key={section.title} className="space-y-2">
-            <p className="workspace-section-title">{section.title}</p>
-            <div className="space-y-1">{section.items.map(renderMenuItem)}</div>
-          </div>
-        ))}
-
-        <button
-          onClick={() => setIsSupportOpen(true)}
-          className="workspace-nav-item flex items-center justify-between w-full group"
-        >
-          <div className="flex items-center gap-3.5">
-            <Headset
-              size={20}
-              className="text-slate-400 group-hover:text-primary"
-            />
-            <span>Suporte</span>
-          </div>
-        </button>
-      </nav>
-
-      <div className="p-4 border-t border-slate-100 bg-slate-50/60">
-        <div className="flex items-center gap-3 mb-3 p-2 rounded-xl border border-slate-200 bg-white">
-          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold border border-primary/20">
-            {profile?.full_name?.charAt(0) || profile?.name?.charAt(0) || 'R'}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-900 truncate">
-              {profile?.full_name || profile?.name || 'Carregando...'}
-            </p>
-            {profile?.role === 'superadmin' ? (
-              <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-semibold uppercase tracking-wide rounded">
-                SUPER ADMIN
-              </span>
+          {expanded && (
+            <RouterLink
+              to="/rural"
+              className="flex items-center gap-3 group"
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                setIsDesktopSidebarOpen(false);
+              }}
+            >
+              <img
+                src="/logo-wootech-imob.svg"
+                alt="WooTech Imob"
+                className="workspace-logo transition-transform group-hover:scale-[1.02]"
+              />
+            </RouterLink>
+          )}
+          <button
+            onClick={() => setIsDesktopSidebarOpen(!isDesktopSidebarOpen)}
+            className="hidden md:flex text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg p-2 transition-colors"
+            title="Alternar Menu"
+          >
+            {expanded ? (
+              <PanelLeftClose size={18} />
             ) : (
-              <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide truncate">
-                {profile?.role === 'admin'
-                  ? 'Admin Imobiliária'
-                  : loading
-                    ? '...'
-                    : profile?.role || 'Corretor'}
-              </p>
+              <PanelLeftOpen size={18} />
             )}
-          </div>
+          </button>
         </div>
 
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2 text-slate-500 hover:text-red-600 text-xs font-semibold transition-all w-full p-2 rounded-lg hover:bg-red-50"
+        <nav
+          className={`flex-1 overflow-y-auto space-y-5 custom-scrollbar ${expanded ? 'px-3 py-4' : 'px-2 py-4'}`}
         >
-          <LogOut size={14} /> Sair
-        </button>
-      </div>
-      <SupportModal
-        isOpen={isSupportOpen}
-        onClose={() => setIsSupportOpen(false)}
-      />
-    </>
-  );
+          {menuSections.map((section) => (
+            <div key={section.title} className="space-y-2">
+              {expanded ? (
+                <p className="workspace-section-title">{section.title}</p>
+              ) : (
+                <div className="w-full h-px bg-slate-100 my-2"></div>
+              )}
+              <div className="space-y-1">
+                {section.items.map((item) => renderMenuItem(item, expanded))}
+              </div>
+            </div>
+          ))}
+
+          <button
+            onClick={() => setIsSupportOpen(true)}
+            className={`workspace-nav-item flex items-center group ${expanded ? 'justify-between w-full' : 'justify-center w-full'}`}
+            title="Suporte"
+          >
+            <div className="flex items-center gap-3.5">
+              <Headset
+                size={20}
+                className="text-slate-400 group-hover:text-primary shrink-0"
+              />
+              {expanded && <span>Suporte</span>}
+            </div>
+          </button>
+        </nav>
+
+        <div
+          className={`border-t border-slate-100 bg-slate-50/60 ${expanded ? 'p-4' : 'p-2 flex flex-col items-center gap-2'}`}
+        >
+          <div
+            className={`flex items-center gap-3 bg-white border border-slate-200 rounded-xl ${expanded ? 'mb-3 p-2' : 'p-1'}`}
+          >
+            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold border border-primary/20 shrink-0">
+              {profile?.full_name?.charAt(0) || profile?.name?.charAt(0) || 'R'}
+            </div>
+            {expanded && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-900 truncate">
+                  {profile?.full_name || profile?.name || 'Carregando...'}
+                </p>
+                {profile?.role === 'superadmin' ? (
+                  <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-semibold uppercase tracking-wide rounded">
+                    SUPER ADMIN
+                  </span>
+                ) : (
+                  <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide truncate">
+                    {profile?.role === 'admin'
+                      ? 'Admin Imobiliária'
+                      : loading
+                        ? '...'
+                        : profile?.role || 'Corretor'}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={handleLogout}
+            className={`flex items-center gap-2 text-slate-500 hover:text-red-600 text-xs font-semibold transition-all rounded-lg hover:bg-red-50 ${expanded ? 'w-full p-2' : 'p-2 justify-center'}`}
+            title="Sair"
+          >
+            <LogOut size={16} className="shrink-0" /> {expanded && 'Sair'}
+          </button>
+        </div>
+        <SupportModal
+          isOpen={isSupportOpen}
+          onClose={() => setIsSupportOpen(false)}
+        />
+      </>
+    );
+  };
 
   return (
     <div className="workspace-shell flex h-screen h-dvh overflow-hidden selection:bg-primary/20 selection:text-primary">
@@ -287,14 +337,18 @@ const RuralLayout: React.FC = () => {
             >
               <X size={20} />
             </button>
-            {renderSidebarContent()}
+            {renderSidebarContent(true)}
           </aside>
         </div>
       )}
 
       {/* Desktop Sidebar */}
       {!isLandingPageEditor && (
-        <aside className="workspace-sidebar text-slate-900 hidden md:flex flex-col shrink-0 overflow-hidden">
+        <aside
+          className={`workspace-sidebar text-slate-900 hidden md:flex flex-col shrink-0 overflow-hidden transition-all duration-300 ease-in-out border-r border-slate-200 ${
+            isDesktopSidebarOpen ? 'w-[280px]' : 'w-[72px]'
+          }`}
+        >
           {renderSidebarContent()}
         </aside>
       )}

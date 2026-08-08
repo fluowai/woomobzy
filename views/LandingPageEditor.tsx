@@ -112,6 +112,7 @@ const LandingPageEditor: React.FC = () => {
         themeConfig: page.themeConfig,
         settings: page.settings,
         propertySelection: page.propertySelection,
+        developmentSelection: page.developmentSelection,
         formConfig: page.formConfig,
         metaTitle: page.metaTitle,
         metaDescription: page.metaDescription,

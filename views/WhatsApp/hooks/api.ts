@@ -18,15 +18,11 @@ const API_BASE = normalizeWhatsAppApiUrl(RAW_WHATSAPP_API_URL);
 const USE_DIRECT_WHATSAPP_API = /^https?:\/\//i.test(API_BASE);
 const LEGACY_STORAGE_HOSTS = ['n.woopanel.com.br'];
 const STORAGE_PUBLIC_URL = normalizeStoragePublicBase(
-  getRuntimeEnv('VITE_MINIO_PUBLIC_URL', 'https://nb.consultio.com.br')
+  getRuntimeEnv('VITE_MINIO_PUBLIC_URL', 'https://s.wootech.com.br')
 );
 export const WS_URL = normalizeWhatsAppWsUrl(
   getRuntimeEnv('VITE_WHATSAPP_WS_URL', DEFAULT_WHATSAPP_WS_PATH)
 );
-
-const providerCache = new Map<string, string>();
-export const setInstanceProviderCache = (id: string, provider: string) => providerCache.set(id, provider);
-export const getInstanceProviderCache = (id: string) => providerCache.get(id);
 
 import { supabase } from '@/services/supabase';
 
@@ -297,6 +293,7 @@ async function getValidImpersonatedOrgId(
 function clearImpersonationStorage() {
   clearImpersonationSession();
   tenantIdCache = undefined;
+  userTenantContextCache = undefined;
 }
 
 async function getTenantId(userId?: string): Promise<string | null> {
@@ -392,7 +389,7 @@ function normalizeStorageUrl(value: string): string {
 }
 
 function normalizeStoragePublicBase(value: string): string {
-  const fallback = 'https://nb.consultio.com.br';
+  const fallback = 'https://s.wootech.com.br';
   try {
     const url = new URL(value || fallback);
     if (LEGACY_STORAGE_HOSTS.includes(url.hostname)) return fallback;
@@ -408,7 +405,6 @@ export interface Instance {
   tenant_id?: string;
   name: string;
   status: 'connected' | 'disconnected' | 'connecting' | 'qr_pending';
-  provider?: 'whatsmeow' | 'waha';
   qr_code?: string;
   phone?: string;
   jid?: string;
@@ -448,6 +444,13 @@ export interface Chat {
   avatar_url?: string;
   created_at: string;
   updated_at: string;
+  crm_lead_id?: string;
+  crm_assigned_to?: string | null;
+  crm_is_mine?: boolean;
+  crm_status?: string | null;
+  crm_classification?: string | null;
+  crm_lead_score?: number | null;
+  crm_tags?: string[];
 }
 
 export interface Message {
@@ -505,9 +508,49 @@ export interface DeleteChatsResponse {
   deleted_messages: number;
 }
 
+export interface CrmLead {
+  id: string;
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  status?: string | null;
+  classification?: string | null;
+  assigned_to?: string | null;
+  lead_score?: number | null;
+  qualification_score?: number | null;
+  budget?: number | null;
+  ai_next_action?: string | null;
+  ai_last_intent?: string | null;
+  property_id?: string | null;
+  preferences?: Record<string, unknown> | null;
+}
+
+export interface CrmTask {
+  id: string;
+  title: string;
+  due_at: string;
+  status: string;
+  kind: string;
+}
+
+export interface CrmProperty {
+  id: string;
+  title: string;
+  property_type?: string | null;
+  neighborhood?: string | null;
+  city?: string | null;
+  state?: string | null;
+  price?: number | null;
+  rental_value?: number | null;
+  images?: string[] | null;
+}
+
 export interface CrmContactResponse {
-  lead: any | null;
+  lead: CrmLead | null;
   tags: string[];
+  assignee?: CrmAssignee | null;
+  tasks?: CrmTask[];
+  property?: CrmProperty | null;
 }
 
 export interface CrmAssignee {
@@ -593,15 +636,16 @@ export interface WhatsAppMessageReceiptEvent {
 
 // ---- Instance API ----
 export const instanceApi = {
-  create: (name: string, provider?: string) =>
+  create: (name: string) =>
     apiRequest<Instance>('/instances', {
       method: 'POST',
-      body: JSON.stringify({ name, provider }),
+      body: JSON.stringify({ name }),
     }),
 
   list: () => apiRequest<Instance[]>('/instances'),
 
-  get: (id: string) => apiRequest<Instance>(`/instances/${id}`, { instanceId: id }),
+  get: (id: string) =>
+    apiRequest<Instance>(`/instances/${id}`, { instanceId: id }),
 
   delete: (id: string) =>
     apiRequest(`/instances/${id}`, { method: 'DELETE', instanceId: id }),
@@ -688,6 +732,25 @@ export const crmContactApi = {
   assignees: () =>
     callApi('/api/crm/whatsapp/assignees') as Promise<CrmAssigneesResponse>,
 
+  inboxContext: (phones: string[]) =>
+    callApi('/api/crm/whatsapp/inbox-context', {
+      method: 'POST',
+      body: JSON.stringify({ phones }),
+    }) as Promise<{
+      contacts: Record<
+        string,
+        {
+          lead_id: string;
+          assigned_to?: string | null;
+          is_mine?: boolean;
+          status?: string | null;
+          classification?: string | null;
+          lead_score?: number | null;
+          tags?: string[];
+        }
+      >;
+    }>,
+
   link: (payload: {
     phone: string;
     name?: string;
@@ -757,7 +820,13 @@ export const crmContactApi = {
     callApi('/api/crm/whatsapp/task', {
       method: 'POST',
       body: JSON.stringify(payload),
-    }) as Promise<CrmContactResponse & { task?: any }>,
+    }) as Promise<CrmContactResponse & { task?: CrmTask }>,
+
+  updateTask: (taskId: string, status: 'pending' | 'completed') =>
+    callApi(`/api/crm/whatsapp/task/${taskId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }) as Promise<{ task: CrmTask }>,
 };
 
 // ---- Message API ----
@@ -803,11 +872,8 @@ export const messageApi = {
     formData.append('content', content);
     formData.append('type', mediaTypeFromFile(file));
 
-    const provider = getInstanceProviderCache(instanceId);
-    const prefix = provider === 'waha' ? '/waha' : '';
     const cleanPath = `/messages/${chatId}/send-media?instance_id=${instanceId}`;
-
-    const res = await fetch(buildApiUrl(`${prefix}${cleanPath}`, tenantId), {
+    const res = await fetch(buildApiUrl(cleanPath, tenantId), {
       method: 'POST',
       headers: {
         Authorization: session ? `Bearer ${session.access_token}` : '',

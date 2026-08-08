@@ -17,13 +17,23 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
 
     if (search) {
       const term = `%${search}%`;
-      query = query.or(`name.ilike.${term},email.ilike.${term},phone.ilike.${term}`);
+      query = query.or(
+        `name.ilike.${term},email.ilike.${term},phone.ilike.${term}`
+      );
     }
 
     const { data, error } = await query;
     if (error) {
-      if (error.code === '42P01' || error.code === 'PGRST205' || error.message?.includes('does not exist')) {
-        return res.json({ success: true, clients: [], migration_required: true });
+      if (
+        error.code === '42P01' ||
+        error.code === 'PGRST205' ||
+        error.message?.includes('does not exist')
+      ) {
+        return res.json({
+          success: true,
+          clients: [],
+          migration_required: true,
+        });
       }
       throw error;
     }
@@ -61,7 +71,20 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
 
 router.post('/', verifyAuth, requireTenant, async (req, res) => {
   try {
-    const { name, email, phone, document_number, document_type, roles, city, state, address, neighborhood, zip_code, notes } = req.body;
+    const {
+      name,
+      email,
+      phone,
+      document_number,
+      document_type,
+      roles,
+      city,
+      state,
+      address,
+      neighborhood,
+      zip_code,
+      notes,
+    } = req.body;
     if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
 
     const supabase = getSupabaseServer();
@@ -86,9 +109,14 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
       .single();
 
     if (error) {
-      if (error.code === '42P01' || error.code === 'PGRST205' || error.message?.includes('does not exist')) {
+      if (
+        error.code === '42P01' ||
+        error.code === 'PGRST205' ||
+        error.message?.includes('does not exist')
+      ) {
         return res.status(503).json({
-          error: 'Tabela clients não existe. Execute a migration 20260728_fix_backend_errors.sql no Supabase.',
+          error:
+            'Tabela clients não existe. Execute a migration 20260728_fix_backend_errors.sql no Supabase.',
           migration_required: true,
         });
       }
@@ -104,13 +132,15 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
 router.patch('/:id', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { id } = req.params;
-    const { city, state, address, neighborhood, zip_code, ...restUpdates } = req.body;
-    
+    const { city, state, address, neighborhood, zip_code, ...restUpdates } =
+      req.body;
+
     const dbUpdates = { ...restUpdates };
     if (city !== undefined) dbUpdates.address_city = city;
     if (state !== undefined) dbUpdates.address_state = state;
     if (address !== undefined) dbUpdates.address_street = address;
-    if (neighborhood !== undefined) dbUpdates.address_neighborhood = neighborhood;
+    if (neighborhood !== undefined)
+      dbUpdates.address_neighborhood = neighborhood;
     if (zip_code !== undefined) dbUpdates.address_zip = zip_code;
 
     delete dbUpdates.id;

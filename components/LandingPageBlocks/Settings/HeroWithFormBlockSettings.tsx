@@ -206,6 +206,54 @@ const HeroWithFormBlockSettings: React.FC<HeroWithFormBlockSettingsProps> = ({
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
+          Subtítulo do Formulário
+        </label>
+        <input
+          type="text"
+          value={config.formSubtitle || ''}
+          onChange={(e) => updateField('formSubtitle', e.target.value)}
+          placeholder="Texto pequeno abaixo do formulário"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Altura do Hero (px): {config.height || 700}
+        </label>
+        <input
+          type="range"
+          min="400"
+          max="1000"
+          step="50"
+          value={config.height || 700}
+          onChange={(e) => updateField('height', parseInt(e.target.value))}
+          className="w-full"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Cor do Texto
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="color"
+            value={config.textColor || '#ffffff'}
+            onChange={(e) => updateField('textColor', e.target.value)}
+            className="h-10 w-20 rounded border border-gray-300"
+          />
+          <input
+            type="text"
+            value={config.textColor || '#ffffff'}
+            onChange={(e) => updateField('textColor', e.target.value)}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
           Imagem do Guia/Especialista (URL)
         </label>
         <input
@@ -217,20 +265,81 @@ const HeroWithFormBlockSettings: React.FC<HeroWithFormBlockSettingsProps> = ({
         />
       </div>
 
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="showBadges"
-          checked={config.showBadges}
-          onChange={(e) => updateField('showBadges', e.target.checked)}
-          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-        />
-        <label
-          htmlFor="showBadges"
-          className="text-sm font-medium text-gray-700"
-        >
-          Mostrar Selos de Confiança
-        </label>
+      <div className="border-t border-gray-200 pt-4">
+        <div className="flex items-center gap-2 mb-3">
+          <input
+            type="checkbox"
+            id="showBadges"
+            checked={config.showBadges}
+            onChange={(e) => updateField('showBadges', e.target.checked)}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <label
+            htmlFor="showBadges"
+            className="text-sm font-medium text-gray-700"
+          >
+            Mostrar Selos de Confiança
+          </label>
+        </div>
+
+        {config.showBadges && (
+          <div className="space-y-3 pl-6">
+            {(config.badges || []).map((badge: any, idx: number) => (
+              <div
+                key={idx}
+                className="p-3 bg-gray-50 rounded-lg border border-gray-200"
+              >
+                <span className="text-xs font-medium text-gray-500 block mb-2">
+                  Selo {idx + 1}
+                </span>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={badge.icon}
+                    onChange={(e) => {
+                      const newBadges = [...(config.badges || [])];
+                      newBadges[idx] = {
+                        ...newBadges[idx],
+                        icon: e.target.value,
+                      };
+                      updateField('badges', newBadges);
+                    }}
+                    placeholder="Ícone (shield, star, clock)"
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                  />
+                  <input
+                    type="text"
+                    value={badge.title}
+                    onChange={(e) => {
+                      const newBadges = [...(config.badges || [])];
+                      newBadges[idx] = {
+                        ...newBadges[idx],
+                        title: e.target.value,
+                      };
+                      updateField('badges', newBadges);
+                    }}
+                    placeholder="Título"
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                  />
+                  <input
+                    type="text"
+                    value={badge.description}
+                    onChange={(e) => {
+                      const newBadges = [...(config.badges || [])];
+                      newBadges[idx] = {
+                        ...newBadges[idx],
+                        description: e.target.value,
+                      };
+                      updateField('badges', newBadges);
+                    }}
+                    placeholder="Descrição"
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

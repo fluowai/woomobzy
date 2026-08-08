@@ -25,4 +25,3 @@
 - Sem deploy, migração, alteração de RLS, cobrança, mensagens reais ou dados de produção.
 - Fluxos autenticados dependentes de credenciais reais serão testados apenas até o limite seguro local.
 - Avisos históricos de lint serão classificados; não haverá reescrita indiscriminada de centenas de arquivos sem relação causal.
-

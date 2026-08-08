@@ -56,13 +56,37 @@ const MIGRATIONS = [
   'sql/fix_rpc_final.sql',
   'sql/fix_landing_pages_rls.sql',
   'sql/setup_landing_pages.sql',
+  'sql/rpc_get_tenant_by_any_domain.sql',
   'migrations/v6_rural_search_logs.sql',
   'migrations/20260530_fluowai_cloud_migration_control.sql',
   'migrations/20260516_ai_agents_whatsapp_automation.sql',
   'migrations/20260603_whatsapp_media_pipeline.sql',
   'migrations/20260604_email_center.sql',
+  'migrations/20260620_rural_operations_modules.sql',
+  'migrations/20260713_global_templates.sql',
   'migrations/20260725_add_indexes_reseller.sql',
   'migrations/20260725_reseller_infrastructure.sql',
+  'migrations/20260730_214115_fix_plans_rls_insert.sql',
+  'migrations/20260730_fix_landing_pages_public_access.sql',
+  'migrations/20260730_fix_landing_pages_rls_definitive.sql',
+  'migrations/20260730_fix_condominium_tickets_missing_table.sql',
+  'migrations/20260730_consolidated_production_fix.sql',
+  'migrations/20260730_fix_all_production_errors.sql',
+  'migrations/20260730_fix_contracts_legal_tab.sql',
+  'migrations/20260803_system_contracts.sql',
+  'migrations/20260803_system_contracts_analysis.sql',
+  'migrations/20260803_system_contracts_rls_fix.sql',
+  'migrations/20260731_ui_redesign_schema_additions.sql',
+  'migrations/20260801_fix_organizations_niche_check.sql',
+  'migrations/20260803_domain_purpose.sql',
+  'migrations/20260803_licensing_core.sql',
+  'migrations/20260803_lease_schema_alignment.sql',
+  'migrations/woosign/20260803_woosign_core.sql',
+  'migrations/20260804_create_agendas.sql',
+  'migrations/20260807_fix_admin_approved_column_rls.sql',
+  'migrations/20260807_reseller_branding_rpc.sql',
+  'migrations/20260807_fix_match_properties_to_lead.sql',
+  'migrations/20260808_fix_urban_module_rls_superadmin.sql',
 ];
 
 async function executeMigrations() {
@@ -122,11 +146,15 @@ async function executeMigrations() {
       const sqlContent = fs.readFileSync(migrationFile, 'utf-8');
 
       // Dividir por ; mas respeitando blocos $$ (funções)
+      // Linhas de comentário são removidas antes do parsing para que
+      // statements precedidos por comentários não sejam descartados.
       const statements = [];
       let currentStatement = '';
       let inDollarBlock = false;
 
-      const lines = sqlContent.split('\n');
+      const lines = sqlContent
+        .split('\n')
+        .filter((line) => !line.trim().startsWith('--'));
       for (let line of lines) {
         if (line.includes('$$')) inDollarBlock = !inDollarBlock;
         currentStatement += line + '\n';

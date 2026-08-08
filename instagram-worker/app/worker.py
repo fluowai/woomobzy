@@ -15,6 +15,7 @@ from .instagram_client import (
     send_message_to_username,
     get_user_id,
     get_user_info,
+    LoginRequired,
 )
 
 logger = logging.getLogger("instagram.worker")

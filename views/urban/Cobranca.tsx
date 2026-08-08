@@ -45,9 +45,9 @@ const Cobranca: React.FC = () => {
 
   const loadContracts = useCallback(async () => {
     const { data } = await supabase
-      .from('contracts')
-      .select('id, tenant_name, property:property_id(title), value')
-      .eq('status', 'Active')
+      .from('rental_contracts')
+      .select('id, tenant_name, property:property_id(title), monthly_rent')
+      .eq('status', 'active')
       .order('tenant_name');
     setContracts(data || []);
   }, []);
@@ -415,6 +415,7 @@ const Cobranca: React.FC = () => {
                               target="_blank"
                               className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100"
                               title="Ver Boleto/PIX"
+                              rel="noreferrer"
                             >
                               <QrCode size={16} />
                             </a>

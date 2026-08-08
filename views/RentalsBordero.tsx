@@ -7,7 +7,7 @@ import { useSettings } from '@/context/SettingsContext';
 import { supabase } from '@/services/supabase';
 import { logger } from '@/utils/logger';
 
-export function RentalsBordero() {
+export default function RentalsBordero() {
   const { user } = useAuth();
   const { settings } = useSettings();
 
@@ -51,14 +51,15 @@ export function RentalsBordero() {
       );
       const data = await res.json();
       if (data.success) {
-        alert(`Borderô Gerado: Repasse de R$ ${data.data.total_to_repass}`);
-        // Aqui conectaria com uma lib para gerar PDF real (ex: jsPDF ou React-pdf)
+        toast.success(
+          `Borderô gerado: repasse de R$ ${data.data.total_to_repass}`
+        );
       } else {
-        alert('Nenhuma fatura paga encontrada para este período');
+        toast.error('Nenhuma fatura paga encontrada para este período');
       }
     } catch (error) {
       logger.error('Erro ao gerar bordero:', error);
-      alert('Erro ao gerar borderô');
+      toast.error('Erro ao gerar borderô');
     } finally {
       setLoading(false);
     }

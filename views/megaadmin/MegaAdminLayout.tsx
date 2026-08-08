@@ -16,6 +16,9 @@ import {
   UploadCloud,
   HardDrive,
   ShieldAlert,
+  Globe,
+  KeyRound,
+  FileText,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -32,11 +35,14 @@ const MegaAdminLayout: React.FC = () => {
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/megaadmin' },
     { icon: Building2, label: 'Resellers', path: '/megaadmin/resellers' },
+    { icon: Globe, label: 'Domínios', path: '/megaadmin/domains' },
     {
       icon: Building2,
       label: 'Clientes Diretos',
       path: '/megaadmin/direct-clients',
     },
+    { icon: KeyRound, label: 'Licenças', path: '/megaadmin/licenses' },
+    { icon: FileText, label: 'Contratos', path: '/megaadmin/contracts' },
     { icon: BarChart3, label: 'Analytics', path: '/megaadmin/analytics' },
     { icon: Activity, label: 'Monitoring', path: '/megaadmin/monitoring' },
     { icon: DollarSign, label: 'Billing', path: '/megaadmin/billing' },

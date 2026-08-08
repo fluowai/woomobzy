@@ -16,7 +16,7 @@ const newBase =
   cleanArg('--new') ||
   process.env.NEW_MINIO_PUBLIC_URL ||
   process.env.MINIO_PUBLIC_URL ||
-  'https://nb.consultio.com.br';
+  'https://s.wootech.com.br';
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 

@@ -78,6 +78,7 @@ func main() {
 		cfg.SupabaseURL, cfg.SupabaseServiceKey, cfg.StorageBucket,
 		cfg.MinIOEndpoint, cfg.MinIOPublicURL, cfg.MinIOAccessKey, cfg.MinIOSecretKey, cfg.MinIORegion,
 		cfg.NodeURL, cfg.InternalToken, cfg.AutomationEnabled, cfg.PairClientType, cfg.PairClientName,
+		cfg.ProtocolLogLevel,
 	)
 
 	// Auto-reconnect existing sessions
@@ -112,9 +113,10 @@ func main() {
 	// Health check
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"status":     "ok",
-			"service":    "whatsapp-service",
-			"ws_clients": hub.ClientCount(),
+			"status":            "ok",
+			"service":           "whatsapp-service",
+			"whatsmeow_version": dependencyVersion(whatsmeowModulePath),
+			"ws_clients":        hub.ClientCount(),
 		})
 	})
 

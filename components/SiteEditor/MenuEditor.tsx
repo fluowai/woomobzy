@@ -144,7 +144,7 @@ const MenuEditor: React.FC<MenuEditorProps> = ({ menuConfig, pages, onChange }) 
       </DndContext>
 
       {items.length === 0 && (
-        <p className="text-gray-500 text-sm text-center py-4">Nenhum item no menu. Clique em "Adicionar Item" para começar.</p>
+        <p className="text-gray-500 text-sm text-center py-4">Nenhum item no menu. Clique em &quot;Adicionar Item&quot; para começar.</p>
       )}
     </div>
   );

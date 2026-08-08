@@ -76,9 +76,9 @@ const EMAIL = 'contato@fazendasbrasil.com.br';
 const LOGO_URL = '/images/fazendas-brasil/logo.png';
 const BROKER_IMAGE = '/images/fazendas-brasil/broker-renato.jpeg';
 const HERO_IMAGE =
-  'https://nb.consultio.com.br/imobzycrm/ee2eafa9-929a-460e-a38a-2e13d259e7cb/fazendasbrasil-crm49/site/hero/fazendas-brasil-hero-clean.webp';
+  'https://s.wootech.com.br/imobzycrm/ee2eafa9-929a-460e-a38a-2e13d259e7cb/fazendasbrasil-crm49/site/hero/fazendas-brasil-hero-clean.webp';
 const CARD_FALLBACK_IMAGE =
-  'https://nb.consultio.com.br/imobzycrm/ee2eafa9-929a-460e-a38a-2e13d259e7cb/fazendasbrasil-crm49/site/fallback/fazendas-brasil-card-fallback.webp';
+  'https://s.wootech.com.br/imobzycrm/ee2eafa9-929a-460e-a38a-2e13d259e7cb/fazendasbrasil-crm49/site/fallback/fazendas-brasil-card-fallback.webp';
 const BROKER_NAME = 'Renato Piovesana';
 const PROPERTIES_PER_PAGE = 12;
 const PROPERTIES_PER_GRID = 4;

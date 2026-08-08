@@ -35,12 +35,13 @@ export const PropertyGridBlock: React.FC<PropertyGridBlockProps> = ({
         <div className="col-span-full rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
           {config.propertyIds && config.propertyIds.length > 0 ? (
             <span className="font-bold text-indigo-600">
-              {config.propertyIds.length} imóvel(is) selecionado(s) manualmente para exibição neste bloco.
+              {config.propertyIds.length} imóvel(is) selecionado(s) manualmente
+              para exibição neste bloco.
             </span>
           ) : (
             <span>
-              A prévia usa somente imóveis reais; conecte uma fonte de propriedades
-              ao bloco ou selecione manualmente.
+              A prévia usa somente imóveis reais; conecte uma fonte de
+              propriedades ao bloco ou selecione manualmente.
             </span>
           )}
         </div>

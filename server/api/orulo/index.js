@@ -313,6 +313,15 @@ router.get('/master-credentials', verifySuperAdmin, async (req, res) => {
       updatedAt: credentials.updatedAt,
     });
   } catch (error) {
+    if (error?.statusCode === 400) {
+      return res.json({
+        success: true,
+        configured: false,
+        source: null,
+        updatedAt: null,
+        message: error.message,
+      });
+    }
     return handleError(res, error);
   }
 });

@@ -31,7 +31,7 @@ export const EditorToolbar: React.FC = () => {
     setSaving(true);
     try {
       await saveLayout();
-    } catch (error) {
+    } catch {
       alert('Erro ao salvar layout');
     } finally {
       setSaving(false);

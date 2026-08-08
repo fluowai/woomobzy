@@ -159,7 +159,7 @@ export class ContractGenerationService {
     const supabase = getSupabaseServer();
 
     const { data: lease, error: leaseError } = await supabase
-      .from('leases')
+      .from('rental_contracts')
       .select('*')
       .eq('id', leaseId)
       .single();
@@ -241,7 +241,7 @@ export class ContractGenerationService {
 
     // Update lease with signed document URL
     await supabase
-      .from('leases')
+      .from('rental_contracts')
       .update({
         signed_document_url: publicUrl.publicUrl,
         updated_by: userId,
@@ -343,7 +343,7 @@ export class ContractGenerationService {
     }
 
     await supabase
-      .from('leases')
+      .from('rental_contracts')
       .update({
         signed_document_url: publicUrl.publicUrl,
         updated_by: userId,
@@ -357,7 +357,7 @@ export class ContractGenerationService {
     const supabase = getSupabaseServer();
 
     const { data: lease, error: leaseError } = await supabase
-      .from('leases')
+      .from('rental_contracts')
       .select('*')
       .eq('id', leaseId)
       .single();

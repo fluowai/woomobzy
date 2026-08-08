@@ -43,11 +43,18 @@ const resolveLocalModule = (modulePath) => {
     `${normalized}/index.jsx`,
     `${normalized}/index.js`,
   ];
-  return candidates.find((candidate) => fs.existsSync(path.join(projectRoot, candidate))) || normalized;
+  return (
+    candidates.find((candidate) =>
+      fs.existsSync(path.join(projectRoot, candidate))
+    ) || normalized
+  );
 };
 
 for (const statement of sourceFile.statements) {
-  if (ts.isImportDeclaration(statement) && ts.isStringLiteral(statement.moduleSpecifier)) {
+  if (
+    ts.isImportDeclaration(statement) &&
+    ts.isStringLiteral(statement.moduleSpecifier)
+  ) {
     const modulePath = resolveLocalModule(statement.moduleSpecifier.text);
     if (!modulePath || !statement.importClause) continue;
     if (statement.importClause.name) {
@@ -63,7 +70,8 @@ for (const statement of sourceFile.statements) {
 
   if (ts.isVariableStatement(statement)) {
     for (const declaration of statement.declarationList.declarations) {
-      if (!ts.isIdentifier(declaration.name) || !declaration.initializer) continue;
+      if (!ts.isIdentifier(declaration.name) || !declaration.initializer)
+        continue;
       let dynamicImport = '';
       const findDynamicImport = (node) => {
         if (
@@ -77,7 +85,8 @@ for (const statement of sourceFile.statements) {
         ts.forEachChild(node, findDynamicImport);
       };
       findDynamicImport(declaration.initializer);
-      if (dynamicImport) componentFiles.set(declaration.name.text, dynamicImport);
+      if (dynamicImport)
+        componentFiles.set(declaration.name.text, dynamicImport);
     }
   }
 }
@@ -102,7 +111,8 @@ const getAttribute = (node, name) => {
 const getStringAttribute = (node, name) => {
   const attribute = getAttribute(node, name);
   if (!attribute?.initializer) return null;
-  if (ts.isStringLiteral(attribute.initializer)) return attribute.initializer.text;
+  if (ts.isStringLiteral(attribute.initializer))
+    return attribute.initializer.text;
   if (
     ts.isJsxExpression(attribute.initializer) &&
     attribute.initializer.expression &&
@@ -127,7 +137,8 @@ const getElementMetadata = (node) => {
 
   const names = [];
   const collect = (child) => {
-    if (ts.isJsxElement(child)) names.push(tagName(child.openingElement.tagName));
+    if (ts.isJsxElement(child))
+      names.push(tagName(child.openingElement.tagName));
     if (ts.isJsxSelfClosingElement(child)) names.push(tagName(child.tagName));
     ts.forEachChild(child, collect);
   };
@@ -183,7 +194,8 @@ const visit = (node, parentPath = '') => {
     const isIndex = hasAttribute(node, 'index');
     const fullPath = joinRoutePath(parentPath, routePath, isIndex);
     const { component, guards } = getElementMetadata(node);
-    const line = sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1;
+    const line =
+      sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1;
 
     routeRows.push({
       panel: classifyPanel(fullPath),
@@ -193,7 +205,11 @@ const visit = (node, parentPath = '') => {
       guards: guards.join(', ') || 'Herdado',
       risk: classifyRisk(fullPath),
       line,
-      kind: isIndex ? 'índice' : component === 'Navigate' ? 'redirecionamento' : 'função',
+      kind: isIndex
+        ? 'índice'
+        : component === 'Navigate'
+          ? 'redirecionamento'
+          : 'função',
     });
     nextParentPath = fullPath;
   }
@@ -203,13 +219,19 @@ const visit = (node, parentPath = '') => {
 
 visit(sourceFile);
 
-const testRoots = ['tests', path.join('src', 'test'), path.join('server', '__tests__')];
+const testRoots = [
+  'tests',
+  path.join('src', 'test'),
+  path.join('server', '__tests__'),
+];
 const testFiles = [];
 
 const collectTestFiles = (directory) => {
   const absoluteDirectory = path.join(projectRoot, directory);
   if (!fs.existsSync(absoluteDirectory)) return;
-  for (const entry of fs.readdirSync(absoluteDirectory, { withFileTypes: true })) {
+  for (const entry of fs.readdirSync(absoluteDirectory, {
+    withFileTypes: true,
+  })) {
     const relativePath = path.join(directory, entry.name);
     if (entry.isDirectory()) collectTestFiles(relativePath);
     if (entry.isFile() && /\.(test|spec)\.[cm]?[jt]sx?$/.test(entry.name)) {
@@ -230,7 +252,9 @@ const coverageFor = (routePath) => {
   const matches = testFiles
     .filter((file) => file.content.includes(routePath))
     .map((file) => file.path);
-  return matches.length ? `REFERENCIADA: ${matches.join(', ')}` : 'SEM REFERÊNCIA';
+  return matches.length
+    ? `REFERENCIADA: ${matches.join(', ')}`
+    : 'SEM REFERÊNCIA';
 };
 
 const panelOrder = [
@@ -254,7 +278,8 @@ const counts = routeRows.reduce((result, row) => {
   return result;
 }, {});
 
-const escapeCell = (value) => String(value).replaceAll('|', '\\|').replaceAll('\n', ' ');
+const escapeCell = (value) =>
+  String(value).replaceAll('|', '\\|').replaceAll('\n', ' ');
 
 const lines = [
   '# Matriz mestra de auditoria funcional — IMOBZY',

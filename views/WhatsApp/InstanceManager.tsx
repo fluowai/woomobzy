@@ -23,7 +23,6 @@ const InstanceManager: React.FC<InstanceManagerProps> = ({
 }) => {
   const [instances, setInstances] = useState<Instance[]>(initialInstances);
   const [newName, setNewName] = useState('');
-  const [newProvider, setNewProvider] = useState<'whatsmeow' | 'waha'>('whatsmeow');
   const [creating, setCreating] = useState(false);
   const [qrInstance, setQrInstance] = useState<Instance | null>(null);
   const [error, setError] = useState('');
@@ -67,7 +66,7 @@ const InstanceManager: React.FC<InstanceManagerProps> = ({
     setCreating(true);
     setError('');
     try {
-      const inst = await instanceApi.create(newName.trim(), newProvider);
+      const inst = await instanceApi.create(newName.trim());
       setInstances((prev) => [inst, ...prev]);
       setNewName('');
       onInstanceCreated();
@@ -162,15 +161,6 @@ const InstanceManager: React.FC<InstanceManagerProps> = ({
               </p>
             </div>
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-              <select
-                value={newProvider}
-                onChange={(e) => setNewProvider(e.target.value as 'whatsmeow' | 'waha')}
-                className="w-full sm:w-auto bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:border-green-500"
-                disabled={creating || isLimitReached}
-              >
-                <option value="whatsmeow">WooTech 1 (Estável)</option>
-                <option value="waha">WooTech 2 (BETA)</option>
-              </select>
               <div className="flex items-center gap-3 w-full sm:w-auto">
                 <input
                   type="text"

@@ -10,4 +10,3 @@
 - Fase atual: baseline e diagnóstico.
 - Próxima ação: executar lint, type-check, testes e build; reduzir cada falha ao menor caso reproduzível.
 - Validação: `npm run lint`, `npm run type-check`, `npm run test -- --run`, `npm run build` e Playwright local.
-

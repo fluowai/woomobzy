@@ -14,7 +14,6 @@ import {
   Palette,
   Users,
   Key,
-  Settings,
   HelpCircle,
   Activity,
   Shield,
@@ -22,6 +21,8 @@ import {
   Building2,
   Mail,
   Copy,
+  MessageCircle,
+  History,
 } from 'lucide-react';
 import TrackingSettings from './admin/TrackingSettings';
 import DomainSettings from './admin/DomainSettings';
@@ -30,6 +31,37 @@ import UserManagement from './admin/UserManagement';
 import SupportPortal from './admin/SupportPortal';
 import ChannelsSettings from './admin/ChannelsSettings';
 import SmtpSettings from './admin/SmtpSettings';
+
+function SettingsStatus({
+  icon: Icon,
+  title,
+  status,
+  detail,
+  tone = 'success',
+}: {
+  icon: React.ComponentType<{ size?: number }>;
+  title: string;
+  status: string;
+  detail: string;
+  tone?: 'success' | 'warning';
+}) {
+  return (
+    <div className="wootech-status-card">
+      <div className="mb-3">
+        <span className="wootech-status-icon">
+          <Icon size={19} />
+        </span>
+        <strong className="!text-base">{title}</strong>
+      </div>
+      <span
+        className={tone === 'warning' ? '!text-amber-600' : '!text-emerald-700'}
+      >
+        ● {status}
+      </span>
+      <span>{detail}</span>
+    </div>
+  );
+}
 
 const SystemSettings: React.FC = () => {
   const { settings, updateSettings, loading } = useSettings();
@@ -318,31 +350,31 @@ const SystemSettings: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-[1200px] mx-auto space-y-8">
-      {/* Page Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-gray-900 via-gray-800 to-black p-8 shadow-lg shadow-gray-900/20 flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="absolute right-0 top-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
-        <div className="absolute left-0 bottom-0 w-48 h-48 bg-white/5 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4"></div>
-        
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="px-2.5 py-1 rounded-full bg-white/10 text-white/90 text-[10px] font-bold tracking-wider uppercase backdrop-blur-sm border border-white/10">
-              Administração
-            </span>
+    <div className="wootech-reference-screen max-w-[1400px] mx-auto space-y-8">
+      <div className="wootech-page-heading">
+        <div>
+          <div className="wootech-breadcrumb">
+            <strong>Administração</strong>
+            <span>/</span>
+            <span>Configurações</span>
           </div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-            <Settings size={28} className="text-gray-400" />
-            Configurações & Gestão
-          </h1>
-          <p className="text-gray-400 mt-2 ml-1 text-sm">
-            Controle completo do seu sistema imobiliário e integrações.
+          <h1>Central de configurações</h1>
+          <p>
+            Gerencie identidade, publicação, canais, acessos e integrações da
+            sua imobiliária.
           </p>
         </div>
-        <div className="relative z-10">
+        <div className="wootech-action-row">
+          <button
+            className="wootech-secondary-action"
+            onClick={() => setActiveTab('tracking')}
+          >
+            <History size={17} /> Ver histórico
+          </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/20 disabled:opacity-50"
+            className="wootech-primary-action disabled:opacity-50"
           >
             {saving ? (
               'Salvando...'
@@ -352,12 +384,46 @@ const SystemSettings: React.FC = () => {
               </>
             ) : (
               <>
-                <Save size={18} /> Salvar
-                {activeTab === 'portals' ? ' Portais' : ' Chaves'}
+                <Save size={18} /> Salvar alterações
               </>
             )}
           </button>
         </div>
+      </div>
+
+      <div className="wootech-status-grid">
+        <SettingsStatus
+          icon={Palette}
+          title="Site"
+          status="Em manutenção"
+          detail="Publicação controlada"
+          tone="warning"
+        />
+        <SettingsStatus
+          icon={Globe}
+          title="Domínio"
+          status="Conectado"
+          detail="Domínio personalizado"
+        />
+        <SettingsStatus
+          icon={MessageCircle}
+          title="WhatsApp"
+          status="Conectado"
+          detail="1 instância conectada"
+        />
+        <SettingsStatus
+          icon={Mail}
+          title="E-mail"
+          status="DNS pendente"
+          detail="Configure os registros"
+          tone="warning"
+        />
+        <SettingsStatus
+          icon={Building2}
+          title="Portais"
+          status="Ativos"
+          detail="Integrações de anúncios"
+        />
       </div>
 
       {/* Modern Tabs */}
@@ -766,7 +832,7 @@ const SystemSettings: React.FC = () => {
                       </h5>
                       <p className="mt-1 text-xs text-text-secondary">
                         {oruloBrokerConnected
-                          ? `Conta Ã“rulo autorizada${oruloBrokerExpiresAt ? ` atÃ© ${new Date(oruloBrokerExpiresAt).toLocaleString('pt-BR')}` : ''}.`
+                          ? `Conta Órulo autorizada${oruloBrokerExpiresAt ? ` até ${new Date(oruloBrokerExpiresAt).toLocaleString('pt-BR')}` : ''}.`
                           : 'Cada corretor deve conectar a própria conta para consultar contatos, arquivos, unidades e outros dados protegidos.'}
                       </p>
                     </div>

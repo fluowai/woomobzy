@@ -12,14 +12,38 @@ import {
 import { leadService } from '../services/leads';
 import { COMMERCIAL_PRODUCT_NAME } from '../utils/branding';
 
+interface ResellerBranding {
+  name?: string | null;
+  logoUrl?: string | null;
+  primaryColor?: string | null;
+  secondaryColor?: string | null;
+}
+
 interface ComingSoonProps {
   organizationId: string;
   agencyName: string;
+  resellerBranding?: ResellerBranding | null;
+}
+
+const DEFAULT_PRIMARY = '#6366f1';
+const DEFAULT_SECONDARY = '#8b5cf6';
+
+function hexToRgb(hex: string) {
+  const h = (hex || '').replace('#', '');
+  if (h.length !== 6) return { r: 99, g: 102, b: 241 };
+  const int = parseInt(h, 16);
+  return { r: (int >> 16) & 255, g: (int >> 8) & 255, b: int & 255 };
+}
+
+function rgba(hex: string, alpha: number) {
+  const { r, g, b } = hexToRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 const ComingSoon: React.FC<ComingSoonProps> = ({
   organizationId,
   agencyName,
+  resellerBranding,
 }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -29,6 +53,12 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const reseller = resellerBranding || null;
+  const primary = reseller?.primaryColor || DEFAULT_PRIMARY;
+  const secondary = reseller?.secondaryColor || DEFAULT_SECONDARY;
+  const footerLogo = reseller?.logoUrl || '/logo-wootech-imob.svg';
+  const footerName = reseller?.name || COMMERCIAL_PRODUCT_NAME;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,12 +88,68 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
     }
   };
 
+  const brandCss = {
+    '--cs-primary': primary,
+    '--cs-primary-20': rgba(primary, 0.2),
+    '--cs-primary-12': rgba(primary, 0.12),
+    '--cs-primary-08': rgba(primary, 0.08),
+    '--cs-primary-50': rgba(primary, 0.5),
+    '--cs-primary-text': primary,
+    '--cs-secondary-16': rgba(secondary, 0.16),
+  } as React.CSSProperties;
+
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#050505] p-4 font-sans text-white selection:bg-indigo-500/30">
-      <div className="pointer-events-none absolute top-0 h-[500px] w-full bg-gradient-to-b from-indigo-900/20 to-transparent" />
-      <div className="pointer-events-none absolute left-[-10%] top-[-20%] h-[50%] w-[50%] animate-pulse rounded-full bg-indigo-600/20 blur-[150px]" />
+    <div
+      className="coming-soon-branded relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#050505] p-4 font-sans text-white selection:bg-indigo-500/30"
+      style={brandCss}
+    >
+      <style>{`
+        .coming-soon-branded .cs-top-grad {
+          background: linear-gradient(to bottom, var(--cs-primary-20), transparent);
+        }
+        .coming-soon-branded .cs-blob-1 {
+          background: var(--cs-primary-20);
+        }
+        .coming-soon-branded .cs-blob-2 {
+          background: var(--cs-secondary-16);
+        }
+        .coming-soon-branded .cs-icon {
+          color: var(--cs-primary-text);
+        }
+        .coming-soon-branded .cs-accent {
+          color: var(--cs-primary-text);
+        }
+        .coming-soon-branded .cs-card-line {
+          background: linear-gradient(to right, transparent, var(--cs-primary-50), transparent);
+        }
+        .coming-soon-branded .cs-input-icon {
+          color: rgba(100, 116, 139, 1);
+          transition: color 150ms;
+        }
+        .coming-soon-branded .group\\/input:focus-within .cs-input-icon {
+          color: var(--cs-primary-text);
+        }
+        .coming-soon-branded .cs-input:focus {
+          border-color: var(--cs-primary-50);
+          background: rgba(255, 255, 255, 0.1);
+        }
+        .coming-soon-branded .cs-btn {
+          background: var(--cs-primary);
+          color: #ffffff;
+          transition: filter 150ms, transform 150ms;
+        }
+        .coming-soon-branded .cs-btn:hover {
+          filter: brightness(1.1);
+        }
+        .coming-soon-branded .cs-btn:active {
+          transform: scale(0.98);
+        }
+      `}</style>
+
+      <div className="pointer-events-none absolute top-0 h-[500px] w-full cs-top-grad" />
+      <div className="pointer-events-none absolute left-[-10%] top-[-20%] h-[50%] w-[50%] animate-pulse rounded-full blur-[150px] cs-blob-1" />
       <div
-        className="pointer-events-none absolute bottom-[-20%] right-[-10%] h-[50%] w-[50%] animate-pulse rounded-full bg-blue-600/10 blur-[150px]"
+        className="pointer-events-none absolute bottom-[-20%] right-[-10%] h-[50%] w-[50%] animate-pulse rounded-full blur-[150px] cs-blob-2"
         style={{ animationDelay: '3s' }}
       />
 
@@ -73,7 +159,7 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
       <div className="relative z-10 flex w-full max-w-xl flex-col items-center">
         <div className="mb-10 w-full animate-in fade-in slide-in-from-bottom-8 text-center duration-1000">
           <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 backdrop-blur-md">
-            <Sparkles size={14} className="text-indigo-400" />
+            <Sparkles size={14} className="cs-icon" />
             <span className="text-xs font-medium uppercase tracking-widest text-slate-300">
               Em Construcao
             </span>
@@ -86,7 +172,7 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
           <p className="mx-auto max-w-md text-lg font-light leading-relaxed text-slate-400 md:text-xl">
             Estamos preparando uma plataforma imobiliaria de alto padrao em
             parceria com a{' '}
-            <strong className="font-medium text-indigo-400">
+            <strong className="cs-accent font-medium">
               {COMMERCIAL_PRODUCT_NAME}
             </strong>
             .
@@ -94,8 +180,8 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
         </div>
 
         <div className="group relative w-full animate-in rounded-3xl border border-white/10 bg-black/40 p-8 shadow-2xl backdrop-blur-2xl fade-in slide-in-from-bottom-10 duration-1000 delay-150 sm:p-10">
-          <div className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-indigo-500/5 to-transparent" />
-          <div className="pointer-events-none absolute left-10 right-10 top-[-1px] h-px bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+          <div className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-white/5 to-transparent" />
+          <div className="pointer-events-none absolute left-10 right-10 top-[-1px] h-px cs-card-line opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
           {success ? (
             <div className="animate-in py-10 text-center zoom-in duration-500">
@@ -130,7 +216,7 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="relative group/input">
                   <User
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 transition-colors group-focus-within/input:text-indigo-400"
+                    className="cs-input-icon absolute left-4 top-1/2 -translate-y-1/2"
                     size={20}
                   />
                   <input
@@ -141,14 +227,14 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
-                    className="w-full rounded-xl border border-white/10 bg-white/5 py-4 pl-12 pr-6 font-medium text-white outline-none transition-all placeholder:text-slate-500 focus:border-indigo-500/50 focus:bg-white/10"
+                    className="cs-input w-full rounded-xl border border-white/10 bg-white/5 py-4 pl-12 pr-6 font-medium text-white outline-none transition-all placeholder:text-slate-500"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                   <div className="relative group/input">
                     <Mail
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 transition-colors group-focus-within/input:text-indigo-400"
+                      className="cs-input-icon absolute left-4 top-1/2 -translate-y-1/2"
                       size={20}
                     />
                     <input
@@ -159,12 +245,12 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
                       onChange={(e) =>
                         setFormData({ ...formData, email: e.target.value })
                       }
-                      className="w-full rounded-xl border border-white/10 bg-white/5 py-4 pl-12 pr-6 font-medium text-white outline-none transition-all placeholder:text-slate-500 focus:border-indigo-500/50 focus:bg-white/10"
+                      className="cs-input w-full rounded-xl border border-white/10 bg-white/5 py-4 pl-12 pr-6 font-medium text-white outline-none transition-all placeholder:text-slate-500"
                     />
                   </div>
                   <div className="relative group/input">
                     <Phone
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 transition-colors group-focus-within/input:text-indigo-400"
+                      className="cs-input-icon absolute left-4 top-1/2 -translate-y-1/2"
                       size={20}
                     />
                     <input
@@ -175,7 +261,7 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
                       onChange={(e) =>
                         setFormData({ ...formData, whatsapp: e.target.value })
                       }
-                      className="w-full rounded-xl border border-white/10 bg-white/5 py-4 pl-12 pr-6 font-medium text-white outline-none transition-all placeholder:text-slate-500 focus:border-indigo-500/50 focus:bg-white/10"
+                      className="cs-input w-full rounded-xl border border-white/10 bg-white/5 py-4 pl-12 pr-6 font-medium text-white outline-none transition-all placeholder:text-slate-500"
                     />
                   </div>
                 </div>
@@ -189,7 +275,7 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="mt-2 flex w-full items-center justify-center gap-3 rounded-xl bg-white py-4 text-sm font-bold uppercase tracking-wider text-black shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all active:scale-[0.98] hover:bg-slate-200 disabled:opacity-70"
+                  className="cs-btn mt-2 flex w-full items-center justify-center gap-3 rounded-xl py-4 text-sm font-bold uppercase tracking-wider shadow-[0_0_20px_rgba(255,255,255,0.1)] disabled:opacity-70"
                 >
                   {loading ? (
                     <Loader2 className="animate-spin" size={20} />
@@ -211,10 +297,15 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
               Desenvolvido por
             </span>
             <img
-              src="/logo-wootech-imob.svg"
-              alt={COMMERCIAL_PRODUCT_NAME}
+              src={footerLogo}
+              alt={footerName}
               className="h-8 cursor-pointer opacity-50 grayscale transition-opacity hover:opacity-100 hover:grayscale-0"
             />
+            {reseller?.name && (
+              <span className="text-xs font-semibold text-slate-400">
+                {reseller.name}
+              </span>
+            )}
           </div>
         </div>
       </div>

@@ -10,6 +10,14 @@ import { z } from 'zod';
 
 const router = Router();
 
+function isMissingTable(error) {
+  return (
+    error?.code === '42P01' ||
+    error?.code === 'PGRST205' ||
+    /does not exist|schema cache|could not find/i.test(error?.message || '')
+  );
+}
+
 const templateSchema = z.object({
   name: z.string().min(2).max(200),
   type: z.enum(['landing_page', 'email', 'contract', 'report']),
@@ -105,7 +113,7 @@ router.get('/', verifyAdmin, requireTenant, async (req, res) => {
       .order('name', { ascending: true });
 
     if (error) {
-      if (error.code === '42P01') {
+      if (isMissingTable(error)) {
         return res.json({ success: true, data: [], seeded: false });
       }
       throw error;

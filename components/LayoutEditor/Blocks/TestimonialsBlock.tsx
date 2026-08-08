@@ -58,7 +58,10 @@ export const TestimonialsBlock: React.FC<TestimonialsBlockProps> = ({
         }}
       >
         {testimonials.map((testimonial, index) => (
-          <div key={index} className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+          <div
+            key={index}
+            className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100"
+          >
             <div className="flex text-amber-400 mb-6">
               {[...Array(testimonial.rating || 5)].map((_, i) => (
                 <Star key={i} size={20} fill="currentColor" />

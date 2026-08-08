@@ -8,7 +8,7 @@ import {
   Activity,
   Filter,
   Download,
-  Trees
+  Trees,
 } from 'lucide-react';
 import {
   BarChart,
@@ -218,60 +218,52 @@ const BIRural: React.FC = () => {
     boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
     color: '#1e293b',
     fontSize: '12px',
-    fontWeight: '500' as const
+    fontWeight: '500' as const,
   };
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64 bg-white/50 rounded-3xl animate-pulse">
-        <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">Sincronizando BI Rural...</span>
+        <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">
+          Sincronizando BI Rural...
+        </span>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto space-y-8 pb-12 font-sans text-gray-900">
-      
-      {/* Header Premium */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 p-8 shadow-lg shadow-emerald-900/20">
-        <div className="absolute right-0 top-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
-        <div className="absolute left-0 bottom-0 w-48 h-48 bg-teal-500/10 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4"></div>
-        
-        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-2.5 py-1 rounded-full bg-white/10 text-white/90 text-xs font-semibold tracking-wider uppercase backdrop-blur-sm border border-white/10">
-                Inteligência Rural
-              </span>
-            </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight flex items-center gap-3">
-              <Activity className="text-emerald-400" size={36} />
-              BI Rural Select
-            </h1>
-            <p className="text-emerald-100 mt-2 text-sm md:text-base max-w-xl">
-              Análise de performance, portfólio e mercado do segmento rural em tempo real.
-            </p>
+    <div className="wootech-reference-screen w-full max-w-[1600px] mx-auto space-y-8 pb-12 font-sans text-gray-900">
+      <div className="wootech-page-heading">
+        <div>
+          <div className="wootech-breadcrumb">
+            <strong>Rural</strong>
+            <span>/</span>
+            <span>BI Rural Select</span>
           </div>
-          
-          <div className="flex items-center gap-3">
-            <div className="flex bg-white/10 rounded-xl p-1 backdrop-blur-sm border border-white/20">
-              {['Mensal', 'Semestral', 'Anual'].map((range) => (
-                <button
-                  key={range}
-                  onClick={() => setTimeRange(range)}
-                  className={`px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${timeRange === range ? 'bg-white text-emerald-900 shadow-sm' : 'text-white/70 hover:text-white'}`}
-                >
-                  {range}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={exportReport}
-              className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-xl backdrop-blur-sm transition-all flex items-center gap-2 border border-white/20"
-            >
-              <Download size={18} /> Exportar
-            </button>
+          <h1 className="flex items-center gap-3">
+            <Activity className="text-emerald-600" size={30} /> BI Rural Select
+          </h1>
+          <p>
+            Análise de performance, portfólio e mercado do segmento rural em
+            tempo real.
+          </p>
+        </div>
+
+        <div className="wootech-action-row">
+          <div className="flex rounded-lg border border-slate-200 bg-white p-1">
+            {['Mensal', 'Semestral', 'Anual'].map((range) => (
+              <button
+                key={range}
+                onClick={() => setTimeRange(range)}
+                className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${timeRange === range ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+              >
+                {range}
+              </button>
+            ))}
           </div>
+          <button onClick={exportReport} className="wootech-secondary-action">
+            <Download size={18} /> Exportar relatório
+          </button>
         </div>
       </div>
 
@@ -315,17 +307,21 @@ const BIRural: React.FC = () => {
             key={idx}
             className="group relative bg-white border border-gray-100 rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden cursor-default hover:-translate-y-1"
           >
-            <kpi.icon className={`absolute -right-4 -bottom-4 w-24 h-24 opacity-[0.03] transform group-hover:scale-110 transition-transform duration-500 ${kpi.color}`} />
-            
+            <kpi.icon
+              className={`absolute -right-4 -bottom-4 w-24 h-24 opacity-[0.03] transform group-hover:scale-110 transition-transform duration-500 ${kpi.color}`}
+            />
+
             <div className="flex items-start justify-between mb-4 relative z-10">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${kpi.bg} ${kpi.color}`}>
+              <div
+                className={`w-12 h-12 rounded-xl flex items-center justify-center ${kpi.bg} ${kpi.color}`}
+              >
                 <kpi.icon size={24} />
               </div>
               <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 uppercase tracking-widest">
                 {kpi.trend}
               </span>
             </div>
-            
+
             <div className="relative z-10">
               <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">
                 {kpi.label}
@@ -357,19 +353,66 @@ const BIRural: React.FC = () => {
           </div>
           <div className="h-[350px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={growthData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <AreaChart
+                data={growthData}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
                 <defs>
-                  <linearGradient id="colorListings" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient
+                    id="colorListings"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
                     <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
                     <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} />
-                <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: '#e2e8f0', strokeWidth: 1, strokeDasharray: '4 4' }} />
-                <Area type="monotone" dataKey="listings" name="Captações" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorListings)" activeDot={{ r: 6, strokeWidth: 0, fill: '#10b981' }} />
-                <Area type="monotone" dataKey="leads" name="Leads" stroke="#6366f1" strokeWidth={3} fillOpacity={0} activeDot={{ r: 6, strokeWidth: 0, fill: '#6366f1' }} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="#f1f5f9"
+                />
+                <XAxis
+                  dataKey="month"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
+                  dy={10}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
+                />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  cursor={{
+                    stroke: '#e2e8f0',
+                    strokeWidth: 1,
+                    strokeDasharray: '4 4',
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="listings"
+                  name="Captações"
+                  stroke="#10b981"
+                  strokeWidth={3}
+                  fillOpacity={1}
+                  fill="url(#colorListings)"
+                  activeDot={{ r: 6, strokeWidth: 0, fill: '#10b981' }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="leads"
+                  name="Leads"
+                  stroke="#6366f1"
+                  strokeWidth={3}
+                  fillOpacity={0}
+                  activeDot={{ r: 6, strokeWidth: 0, fill: '#6366f1' }}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -378,9 +421,7 @@ const BIRural: React.FC = () => {
         {/* Portfolio Distribution Pie Chart */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col">
           <div className="mb-6">
-            <h3 className="text-lg font-bold text-gray-900">
-              Mix de Produtos
-            </h3>
+            <h3 className="text-lg font-bold text-gray-900">Mix de Produtos</h3>
             <p className="text-xs font-medium text-gray-500 mt-1">
               Distribuição por tipologia rural.
             </p>
@@ -399,25 +440,39 @@ const BIRural: React.FC = () => {
                   stroke="none"
                 >
                   {typeData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
                   ))}
                 </Pie>
                 <Tooltip contentStyle={tooltipStyle} />
               </PieChart>
             </ResponsiveContainer>
-             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-2xl font-bold text-gray-900">{stats.propertyCount}</span>
-              <span className="text-[10px] uppercase font-bold text-gray-400">Total</span>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-2xl font-bold text-gray-900">
+                {stats.propertyCount}
+              </span>
+              <span className="text-[10px] uppercase font-bold text-gray-400">
+                Total
+              </span>
             </div>
           </div>
           <div className="mt-4 space-y-2">
             {typeData.slice(0, 4).map((item, idx) => (
               <div key={idx} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
-                  <span className="text-sm font-medium text-gray-700">{item.name}</span>
+                  <div
+                    className="w-3 h-3 rounded-full shadow-sm"
+                    style={{ backgroundColor: COLORS[idx % COLORS.length] }}
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    {item.name}
+                  </span>
                 </div>
-                <span className="text-sm font-bold text-gray-900">{item.value}</span>
+                <span className="text-sm font-bold text-gray-900">
+                  {item.value}
+                </span>
               </div>
             ))}
           </div>
@@ -437,14 +492,36 @@ const BIRural: React.FC = () => {
           </div>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={regionData} layout="vertical" margin={{ left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+              <BarChart
+                data={regionData}
+                layout="vertical"
+                margin={{ left: 20 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  horizontal={false}
+                  stroke="#f1f5f9"
+                />
                 <XAxis type="number" hide />
-                <YAxis dataKey="name" type="category" width={100} tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} />
-                <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={tooltipStyle} cursor={{ fill: '#f8fafc' }} />
+                <YAxis
+                  dataKey="name"
+                  type="category"
+                  width={100}
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
+                />
+                <Tooltip
+                  formatter={(value: number) => formatCurrency(value)}
+                  contentStyle={tooltipStyle}
+                  cursor={{ fill: '#f8fafc' }}
+                />
                 <Bar dataKey="value" fill="#10b981" radius={[0, 6, 6, 0]}>
                   {regionData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
                   ))}
                 </Bar>
               </BarChart>
@@ -468,7 +545,10 @@ const BIRural: React.FC = () => {
               <div key={idx} className="group">
                 <div className="mb-2 flex justify-between items-end">
                   <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-500">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></span>
+                    <span
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: COLORS[idx % COLORS.length] }}
+                    ></span>
                     {source.name}
                   </span>
                   <span className="text-xs font-bold text-gray-900">

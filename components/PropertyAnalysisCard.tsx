@@ -4,10 +4,7 @@ import React from 'react';
 import { PropertyAnalysis } from '../types';
 import {
   Cloud,
-  Droplets,
   ThermometerSun,
-  Wind,
-  TrendingUp,
   AlertTriangle,
   Lightbulb,
   Award,

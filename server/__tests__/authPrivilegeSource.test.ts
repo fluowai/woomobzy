@@ -21,7 +21,10 @@ function createSupabaseMock({ profileById = null, profileByEmail = null }) {
               if (column === 'id') {
                 return {
                   maybeSingle: async () => ({
-                    data: profileById && profileById.id === value ? profileById : null,
+                    data:
+                      profileById && profileById.id === value
+                        ? profileById
+                        : null,
                     error: null,
                   }),
                 };

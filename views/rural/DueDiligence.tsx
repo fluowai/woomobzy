@@ -14,6 +14,7 @@ import {
   RefreshCw,
   ExternalLink,
   AlertCircle,
+  Loader2,
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -189,6 +190,7 @@ const DueDiligence: React.FC = () => {
   const [isValidating, setIsValidating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [documents, setDocuments] = useState<any[]>([]);
+  const [uploadingItem, setUploadingItem] = useState<string | null>(null);
 
   const loadProps = useCallback(async () => {
     if (!profile?.organization_id) {
@@ -406,6 +408,52 @@ const DueDiligence: React.FC = () => {
     });
   };
 
+  const handleItemUpload = async (itemId: string, file: File) => {
+    if (!selectedProperty) {
+      toast.error('Selecione uma propriedade primeiro.');
+      return;
+    }
+    if (!file) return;
+
+    const MAX_SIZE_MB = 20;
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      toast.error(`Arquivo muito grande. Maximo ${MAX_SIZE_MB}MB.`);
+      return;
+    }
+
+    setUploadingItem(itemId);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const data = await callApi(`/api/documents/upload/${selectedProperty}`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!data.success) throw new Error(data.error || 'Erro no upload');
+
+      const publicUrl =
+        data.document?.public_url || data.document?.file_url || '';
+      if (!publicUrl) throw new Error('Upload concluido sem URL do documento.');
+
+      const nextChecklist = checklist.map((item) =>
+        item.id === itemId
+          ? { ...item, file: publicUrl, status: 'pending' as DocStatus }
+          : item
+      );
+      setChecklist(nextChecklist);
+      await persistChecklist(nextChecklist);
+      toast.success('Documento anexado ao item do checklist.');
+
+      callApi(`/api/documents/${selectedProperty}`)
+        .then((result) => setDocuments(result.documents || []))
+        .catch(() => {});
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao enviar documento.');
+    } finally {
+      setUploadingItem(null);
+    }
+  };
+
   const fundiarioItems = checklist.filter((i) => i.category === 'fundiario');
   const ambientalItems = checklist.filter((i) => i.category === 'ambiental');
 
@@ -494,14 +542,40 @@ const DueDiligence: React.FC = () => {
                   >
                     {cfg.label}
                   </span>
-                  <button
-                    onClick={() =>
-                      toast.info('Funcionalidade de upload específica em breve')
-                    }
-                    className="invisible group-hover:visible p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all"
+                  {item.file ? (
+                    <a
+                      href={item.file}
+                      target="_blank"
+                      rel="noreferrer"
+                      title="Abrir documento anexado"
+                      className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-all"
+                    >
+                      <ExternalLink size={14} />
+                    </a>
+                  ) : (
+                    <span className="w-7" />
+                  )}
+                  <label
+                    title="Anexar documento a este item"
+                    className="invisible group-hover:visible p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all cursor-pointer"
                   >
-                    <Upload size={14} />
-                  </button>
+                    {uploadingItem === item.id ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Upload size={14} />
+                    )}
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                      className="hidden"
+                      onChange={(e) => {
+                        const selectedFile = e.target.files?.[0];
+                        if (selectedFile)
+                          handleItemUpload(item.id, selectedFile);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
                 </div>
               );
             })}

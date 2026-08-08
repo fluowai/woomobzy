@@ -13,6 +13,7 @@ import {
   Block,
 } from '../types/landingPage';
 import { Property } from '../types';
+import { DevelopmentSelectionConfig } from '../types/site';
 
 // ============================================
 // LANDING PAGE SERVICE
@@ -184,6 +185,7 @@ export const landingPageService = {
       .update({
         status: LandingPageStatus.PUBLISHED,
         published_at: new Date().toISOString(),
+        is_active: true,
       })
       .eq('id', id)
       .select()
@@ -323,6 +325,71 @@ export const landingPageService = {
   },
 
   /**
+   * Obtém os lançamentos selecionados para uma landing page
+   */
+  async getPageDevelopments(pageId: string): Promise<any[]> {
+    const page = await this.getById(pageId);
+    const config = page.developmentSelection || {
+      mode: 'all',
+      developmentIds: [],
+      filters: {},
+      sortBy: 'date',
+      sortOrder: 'desc',
+      limit: 12,
+    };
+
+    if (!page.organizationId) return [];
+
+    let query = supabase
+      .from('developments')
+      .select('*')
+      .eq('organization_id', page.organizationId)
+      .eq('show_on_site', true);
+
+    if (
+      config.mode === 'manual' &&
+      config.developmentIds &&
+      config.developmentIds.length > 0
+    ) {
+      query = query.in('id', config.developmentIds);
+    } else if (config.mode === 'filter' && config.filters) {
+      const filters = config.filters;
+      if (filters.status && filters.status.length > 0) {
+        query = query.in('status', filters.status);
+      }
+      if (filters.city && filters.city.length > 0) {
+        query = query.in('city', filters.city);
+      }
+      if (filters.state && filters.state.length > 0) {
+        query = query.in('state', filters.state);
+      }
+    }
+
+    if (config.sortBy) {
+      const ascending = config.sortOrder === 'asc';
+      switch (config.sortBy) {
+        case 'name':
+          query = query.order('name', { ascending });
+          break;
+        case 'date':
+          query = query.order('created_at', { ascending });
+          break;
+        case 'units':
+          query = query.order('total_units', { ascending });
+          break;
+      }
+    }
+
+    if (config.limit) {
+      query = query.limit(config.limit);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  },
+
+  /**
    * Atualiza a configuração de seleção de imóveis
    */
   async updatePropertySelection(
@@ -333,6 +400,23 @@ export const landingPageService = {
       .from('landing_pages')
       .update({
         property_selection: config,
+      })
+      .eq('id', pageId);
+
+    if (error) throw error;
+  },
+
+  /**
+   * Atualiza a configuração de seleção de lançamentos
+   */
+  async updateDevelopmentSelection(
+    pageId: string,
+    config: DevelopmentSelectionConfig
+  ): Promise<void> {
+    const { error } = await supabase
+      .from('landing_pages')
+      .update({
+        development_selection: config,
       })
       .eq('id', pageId);
 
@@ -537,6 +621,14 @@ const mapToModel = (dbItem: any): LandingPage => ({
     sortOrder: 'desc',
     limit: 12,
   },
+  developmentSelection: dbItem.development_selection || {
+    mode: 'all',
+    developmentIds: [],
+    filters: {},
+    sortBy: 'date',
+    sortOrder: 'desc',
+    limit: 12,
+  },
   formConfig: dbItem.form_config,
   status: dbItem.status as LandingPageStatus,
   publishedAt: dbItem.published_at,
@@ -570,6 +662,8 @@ const mapToDatabase = (model: Partial<LandingPage>): any => {
   if (model.settings !== undefined) db.settings = model.settings;
   if (model.propertySelection !== undefined)
     db.property_selection = model.propertySelection;
+  if (model.developmentSelection !== undefined)
+    db.development_selection = model.developmentSelection;
   if (model.formConfig !== undefined) db.form_config = model.formConfig;
   if (model.status !== undefined) db.status = model.status;
   if (model.publishedAt !== undefined) db.published_at = model.publishedAt;

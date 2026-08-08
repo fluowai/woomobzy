@@ -14,6 +14,7 @@ import {
 import {
   clearImpersonationSession,
   getStoredImpersonationSession,
+  isImpersonationErrorCode,
   persistImpersonationSession,
 } from '../src/lib/impersonation';
 import { supabase } from '../services/supabase';
@@ -153,7 +154,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           'id, email, name, role, avatar_url, organization_id, created_at'
         )
         .eq('id', userId)
-        .single();
+        .limit(1)
+        .maybeSingle();
 
       const timeoutPromise = new Promise(
         (_, reject) =>
@@ -344,6 +346,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     setUser(null);
     setProfile(null);
     setIsImpersonating(false);
+
+    // Forcefully clear known Supabase auth keys from localStorage
+    if (typeof window !== 'undefined' && window.localStorage) {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+          localStorage.removeItem(key);
+        }
+      }
+    }
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
@@ -388,15 +400,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         await setDownImpersonationSession();
       }
     } catch (error: any) {
-      logger.warn(
-        '[AuthContext] Falha ao revogar impersonação no servidor:',
-        error?.message || error
-      );
+      if (isImpersonationErrorCode(error?.code)) {
+        logger.info(
+          '[AuthContext] Impersonação já encerrada no servidor:',
+          error?.message || error
+        );
+      } else {
+        logger.warn(
+          '[AuthContext] Falha ao revogar impersonação no servidor:',
+          error?.message || error
+        );
+      }
     } finally {
       clearImpersonationSession();
       setIsImpersonating(false);
       if (user) {
-        await loadProfile(user.id);
+        try {
+          await loadProfile(user.id);
+        } catch {
+          syncActiveOrganization(null, user.id);
+        }
       } else {
         syncActiveOrganization(null);
       }
@@ -527,28 +550,29 @@ async function setDownImpersonationSession() {
   } = await supabase.auth.getSession();
   const activeSession = getStoredImpersonationSession();
 
-  const response = await fetch(
-    getApiUrl('/api/admin/impersonations/current'),
-    {
-      method: 'DELETE',
-      credentials: 'same-origin',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(session?.access_token
-          ? { Authorization: `Bearer ${session.access_token}` }
-          : {}),
-        ...(activeSession
-          ? {
-              'x-impersonation-session-id': activeSession.id,
-              'x-impersonation-session-secret': activeSession.secret,
-            }
-          : {}),
-      },
-    }
-  );
+  const response = await fetch(getApiUrl('/api/admin/impersonations/current'), {
+    method: 'DELETE',
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {}),
+      ...(activeSession
+        ? {
+            'x-impersonation-session-id': activeSession.id,
+            'x-impersonation-session-secret': activeSession.secret,
+          }
+        : {}),
+    },
+  });
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(payload?.error || 'Erro ao encerrar o modo suporte');
+    const error = new Error(
+      payload?.error || 'Erro ao encerrar o modo suporte'
+    );
+    (error as any).code = payload?.code || null;
+    throw error;
   }
 }

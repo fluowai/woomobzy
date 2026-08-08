@@ -26,24 +26,22 @@ if (!supabaseUrl || !supabaseAnonKey) {
   }
 }
 
-const buildSupabaseFetch = () => async (
-  input: RequestInfo | URL,
-  init?: RequestInit
-) => {
-  const headers = new Headers(init?.headers || {});
-  if (!headers.has('Content-Type')) {
-    headers.set('Content-Type', 'application/json');
-  }
+const buildSupabaseFetch =
+  () => async (input: RequestInfo | URL, init?: RequestInit) => {
+    const headers = new Headers(init?.headers || {});
+    if (!headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
 
-  for (const [key, value] of Object.entries(getImpersonationHeaders())) {
-    headers.set(key, value);
-  }
+    for (const [key, value] of Object.entries(getImpersonationHeaders())) {
+      headers.set(key, value);
+    }
 
-  return fetch(input, {
-    ...init,
-    headers,
-  });
-};
+    return fetch(input, {
+      ...init,
+      headers,
+    });
+  };
 
 let activeClient = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',

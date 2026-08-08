@@ -22,7 +22,7 @@ type Instance struct {
 	TenantID  *uuid.UUID     `json:"tenant_id,omitempty" db:"tenant_id"`
 	Name      string         `json:"name" db:"name"`
 	Status    InstanceStatus `json:"status" db:"status"`
-	QRCode    string         `json:"qr_code,omitempty" db:"qr_code"`
+	QRCode    string         `json:"-" db:"qr_code"`
 	Phone     string         `json:"phone,omitempty" db:"phone"`
 	JID       string         `json:"jid,omitempty" db:"jid"`
 	CreatedAt time.Time      `json:"created_at" db:"created_at"`
@@ -244,6 +244,10 @@ type InstanceStatusEvent struct {
 	Status     InstanceStatus `json:"status"`
 	Phone      string         `json:"phone,omitempty"`
 	Error      string         `json:"error,omitempty"`
+	// Recoverable marks errors that can be resolved automatically (e.g. a QR
+	// code that expired). Clients use it to keep waiting for a fresh QR
+	// instead of freezing on a terminal error screen.
+	Recoverable bool `json:"recoverable,omitempty"`
 }
 
 // HistoryImportedEvent is emitted after a WhatsApp history sync chunk is stored.

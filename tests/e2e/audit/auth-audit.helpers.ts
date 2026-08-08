@@ -1,6 +1,11 @@
 import { expect, type Page } from '@playwright/test';
 
-export type AuditRole = 'urbanAdmin' | 'urbanBroker' | 'ruralAdmin' | 'superAdmin' | 'megaAdmin';
+export type AuditRole =
+  | 'urbanAdmin'
+  | 'urbanBroker'
+  | 'ruralAdmin'
+  | 'superAdmin'
+  | 'megaAdmin';
 
 type RoleConfig = {
   label: string;

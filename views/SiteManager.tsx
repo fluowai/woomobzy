@@ -5,6 +5,7 @@ import { siteService } from '../services/sites';
 import { Site, SitePage, SiteTemplate } from '../types/site';
 import { SITE_TEMPLATES, applySiteTemplate } from '../constants/siteTemplates';
 import GlobalSettings from '../components/SiteEditor/GlobalSettings';
+import PropertySelectionPanel from '../components/SiteEditor/PropertySelectionPanel';
 import {
   Plus,
   Eye,
@@ -21,6 +22,8 @@ import {
   Sparkles,
   Wand2,
   PenTool,
+  Home,
+  Building2,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
@@ -37,7 +40,7 @@ const SiteManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'pages' | 'settings' | 'templates'
+    'pages' | 'settings' | 'templates' | 'imoveis'
   >('pages');
   const [showCreatePage, setShowCreatePage] = useState(false);
   const [newPageTitle, setNewPageTitle] = useState('');
@@ -456,6 +459,12 @@ const SiteManager: React.FC = () => {
           <Palette size={16} /> Configurações
         </button>
         <button
+          onClick={() => setActiveTab('imoveis')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-colors flex-1 justify-center ${activeTab === 'imoveis' ? 'bg-indigo-600 text-white shadow' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}
+        >
+          <Home size={16} /> Imóveis
+        </button>
+        <button
           onClick={() => setActiveTab('templates')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-colors flex-1 justify-center ${activeTab === 'templates' ? 'bg-indigo-600 text-white shadow' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}
         >
@@ -610,6 +619,25 @@ const SiteManager: React.FC = () => {
             site={site}
             pages={pages}
             onUpdate={handleUpdateSite}
+          />
+        </div>
+      )}
+
+      {activeTab === 'imoveis' && (
+        <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
+          <div className="mb-5">
+            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+              <Home size={20} className="text-indigo-400" /> Seleção de Imóveis
+            </h2>
+            <p className="text-gray-400 text-sm mt-1">
+              Escolha quais imóveis e lançamentos aparecerão no seu site
+              público.
+            </p>
+          </div>
+          <PropertySelectionPanel
+            site={site}
+            onUpdate={handleUpdateSite}
+            saving={saving}
           />
         </div>
       )}

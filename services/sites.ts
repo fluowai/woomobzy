@@ -8,7 +8,9 @@ import {
   UpdateSiteInput,
   CreateSitePageInput,
   UpdateSitePageInput,
+  DevelopmentSelectionConfig,
 } from '../types/site';
+import { PropertySelectionConfig } from '../types/landingPage';
 import { v4 as uuidv4 } from 'uuid';
 
 const mapSiteFromDB = (dbItem: any): Site => ({
@@ -24,6 +26,22 @@ const mapSiteFromDB = (dbItem: any): Site => ({
   menuConfig: dbItem.menu_config || [],
   contactInfo: dbItem.contact_info || {},
   socialLinks: dbItem.social_links || {},
+  propertySelection: dbItem.property_selection || {
+    mode: 'all',
+    propertyIds: [],
+    filters: {},
+    sortBy: 'price',
+    sortOrder: 'desc',
+    limit: 20,
+  },
+  developmentSelection: dbItem.development_selection || {
+    mode: 'all',
+    developmentIds: [],
+    filters: {},
+    sortBy: 'date',
+    sortOrder: 'desc',
+    limit: 20,
+  },
   customCss: dbItem.custom_css,
   customJs: dbItem.custom_js,
   customHead: dbItem.custom_head,
@@ -43,6 +61,10 @@ const mapSiteToDB = (model: Partial<Site>): any => {
   if (model.menuConfig !== undefined) db.menu_config = model.menuConfig;
   if (model.contactInfo !== undefined) db.contact_info = model.contactInfo;
   if (model.socialLinks !== undefined) db.social_links = model.socialLinks;
+  if (model.propertySelection !== undefined)
+    db.property_selection = model.propertySelection;
+  if (model.developmentSelection !== undefined)
+    db.development_selection = model.developmentSelection;
   if (model.customCss !== undefined) db.custom_css = model.customCss;
   if (model.customJs !== undefined) db.custom_js = model.customJs;
   if (model.customHead !== undefined) db.custom_head = model.customHead;
@@ -296,6 +318,190 @@ export const siteService = {
     });
 
     return dup;
+  },
+
+  // ============================================
+  // PROPERTY SELECTION
+  // ============================================
+
+  /**
+   * Gets properties based on site's property selection config
+   */
+  async getSiteProperties(siteId: string): Promise<any[]> {
+    const site = await this.getById(siteId);
+    if (!site) return [];
+
+    const config = site.propertySelection || {
+      mode: 'all',
+      propertyIds: [],
+      filters: {},
+      sortBy: 'price',
+      sortOrder: 'desc',
+      limit: 20,
+    };
+
+    let query = supabase
+      .from('properties')
+      .select('*')
+      .eq('organization_id', site.organizationId);
+
+    // Always filter by show_on_site
+    query = query.eq('show_on_site', true);
+
+    if (
+      config.mode === 'manual' &&
+      config.propertyIds &&
+      config.propertyIds.length > 0
+    ) {
+      query = query.in('id', config.propertyIds);
+    } else if (config.mode === 'filter' && config.filters) {
+      const filters = config.filters;
+      if (filters.type && filters.type.length > 0) {
+        query = query.in('property_type', filters.type);
+      }
+      if (filters.purpose && filters.purpose.length > 0) {
+        query = query.in('purpose', filters.purpose);
+      }
+      if (filters.status && filters.status.length > 0) {
+        query = query.in('status', filters.status);
+      }
+      if (filters.city && filters.city.length > 0) {
+        query = query.in('city', filters.city);
+      }
+      if (filters.state && filters.state.length > 0) {
+        query = query.in('state', filters.state);
+      }
+      if (filters.minPrice !== undefined) {
+        query = query.gte('price', filters.minPrice);
+      }
+      if (filters.maxPrice !== undefined) {
+        query = query.lte('price', filters.maxPrice);
+      }
+      if (filters.highlighted !== undefined) {
+        query = query.eq('highlighted', filters.highlighted);
+      }
+    } else {
+      query = query.eq('status', 'Disponível');
+    }
+
+    if (config.sortBy) {
+      const ascending = config.sortOrder === 'asc';
+      switch (config.sortBy) {
+        case 'price':
+          query = query.order('price', { ascending });
+          break;
+        case 'area':
+          query = query.order('total_area_ha', { ascending });
+          break;
+        case 'date':
+          query = query.order('created_at', { ascending });
+          break;
+      }
+    }
+
+    if (config.limit) {
+      query = query.limit(config.limit);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  },
+
+  /**
+   * Gets developments based on site's development selection config
+   */
+  async getSiteDevelopments(siteId: string): Promise<any[]> {
+    const site = await this.getById(siteId);
+    if (!site) return [];
+
+    const config = site.developmentSelection || {
+      mode: 'all',
+      developmentIds: [],
+      filters: {},
+      sortBy: 'date',
+      sortOrder: 'desc',
+      limit: 20,
+    };
+
+    let query = supabase
+      .from('developments')
+      .select('*')
+      .eq('organization_id', site.organizationId);
+
+    query = query.eq('show_on_site', true);
+
+    if (
+      config.mode === 'manual' &&
+      config.developmentIds &&
+      config.developmentIds.length > 0
+    ) {
+      query = query.in('id', config.developmentIds);
+    } else if (config.mode === 'filter' && config.filters) {
+      const filters = config.filters;
+      if (filters.status && filters.status.length > 0) {
+        query = query.in('status', filters.status);
+      }
+      if (filters.city && filters.city.length > 0) {
+        query = query.in('city', filters.city);
+      }
+      if (filters.state && filters.state.length > 0) {
+        query = query.in('state', filters.state);
+      }
+    }
+
+    if (config.sortBy) {
+      const ascending = config.sortOrder === 'asc';
+      switch (config.sortBy) {
+        case 'name':
+          query = query.order('name', { ascending });
+          break;
+        case 'date':
+          query = query.order('created_at', { ascending });
+          break;
+        case 'units':
+          query = query.order('total_units', { ascending });
+          break;
+      }
+    }
+
+    if (config.limit) {
+      query = query.limit(config.limit);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  },
+
+  /**
+   * Updates the property selection config for a site
+   */
+  async updatePropertySelection(
+    siteId: string,
+    config: PropertySelectionConfig
+  ): Promise<void> {
+    const { error } = await supabase
+      .from('sites')
+      .update({ property_selection: config })
+      .eq('id', siteId);
+
+    if (error) throw error;
+  },
+
+  /**
+   * Updates the development selection config for a site
+   */
+  async updateDevelopmentSelection(
+    siteId: string,
+    config: DevelopmentSelectionConfig
+  ): Promise<void> {
+    const { error } = await supabase
+      .from('sites')
+      .update({ development_selection: config })
+      .eq('id', siteId);
+
+    if (error) throw error;
   },
 
   async getPublicSite(

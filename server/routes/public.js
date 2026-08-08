@@ -699,6 +699,24 @@ function uniqueNonEmpty(values) {
   ];
 }
 
+// Public plans (onboarding/checkout pré-login). A tabela `plans` tem RLS
+// restrita a superadmin; aqui usamos service role para expor só os ativos.
+router.get('/plans', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('plans')
+      .select(
+        'id, name, slug, price_monthly, features, limits, is_active, trial_days'
+      )
+      .eq('is_active', true)
+      .order('price_monthly', { ascending: true });
+    if (error) throw error;
+    res.json({ success: true, plans: data || [] });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Texts management
 router.get('/texts', async (req, res) => {
   try {

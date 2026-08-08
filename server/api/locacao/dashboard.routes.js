@@ -3,6 +3,7 @@
  * /api/locacao/dashboard
  */
 import { Router } from 'express';
+import { logger } from '../../utils/logger.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
@@ -103,7 +104,7 @@ router.get('/resumo', verifyAuth, requireTenant, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('[DashboardRoutes] Resumo error:', error);
+    logger.error('[DashboardRoutes] Resumo error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -180,7 +181,7 @@ router.get('/timeline', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true, data: events.slice(0, 20) });
   } catch (error) {
-    console.error('[DashboardRoutes] Timeline error:', error);
+    logger.error('[DashboardRoutes] Timeline error:', error);
     res.status(500).json({ error: error.message });
   }
 });

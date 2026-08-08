@@ -152,6 +152,22 @@ func (h *InstanceHandler) GetQRCode(c *gin.Context) {
 		return
 	}
 
+	if message := h.manager.GetPairingError(id); message != "" {
+		if !h.manager.PairingErrorRecoverable(id) {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"error":       message,
+				"code":        "WHATSAPP_QR_FAILED",
+				"status":      "failed",
+				"recoverable": false,
+			})
+			return
+		}
+		// Recoverable failure (e.g. QR expired): clear the error and let the
+		// restart logic below open a fresh QR flow instead of erroring the
+		// poll. The modal then keeps waiting and receives the new QR.
+		h.manager.ClearPairingError(id)
+	}
+
 	client, exists := h.manager.GetClient(id)
 	clientExists := exists && client != nil
 	clientConnected := clientExists && client.IsConnected()

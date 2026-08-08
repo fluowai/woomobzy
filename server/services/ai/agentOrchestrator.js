@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { matchLeadProperties } from '../leadPropertyMatcher.js';
+import { buildAgentSystemPrompt } from './agentPrompt.js';
 
 const allTools = [
   {
@@ -39,6 +40,11 @@ const allTools = [
         property_id: {
           type: 'string',
           description: 'ID do imovel a ser visitado (se conhecido)',
+        },
+        agenda_id: {
+          type: 'string',
+          description:
+            'ID da agenda de visitas em que o compromisso deve entrar (se conhecido)',
         },
         data_hora: {
           type: 'string',
@@ -114,6 +120,25 @@ const allTools = [
     },
   },
   {
+    name: 'consultar_agenda_disponibilidade',
+    description:
+      'Consulta horarios disponiveis para visita em um dia especifico, evitando conflitos com agendamentos existentes.',
+    parameters: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'string',
+          description: 'Data desejada para consulta (YYYY-MM-DD ou ISO 8601).',
+        },
+        corretor_id: {
+          type: 'string',
+          description: 'ID do corretor responsavel (opcional).',
+        },
+      },
+      required: ['data'],
+    },
+  },
+  {
     name: 'enviar_audio_whatsapp',
     description:
       'Gera um audio a partir de texto (Text-to-Speech) e envia para o cliente pelo WhatsApp. Use isto quando o cliente pedir para enviar um audio ou quando a resposta for longa e acolhedora.',
@@ -178,6 +203,14 @@ export class AgentOrchestrator {
         allTools.find((t) => t.name === 'enviar_audio_whatsapp')
       );
     }
+    if (
+      agentToolsConfig?.includes('agenda') ||
+      agentToolsConfig?.includes('agendar_visita')
+    ) {
+      activeFunctionDeclarations.push(
+        allTools.find((t) => t.name === 'consultar_agenda_disponibilidade')
+      );
+    }
 
     // Se o agente nao tiver tools de backend mapeadas, retornamos nulo para pular a orquestracao
     if (activeFunctionDeclarations.length === 0) {
@@ -218,7 +251,9 @@ export class AgentOrchestrator {
       if (name === 'buscar_imoveis') {
         let query = supabase
           .from('properties')
-          .select('id, title, price, city, bedrooms')
+          .select(
+            'id, title, price, city, state, property_type, purpose, description, total_area_ha, images, status'
+          )
           .eq('organization_id', organizationId)
           .eq('status', 'ativo');
 
@@ -232,7 +267,18 @@ export class AgentOrchestrator {
         return {
           resultado:
             data && data.length > 0
-              ? data
+              ? data.map((p) => ({
+                  id: p.id,
+                  titulo: p.title,
+                  preco: p.price,
+                  cidade: p.city,
+                  estado: p.state,
+                  tipo: p.property_type,
+                  finalidade: p.purpose,
+                  descricao: p.description,
+                  area_total_ha: p.total_area_ha,
+                  imagem: p.images?.[0] || null,
+                }))
               : 'Nenhum imovel encontrado com essas caracteristicas.',
         };
       }
@@ -243,15 +289,55 @@ export class AgentOrchestrator {
             erro: 'Lead nao identificado. Nao e possivel agendar visita sem um lead salvo.',
           };
 
-        await supabase.from('lead_followups').insert({
-          organization_id: organizationId,
-          lead_id: leadId,
-          title: `Visita Agendada: ${args.property_id || 'Imovel a definir'}`,
-          notes: args.notas || '',
-          due_at: args.data_hora,
-          kind: 'visit',
-          status: 'pending',
-        });
+        const scheduledAt = args.data_hora
+          ? new Date(args.data_hora).toISOString()
+          : null;
+        if (!scheduledAt)
+          return {
+            erro: 'Data e hora da visita sao obrigatorias. Formato: 2026-07-25T14:30:00Z',
+          };
+
+        const propertyId = args.property_id || null;
+        const propertyTitle = propertyId
+          ? await this._resolvePropertyTitle(
+              supabase,
+              organizationId,
+              propertyId
+            )
+          : null;
+        const visitTitle = propertyTitle
+          ? `Visita Agendada: ${propertyTitle}`
+          : `Visita Agendada: ${args.property_id || 'Imovel a definir'}`;
+        const appointmentNotes = [
+          args.notas || '',
+          propertyTitle ? `Imovel: ${propertyTitle}` : '',
+        ]
+          .filter(Boolean)
+          .join('\n');
+
+        await Promise.all([
+          supabase.from('lead_followups').insert({
+            organization_id: organizationId,
+            lead_id: leadId,
+            title: visitTitle,
+            notes: appointmentNotes,
+            due_at: scheduledAt,
+            kind: 'visit',
+            status: 'pending',
+          }),
+          supabase.from('lead_appointments').insert({
+            organization_id: organizationId,
+            lead_id: leadId,
+            agenda_id: args.agenda_id || null,
+            property_id: propertyId,
+            user_id: null,
+            title: visitTitle,
+            appointment_date: scheduledAt,
+            type: 'meeting',
+            status: 'pending',
+            notes: appointmentNotes,
+          }),
+        ]);
 
         return {
           sucesso: true,
@@ -358,6 +444,48 @@ export class AgentOrchestrator {
         };
       }
 
+      if (name === 'consultar_agenda_disponibilidade') {
+        const dateStr = args.data
+          ? new Date(args.data).toISOString().split('T')[0]
+          : null;
+        if (!dateStr)
+          return {
+            erro: 'Informe a data no formato YYYY-MM-DD ou ISO 8601.',
+          };
+
+        const conflicts = await this._checkAgendaConflicts(
+          supabase,
+          organizationId,
+          dateStr,
+          leadId || null
+        );
+
+        if (conflicts.length === 0) {
+          return {
+            sucesso: true,
+            data: dateStr,
+            disponivel: true,
+            mensagem: `Nenhum conflito encontrado para ${dateStr}. O horario esta disponivel.`,
+          };
+        }
+
+        const horariosOcupados = conflicts
+          .map(
+            (c) =>
+              `- ${new Date(c.appointment_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}: ${c.title}`
+          )
+          .join('\n');
+
+        return {
+          sucesso: true,
+          data: dateStr,
+          disponivel: false,
+          conflitos: conflicts.length,
+          horarios_ocupados: horariosOcupados,
+          mensagem: `Em ${dateStr} ja existem ${conflicts.length} agendamento(s):\n${horariosOcupados}\nSugira outro horario para o cliente.`,
+        };
+      }
+
       return { erro: `Ferramenta ${name} desconhecida.` };
     } catch (err) {
       console.error('[AgentOrchestrator] Erro na tool', name, err);
@@ -387,17 +515,19 @@ export class AgentOrchestrator {
       systemInstruction: {
         parts: [
           {
-            text: `
-Voce e um agente autonomo imobiliario. 
-Nome: ${agent?.name || 'Agente'}
-Personalidade: ${agent?.personality || 'Profissional e prestativo'}
-Instrucoes: ${agent?.instructions || 'Ajude o cliente a encontrar imoveis e agendar visitas.'}
+            text:
+              buildAgentSystemPrompt(agent, {
+                history,
+                channel: 'WhatsApp',
+              }) +
+              `
 
-Voce possui acesso a ferramentas (Tools) no sistema IMOBZY.
-- Use "buscar_imoveis" para verificar disponibilidade antes de oferecer algo.
+DIRETRIZES DE FERRAMENTAS (apenas quando aplicavel ao contexto):
+- Use "buscar_imoveis" para verificar disponibilidade antes de oferecer um imovel.
 - Use "agendar_visita" apenas quando o cliente confirmar o dia e o horario.
-- Sempre responda de forma natural e amigavel ao cliente no WhatsApp, resumindo o resultado da ferramenta.
-        `,
+- Use "simular_financiamento" quando o cliente pedir valores, parcelas ou financiamento.
+- Use "atualizar_etapa_crm" e "qualificar_lead" para manter o CRM atualizado.
+- Sempre resuma o resultado da ferramenta de forma natural e amigavel ao cliente, sem citar termos tecnicos internos.`,
           },
         ],
       },
@@ -430,5 +560,40 @@ Voce possui acesso a ferramentas (Tools) no sistema IMOBZY.
     }
 
     return result.response.text();
+  }
+
+  async _resolvePropertyTitle(supabase, organizationId, propertyId) {
+    const { data } = await supabase
+      .from('properties')
+      .select('title')
+      .eq('id', propertyId)
+      .eq('organization_id', organizationId)
+      .maybeSingle();
+    return data?.title || null;
+  }
+
+  async _checkAgendaConflicts(
+    supabase,
+    organizationId,
+    dateStr,
+    excludeLeadId = null
+  ) {
+    const startOfDay = new Date(dateStr);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(dateStr);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    let query = supabase
+      .from('lead_appointments')
+      .select('id, title, appointment_date, status')
+      .eq('organization_id', organizationId)
+      .gte('appointment_date', startOfDay.toISOString())
+      .lte('appointment_date', endOfDay.toISOString())
+      .neq('status', 'canceled');
+
+    if (excludeLeadId) query = query.neq('lead_id', excludeLeadId);
+
+    const { data } = await query;
+    return data || [];
   }
 }

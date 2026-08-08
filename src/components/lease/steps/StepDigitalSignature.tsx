@@ -1,6 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { PenTool, Send, Mail, MessageSquare, CheckCircle, XCircle, Clock, User } from 'lucide-react';
+import {
+  PenTool,
+  Send,
+  Mail,
+  MessageSquare,
+  CheckCircle,
+  XCircle,
+  Clock,
+  User,
+  Save,
+  Loader2,
+} from 'lucide-react';
 import type { Lease, Signature } from '../../../types/lease';
 import { COMMERCIAL_PRODUCT_NAME } from '../../../../utils/branding';
 
@@ -20,34 +31,180 @@ const SIGNERS = [
 
 export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
   const [signers, setSigners] = useState<Partial<Signature>[]>([
-    { signer_type: 'locador', signer_name: lease.owner_name || '', signer_email: '', signer_phone: '', status: 'pending' },
-    { signer_type: 'locatario', signer_name: lease.tenant_name || '', signer_email: lease.tenant_email || '', signer_phone: lease.tenant_phone || '', status: 'pending' },
+    {
+      signer_type: 'locador',
+      signer_name: lease.owner_name || '',
+      signer_email: '',
+      signer_phone: '',
+      status: 'pending',
+    },
+    {
+      signer_type: 'locatario',
+      signer_name: lease.tenant_name || '',
+      signer_email: lease.tenant_email || '',
+      signer_phone: lease.tenant_phone || '',
+      status: 'pending',
+    },
   ]);
   const [signatureMethod, setSignatureMethod] = useState('proprio');
   const [sendMethod, setSendMethod] = useState('ambos');
+  const [saving, setSaving] = useState(false);
+  const [sending, setSending] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!lease.id) return;
+
+    fetch(`/api/locacao/signatures/${lease.id}`)
+      .then((res) => res.json())
+      .then((res) => {
+        if (res.success && res.data && res.data.length > 0) {
+          const saved = res.data.map((s: Signature) => ({
+            ...s,
+            signer_name: s.signer_name || '',
+            signer_email: s.signer_email || '',
+            signer_phone: s.signer_phone || '',
+          }));
+          setSigners(saved);
+        }
+      })
+      .catch(() => {});
+  }, [lease.id]);
 
   const addFiador = () => {
     if (lease.guarantee_type === 'fiador' && lease.guarantor_name) {
-      setSigners([...signers, {
-        signer_type: 'fiador', signer_name: lease.guarantor_name,
-        signer_email: lease.guarantor_email, signer_phone: lease.guarantor_phone, status: 'pending',
-      }]);
+      setSigners([
+        ...signers,
+        {
+          signer_type: 'fiador',
+          signer_name: lease.guarantor_name,
+          signer_email: lease.guarantor_email,
+          signer_phone: lease.guarantor_phone,
+          status: 'pending',
+        },
+      ]);
     }
   };
 
   const addWitness = (type: 'testemunha_1' | 'testemunha_2') => {
-    const name = type === 'testemunha_1' ? lease.witness_1_name : lease.witness_2_name;
+    const name =
+      type === 'testemunha_1' ? lease.witness_1_name : lease.witness_2_name;
     if (name) {
-      setSigners([...signers, { signer_type: type, signer_name: name, status: 'pending' }]);
+      setSigners([
+        ...signers,
+        { signer_type: type, signer_name: name, status: 'pending' },
+      ]);
     }
   };
 
   const getStatusIcon = (status?: string) => {
     switch (status) {
-      case 'signed': return <CheckCircle size={18} className="text-emerald-500" />;
-      case 'sent': return <Clock size={18} className="text-amber-500" />;
-      case 'refused': return <XCircle size={18} className="text-red-500" />;
-      default: return <Clock size={18} className="text-slate-300" />;
+      case 'signed':
+        return <CheckCircle size={18} className="text-emerald-500" />;
+      case 'sent':
+        return <Clock size={18} className="text-amber-500" />;
+      case 'refused':
+        return <XCircle size={18} className="text-red-500" />;
+      default:
+        return <Clock size={18} className="text-slate-300" />;
+    }
+  };
+
+  const saveSigners = async () => {
+    if (!lease.id) {
+      toast.error('Salve o contrato antes de configurar assinaturas');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const validSigners = signers.filter((s) => s.signer_name);
+
+      for (const signer of validSigners) {
+        const existing = signers.find((s) => s.id === signer.id);
+        if (existing?.id) {
+          await fetch(`/api/locacao/signatures/${existing.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              signer_name: signer.signer_name,
+              signer_email: signer.signer_email,
+              signer_phone: signer.signer_phone,
+              signer_cpf: signer.signer_cpf,
+              signer_type: signer.signer_type,
+              status: 'pending',
+            }),
+          });
+        } else {
+          const res = await fetch('/api/locacao/signatures', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              lease_id: lease.id,
+              signer_type: signer.signer_type,
+              signer_name: signer.signer_name,
+              signer_email: signer.signer_email,
+              signer_phone: signer.signer_phone,
+              signer_cpf: signer.signer_cpf,
+              status: 'pending',
+            }),
+          });
+          const data = await res.json();
+          if (data.success && data.data) {
+            setSigners((prev) =>
+              prev.map((s) =>
+                s.signer_type === signer.signer_type
+                  ? { ...s, id: data.data.id }
+                  : s
+              )
+            );
+          }
+        }
+      }
+
+      if (lease.id) {
+        await fetch(
+          `/api/locacao/signatures/send-invitation/bulk/${lease.id}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ method: sendMethod }),
+          }
+        );
+      }
+
+      toast.success('Assinaturas salvas e convites enviados!');
+    } catch {
+      toast.error('Erro ao salvar assinaturas');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const sendSingleInvitation = async (signer: Partial<Signature>) => {
+    if (!signer.id) {
+      toast.error('Salve o signatário antes de enviar o convite');
+      return;
+    }
+
+    setSending(signer.id);
+    try {
+      const res = await fetch(`/api/locacao/signatures/invite/${signer.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ method: sendMethod }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(
+          `Convite enviado para ${signer.signer_name || signer.signer_type}`
+        );
+      } else {
+        toast.error(data.error || 'Erro ao enviar convite');
+      }
+    } catch {
+      toast.error('Erro ao enviar convite');
+    } finally {
+      setSending(null);
     }
   };
 
@@ -56,13 +213,25 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
       {/* Método */}
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><PenTool size={20} /></div>
-          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Método de Assinatura</h4>
+          <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600">
+            <PenTool size={20} />
+          </div>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">
+            Método de Assinatura
+          </h4>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { id: 'proprio', label: 'Assinatura Própria', desc: `Link seguro ${COMMERCIAL_PRODUCT_NAME}` },
-            { id: 'clicksign', label: 'Clicksign', desc: 'Integração Clicksign' },
+            {
+              id: 'proprio',
+              label: 'Assinatura Própria',
+              desc: `Link seguro ${COMMERCIAL_PRODUCT_NAME}`,
+            },
+            {
+              id: 'clicksign',
+              label: 'Clicksign',
+              desc: 'Integração Clicksign',
+            },
             { id: 'zapsign', label: 'ZapSign', desc: 'Integração ZapSign' },
             { id: 'docusign', label: 'DocuSign', desc: 'Integração DocuSign' },
           ].map((m) => (
@@ -70,7 +239,9 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
               key={m.id}
               onClick={() => setSignatureMethod(m.id)}
               className={`p-4 rounded-xl border-2 text-left transition-all ${
-                signatureMethod === m.id ? 'border-blue-500 bg-blue-50' : 'border-slate-100 hover:border-slate-200'
+                signatureMethod === m.id
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-slate-100 hover:border-slate-200'
               }`}
             >
               <p className="text-sm font-bold text-slate-800">{m.label}</p>
@@ -84,31 +255,62 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><User size={20} /></div>
-            <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Signatários</h4>
+            <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600">
+              <User size={20} />
+            </div>
+            <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">
+              Signatários
+            </h4>
           </div>
           <div className="flex gap-2">
-            {lease.guarantee_type === 'fiador' && lease.guarantor_name && !signers.find(s => s.signer_type === 'fiador') && (
-              <button onClick={addFiador} className="text-xs font-bold text-blue-600 px-3 py-1.5 bg-blue-50 rounded-lg">+ Fiador</button>
-            )}
-            {lease.witness_1_name && !signers.find(s => s.signer_type === 'testemunha_1') && (
-              <button onClick={() => addWitness('testemunha_1')} className="text-xs font-bold text-blue-600 px-3 py-1.5 bg-blue-50 rounded-lg">+ Test. 1</button>
-            )}
-            {lease.witness_2_name && !signers.find(s => s.signer_type === 'testemunha_2') && (
-              <button onClick={() => addWitness('testemunha_2')} className="text-xs font-bold text-blue-600 px-3 py-1.5 bg-blue-50 rounded-lg">+ Test. 2</button>
-            )}
+            {lease.guarantee_type === 'fiador' &&
+              lease.guarantor_name &&
+              !signers.find((s) => s.signer_type === 'fiador') && (
+                <button
+                  onClick={addFiador}
+                  className="text-xs font-bold text-blue-600 px-3 py-1.5 bg-blue-50 rounded-lg"
+                >
+                  + Fiador
+                </button>
+              )}
+            {lease.witness_1_name &&
+              !signers.find((s) => s.signer_type === 'testemunha_1') && (
+                <button
+                  onClick={() => addWitness('testemunha_1')}
+                  className="text-xs font-bold text-blue-600 px-3 py-1.5 bg-blue-50 rounded-lg"
+                >
+                  + Test. 1
+                </button>
+              )}
+            {lease.witness_2_name &&
+              !signers.find((s) => s.signer_type === 'testemunha_2') && (
+                <button
+                  onClick={() => addWitness('testemunha_2')}
+                  className="text-xs font-bold text-blue-600 px-3 py-1.5 bg-blue-50 rounded-lg"
+                >
+                  + Test. 2
+                </button>
+              )}
           </div>
         </div>
 
         <div className="space-y-3">
           {signers.map((signer, idx) => (
-            <div key={idx} className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl">
+            <div
+              key={signer.id || idx}
+              className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl"
+            >
               <div className="p-2 rounded-lg bg-white">
                 {getStatusIcon(signer.status)}
               </div>
               <div className="flex-1">
-                <p className="text-sm font-bold text-slate-700">{signer.signer_name || SIGNERS.find(s => s.type === signer.signer_type)?.label}</p>
-                <p className="text-[10px] text-slate-400 uppercase tracking-wider">{signer.signer_type}</p>
+                <p className="text-sm font-bold text-slate-700">
+                  {signer.signer_name ||
+                    SIGNERS.find((s) => s.type === signer.signer_type)?.label}
+                </p>
+                <p className="text-[10px] text-slate-400 uppercase tracking-wider">
+                  {signer.signer_type}
+                </p>
               </div>
               <input
                 placeholder="E-mail"
@@ -131,12 +333,17 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
                 className="w-44 px-3 py-2 bg-white rounded-lg border border-slate-200 text-sm outline-none"
               />
               <div className="flex gap-1">
-                <button 
-                  onClick={() => toast.success(`Convite enviado para ${signer.signer_name || signer.signer_type} com sucesso!`)}
-                  className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-all" 
+                <button
+                  onClick={() => sendSingleInvitation(signer)}
+                  disabled={!signer.id || sending === signer.id}
+                  className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-all disabled:opacity-50"
                   title="Enviar convite"
                 >
-                  <Send size={16} />
+                  {sending === signer.id ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Send size={16} />
+                  )}
                 </button>
               </div>
             </div>
@@ -147,8 +354,12 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
       {/* Método de Envio */}
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><Send size={20} /></div>
-          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Envio do Convite</h4>
+          <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600">
+            <Send size={20} />
+          </div>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">
+            Envio do Convite
+          </h4>
         </div>
         <div className="flex gap-3">
           {[
@@ -162,7 +373,9 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
                 key={m.id}
                 onClick={() => setSendMethod(m.id)}
                 className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all ${
-                  sendMethod === m.id ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                  sendMethod === m.id
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
                 }`}
               >
                 <Icon size={18} /> {m.label}
@@ -172,28 +385,71 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
         </div>
       </section>
 
+      {/* Ações */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={saveSigners}
+          disabled={saving}
+          className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 disabled:opacity-50"
+        >
+          {saving ? (
+            <>
+              <Loader2 size={18} className="animate-spin" />
+              Salvando...
+            </>
+          ) : (
+            <>
+              <Save size={18} />
+              Salvar e Enviar Convites
+            </>
+          )}
+        </button>
+      </div>
+
       {/* Resumo da Assinatura */}
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><CheckCircle size={20} /></div>
-          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Status da Assinatura</h4>
+          <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600">
+            <CheckCircle size={20} />
+          </div>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">
+            Status da Assinatura
+          </h4>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div className="p-4 bg-slate-50 rounded-xl">
-            <p className="text-2xl font-bold text-slate-300">0</p>
-            <p className="text-[10px] font-bold text-slate-400 uppercase">Assinados</p>
+            <p className="text-2xl font-bold text-slate-300">
+              {signers.filter((s) => s.status === 'signed').length}
+            </p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase">
+              Assinados
+            </p>
           </div>
           <div className="p-4 bg-slate-50 rounded-xl">
-            <p className="text-2xl font-bold text-amber-500">{signers.length}</p>
-            <p className="text-[10px] font-bold text-slate-400 uppercase">Pendentes</p>
+            <p className="text-2xl font-bold text-amber-500">
+              {
+                signers.filter(
+                  (s) => s.status === 'pending' || s.status === 'sent'
+                ).length
+              }
+            </p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase">
+              Pendentes
+            </p>
           </div>
           <div className="p-4 bg-slate-50 rounded-xl">
-            <p className="text-2xl font-bold text-slate-300">0</p>
-            <p className="text-[10px] font-bold text-slate-400 uppercase">Recusados</p>
+            <p className="text-2xl font-bold text-red-500">
+              {signers.filter((s) => s.status === 'refused').length}
+            </p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase">
+              Recusados
+            </p>
           </div>
           <div className="p-4 bg-slate-50 rounded-xl">
             <p className="text-2xl font-bold text-blue-600">{signers.length}</p>
-            <p className="text-[10px] font-bold text-slate-400 uppercase">Total</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase">
+              Total
+            </p>
           </div>
         </div>
       </section>

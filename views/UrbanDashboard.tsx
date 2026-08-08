@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import {
   ArrowUpRight,
   ArrowDownRight,
@@ -10,7 +11,7 @@ import {
   TrendingUp,
   MapPin,
   ChevronRight,
-  MoreHorizontal
+  MoreHorizontal,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import IADashboardSummary from '../components/IADashboardSummary';
@@ -70,14 +71,18 @@ const UrbanDashboard: React.FC = () => {
         .from('properties')
         .select('id', { count: 'exact' })
         .eq('organization_id', organizationId)
-        .or(`niche.eq.urbano,property_type.in.(${URBAN_TYPES.map((type) => `"${type}"`).join(',')})`);
+        .or(
+          `niche.eq.urbano,property_type.in.(${URBAN_TYPES.map((type) => `"${type}"`).join(',')})`
+        );
 
       // 2. Contagem por Status
       const { data: pByStatus } = await supabase
         .from('properties')
         .select('id,status,price,property_type,niche,created_at')
         .eq('organization_id', organizationId)
-        .or(`niche.eq.urbano,property_type.in.(${URBAN_TYPES.map((type) => `"${type}"`).join(',')})`);
+        .or(
+          `niche.eq.urbano,property_type.in.(${URBAN_TYPES.map((type) => `"${type}"`).join(',')})`
+        );
 
       const statsMap = { available: 0, sold: 0, rented: 0 };
       pByStatus?.forEach((p) => {
@@ -89,7 +94,9 @@ const UrbanDashboard: React.FC = () => {
       // 3. VGV (Valor Geral de Vendas)
       const totalVgv =
         pByStatus
-          ?.filter((p) => p.status === 'Disponível' || p.status === 'Disponivel')
+          ?.filter(
+            (p) => p.status === 'Disponível' || p.status === 'Disponivel'
+          )
           .reduce((sum, p) => sum + (p.price || 0), 0) || 0;
 
       // 4. Contagem de Leads
@@ -136,7 +143,7 @@ const UrbanDashboard: React.FC = () => {
       color: 'text-indigo-600',
       bg: 'bg-indigo-50',
       iconBg: 'bg-indigo-100',
-      shadowColor: 'shadow-indigo-500/20'
+      shadowColor: 'shadow-indigo-500/20',
     },
     {
       label: 'Imóveis Disponíveis',
@@ -147,7 +154,7 @@ const UrbanDashboard: React.FC = () => {
       color: 'text-emerald-600',
       bg: 'bg-emerald-50',
       iconBg: 'bg-emerald-100',
-      shadowColor: 'shadow-emerald-500/20'
+      shadowColor: 'shadow-emerald-500/20',
     },
     {
       label: 'Locações Ativas',
@@ -158,7 +165,7 @@ const UrbanDashboard: React.FC = () => {
       color: 'text-amber-600',
       bg: 'bg-amber-50',
       iconBg: 'bg-amber-100',
-      shadowColor: 'shadow-amber-500/20'
+      shadowColor: 'shadow-amber-500/20',
     },
     {
       label: 'VGV em Estoque',
@@ -169,7 +176,7 @@ const UrbanDashboard: React.FC = () => {
       color: 'text-blue-600',
       bg: 'bg-blue-50',
       iconBg: 'bg-blue-100',
-      shadowColor: 'shadow-blue-500/20'
+      shadowColor: 'shadow-blue-500/20',
     },
   ];
 
@@ -180,7 +187,11 @@ const UrbanDashboard: React.FC = () => {
         (lead) => new Date(lead.created_at).getMonth() === month
       );
       const countBySource = (source: string) =>
-        monthLeads.filter((lead) => String(lead.source || '').toLowerCase().includes(source)).length;
+        monthLeads.filter((lead) =>
+          String(lead.source || '')
+            .toLowerCase()
+            .includes(source)
+        ).length;
 
       return {
         name,
@@ -193,16 +204,24 @@ const UrbanDashboard: React.FC = () => {
   }, [urbanLeads]);
 
   const conversionData = React.useMemo(() => {
-    const grouped: Record<string, { name: string; leads: number; vendas: number }> = {};
+    const grouped: Record<
+      string,
+      { name: string; leads: number; vendas: number }
+    > = {};
     urbanLeads.forEach((lead) => {
       const key = lead.assigned_to || 'Sem corretor';
       grouped[key] = grouped[key] || {
-        name: key === 'Sem corretor' ? key : `Corretor ${String(key).slice(0, 4)}`,
+        name:
+          key === 'Sem corretor' ? key : `Corretor ${String(key).slice(0, 4)}`,
         leads: 0,
         vendas: 0,
       };
       grouped[key].leads++;
-      if (['convertido', 'vendido', 'fechado'].includes(String(lead.status || '').toLowerCase())) {
+      if (
+        ['convertido', 'vendido', 'fechado'].includes(
+          String(lead.status || '').toLowerCase()
+        )
+      ) {
         grouped[key].vendas++;
       }
     });
@@ -236,17 +255,16 @@ const UrbanDashboard: React.FC = () => {
     boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
     color: '#1e293b',
     fontSize: '12px',
-    fontWeight: '500' as const
+    fontWeight: '500' as const,
   };
 
   return (
     <div className="w-full max-w-[1600px] mx-auto space-y-8 pb-12 font-sans text-gray-900">
-      
       {/* Header Premium */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-900 via-indigo-800 to-indigo-900 p-8 shadow-lg shadow-indigo-900/20">
         <div className="absolute right-0 top-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
         <div className="absolute left-0 bottom-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4"></div>
-        
+
         <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -259,15 +277,22 @@ const UrbanDashboard: React.FC = () => {
               Dashboard Urbano
             </h1>
             <p className="text-indigo-200 mt-2 text-sm md:text-base max-w-xl">
-              Acompanhe o desempenho da sua operação imobiliária urbana em tempo real.
+              Acompanhe o desempenho da sua operação imobiliária urbana em tempo
+              real.
             </p>
           </div>
-          
+
           <div className="flex items-center gap-3">
-            <Link to="/urban/properties/new" className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold rounded-xl shadow-lg shadow-emerald-500/30 transition-all flex items-center gap-2">
+            <Link
+              to="/urban/properties/new"
+              className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold rounded-xl shadow-lg shadow-emerald-500/30 transition-all flex items-center gap-2"
+            >
               <Home size={18} /> Novo Imóvel
             </Link>
-            <button className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-xl backdrop-blur-sm transition-all">
+            <button
+              onClick={() => toast.info('Gerando relatório...')}
+              className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-xl backdrop-blur-sm transition-all"
+            >
               Gerar Relatório
             </button>
           </div>
@@ -285,21 +310,31 @@ const UrbanDashboard: React.FC = () => {
             className="group relative bg-white border border-gray-100 rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden cursor-default hover:-translate-y-1"
           >
             {/* Background Icon */}
-            <stat.icon className={`absolute -right-6 -bottom-6 w-32 h-32 opacity-[0.03] transform group-hover:scale-110 transition-transform duration-500 ${stat.color}`} />
-            
+            <stat.icon
+              className={`absolute -right-6 -bottom-6 w-32 h-32 opacity-[0.03] transform group-hover:scale-110 transition-transform duration-500 ${stat.color}`}
+            />
+
             <div className="flex items-start justify-between mb-4 relative z-10">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${stat.bg} ${stat.color}`}>
+              <div
+                className={`w-12 h-12 rounded-xl flex items-center justify-center ${stat.bg} ${stat.color}`}
+              >
                 <stat.icon size={24} />
               </div>
-              
+
               {stat.trend !== 'neutral' && (
-                <div className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${stat.trend === 'up' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                  {stat.trend === 'up' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                <div
+                  className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${stat.trend === 'up' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}
+                >
+                  {stat.trend === 'up' ? (
+                    <ArrowUpRight size={14} />
+                  ) : (
+                    <ArrowDownRight size={14} />
+                  )}
                   {stat.change}
                 </div>
               )}
             </div>
-            
+
             <div className="relative z-10">
               <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">
                 {stat.label}
@@ -318,18 +353,25 @@ const UrbanDashboard: React.FC = () => {
         <div className="lg:col-span-2 bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h3 className="text-lg font-bold text-gray-900">Origem de Leads</h3>
-              <p className="text-xs text-gray-500 mt-1">Evolução de captação por canal nos últimos 6 meses</p>
+              <h3 className="text-lg font-bold text-gray-900">
+                Origem de Leads
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">
+                Evolução de captação por canal nos últimos 6 meses
+              </p>
             </div>
             <select className="bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium">
               <option>Últimos 6 meses</option>
               <option>Este ano</option>
             </select>
           </div>
-          
+
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={channelData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <AreaChart
+                data={channelData}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
                 <defs>
                   <linearGradient id="colorWA" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
@@ -340,12 +382,49 @@ const UrbanDashboard: React.FC = () => {
                     <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} />
-                <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: '#e2e8f0', strokeWidth: 1, strokeDasharray: '4 4' }} />
-                <Area type="monotone" dataKey="whatsapp" name="WhatsApp" stroke="#10b981" strokeWidth={3} fill="url(#colorWA)" activeDot={{ r: 6, strokeWidth: 0, fill: '#10b981' }} />
-                <Area type="monotone" dataKey="site" name="Site" stroke="#6366f1" strokeWidth={3} fill="url(#colorSite)" activeDot={{ r: 6, strokeWidth: 0, fill: '#6366f1' }} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="#f1f5f9"
+                />
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
+                  dy={10}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
+                />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  cursor={{
+                    stroke: '#e2e8f0',
+                    strokeWidth: 1,
+                    strokeDasharray: '4 4',
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="whatsapp"
+                  name="WhatsApp"
+                  stroke="#10b981"
+                  strokeWidth={3}
+                  fill="url(#colorWA)"
+                  activeDot={{ r: 6, strokeWidth: 0, fill: '#10b981' }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="site"
+                  name="Site"
+                  stroke="#6366f1"
+                  strokeWidth={3}
+                  fill="url(#colorSite)"
+                  activeDot={{ r: 6, strokeWidth: 0, fill: '#6366f1' }}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -354,10 +433,14 @@ const UrbanDashboard: React.FC = () => {
         {/* Stock by Type */}
         <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex flex-col">
           <div className="mb-6">
-            <h3 className="text-lg font-bold text-gray-900">Estoque por Tipo</h3>
-            <p className="text-xs text-gray-500 mt-1">Distribuição do portfólio ativo</p>
+            <h3 className="text-lg font-bold text-gray-900">
+              Estoque por Tipo
+            </h3>
+            <p className="text-xs text-gray-500 mt-1">
+              Distribuição do portfólio ativo
+            </p>
           </div>
-          
+
           <div className="flex-1 min-h-[200px] relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -372,7 +455,10 @@ const UrbanDashboard: React.FC = () => {
                   stroke="none"
                 >
                   {typeData.map((_, idx) => (
-                    <Cell key={idx} fill={BRAND_COLORS[idx % BRAND_COLORS.length]} />
+                    <Cell
+                      key={idx}
+                      fill={BRAND_COLORS[idx % BRAND_COLORS.length]}
+                    />
                   ))}
                 </Pie>
                 <Tooltip contentStyle={tooltipStyle} />
@@ -380,19 +466,32 @@ const UrbanDashboard: React.FC = () => {
             </ResponsiveContainer>
             {/* Center Text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-2xl font-bold text-gray-900">{typeData.reduce((a, b) => a + b.value, 0)}</span>
-              <span className="text-[10px] uppercase font-bold text-gray-400">Total</span>
+              <span className="text-2xl font-bold text-gray-900">
+                {typeData.reduce((a, b) => a + b.value, 0)}
+              </span>
+              <span className="text-[10px] uppercase font-bold text-gray-400">
+                Total
+              </span>
             </div>
           </div>
-          
+
           <div className="mt-6 space-y-3">
             {typeData.map((item, idx) => (
               <div key={idx} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: BRAND_COLORS[idx % BRAND_COLORS.length] }} />
-                  <span className="text-sm font-medium text-gray-700">{item.name}</span>
+                  <div
+                    className="w-3 h-3 rounded-full shadow-sm"
+                    style={{
+                      backgroundColor: BRAND_COLORS[idx % BRAND_COLORS.length],
+                    }}
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    {item.name}
+                  </span>
                 </div>
-                <span className="text-sm font-bold text-gray-900">{item.value}</span>
+                <span className="text-sm font-bold text-gray-900">
+                  {item.value}
+                </span>
               </div>
             ))}
           </div>
@@ -401,19 +500,25 @@ const UrbanDashboard: React.FC = () => {
 
       {/* Conversion + Recent Leads */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
         {/* Recent Leads */}
         <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-bold text-gray-900">Leads Recentes</h3>
-              <p className="text-xs text-gray-500 mt-1">Últimos contatos captados</p>
+              <h3 className="text-lg font-bold text-gray-900">
+                Leads Recentes
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">
+                Últimos contatos captados
+              </p>
             </div>
-            <Link to="/urban/crm" className="flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors">
+            <Link
+              to="/urban/crm"
+              className="flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors"
+            >
               Ver CRM <ChevronRight size={16} />
             </Link>
           </div>
-          
+
           <div className="space-y-4">
             {recentLeads.map((lead) => (
               <Link
@@ -438,7 +543,9 @@ const UrbanDashboard: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider border ${channelColors[lead.source] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                  <span
+                    className={`text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider border ${channelColors[lead.source] || 'bg-gray-100 text-gray-600 border-gray-200'}`}
+                  >
                     {lead.source || 'Site'}
                   </span>
                   <span className="text-[11px] font-medium text-gray-400">
@@ -452,7 +559,9 @@ const UrbanDashboard: React.FC = () => {
                 <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                   <Users className="text-gray-400" size={20} />
                 </div>
-                <p className="text-gray-500 text-sm font-medium">Nenhum lead recente.</p>
+                <p className="text-gray-500 text-sm font-medium">
+                  Nenhum lead recente.
+                </p>
               </div>
             )}
           </div>
@@ -461,51 +570,70 @@ const UrbanDashboard: React.FC = () => {
         {/* Quick Actions & More */}
         <div className="space-y-6">
           <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
-             <h3 className="text-lg font-bold text-gray-900 mb-6">Acesso Rápido</h3>
-             <div className="grid grid-cols-2 gap-4">
-                <Link to="/urban/empreendimentos" className="group p-4 border border-gray-100 rounded-xl hover:border-indigo-200 hover:shadow-md hover:bg-indigo-50/30 transition-all flex flex-col items-center justify-center text-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
-                    <Building2 size={24} />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-gray-900 group-hover:text-indigo-700">Empreendimentos</h4>
-                    <p className="text-[11px] text-gray-500 font-medium mt-1">Gerenciar lançamentos</p>
-                  </div>
-                </Link>
-                <Link to="/urban/locacao" className="group p-4 border border-gray-100 rounded-xl hover:border-emerald-200 hover:shadow-md hover:bg-emerald-50/30 transition-all flex flex-col items-center justify-center text-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
-                    <Key size={24} />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-gray-900 group-hover:text-emerald-700">Gestão de Locação</h4>
-                    <p className="text-[11px] text-gray-500 font-medium mt-1">Contratos e Inquilinos</p>
-                  </div>
-                </Link>
-             </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-6">
+              Acesso Rápido
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <Link
+                to="/urban/empreendimentos"
+                className="group p-4 border border-gray-100 rounded-xl hover:border-indigo-200 hover:shadow-md hover:bg-indigo-50/30 transition-all flex flex-col items-center justify-center text-center gap-3"
+              >
+                <div className="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
+                  <Building2 size={24} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-gray-900 group-hover:text-indigo-700">
+                    Empreendimentos
+                  </h4>
+                  <p className="text-[11px] text-gray-500 font-medium mt-1">
+                    Gerenciar lançamentos
+                  </p>
+                </div>
+              </Link>
+              <Link
+                to="/urban/locacao"
+                className="group p-4 border border-gray-100 rounded-xl hover:border-emerald-200 hover:shadow-md hover:bg-emerald-50/30 transition-all flex flex-col items-center justify-center text-center gap-3"
+              >
+                <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
+                  <Key size={24} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-gray-900 group-hover:text-emerald-700">
+                    Gestão de Locação
+                  </h4>
+                  <p className="text-[11px] text-gray-500 font-medium mt-1">
+                    Contratos e Inquilinos
+                  </p>
+                </div>
+              </Link>
+            </div>
           </div>
-          
+
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 shadow-lg relative overflow-hidden text-white">
             <div className="absolute right-0 bottom-0 w-32 h-32 bg-white/5 rounded-full blur-2xl translate-x-1/3 translate-y-1/3"></div>
             <div className="relative z-10 flex items-start justify-between">
               <div>
-                <h3 className="text-lg font-bold text-white mb-2">Exportador de Portais</h3>
+                <h3 className="text-lg font-bold text-white mb-2">
+                  Exportador de Portais
+                </h3>
                 <p className="text-sm text-gray-300 font-medium max-w-[200px] leading-relaxed">
-                  Sincronize seus imóveis com Zap, Viva Real e OLX automaticamente.
+                  Sincronize seus imóveis com Zap, Viva Real e OLX
+                  automaticamente.
                 </p>
               </div>
               <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-sm">
                 <TrendingUp size={20} className="text-emerald-400" />
               </div>
             </div>
-            <Link to="/urban/exportador" className="relative z-10 mt-6 w-full py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-sm font-bold text-white flex items-center justify-center transition-colors">
+            <Link
+              to="/urban/exportador"
+              className="relative z-10 mt-6 w-full py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-sm font-bold text-white flex items-center justify-center transition-colors"
+            >
               Configurar Exportação
             </Link>
           </div>
-
         </div>
-
       </div>
-
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import React from 'react';
+import { toast } from 'sonner';
 import {
   Phone,
   CheckCircle,
@@ -193,6 +194,7 @@ const BrokerCardBlock: React.FC<BrokerCardBlockProps> = ({
             )}
 
             <button
+              onClick={() => toast.info('Visualizando propriedades...')}
               className="px-8 py-4 border-2 text-sm font-bold uppercase tracking-wider transition-all rounded-xl flex items-center justify-center gap-2 hover:bg-slate-900 hover:text-white"
               style={{ borderColor: secondaryColor, color: secondaryColor }}
             >

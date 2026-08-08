@@ -149,8 +149,8 @@ export class LeaseNotificationWorker {
       today.getTime() + daysAhead * 24 * 60 * 60 * 1000
     );
 
-    const { data: leases, error } = await supabase
-      .from('leases')
+    const { data: rental_contracts, error } = await supabase
+      .from('rental_contracts')
       .select('*')
       .eq('organization_id', orgId)
       .eq('status', 'active')
@@ -159,10 +159,10 @@ export class LeaseNotificationWorker {
       .not('next_rent_adjustment', 'is', null);
 
     if (error) throw error;
-    if (!leases || leases.length === 0) return [];
+    if (!rental_contracts || rental_contracts.length === 0) return [];
 
     const results = [];
-    for (const lease of leases) {
+    for (const lease of rental_contracts) {
       if (!lease.tenant_email) continue;
 
       try {
@@ -206,8 +206,8 @@ export class LeaseNotificationWorker {
       today.getTime() + daysAhead * 24 * 60 * 60 * 1000
     );
 
-    const { data: leases, error } = await supabase
-      .from('leases')
+    const { data: rental_contracts, error } = await supabase
+      .from('rental_contracts')
       .select('*')
       .eq('organization_id', orgId)
       .eq('status', 'active')
@@ -216,10 +216,10 @@ export class LeaseNotificationWorker {
       .not('end_date', 'is', null);
 
     if (error) throw error;
-    if (!leases || leases.length === 0) return [];
+    if (!rental_contracts || rental_contracts.length === 0) return [];
 
     const results = [];
-    for (const lease of leases) {
+    for (const lease of rental_contracts) {
       if (!lease.tenant_email) continue;
 
       try {

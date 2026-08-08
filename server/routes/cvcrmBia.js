@@ -25,12 +25,10 @@ router.post('/webhook/cvcrm/:tenantId', async (req, res) => {
       .json({ success: true, message: 'Webhook recebido com sucesso' });
   } catch (error) {
     logger.error(`[CVCrm Webhook Route] Erro: ${error.message}`);
-    res
-      .status(500)
-      .json({
-        success: false,
-        error: 'Internal server error processing webhook',
-      });
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error processing webhook',
+    });
   }
 });
 
@@ -45,20 +43,16 @@ router.post('/webhook/bia/:tenantId', async (req, res) => {
 
     await handleBiaWebhook(tenantId, payload);
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: 'Webhook BIA processado e histórico atualizado no CVcrm',
-      });
+    res.status(200).json({
+      success: true,
+      message: 'Webhook BIA processado e histórico atualizado no CVcrm',
+    });
   } catch (error) {
     logger.error(`[BIA Webhook Route] Erro: ${error.message}`);
-    res
-      .status(500)
-      .json({
-        success: false,
-        error: 'Internal server error processing BIA webhook',
-      });
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error processing BIA webhook',
+    });
   }
 });
 

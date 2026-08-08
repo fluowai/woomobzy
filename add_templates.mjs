@@ -247,7 +247,12 @@ if (exportIndex !== -1) {
 
   if (nextExportIndex !== -1) {
     // We insert right before the '];'
-    content = content.slice(0, nextExportIndex) + ',' + newTemplates + '\n' + content.slice(nextExportIndex);
+    content =
+      content.slice(0, nextExportIndex) +
+      ',' +
+      newTemplates +
+      '\n' +
+      content.slice(nextExportIndex);
     fs.writeFileSync(filePath, content, 'utf8');
     console.log('Templates successfully added.');
   } else {

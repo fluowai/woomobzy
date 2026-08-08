@@ -9,6 +9,7 @@ import {
 } from '../lib/impersonation-session.js';
 import { createHash } from 'node:crypto';
 import { TtlCache } from '../lib/ttl-cache.js';
+import { enforceLicenseAccess } from '../lib/licensing/enforcement.js';
 
 const AUTH_CACHE_TTL_MS = 60_000;
 const authenticatedUserCache = new TtlCache(AUTH_CACHE_TTL_MS);
@@ -39,6 +40,12 @@ export const verifyAuth = async (req, res, next) => {
   try {
     const supabase = getSupabaseServer();
     const supabaseAuth = getSupabaseAuthServer();
+
+    // Pós-resolução de tenant: aplica o enforcement de licença antes de seguir.
+    // Em modo off (padrão) nunca bloqueia; control plane é isento.
+    const continueAfterTenant = (req2, res2) =>
+      enforceLicenseAccess()(req2, res2, next);
+
     const { user, impersonation, authError } = await resolveAuthenticatedUser(
       supabaseAuth,
       token
@@ -138,7 +145,10 @@ export const verifyAuth = async (req, res, next) => {
           code: 'INVALID_REQUESTED_ORG',
         });
       }
-      if (requestedOrg.status && requestedOrg.status.toLowerCase() !== 'active') {
+      if (
+        requestedOrg.status &&
+        requestedOrg.status.toLowerCase() !== 'active'
+      ) {
         return res.status(403).json({
           error: 'Organizacao solicitada esta inativa.',
           code: 'REQUESTED_ORG_INACTIVE',
@@ -246,7 +256,7 @@ export const verifyAuth = async (req, res, next) => {
               userId: user.id,
               orgId: existingOrg.id,
             });
-            return next();
+            return continueAfterTenant(req, res);
           }
 
           // Profile update failed but org exists — proceed anyway to avoid blocking user
@@ -264,7 +274,7 @@ export const verifyAuth = async (req, res, next) => {
           req.realOrgId = existingOrg.id;
           req.orgId = existingOrg.id;
           req.isImpersonating = false;
-          return next();
+          return continueAfterTenant(req, res);
         } else {
           console.warn(
             '[Auth] Nenhuma organizacao existente encontrada para vincular',
@@ -295,7 +305,7 @@ export const verifyAuth = async (req, res, next) => {
       });
     }
 
-    next();
+    return continueAfterTenant(req, res);
   } catch (e) {
     if (e instanceof ImpersonationSessionError) {
       return res.status(e.status).json({
@@ -689,7 +699,12 @@ export function getSafeProfileBootstrapIdentity(user) {
   };
 }
 
-function logMetadataPrivilegeMismatch(user, databaseRole, metadataRole, extra = {}) {
+function logMetadataPrivilegeMismatch(
+  user,
+  databaseRole,
+  metadataRole,
+  extra = {}
+) {
   if (
     metadataRole === 'superadmin' &&
     normalizeRole(databaseRole) !== 'superadmin'

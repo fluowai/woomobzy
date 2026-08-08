@@ -1,4 +1,5 @@
 import React from 'react';
+import { toast } from 'sonner';
 import { Block } from '../../../types';
 import { Instagram, Facebook, Mail, Phone } from 'lucide-react';
 import { useSettings } from '../../../context/SettingsContext';
@@ -120,7 +121,10 @@ export const FooterBlock: React.FC<FooterBlockProps> = ({ block }) => {
                   placeholder="Seu e-mail"
                   className="flex-1 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-sm outline-none"
                 />
-                <button className="px-4 py-2 bg-white text-slate-900 rounded-lg text-sm font-bold hover:bg-opacity-90">
+                <button
+                  onClick={() => toast.info('Inscrição realizada com sucesso!')}
+                  className="px-4 py-2 bg-white text-slate-900 rounded-lg text-sm font-bold hover:bg-opacity-90"
+                >
                   OK
                 </button>
               </div>

@@ -592,7 +592,8 @@ DROP POLICY IF EXISTS "Public view plans" ON plans;
 CREATE POLICY "Public view plans" ON plans FOR SELECT USING (is_active = true OR (SELECT role FROM profiles WHERE id = auth.uid()) = 'superadmin');
 DROP POLICY IF EXISTS "Superadmin manage plans" ON plans;
 CREATE POLICY "Superadmin manage plans" ON plans FOR ALL
-USING ((SELECT role FROM profiles WHERE id = auth.uid()) = 'superadmin');
+USING (public.is_superadmin())
+WITH CHECK (public.is_superadmin());
 
 -- 11.17 SaaS Settings RLS
 ALTER TABLE saas_settings ENABLE ROW LEVEL SECURITY;

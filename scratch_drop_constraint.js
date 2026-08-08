@@ -1,16 +1,16 @@
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 import pg from 'pg';
 
 const { Client } = pg;
 const client = new Client({
-  connectionString: "postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=require&default_query_exec_mode=simple_protocol",
-  ssl: { rejectUnauthorized: false }
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
 });
 
 async function main() {
   await client.connect();
   console.log('Connected');
-  
+
   const query = `
     SELECT conname 
     FROM pg_constraint 
@@ -20,12 +20,14 @@ async function main() {
   `;
   const res = await client.query(query);
   console.log('Found constraints:', res.rows);
-  
+
   for (const row of res.rows) {
     console.log(`Dropping constraint: ${row.conname}`);
-    await client.query(`ALTER TABLE rental_contracts DROP CONSTRAINT "${row.conname}"`);
+    await client.query(
+      `ALTER TABLE rental_contracts DROP CONSTRAINT "${row.conname}"`
+    );
   }
-  
+
   console.log('Done');
   await client.end();
 }

@@ -1,8 +1,4 @@
-import {
-  createHash,
-  randomBytes,
-  timingSafeEqual,
-} from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 
 const SESSION_TTL_MS = 15 * 60 * 1000;
 
@@ -43,13 +39,7 @@ export function getRequestedImpersonationOrganizationId(headers = {}) {
 
 export async function createImpersonationSession(
   supabase,
-  {
-    actorUserId,
-    organizationId,
-    reason,
-    ipAddress = null,
-    userAgent = null,
-  }
+  { actorUserId, organizationId, reason, ipAddress = null, userAgent = null }
 ) {
   const normalizedReason = String(reason || '').trim();
   if (!actorUserId || !organizationId || !normalizedReason) {
@@ -158,7 +148,10 @@ export async function assertValidImpersonationSession(
       403
     );
   }
-  if (data.status !== 'active' || new Date(data.expires_at).getTime() <= Date.now()) {
+  if (
+    data.status !== 'active' ||
+    new Date(data.expires_at).getTime() <= Date.now()
+  ) {
     throw new ImpersonationSessionError(
       'Sessão de impersonação expirada.',
       'IMPERSONATION_EXPIRED',
@@ -180,6 +173,22 @@ export async function revokeImpersonationSession(
   supabase,
   { actorUserId, sessionId, sessionSecret, ipAddress = null }
 ) {
+  const { data: existing } = await supabase
+    .from('impersonation_sessions')
+    .select('id, tenant_id, actor_user_id, status, revoked_at')
+    .eq('id', sessionId)
+    .maybeSingle();
+
+  if (existing && existing.status !== 'active') {
+    return {
+      id: existing.id,
+      tenant_id: existing.tenant_id,
+      actor_user_id: existing.actor_user_id,
+      status: existing.status,
+      revoked_at: existing.revoked_at,
+    };
+  }
+
   const active = await assertValidImpersonationSession(supabase, {
     actorUserId,
     sessionId,

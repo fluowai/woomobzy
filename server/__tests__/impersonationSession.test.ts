@@ -90,8 +90,14 @@ function createSupabaseMock({
           update(patch: Record<string, unknown>) {
             return {
               eq(column: string, value: string) {
-                if (!state.sessionRow || column !== 'id' || state.sessionRow.id !== value) {
-                  throw new Error(`Unexpected update target ${column}=${value}`);
+                if (
+                  !state.sessionRow ||
+                  column !== 'id' ||
+                  state.sessionRow.id !== value
+                ) {
+                  throw new Error(
+                    `Unexpected update target ${column}=${value}`
+                  );
                 }
 
                 state.sessionRow = {

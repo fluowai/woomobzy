@@ -98,10 +98,11 @@ export async function sendLeadToBia(cvcrmLead, biaKey, biaBaseUrl) {
 }
 
 /**
- * Registra o resumo do atendimento na timeline do lead no CVcrm.
+ * Sincroniza o Lead e adiciona a Interação no CVcrm (CVIO).
+ * Cria o lead se não existir, ou edita adicionando a interação se já existir.
  */
-export async function registerInteractionOnCvcrm(
-  cvcrmLeadId,
+export async function syncLeadAndInteractionCvcrm(
+  biaPayload,
   summaryText,
   cvcrmKey,
   cvcrmEmail,
@@ -109,72 +110,13 @@ export async function registerInteractionOnCvcrm(
 ) {
   if (!cvcrmKey || !cvcrmEmail) {
     logger.warn(
-      '[CVCrm Integration] CVcrm API Token or Email is missing. Aborting registerInteractionOnCvcrm.'
+      '[CVCrm Integration] CVcrm API Token or Email is missing. Aborting sync.'
     );
     return null;
   }
 
   try {
-    const endpoint = `${cvcrmBaseUrl.replace(/\/$/, '')}/api/cv/v1/interacoes`;
-
-    const payload = {
-      id_lead: cvcrmLeadId,
-      descricao: summaryText,
-      tipo: 'Atendimento BIA (IA)',
-      data_hora: new Date().toISOString(),
-    };
-
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        email: cvcrmEmail,
-        token: cvcrmKey,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      logger.error(
-        `[CVCrm Integration] Error registering interaction. Status: ${response.status} - ${errorText}`
-      );
-      throw new Error(`CVcrm API error: ${response.status}`);
-    }
-
-    const textData = await response.text();
-    const data = textData ? JSON.parse(textData) : {};
-    logger.info(
-      `[CVCrm Integration] Interaction registered for lead ${cvcrmLeadId}`
-    );
-    return data;
-  } catch (error) {
-    logger.error(
-      `[CVCrm Integration] Failed to register interaction on CVcrm: ${error.message}`
-    );
-    throw error;
-  }
-}
-
-/**
- * Cria um lead novo no CVcrm.
- * Útil para o Cenário 2 (Lead nasceu no WhatsApp da BIA e não existe no CVcrm ainda).
- */
-export async function createLeadOnCvcrm(
-  biaPayload,
-  cvcrmKey,
-  cvcrmEmail,
-  cvcrmBaseUrl
-) {
-  if (!cvcrmKey || !cvcrmEmail) {
-    logger.warn(
-      '[CVCrm Integration] CVcrm API Token or Email is missing. Aborting createLeadOnCvcrm.'
-    );
-    return null;
-  }
-
-  try {
-    const endpoint = `${cvcrmBaseUrl.replace(/\/$/, '')}/api/v1/cvbot/lead`;
+    const endpoint = `${cvcrmBaseUrl.replace(/\/$/, '')}/api/cvio/lead`;
 
     const payload = {
       nome: biaPayload.name || 'Lead via WhatsApp (BIA)',
@@ -183,7 +125,13 @@ export async function createLeadOnCvcrm(
       origem: 'WhatsApp BIA',
       empreendimento:
         biaPayload.metadata?.empreendimento || 'Bosque dos Pássaros',
-      permitir_atualizacao: true,
+      permitir_alteracao: 'true', // CVIO exige string ou boolean 'true' para alterar
+      interacoes: [
+        {
+          tipo: 'A', // Anotação
+          descricao: summaryText,
+        },
+      ],
     };
 
     const response = await fetch(endpoint, {
@@ -199,26 +147,22 @@ export async function createLeadOnCvcrm(
     if (!response.ok) {
       const errorText = await response.text();
       logger.error(
-        `[CVCrm Integration] Error creating lead. Status: ${response.status} - ${errorText}`
+        `[CVCrm Integration] Error syncing lead. Status: ${response.status} - ${errorText}`
       );
-      throw new Error(`CVcrm API error (Create Lead): ${response.status}`);
+      throw new Error(`CVcrm API error (Sync Lead): ${response.status}`);
     }
 
     const textData = await response.text();
     const data = textData ? JSON.parse(textData) : {};
 
-    // CVcrm v1/cvbot retorna { idlead: X }
-    const newLeadId =
-      data.idlead ||
-      data.id_lead ||
-      data.id ||
-      data?.lead?.id ||
-      'lead_simulado_' + Date.now();
-    logger.info(`[CVCrm Integration] Lead created on CVcrm. ID: ${newLeadId}`);
-    return newLeadId;
+    // CVIO retorna { id: X } ou { idlead: X }
+    const leadId =
+      data.id || data.idlead || data.id_lead || 'lead_simulado_' + Date.now();
+    logger.info(`[CVCrm Integration] Lead synced on CVcrm. ID: ${leadId}`);
+    return leadId;
   } catch (error) {
     logger.error(
-      `[CVCrm Integration] Failed to create lead on CVcrm: ${error.message}`
+      `[CVCrm Integration] Failed to sync lead on CVcrm: ${error.message}`
     );
     throw error;
   }
@@ -247,30 +191,13 @@ export async function handleBiaWebhook(tenantId, payload) {
   const { cvcrmKey, cvcrmEmail, cvcrmBaseUrl } =
     await getTenantIntegrationConfigs(tenantId);
 
-  let cvcrmLeadId = payload.externalId || payload.metadata?.cvcrmLeadId;
   const summaryText = payload.summary || payload.message;
 
-  // Se não tem ID do CVcrm, significa que o lead nasceu no WhatsApp (Cenário 2).
-  // Vamos criá-lo no CVcrm primeiro.
-  if (!cvcrmLeadId) {
-    logger.info(
-      `[BIA Webhook] Lead has no CVcrm ID. Creating lead in CVcrm first...`
-    );
-    cvcrmLeadId = await createLeadOnCvcrm(
-      payload,
-      cvcrmKey,
-      cvcrmEmail,
-      cvcrmBaseUrl
-    );
-
-    if (!cvcrmLeadId) {
-      throw new Error('Failed to create Lead in CVcrm for WhatsApp origin');
-    }
-  }
-
-  // Com o ID garantido (seja da origem ou recém-criado), envia o histórico.
-  return registerInteractionOnCvcrm(
-    cvcrmLeadId,
+  // A nova lógica do CVIO permite enviar tudo em uma única requisição.
+  // Se o lead já existe (por email ou telefone), ele adiciona a interação.
+  // Se não existe, ele cria e já adiciona a interação.
+  return syncLeadAndInteractionCvcrm(
+    payload,
     summaryText,
     cvcrmKey,
     cvcrmEmail,

@@ -10,10 +10,41 @@ const SIGNATURE_PROVIDERS = {
   clicksign: { name: 'ClickSign', apiUrl: 'https://api.clicksign.com/api/v1' },
   zapsign: { name: 'ZapSign', apiUrl: 'https://api.zapsign.com.br/api/v1' },
   docusign: { name: 'DocuSign', apiUrl: 'https://demo.docusign.net/restapi' },
+  woosign: { name: 'WooSign', apiUrl: process.env.DOCUMENSO_API_URL || null },
 };
 
+async function getProviderConfig(orgId, userId, provider) {
+  if (provider === 'woosign' || provider === 'proprio') {
+    return {};
+  }
+
+  const supabase = getSupabaseServer();
+  const { data, error } = await supabase
+    .from('signature_provider_configs')
+    .select('api_key, webhook_secret, api_url')
+    .eq('organization_id', orgId)
+    .eq('provider', provider)
+    .or(
+      `user_id.is.null,user_id.eq.${userId || '00000000-0000-0000-0000-000000000000'}`
+    )
+    .eq('is_active', true)
+    .order('user_id', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) {
+    return {};
+  }
+
+  return {
+    apiKey: data.api_key,
+    webhookSecret: data.webhook_secret,
+    apiUrl: data.api_url || SIGNATURE_PROVIDERS[provider]?.apiUrl,
+  };
+}
+
 export class SignatureInvitationService {
-  static async sendInvitation(signatureId, orgId) {
+  static async sendInvitation(signatureId, orgId, userId) {
     const supabase = getSupabaseServer();
 
     const { data: sig, error: sigError } = await supabase
@@ -28,7 +59,7 @@ export class SignatureInvitationService {
       );
 
     const { data: lease } = await supabase
-      .from('leases')
+      .from('rental_contracts')
       .select('*')
       .eq('id', sig.lease_id)
       .single();
@@ -41,7 +72,6 @@ export class SignatureInvitationService {
 
     const results = { email: null, whatsapp: null, provider: null };
 
-    // Send email invitation
     if (
       sig.signer_email &&
       (sig.invitation_method === 'email' || sig.invitation_method === 'ambos')
@@ -54,7 +84,6 @@ export class SignatureInvitationService {
       }
     }
 
-    // Send WhatsApp invitation
     if (
       sig.signer_phone &&
       (sig.invitation_method === 'whatsapp' ||
@@ -68,7 +97,6 @@ export class SignatureInvitationService {
       }
     }
 
-    // Send to external provider if configured
     const provider = lease.signature_method;
     if (provider && provider !== 'proprio' && SIGNATURE_PROVIDERS[provider]) {
       try {
@@ -76,7 +104,8 @@ export class SignatureInvitationService {
           provider,
           sig,
           lease,
-          orgId
+          orgId,
+          userId
         );
         results.provider = providerResult;
       } catch (err) {
@@ -84,7 +113,6 @@ export class SignatureInvitationService {
       }
     }
 
-    // Update signature record
     const updates = {
       invitation_sent_at: new Date().toISOString(),
       status: 'sent',
@@ -96,9 +124,8 @@ export class SignatureInvitationService {
 
     await supabase.from('signatures').update(updates).eq('id', signatureId);
 
-    // Update lease signature status
     await supabase
-      .from('leases')
+      .from('rental_contracts')
       .update({
         signature_status: 'sent',
         updated_at: new Date().toISOString(),
@@ -108,7 +135,7 @@ export class SignatureInvitationService {
     return results;
   }
 
-  static async sendBulkInvitations(leaseId, orgId) {
+  static async sendBulkInvitations(leaseId, orgId, userId) {
     const supabase = getSupabaseServer();
 
     const { data: signatures, error } = await supabase
@@ -125,7 +152,7 @@ export class SignatureInvitationService {
     const results = [];
     for (const sig of signatures) {
       try {
-        const result = await this.sendInvitation(sig.id, orgId);
+        const result = await this.sendInvitation(sig.id, orgId, userId);
         results.push({
           signature_id: sig.id,
           signer_name: sig.signer_name,
@@ -220,9 +247,9 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
     }
   }
 
-  static async _sendToProvider(provider, sig, lease, orgId) {
+  static async _sendToProvider(provider, sig, lease, orgId, userId) {
     const providerConfig = SIGNATURE_PROVIDERS[provider];
-    if (!providerConfig.apiUrl) return null;
+    if (!providerConfig.apiUrl && provider !== 'woosign') return null;
 
     const supabase = getSupabaseServer();
 
@@ -240,18 +267,23 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
 
     switch (provider) {
       case 'clicksign':
-        return this._sendClickSign(sig, documentUrl, orgId);
+        return this._sendClickSign(sig, documentUrl, orgId, userId);
       case 'zapsign':
-        return this._sendZapSign(sig, documentUrl);
+        return this._sendZapSign(sig, documentUrl, orgId, userId);
       case 'docusign':
-        return this._sendDocuSign(sig, documentUrl, lease);
+        return this._sendDocuSign(sig, documentUrl, lease, orgId, userId);
+      case 'woosign':
+        return this._sendWooSign(sig, documentUrl, lease, orgId, userId);
       default:
         throw new Error('Unsupported signature provider: ' + provider);
     }
   }
 
-  static async _sendClickSign(sig, documentUrl, orgId) {
-    const apiKey = process.env.CLICKSIGN_API_KEY;
+  static async _sendWooSign(sig, documentUrl, lease, orgId, userId) {}
+
+  static async _sendClickSign(sig, documentUrl, orgId, userId) {
+    const config = await getProviderConfig(orgId, userId, 'clicksign');
+    const apiKey = config.apiKey || process.env.CLICKSIGN_API_KEY;
     if (!apiKey) throw new Error('CLICKSIGN_API_KEY not configured');
 
     const response = await fetch('https://api.clicksign.com/api/v1/documents', {
@@ -290,8 +322,9 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
     };
   }
 
-  static async _sendZapSign(sig, documentUrl) {
-    const apiKey = process.env.ZAPSIGN_API_KEY;
+  static async _sendZapSign(sig, documentUrl, orgId, userId) {
+    const config = await getProviderConfig(orgId, userId, 'zapsign');
+    const apiKey = config.apiKey || process.env.ZAPSIGN_API_KEY;
     if (!apiKey) throw new Error('ZAPSIGN_API_KEY not configured');
 
     const response = await fetch('https://api.zapsign.com.br/api/v1/docs/', {
@@ -318,8 +351,9 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
     return { provider: 'zapsign', signature_id: data.id, status: 'sent' };
   }
 
-  static async _sendDocuSign(sig, documentUrl, lease) {
-    const apiKey = process.env.DOCUSIGN_API_KEY;
+  static async _sendDocuSign(sig, documentUrl, lease, orgId, userId) {
+    const config = await getProviderConfig(orgId, userId, 'docusign');
+    const apiKey = config.apiKey || process.env.DOCUSIGN_API_KEY;
     if (!apiKey) throw new Error('DOCUSIGN_API_KEY not configured');
 
     const response = await fetch(
@@ -362,7 +396,7 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
 
   static _buildSignatureLink(signatureId, leaseId) {
     const baseUrl = process.env.APP_URL || 'http://localhost:3006';
-    return `${baseUrl}/urban/locacao/${leaseId}/sign/${signatureId}`;
+    return `${baseUrl}/public/sign/${signatureId}`;
   }
 
   static _getSignerTypeLabel(type) {
@@ -381,7 +415,7 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
     const supabase = getSupabaseServer();
 
     const { data: lease } = await supabase
-      .from('leases')
+      .from('rental_contracts')
       .select('signature_method, signature_status')
       .eq('id', leaseId)
       .single();
@@ -498,7 +532,7 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
 
       if (allSigs && allSigs.every((s) => s.status === 'signed')) {
         await supabase
-          .from('leases')
+          .from('rental_contracts')
           .update({
             signature_status: 'signed',
             signed_at: new Date().toISOString(),
@@ -508,7 +542,7 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
           .eq('id', sig.lease_id);
       } else {
         await supabase
-          .from('leases')
+          .from('rental_contracts')
           .update({ signature_status: 'partially_signed' })
           .eq('id', sig.lease_id);
       }

@@ -1,6 +1,6 @@
 import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
-import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import {
   TrendingUp,
   Users as UsersIcon,
@@ -13,7 +13,7 @@ import {
   Briefcase,
   MapPin,
   Trees,
-  Sprout
+  Sprout,
 } from 'lucide-react';
 import IADashboardSummary from '../components/IADashboardSummary';
 import { useAuth } from '../context/AuthContext';
@@ -31,6 +31,7 @@ import {
 
 const RuralDashboard: React.FC = () => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [ruralProperties, setRuralProperties] = useState<any[]>([]);
   const [leadCount, setLeadCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -167,7 +168,7 @@ const RuralDashboard: React.FC = () => {
     boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
     color: '#1e293b',
     fontSize: '12px',
-    fontWeight: '500' as const
+    fontWeight: '500' as const,
   };
 
   const quickActions = [
@@ -177,7 +178,8 @@ const RuralDashboard: React.FC = () => {
       desc: 'Sincronizar dados do CAR/SIGEF',
       color: 'text-emerald-600',
       bg: 'bg-emerald-50',
-      border: 'border-emerald-100'
+      border: 'border-emerald-100',
+      path: '/rural/territorio/due-diligence',
     },
     {
       icon: Target,
@@ -185,7 +187,8 @@ const RuralDashboard: React.FC = () => {
       desc: 'Mapa de calor de investidores',
       color: 'text-indigo-600',
       bg: 'bg-indigo-50',
-      border: 'border-indigo-100'
+      border: 'border-indigo-100',
+      path: '/rural/portal-comprador',
     },
     {
       icon: Briefcase,
@@ -193,18 +196,18 @@ const RuralDashboard: React.FC = () => {
       desc: 'Criar apresentação personalizada',
       color: 'text-amber-600',
       bg: 'bg-amber-50',
-      border: 'border-amber-100'
+      border: 'border-amber-100',
+      path: '/rural/properties/new',
     },
   ];
 
   return (
     <div className="w-full max-w-[1600px] mx-auto space-y-8 pb-12 font-sans text-gray-900">
-      
       {/* Header Premium (Rural variant) */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-900 p-8 shadow-lg shadow-emerald-900/20">
         <div className="absolute right-0 top-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
         <div className="absolute left-0 bottom-0 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4"></div>
-        
+
         <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -217,12 +220,16 @@ const RuralDashboard: React.FC = () => {
               Dashboard Rural
             </h1>
             <p className="text-emerald-100 mt-2 text-sm md:text-base max-w-xl">
-              Gerenciamento de grandes áreas, compliance fundiário e performance comercial de fazendas.
+              Gerenciamento de grandes áreas, compliance fundiário e performance
+              comercial de fazendas.
             </p>
           </div>
-          
+
           <div className="flex items-center gap-3">
-            <button className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-white text-sm font-semibold rounded-xl shadow-lg shadow-amber-500/30 transition-all flex items-center gap-2">
+            <button
+              onClick={() => navigate('/rural/properties/new')}
+              className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-white text-sm font-semibold rounded-xl shadow-lg shadow-amber-500/30 transition-all flex items-center gap-2"
+            >
               <Sprout size={18} /> Nova Captação
             </button>
           </div>
@@ -239,21 +246,31 @@ const RuralDashboard: React.FC = () => {
             className="group relative bg-white border border-gray-100 rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden cursor-default hover:-translate-y-1"
           >
             {/* Background Icon */}
-            <kpi.icon className={`absolute -right-6 -bottom-6 w-32 h-32 opacity-[0.03] transform group-hover:scale-110 transition-transform duration-500 ${kpi.color}`} />
-            
+            <kpi.icon
+              className={`absolute -right-6 -bottom-6 w-32 h-32 opacity-[0.03] transform group-hover:scale-110 transition-transform duration-500 ${kpi.color}`}
+            />
+
             <div className="flex items-start justify-between mb-4 relative z-10">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${kpi.bg} ${kpi.color}`}>
+              <div
+                className={`w-12 h-12 rounded-xl flex items-center justify-center ${kpi.bg} ${kpi.color}`}
+              >
                 <kpi.icon size={24} />
               </div>
-              
+
               {kpi.trend !== 'neutral' && (
-                <div className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${kpi.trend === 'up' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                  {kpi.trend === 'up' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                <div
+                  className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${kpi.trend === 'up' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}
+                >
+                  {kpi.trend === 'up' ? (
+                    <ArrowUpRight size={14} />
+                  ) : (
+                    <ArrowDownRight size={14} />
+                  )}
                   {kpi.change}
                 </div>
               )}
             </div>
-            
+
             <div className="relative z-10">
               <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">
                 {kpi.label}
@@ -268,13 +285,16 @@ const RuralDashboard: React.FC = () => {
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
         {/* Performance Chart */}
         <div className="lg:col-span-2 bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h3 className="text-lg font-bold text-gray-900">Volume de Negociações</h3>
-              <p className="text-xs text-gray-500 mt-1">Variação mensal de captação em milhões (R$)</p>
+              <h3 className="text-lg font-bold text-gray-900">
+                Volume de Negociações
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">
+                Variação mensal de captação em milhões (R$)
+              </p>
             </div>
             <select className="bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 px-4 py-2 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-medium">
               <option>Últimos 6 meses</option>
@@ -283,18 +303,57 @@ const RuralDashboard: React.FC = () => {
           </div>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <AreaChart
+                data={chartData}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
                 <defs>
-                  <linearGradient id="colorValRural" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient
+                    id="colorValRural"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
                     <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
                     <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} />
-                <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: '#e2e8f0', strokeWidth: 1, strokeDasharray: '4 4' }} />
-                <Area type="monotone" dataKey="valor" name="Negócios (M)" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorValRural)" activeDot={{ r: 6, strokeWidth: 0, fill: '#10b981' }} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="#f1f5f9"
+                />
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
+                  dy={10}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
+                />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  cursor={{
+                    stroke: '#e2e8f0',
+                    strokeWidth: 1,
+                    strokeDasharray: '4 4',
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="valor"
+                  name="Negócios (M)"
+                  stroke="#10b981"
+                  strokeWidth={3}
+                  fillOpacity={1}
+                  fill="url(#colorValRural)"
+                  activeDot={{ r: 6, strokeWidth: 0, fill: '#10b981' }}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -311,10 +370,12 @@ const RuralDashboard: React.FC = () => {
               {quickActions.map((action, idx) => (
                 <button
                   key={idx}
-                  onClick={() => toast.info(`Ação "${action.label}" em breve`)}
+                  onClick={() => navigate(action.path)}
                   className={`flex items-center gap-4 w-full p-4 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 hover:shadow-sm transition-all group text-left`}
                 >
-                  <div className={`p-2.5 rounded-xl border ${action.bg} ${action.border} transition-transform group-hover:scale-110`}>
+                  <div
+                    className={`p-2.5 rounded-xl border ${action.bg} ${action.border} transition-transform group-hover:scale-110`}
+                  >
                     <action.icon size={20} className={action.color} />
                   </div>
                   <div>
@@ -339,7 +400,10 @@ const RuralDashboard: React.FC = () => {
               </h3>
               <div className="flex items-end justify-between mb-3">
                 <span className="text-lg font-bold text-white">
-                  R$ 12.5M <span className="text-sm font-medium text-gray-400">/ R$ 15M</span>
+                  R$ 12.5M{' '}
+                  <span className="text-sm font-medium text-gray-400">
+                    / R$ 15M
+                  </span>
                 </span>
                 <span className="text-sm font-bold text-emerald-400">82%</span>
               </div>
@@ -350,7 +414,9 @@ const RuralDashboard: React.FC = () => {
                 />
               </div>
               <p className="text-xs text-gray-300 font-medium leading-relaxed">
-                Você está a apenas <strong className="text-emerald-400">R$ 2.5M</strong> da meta trimestral. Mantenha o foco em grandes ativos.
+                Você está a apenas{' '}
+                <strong className="text-emerald-400">R$ 2.5M</strong> da meta
+                trimestral. Mantenha o foco em grandes ativos.
               </p>
             </div>
           </div>

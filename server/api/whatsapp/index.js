@@ -42,7 +42,9 @@ const rewriteWhatsAppPath = (path) => {
 };
 
 export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
-  const target = resolveWhatsAppTarget(process.env.WHATSMEOW_URL || 'http://127.0.0.1:3100');
+  const target = resolveWhatsAppTarget(
+    process.env.WHATSMEOW_URL || 'http://127.0.0.1:3100'
+  );
   const aiEngine = new AIAutomationEngine(process.env.GEMINI_API_KEY);
   const isProduction = process.env.NODE_ENV === 'production';
   const envAllowedOrigins = process.env.ALLOWED_ORIGINS
@@ -225,7 +227,11 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
         ok: true,
         uptime: process.uptime(),
       },
-      whatsmeow: { ok: service.ok, status: service.status },
+      whatsmeow: {
+        ok: service.ok,
+        status: service.status,
+        version: service.details?.whatsmeow_version,
+      },
     });
   });
 
@@ -239,7 +245,11 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
       const service = await checkWhatsAppService(target);
       res.status(service.ok ? 200 : 503).json({
         ok: service.ok,
-        service: { ok: service.ok, status: service.status },
+        service: {
+          ok: service.ok,
+          status: service.status,
+          version: service.details?.whatsmeow_version,
+        },
         hint: service.ok
           ? 'WhatsMeow esta respondendo.'
           : 'O servico WhatsApp esta temporariamente indisponivel.',
@@ -278,7 +288,7 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
         const { data, error } = await supabase
           .from('whatsapp_instances')
           .select(
-            'id, tenant_id, name, status, qr_code, phone, jid, provider, created_at, updated_at'
+            'id, tenant_id, name, status, phone, jid, provider, created_at, updated_at'
           )
           .eq('tenant_id', req.orgId)
           .order('created_at', { ascending: false });
@@ -610,11 +620,13 @@ async function checkWhatsAppService(target) {
     const response = await fetch(healthUrl, {
       signal: AbortSignal.timeout(2500),
     });
+    const details = await response.json().catch(() => null);
 
     return {
       ok: response.ok,
       status: response.status,
       url: healthUrl,
+      details,
     };
   } catch (err) {
     return {
@@ -631,7 +643,6 @@ function normalizeInstanceRow(row) {
     tenant_id: row.tenant_id || undefined,
     name: row.name || 'WhatsApp',
     status: row.status || 'disconnected',
-    qr_code: row.qr_code || undefined,
     phone: row.phone || undefined,
     jid: row.jid || undefined,
     provider: row.provider || 'whatsmeow',
@@ -677,7 +688,7 @@ function storagePublicBaseURL() {
       if (!value.includes('n.woopanel.com.br')) return value;
     }
   }
-  return 'https://nb.consultio.com.br';
+  return 'https://s.wootech.com.br';
 }
 
 function getDatabaseEnvStatus() {

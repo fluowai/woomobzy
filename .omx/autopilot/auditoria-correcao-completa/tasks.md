@@ -6,4 +6,3 @@
 4. `WEB-02` — implementar a menor fatia coerente para os problemas confirmados. Depende de `WEB-01`.
 5. `QA-01` — Playwright real em viewports móvel e desktop, console e acessibilidade básica. Depende de `AUD-02` e `WEB-02`.
 6. `DOC-01` — atualizar `DEV/` com relatório, verificação e handoff. Depende de `QA-01`.
-

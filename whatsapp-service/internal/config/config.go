@@ -31,6 +31,7 @@ type Config struct {
 	AutomationEnabled  bool
 	PairClientType     string
 	PairClientName     string
+	ProtocolLogLevel   string
 }
 
 // Load reads configuration from environment variables
@@ -84,6 +85,7 @@ func Load(logger *zap.Logger) *Config {
 		AutomationEnabled:  getEnv("WHATSAPP_AI_AUTOMATION", "true") != "false",
 		PairClientType:     getEnv("WHATSAPP_PAIR_CLIENT_TYPE", "chrome"),
 		PairClientName:     getEnv("WHATSAPP_PAIR_CLIENT_NAME", "Chrome (Windows)"),
+		ProtocolLogLevel:   getEnv("WHATSAPP_PROTOCOL_LOG_LEVEL", "INFO"),
 	}
 
 	corsStr := getEnvAny([]string{"CORS_ORIGINS", "ALLOWED_ORIGINS"}, "http://localhost:3006,http://localhost:3002,https://imob.wootech.com.br,https://app.imobfluow.com.br,https://imobfluow.consultio.com.br,https://imobfluow.com.br,https://www.imobfluow.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br")

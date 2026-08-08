@@ -25,46 +25,48 @@ import (
 
 // Client wraps a WhatsMeow client with business logic
 type Client struct {
-	ctx            context.Context
-	cancel         context.CancelFunc
-	instanceID     uuid.UUID
-	tenantID       *uuid.UUID
-	instanceName   string
-	waClient       *whatsmeow.Client
-	instanceRepo   *repository.InstanceRepo
-	chatRepo       *repository.ChatRepo
-	contactRepo    *repository.ContactRepo
-	messageRepo    *repository.MessageRepo
-	mediaRepo      *repository.MediaRepo
-	hub            *ws.Hub
-	logger         *zap.Logger
-	qrCode         string
-	qrChan         <-chan whatsmeow.QRChannelItem
-	connected      bool
-	eventHandlerID uint32
-	mu             sync.RWMutex
-	historyMu      sync.RWMutex
-	historyCutoff  time.Time
-	supabaseURL    string
-	supabaseKey    string
-	storageBucket  string
-	minioEndpoint  string
-	minioPublicURL string
-	minioAccessKey string
-	minioSecretKey string
-	minioRegion    string
-	automation     *AutomationClient
-	reconnectMu    sync.Mutex
-	reconnectTry   int
-	manualStop     bool
-	pairClientType whatsmeow.PairClientType
-	pairClientName string
-	pairMu         sync.Mutex
-	pairPhone      string
-	pairCode       string
-	pairErr        error
-	pairReady      chan struct{}
-	pairDone       bool
+	ctx                context.Context
+	cancel             context.CancelFunc
+	instanceID         uuid.UUID
+	tenantID           *uuid.UUID
+	instanceName       string
+	waClient           *whatsmeow.Client
+	instanceRepo       *repository.InstanceRepo
+	chatRepo           *repository.ChatRepo
+	contactRepo        *repository.ContactRepo
+	messageRepo        *repository.MessageRepo
+	mediaRepo          *repository.MediaRepo
+	hub                *ws.Hub
+	logger             *zap.Logger
+	qrCode             string
+	pairingError       string
+	pairingRecoverable bool
+	qrChan             <-chan whatsmeow.QRChannelItem
+	connected          bool
+	eventHandlerID     uint32
+	mu                 sync.RWMutex
+	historyMu          sync.RWMutex
+	historyCutoff      time.Time
+	supabaseURL        string
+	supabaseKey        string
+	storageBucket      string
+	minioEndpoint      string
+	minioPublicURL     string
+	minioAccessKey     string
+	minioSecretKey     string
+	minioRegion        string
+	automation         *AutomationClient
+	reconnectMu        sync.Mutex
+	reconnectTry       int
+	manualStop         bool
+	pairClientType     whatsmeow.PairClientType
+	pairClientName     string
+	pairMu             sync.Mutex
+	pairPhone          string
+	pairCode           string
+	pairErr            error
+	pairReady          chan struct{}
+	pairDone           bool
 
 	callManager *CallManager
 }
@@ -134,6 +136,8 @@ func NewClient(
 // Connect initiates the WhatsApp connection
 func (c *Client) Connect(ctx context.Context) error {
 	c.mu.Lock()
+	c.pairingError = ""
+	c.pairingRecoverable = false
 	if c.eventHandlerID == 0 {
 		c.eventHandlerID = c.waClient.AddEventHandler(c.eventHandler)
 	}
@@ -166,8 +170,21 @@ func (c *Client) Connect(ctx context.Context) error {
 		for evt := range qrChan {
 			switch evt.Event {
 			case whatsmeow.QRChannelEventCode:
+				// Render the pairing QR as a PNG data URL so the raw pairing
+				// token never leaves the service (no DOM, no API, no WS).
+				qrImage, imgErr := qrImageDataURL(evt.Code)
+				if imgErr != nil {
+					c.logger.Error("Failed to render QR image",
+						zap.String("instance", c.instanceID.String()),
+						zap.Error(imgErr),
+					)
+					break
+				}
+
 				c.mu.Lock()
-				c.qrCode = evt.Code
+				c.qrCode = qrImage
+				c.pairingError = ""
+				c.pairingRecoverable = false
 				c.mu.Unlock()
 
 				c.logger.Info("QR Code generated",
@@ -175,12 +192,17 @@ func (c *Client) Connect(ctx context.Context) error {
 				)
 
 				// Save to DB
-				c.instanceRepo.UpdateQRCode(ctx, c.instanceID, evt.Code)
+				if err := c.instanceRepo.UpdateQRCode(ctx, c.instanceID, qrImage); err != nil {
+					c.logger.Error("Failed to persist QR code",
+						zap.String("instance", c.instanceID.String()),
+						zap.Error(err),
+					)
+				}
 
 				// Broadcast to WebSocket
 				c.broadcastEvent("qr_code", models.QRCodeEvent{
 					InstanceID: c.instanceID,
-					QRCode:     evt.Code,
+					QRCode:     qrImage,
 					ExpiresAt:  time.Now().Add(evt.Timeout),
 				})
 				c.generatePendingPairCode(ctx, evt.Timeout)
@@ -194,8 +216,8 @@ func (c *Client) Connect(ctx context.Context) error {
 				c.markConnected(ctx)
 
 			default:
-				if message, isFailure := pairingFailureMessage(evt.Event); isFailure {
-					c.finishPairingWithError(ctx, message, evt.Error)
+				if message, recoverable := pairingFailureMessage(evt.Event); message != "" {
+					c.finishPairingWithError(ctx, message, recoverable, evt.Error)
 				}
 			}
 		}
@@ -322,16 +344,20 @@ func (c *Client) generatePendingPairCode(ctx context.Context, qrTimeout time.Dur
 	})
 }
 
-func pairingFailureMessage(event string) (string, bool) {
+// pairingFailureMessage maps a QR channel event to a user-facing message and
+// whether the failure is recoverable. Recoverable failures (e.g. a QR code
+// that expired) can be resolved by simply restarting the QR flow, so the API
+// clears them automatically instead of surfacing a hard error.
+func pairingFailureMessage(event string) (message string, recoverable bool) {
 	switch event {
 	case whatsmeow.QRChannelTimeout.Event:
 		return "O QR Code expirou. Gere um novo código e tente novamente.", true
 	case whatsmeow.QRChannelEventError:
-		return "O WhatsApp recusou o pareamento. Gere um novo QR Code.", true
+		return "O WhatsApp recusou o pareamento. Gere um novo QR Code.", false
 	case whatsmeow.QRChannelClientOutdated.Event:
-		return "A versão do conector WhatsApp está desatualizada.", true
+		return "A versão do conector WhatsApp está desatualizada.", false
 	case whatsmeow.QRChannelScannedWithoutMultidevice.Event:
-		return "Ative Aparelhos Conectados no WhatsApp e tente novamente.", true
+		return "Ative Aparelhos Conectados no WhatsApp e tente novamente.", false
 	case whatsmeow.QRChannelErrUnexpectedEvent.Event:
 		return "A sessão mudou durante o pareamento. Gere um novo QR Code.", true
 	default:
@@ -339,15 +365,18 @@ func pairingFailureMessage(event string) (string, bool) {
 	}
 }
 
-func (c *Client) finishPairingWithError(ctx context.Context, message string, err error) {
+func (c *Client) finishPairingWithError(ctx context.Context, message string, recoverable bool, err error) {
 	c.mu.Lock()
 	c.connected = false
 	c.qrCode = ""
+	c.pairingError = message
+	c.pairingRecoverable = recoverable
 	c.mu.Unlock()
 
 	fields := []zap.Field{
 		zap.String("instance", c.instanceID.String()),
 		zap.String("pairing_error", message),
+		zap.Bool("recoverable", recoverable),
 	}
 	if err != nil {
 		fields = append(fields, zap.Error(err))
@@ -361,9 +390,10 @@ func (c *Client) finishPairingWithError(ctx context.Context, message string, err
 		)
 	}
 	c.broadcastEvent("instance_status", models.InstanceStatusEvent{
-		InstanceID: c.instanceID,
-		Status:     models.StatusDisconnected,
-		Error:      message,
+		InstanceID:  c.instanceID,
+		Status:      models.StatusDisconnected,
+		Error:       message,
+		Recoverable: recoverable,
 	})
 }
 
@@ -430,6 +460,35 @@ func (c *Client) CurrentQRCode() string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.qrCode
+}
+
+// CurrentPairingError returns the terminal error from the current QR flow.
+func (c *Client) CurrentPairingError() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.pairingError
+}
+
+// PairingErrorRecoverable reports whether the current pairing error can be
+// cleared and the QR flow restarted automatically.
+func (c *Client) PairingErrorRecoverable() bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.pairingRecoverable
+}
+
+// ClearPairingError clears any pending pairing error so a fresh QR flow can
+// start without user interaction.
+func (c *Client) ClearPairingError() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.pairingError = ""
+	c.pairingRecoverable = false
+}
+
+// IsSocketConnected reports whether the WhatsApp websocket is still open.
+func (c *Client) IsSocketConnected() bool {
+	return c.waClient != nil && c.waClient.IsConnected()
 }
 
 // GetWAClient returns the underlying WhatsMeow client (for sending messages)

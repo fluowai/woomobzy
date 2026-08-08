@@ -97,7 +97,8 @@ export function createCorsOptions({
       origin.endsWith('.pages.dev') ||
       origin.endsWith('.onrender.com') ||
       origin.startsWith('http://localhost') ||
-      origin.startsWith('http://127.0.0.1')
+      origin.startsWith('http://127.0.0.1') ||
+      isPrivateNetworkOrigin(origin)
     ) {
       return callback(null, true);
     }
@@ -111,4 +112,28 @@ export function createCorsOptions({
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   };
+}
+
+function isPrivateNetworkOrigin(origin) {
+  try {
+    const url = new URL(origin);
+    if (url.protocol !== 'http:') return false;
+    const hostname = url.hostname;
+
+    const isIp = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(hostname);
+    if (!isIp) return false;
+
+    const parts = isIp.slice(1).map(Number);
+    if (parts.some((p) => p > 255)) return false;
+
+    const [a, b] = parts;
+    return (
+      a === 10 ||
+      a === 127 ||
+      (a === 192 && b === 168) ||
+      (a === 172 && b >= 16 && b <= 31)
+    );
+  } catch {
+    return false;
+  }
 }

@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { sendContactFormEmail } from '../../services/emailService.js';
+import { sendContactFormEmail } from '../services/emailService.js';
 import axios from 'axios';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;

@@ -30,6 +30,9 @@ import TestimonialsBlock from '../LandingPageBlocks/TestimonialsBlock';
 import BrokerCardBlock from '../LandingPageBlocks/BrokerCardBlock';
 import DividerBlock from '../LandingPageBlocks/DividerBlock';
 import CustomHTMLBlock from '../LandingPageBlocks/CustomHTMLBlock';
+import FeaturesBlock from '../LandingPageBlocks/FeaturesBlock';
+import PropertyFeaturedBlock from '../LandingPageBlocks/PropertyFeaturedBlock';
+import PropertySearchBlock from '../LandingPageBlocks/PropertySearchBlock';
 import { useSettings } from '../../context/SettingsContext';
 
 interface CanvasAreaProps {
@@ -300,6 +303,15 @@ function renderBlock(
 
     case BlockType.CUSTOM_HTML:
       return <CustomHTMLBlock config={block.config as any} />;
+
+    case BlockType.FEATURES:
+      return <FeaturesBlock config={cfg} theme={themeConfig} />;
+
+    case BlockType.PROPERTY_FEATURED:
+      return <PropertyFeaturedBlock config={cfg} theme={themeConfig} />;
+
+    case BlockType.PROPERTY_SEARCH:
+      return <PropertySearchBlock config={cfg} theme={themeConfig} />;
 
     default:
       return (

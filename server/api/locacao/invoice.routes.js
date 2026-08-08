@@ -4,6 +4,7 @@
  */
 import { Router } from 'express';
 import { z } from 'zod';
+import { logger } from '../../utils/logger.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
@@ -42,7 +43,7 @@ router.get('/:lease_id', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true, data: data || [] });
   } catch (error) {
-    console.error('[InvoiceRoutes] List error:', error);
+    logger.error('[InvoiceRoutes] List error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -118,7 +119,7 @@ router.post('/generate', verifyAuth, requireTenant, async (req, res) => {
             .eq('id', lease.id);
         }
       } catch (err) {
-        console.warn(
+        logger.warn(
           '[InvoiceRoutes] Falha ao criar cliente Asaas, faturas serão locais:',
           err.message
         );
@@ -161,7 +162,7 @@ router.post('/generate', verifyAuth, requireTenant, async (req, res) => {
             imobzyFeePercentage,
           });
         } catch (err) {
-          console.error(
+          logger.error(
             '[InvoiceRoutes] Erro ao criar fatura no Asaas:',
             err.message
           );
@@ -198,7 +199,7 @@ router.post('/generate', verifyAuth, requireTenant, async (req, res) => {
       .status(201)
       .json({ success: true, data: generated, count: generated.length });
   } catch (error) {
-    console.error('[InvoiceRoutes] Generate error:', error);
+    logger.error('[InvoiceRoutes] Generate error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -235,7 +236,7 @@ router.put('/:id/pay', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true, data });
   } catch (error) {
-    console.error('[InvoiceRoutes] Pay error:', error);
+    logger.error('[InvoiceRoutes] Pay error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -270,7 +271,7 @@ router.post('/webhook/asaas', async (req, res) => {
 
     res.status(200).json({ received: true });
   } catch (error) {
-    console.error('[InvoiceRoutes] Webhook Asaas Error:', error);
+    logger.error('[InvoiceRoutes] Webhook Asaas Error:', error);
     res.status(500).json({ error: error.message });
   }
 });

@@ -165,11 +165,9 @@ router.put('/:id', verifyAuth, requireTenant, async (req, res) => {
     if (!existing)
       return res.status(404).json({ error: 'Campanha não encontrada' });
     if (!['draft', 'paused'].includes(existing.status)) {
-      return res
-        .status(400)
-        .json({
-          error: 'Só é possível editar campanhas em rascunho ou pausadas',
-        });
+      return res.status(400).json({
+        error: 'Só é possível editar campanhas em rascunho ou pausadas',
+      });
     }
 
     const { data, error } = await supabase

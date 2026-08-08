@@ -90,7 +90,7 @@ export const propertyService = {
   },
 };
 
-const mapToModel = (dbItem: any): Property =>
+export const mapToModel = (dbItem: any): Property =>
   ({
     id: dbItem.id,
     organization_id: dbItem.organization_id,

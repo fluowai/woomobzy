@@ -1,45 +1,48 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  chatApi,
-  crmContactApi,
-  formatPhone,
-  formatPhoneDisplay,
-  getChatDisplayName,
-  isValidBrazilianPhone,
-  type CrmAssignee,
-} from './hooks/api';
-import type { UnifiedChat, UnifiedMessage } from './hooks/unifiedInbox';
-import MessageBubble from './MessageBubble';
-import {
-  Send,
-  Paperclip,
-  Smile,
   ArrowDown,
-  Users,
-  Phone,
-  Video,
-  MoreVertical,
-  Loader2,
-  X,
-  UserRound,
-  Save,
   ArrowLeft,
   ArrowRightLeft,
-  Tag,
-  Clock3,
-  ShieldCheck,
-  Image as ImageIcon,
-  FileAudio,
+  Bot,
+  Building2,
+  CalendarDays,
+  Check,
+  CheckSquare2,
+  ChevronDown,
+  ClipboardList,
   FileText,
-  FileVideo,
+  House,
+  Image as ImageIcon,
+  Loader2,
+  Mail,
+  MapPin,
+  PanelRight,
+  Paperclip,
+  Plus,
+  Save,
+  Send,
+  Smile,
+  Sparkles,
+  Tag,
+  UserRound,
+  Users,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-/** WhatsApp CDN profile-pic URLs expire and require WA session — never load in browser. */
-function isWhatsAppCdnUrl(url?: string): boolean {
-  if (!url) return false;
-  return url.includes('pps.whatsapp.net') || url.includes('mmg.whatsapp.net');
-}
+import MessageBubble from './MessageBubble';
+import {
+  chatApi,
+  crmContactApi,
+  formatPhoneDisplay,
+  getChatDisplayName,
+  type CrmAssignee,
+  type CrmLead,
+  type CrmProperty,
+  type CrmTask,
+} from './hooks/api';
+import type { UnifiedChat, UnifiedMessage } from './hooks/unifiedInbox';
 
 interface ChatWindowProps {
   chat: UnifiedChat;
@@ -52,6 +55,65 @@ interface ChatWindowProps {
   onBack?: () => void;
 }
 
+const QUICK_MESSAGES = [
+  {
+    icon: House,
+    label: 'Enviar opções',
+    text: 'Separei algumas opções que combinam com o que você procura. Posso enviar os detalhes?',
+  },
+  { icon: Building2, label: 'Simular financiamento', action: 'simulator' },
+  { icon: CalendarDays, label: 'Agendar visita', action: 'visit' },
+  {
+    icon: FileText,
+    label: 'Pedir documentos',
+    text: 'Para avançarmos, pode me enviar seus documentos básicos, por favor?',
+  },
+] as const;
+
+const EMOJIS = ['😊', '👍', '🏡', '✅', '📍', '💚', '📅', '✨'];
+
+function isWhatsAppCdnUrl(url?: string): boolean {
+  if (!url) return false;
+  return url.includes('pps.whatsapp.net') || url.includes('mmg.whatsapp.net');
+}
+
+function getPhoneFromJid(jid: string) {
+  return jid.split('@')[0]?.replace(/\D/g, '') || '';
+}
+
+function getInitial(value: string) {
+  return (value.match(/[A-Za-zÀ-ÿ0-9]/)?.[0] || '?').toUpperCase();
+}
+
+function formatMoney(value?: number | null) {
+  if (!value) return 'Valor sob consulta';
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function formatDueDate(value?: string) {
+  if (!value) return 'Sem prazo';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Sem prazo';
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
+
+function leadTemperature(classification?: string | null) {
+  const normalized = (classification || '').toLowerCase();
+  if (normalized.includes('hot') || normalized.includes('quente'))
+    return 'Quente';
+  if (normalized.includes('cold') || normalized.includes('frio')) return 'Frio';
+  return 'Morno';
+}
+
 const ChatWindow: React.FC<ChatWindowProps> = ({
   chat,
   messages,
@@ -62,37 +124,41 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   onChatUpdated,
   onBack,
 }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isRural = location.pathname.startsWith('/rural');
   const [inputText, setInputText] = useState('');
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [sendingMessage, setSendingMessage] = useState(false);
   const [showScrollDown, setShowScrollDown] = useState(false);
-  const [showContactPanel, setShowContactPanel] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    return window.matchMedia('(min-width: 1024px)').matches;
-  });
+  const [showEmojis, setShowEmojis] = useState(false);
+  const [isLeadPanelOpen, setIsLeadPanelOpen] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [contactNameDraft, setContactNameDraft] = useState('');
   const [avatarError, setAvatarError] = useState(false);
   const [savingContact, setSavingContact] = useState(false);
-  const [crmLead, setCrmLead] = useState<any | null>(null);
+  const [crmLead, setCrmLead] = useState<CrmLead | null>(null);
   const [crmTags, setCrmTags] = useState<string[]>([]);
-  const [tagDraft, setTagDraft] = useState('');
+  const [crmTasks, setCrmTasks] = useState<CrmTask[]>([]);
+  const [crmProperty, setCrmProperty] = useState<CrmProperty | null>(null);
   const [assignees, setAssignees] = useState<CrmAssignee[]>([]);
   const [selectedAssignee, setSelectedAssignee] = useState('');
+  const [tagDraft, setTagDraft] = useState('');
   const [crmActionLoading, setCrmActionLoading] = useState(false);
-  const [sendingMessage, setSendingMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
+
+  const rawPhone =
+    chat.platform === 'instagram'
+      ? ''
+      : chat.phone || getPhoneFromJid(chat.chat_jid);
   const chatPhone =
     chat.platform === 'instagram'
       ? chat.instagram_contact_username
         ? `@${chat.instagram_contact_username}`
         : 'Instagram'
       : chat.phone_display || formatPhoneDisplay(chat.chat_jid);
-  const rawPhone =
-    chat.platform === 'instagram'
-      ? ''
-      : chat.phone || getPhoneFromJid(chat.chat_jid);
   const chatName =
     chat.platform === 'instagram'
       ? chat.instagram_contact_full_name ||
@@ -102,71 +168,87 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       : chat.is_group
         ? chat.name || 'Grupo sem nome'
         : getChatDisplayName(chat);
+  const currentAssignee = assignees.find(
+    (item) => item.id === selectedAssignee
+  );
+  const pendingTasks = crmTasks.filter((task) => task.status !== 'completed');
 
   useEffect(() => {
     setContactNameDraft(chatName);
     setEditingName(false);
     setAvatarError(false);
-    if (
-      typeof window !== 'undefined' &&
-      window.matchMedia('(min-width: 1024px)').matches
-    ) {
-      setShowContactPanel(true);
-    }
   }, [chat.id, chatName]);
 
   useEffect(() => {
-    if (
-      !showContactPanel ||
-      chat.is_group ||
-      !rawPhone ||
-      chat.platform === 'instagram'
-    )
+    if (chat.is_group || !rawPhone || chat.platform === 'instagram') {
+      setCrmLead(null);
+      setCrmTags([]);
+      setCrmTasks([]);
+      setCrmProperty(null);
       return;
+    }
     let active = true;
     Promise.all([crmContactApi.get(rawPhone), crmContactApi.assignees()])
       .then(([result, assigneeResult]) => {
         if (!active) return;
-        setCrmLead(result.lead || null);
+        setCrmLead(result.lead);
         setCrmTags(result.tags || []);
+        setCrmTasks(result.tasks || []);
+        setCrmProperty(result.property || null);
         setAssignees(assigneeResult.users || []);
-        setSelectedAssignee(result.lead?.assigned_to || '');
+        setSelectedAssignee(
+          result.lead?.assigned_to || result.assignee?.id || ''
+        );
       })
       .catch(() => {
         if (!active) return;
         setCrmLead(null);
         setCrmTags([]);
-        setAssignees([]);
-        setSelectedAssignee('');
+        setCrmTasks([]);
+        setCrmProperty(null);
       });
     return () => {
       active = false;
     };
-  }, [showContactPanel, chat.id, chat.is_group, rawPhone]);
+  }, [chat.id, chat.is_group, chat.platform, rawPhone]);
 
-  // Auto-scroll to bottom on new messages
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const groupedMessages = useMemo(() => {
+    return messages
+      .filter(isRenderableMessage)
+      .reduce(
+        (groups: { date: string; messages: UnifiedMessage[] }[], message) => {
+          const date = new Date(message.timestamp).toLocaleDateString('pt-BR', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+          });
+          const previous = groups.at(-1);
+          if (previous?.date === date) previous.messages.push(message);
+          else groups.push({ date, messages: [message] });
+          return groups;
+        },
+        []
+      );
+  }, [messages]);
 
-  const handleScroll = () => {
-    if (!messagesContainerRef.current) return;
-    const { scrollTop, scrollHeight, clientHeight } =
-      messagesContainerRef.current;
-    setShowScrollDown(scrollHeight - scrollTop - clientHeight > 200);
-  };
+  const crmPayload = () => ({
+    phone: rawPhone,
+    name: contactNameDraft.trim() || chatName,
+    chat_jid: chat.chat_jid,
+    source: 'WhatsApp',
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const text = inputText.trim();
-    if ((!text && !pendingFile) || sendingMessage) return;
+  const submitMessage = async (event?: React.FormEvent) => {
+    event?.preventDefault();
+    const content = inputText.trim();
+    if ((!content && !pendingFile) || sendingMessage) return;
     setSendingMessage(true);
     try {
-      await onSendMessage(text, pendingFile || undefined);
+      await onSendMessage(content, pendingFile || undefined);
       setInputText('');
       setPendingFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -175,22 +257,90 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit(e);
+  const runCrmAction = async <T,>(
+    action: () => Promise<T>,
+    success: string,
+    onDone: (result: T) => void
+  ) => {
+    setCrmActionLoading(true);
+    try {
+      const result = await action();
+      onDone(result);
+      toast.success(success);
+    } catch (error: any) {
+      toast.error(error?.message || 'Não foi possível concluir a ação.');
+    } finally {
+      setCrmActionLoading(false);
     }
   };
 
-  const getInitial = (value: string) => {
-    const match = value.match(/[A-Za-z0-9]/);
-    return (match?.[0] || '?').toUpperCase();
+  const syncCrmResult = (result: { lead: CrmLead | null; tags?: string[] }) => {
+    setCrmLead(result.lead);
+    setCrmTags(result.tags || []);
   };
+
+  const ensureLead = () =>
+    runCrmAction(
+      () => crmContactApi.link(crmPayload()),
+      'Contato vinculado ao CRM.',
+      syncCrmResult
+    );
+
+  const addTag = () => {
+    const tag = tagDraft.trim();
+    if (!tag) return;
+    return runCrmAction(
+      () => crmContactApi.addTags({ ...crmPayload(), tags: [tag] }),
+      'Tag adicionada.',
+      (result) => {
+        syncCrmResult(result);
+        setTagDraft('');
+      }
+    );
+  };
+
+  const transfer = () => {
+    if (!selectedAssignee) return;
+    return runCrmAction(
+      () =>
+        crmContactApi.transfer({
+          ...crmPayload(),
+          assigned_to: selectedAssignee,
+        }),
+      'Atendimento transferido.',
+      syncCrmResult
+    );
+  };
+
+  const createTask = (title = `Retornar contato: ${chatName}`) => {
+    const dueAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    return runCrmAction(
+      () => crmContactApi.createTask({ ...crmPayload(), title, due_at: dueAt }),
+      'Tarefa criada.',
+      (result) => {
+        syncCrmResult(result);
+        if (result.task) setCrmTasks((current) => [result.task!, ...current]);
+      }
+    );
+  };
+
+  const toggleTask = (task: CrmTask) =>
+    runCrmAction(
+      () =>
+        crmContactApi.updateTask(
+          task.id,
+          task.status === 'completed' ? 'pending' : 'completed'
+        ),
+      task.status === 'completed' ? 'Tarefa reaberta.' : 'Tarefa concluída.',
+      (result) =>
+        setCrmTasks((current) =>
+          current.map((item) => (item.id === task.id ? result.task : item))
+        )
+    );
 
   const saveContactName = async () => {
     const nextName = contactNameDraft.trim();
     if (!nextName) return;
-
     setSavingContact(true);
     try {
       if (chat.platform === 'whatsapp' && instanceId) {
@@ -200,415 +350,79 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           nextName
         );
         onChatUpdated({ ...updated, platform: 'whatsapp' });
-      } else {
-        onChatUpdated({ ...chat, name: nextName, display_name: nextName });
-      }
+      } else onChatUpdated({ ...chat, name: nextName, display_name: nextName });
       setEditingName(false);
     } finally {
       setSavingContact(false);
     }
   };
 
-  const crmPayload = () => ({
-    phone: rawPhone,
-    name: contactNameDraft.trim() || chatName,
-    chat_jid: chat.chat_jid,
-    source: 'WhatsApp',
-  });
-
-  const linkContactToCrm = async () => {
-    if (!rawPhone || chat.is_group) return;
-    setCrmActionLoading(true);
-    try {
-      const result = await crmContactApi.link(crmPayload());
-      setCrmLead(result.lead || null);
-      setCrmTags(result.tags || []);
-      toast.success('Contato vinculado ao CRM.');
-    } catch (err: any) {
-      toast.error(err?.message || 'Erro ao vincular contato ao CRM.');
-    } finally {
-      setCrmActionLoading(false);
-    }
+  const handleQuickAction = (item: (typeof QUICK_MESSAGES)[number]) => {
+    if ('text' in item) setInputText(item.text);
+    if ('action' in item && item.action === 'simulator')
+      navigate(isRural ? '/rural/financial' : '/urban/simulador');
+    if ('action' in item && item.action === 'visit')
+      void createTask(`Agendar visita com ${chatName}`);
   };
 
-  const addCrmTag = async () => {
-    if (!rawPhone || chat.is_group) return;
-    const tag = tagDraft.trim();
-    if (!tag) return;
-
-    setCrmActionLoading(true);
-    try {
-      const result = await crmContactApi.addTags({
-        ...crmPayload(),
-        tags: [tag],
-      });
-      setCrmLead(result.lead || null);
-      setCrmTags(result.tags || []);
-      setTagDraft('');
-      toast.success('Tag adicionada ao CRM.');
-    } catch (err: any) {
-      toast.error(err?.message || 'Erro ao adicionar tag.');
-    } finally {
-      setCrmActionLoading(false);
-    }
+  const openFilePicker = (accept: string) => {
+    if (!fileInputRef.current) return;
+    fileInputRef.current.accept = accept;
+    fileInputRef.current.click();
   };
 
-  const transferAttendance = async () => {
-    if (!rawPhone || chat.is_group || !selectedAssignee) return;
-    setCrmActionLoading(true);
-    try {
-      const result = await crmContactApi.transfer({
-        ...crmPayload(),
-        assigned_to: selectedAssignee,
-      });
-      setCrmLead(result.lead || null);
-      setCrmTags(result.tags || []);
-      toast.success(
-        result.assignee?.name
-          ? `Atendimento transferido para ${result.assignee.name}.`
-          : 'Atendimento transferido.'
-      );
-    } catch (err: any) {
-      toast.error(err?.message || 'Erro ao transferir atendimento.');
-    } finally {
-      setCrmActionLoading(false);
-    }
-  };
-
-  const handleFileSelect = (file?: File | null) => {
-    if (!file) {
-      setPendingFile(null);
-      return;
-    }
-    if (file.size > 25 * 1024 * 1024) {
-      toast.error('Arquivo muito grande. Envie midias de ate 25 MB.');
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      return;
-    }
-    setPendingFile(file);
-  };
-
-  const clearPendingFile = () => {
-    setPendingFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const markCrmPriority = async () => {
-    if (!rawPhone || chat.is_group) return;
-    setCrmActionLoading(true);
-    try {
-      const result = await crmContactApi.markPriority(crmPayload());
-      setCrmLead(result.lead || null);
-      setCrmTags(result.tags || []);
-      toast.success('Contato marcado como prioridade.');
-    } catch (err: any) {
-      toast.error(err?.message || 'Erro ao marcar prioridade.');
-    } finally {
-      setCrmActionLoading(false);
-    }
-  };
-
-  const createCrmTask = async () => {
-    if (!rawPhone || chat.is_group) return;
-    setCrmActionLoading(true);
-    try {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const result = await crmContactApi.createTask({
-        ...crmPayload(),
-        title: `Retornar contato: ${chatName}`,
-        due_at: tomorrow.toISOString(),
-      });
-      setCrmLead(result.lead || null);
-      setCrmTags(result.tags || []);
-      toast.success('Tarefa criada para o atendimento.');
-    } catch (err: any) {
-      toast.error(err?.message || 'Erro ao criar tarefa.');
-    } finally {
-      setCrmActionLoading(false);
-    }
-  };
-
-  // Group messages by date
-  const visibleMessages = messages.filter(isRenderableMessage);
-  const groupedMessages = visibleMessages.reduce(
-    (acc: { date: string; msgs: UnifiedMessage[] }[], msg) => {
-      const date = new Date(msg.timestamp).toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric',
-      });
-      const lastGroup = acc[acc.length - 1];
-      if (lastGroup && lastGroup.date === date) {
-        lastGroup.msgs.push(msg);
-      } else {
-        acc.push({ date, msgs: [msg] });
-      }
-      return acc;
-    },
-    []
-  );
+  const propertyImage = crmProperty?.images?.[0];
+  const preferenceLocation =
+    typeof crmLead?.preferences?.location === 'string'
+      ? crmLead.preferences.location
+      : '';
 
   return (
     <main
-      className={`wa-chat-window ${showContactPanel ? 'details-open' : ''}`}
+      className={`wa-chat-window ${isLeadPanelOpen ? 'details-open' : ''}`}
       id="chat-window"
     >
-      {/* Chat Header */}
-      <header className="wa-chat-header">
-        <button
-          type="button"
-          className="wa-mobile-back"
-          onClick={onBack}
-          title="Voltar"
-        >
-          <ArrowLeft size={20} />
-        </button>
-        <button
-          type="button"
-          className="wa-chat-header-info wa-chat-header-profile"
-          onClick={() => setShowContactPanel(true)}
-        >
-          <div className="wa-chat-header-avatar">
-            {chat.avatar_url &&
-            !isWhatsAppCdnUrl(chat.avatar_url) &&
-            !avatarError ? (
-              <img
-                src={chat.avatar_url}
-                alt=""
-                className="wa-avatar-img"
-                onError={() => setAvatarError(true)}
-              />
-            ) : chat.is_group ? (
-              <Users size={20} />
-            ) : (
-              <span>{getInitial(chatName)}</span>
-            )}
-          </div>
-          <div>
-            <h2 className="wa-chat-header-name">
-              {chatName}
-              {chat.platform === 'instagram' && (
-                <span className="wa-platform-badge wa-platform-instagram">
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-                  </svg>
-                  Instagram
-                </span>
-              )}
-              {chat.platform === 'whatsapp' && (
-                <span className="wa-platform-badge wa-platform-whatsapp">
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-                  </svg>
-                  WhatsApp
-                </span>
-              )}
-            </h2>
-            <span className="wa-chat-header-sub">
-              {chat.platform === 'instagram'
-                ? chat.instagram_account_username
-                  ? `via @${chat.instagram_account_username}`
-                  : 'Instagram'
-                : chat.is_group
-                  ? 'Grupo'
-                  : chatPhone || 'Telefone nao identificado'}
-            </span>
-          </div>
-        </button>
-        <div className="wa-chat-header-actions">
-          {chat.platform === 'whatsapp' && (
-            <>
-              <button
-                className="wa-icon-btn"
-                title="Ligar"
-                onClick={() =>
-                  toast.info('Chamada de voz será liberada em breve')
-                }
-              >
-                <Phone size={18} />
-              </button>
-              <button
-                className="wa-icon-btn"
-                title="Videochamada"
-                onClick={() =>
-                  toast.info('Videochamada será liberada em breve')
-                }
-              >
-                <Video size={18} />
-              </button>
-            </>
-          )}
-          <button className="wa-icon-btn" title="Mais opções">
-            <MoreVertical size={18} onClick={() => setShowContactPanel(true)} />
+      <section className="wa-conversation-column">
+        <header className="wa-chat-header wa-center-chat-header">
+          <button
+            type="button"
+            className="wa-mobile-back"
+            onClick={onBack}
+            title="Voltar"
+          >
+            <ArrowLeft size={20} />
           </button>
-        </div>
-      </header>
-
-      {showContactPanel && (
-        <aside className="wa-contact-panel">
-          <div className="wa-contact-panel-head">
-            <span>Dados do contato</span>
-            <button
-              type="button"
-              className="wa-icon-btn"
-              onClick={() => setShowContactPanel(false)}
-              title="Fechar"
-            >
-              <X size={18} />
-            </button>
-          </div>
-
-          <div className="wa-contact-profile">
-            <div className="wa-contact-avatar">
-              {chat.avatar_url &&
-              !isWhatsAppCdnUrl(chat.avatar_url) &&
-              !avatarError ? (
-                <img
-                  src={chat.avatar_url}
-                  alt=""
-                  className="wa-avatar-img"
-                  onError={() => setAvatarError(true)}
-                />
-              ) : chat.is_group ? (
-                <Users size={30} />
-              ) : (
-                <span>{getInitial(chatName)}</span>
-              )}
-            </div>
-            {editingName ? (
-              <div className="wa-contact-edit">
-                <input
-                  value={contactNameDraft}
-                  onChange={(e) => setContactNameDraft(e.target.value)}
-                  className="wa-contact-input"
-                  autoFocus
-                />
-                <button
-                  type="button"
-                  className="wa-contact-save"
-                  onClick={saveContactName}
-                  disabled={savingContact}
-                >
-                  {savingContact ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <Save size={14} />
-                  )}
-                  Salvar
-                </button>
-              </div>
-            ) : (
-              <>
-                <h3>{chatName}</h3>
-                <button
-                  type="button"
-                  className="wa-contact-edit-btn"
-                  onClick={() => setEditingName(true)}
-                >
-                  Editar nome do lead
-                </button>
-              </>
-            )}
-          </div>
-
-          <div className="wa-contact-fields">
+          <div className="wa-chat-header-profile">
+            <Avatar
+              chat={chat}
+              name={chatName}
+              avatarError={avatarError}
+              onAvatarError={() => setAvatarError(true)}
+              size="small"
+            />
             <div>
-              <span>CRM</span>
-              <strong>
-                {crmLead
-                  ? `Vinculado: ${crmLead.name || crmLead.phone}`
-                  : 'Nao vinculado'}
-              </strong>
-            </div>
-            {crmTags.length > 0 && (
-              <div>
-                <span>Tags</span>
-                <div className="wa-contact-tags">
-                  {crmTags.map((tag) => (
-                    <b key={tag}>{tag}</b>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div>
+              <strong>{chatName}</strong>
               <span>
-                {chat.platform === 'instagram' ? 'Instagram' : 'WhatsApp'}
+                {chat.platform === 'instagram'
+                  ? 'Instagram'
+                  : `WhatsApp · ${chatPhone}`}
               </span>
-              <strong>
-                {chatPhone ||
-                  (chat.platform === 'instagram'
-                    ? 'Instagram'
-                    : 'Telefone nao identificado')}
-              </strong>
             </div>
-            <div>
-              <span>Plataforma</span>
-              <strong className={`wa-platform-text-${chat.platform}`}>
-                {chat.platform === 'instagram' ? 'Instagram' : 'WhatsApp'}
-              </strong>
-            </div>
-            <div>
-              <span>Origem</span>
-              <strong>
-                {chat.is_group
-                  ? 'Grupo'
-                  : chat.platform === 'instagram'
-                    ? 'Direct Message'
-                    : 'Conversa individual'}
-              </strong>
-            </div>
-            {chat.platform === 'whatsapp' && instanceName && (
-              <div>
-                <span>Instancia</span>
-                <strong>{instanceName}</strong>
-              </div>
-            )}
-            {chat.platform === 'instagram' &&
-              chat.instagram_account_username && (
-                <div>
-                  <span>Conta</span>
-                  <strong>@{chat.instagram_account_username}</strong>
-                </div>
-              )}
           </div>
-
-          <div className="wa-contact-section">
-            <span className="wa-contact-section-title">Atendimento</span>
-            <label className="wa-contact-select-label">
-              Responsavel
+          <div className="wa-lead-header-meta">
+            <div>
+              <span>Lead</span>
+              <strong>🔥 {leadTemperature(crmLead?.classification)}</strong>
+            </div>
+            <label>
+              <span>Responsável</span>
               <select
-                className="wa-contact-select"
                 value={selectedAssignee}
                 onChange={(event) => setSelectedAssignee(event.target.value)}
-                disabled={
-                  crmActionLoading ||
-                  chat.is_group ||
-                  !rawPhone ||
-                  chat.platform === 'instagram'
-                }
+                onBlur={() => selectedAssignee && void transfer()}
+                disabled={!rawPhone || crmActionLoading}
               >
-                <option value="">Selecionar responsavel</option>
+                <option value="">Sem responsável</option>
                 {assignees.map((assignee) => (
                   <option key={assignee.id} value={assignee.id}>
                     {assignee.name}
@@ -618,263 +432,529 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             </label>
             <button
               type="button"
-              className="wa-contact-action primary"
-              onClick={transferAttendance}
-              disabled={
-                crmActionLoading ||
-                chat.is_group ||
-                !rawPhone ||
-                !selectedAssignee ||
-                chat.platform === 'instagram'
-              }
+              className="wa-header-panel-toggle"
+              onClick={() => setIsLeadPanelOpen((prev) => !prev)}
+              title="Detalhes do lead"
             >
-              <ArrowRightLeft size={16} />
-              Transferir atendimento
+              <PanelRight size={20} />
             </button>
           </div>
+        </header>
 
-          {!chat.is_group && rawPhone && chat.platform === 'whatsapp' && (
-            <div className="wa-contact-tag-editor">
+        <div className="wa-interest-strip">
+          <House size={20} />
+          <div>
+            <span>Interesse principal</span>
+            <strong>
+              {crmProperty?.title ||
+                crmLead?.ai_last_intent ||
+                'Imóvel ainda não definido'}
+            </strong>
+          </div>
+          {crmLead?.budget ? <b>até {formatMoney(crmLead.budget)}</b> : null}
+        </div>
+
+        <div
+          className="wa-messages"
+          ref={messagesContainerRef}
+          onScroll={() => {
+            const node = messagesContainerRef.current;
+            if (node)
+              setShowScrollDown(
+                node.scrollHeight - node.scrollTop - node.clientHeight > 200
+              );
+          }}
+        >
+          {loading ? (
+            <div className="wa-messages-loading">
+              <Loader2 size={24} className="animate-spin" /> Carregando
+              mensagens...
+            </div>
+          ) : null}
+          {!loading && groupedMessages.length === 0 ? (
+            <div className="wa-messages-empty">
+              <p>Nenhuma mensagem nesta conversa.</p>
+              <span>Envie a primeira mensagem para iniciar o atendimento.</span>
+            </div>
+          ) : null}
+          {groupedMessages.map((group) => (
+            <React.Fragment key={group.date}>
+              <div className="wa-date-divider">
+                <span>{group.date}</span>
+              </div>
+              {group.messages.map((message) => (
+                <MessageBubble
+                  key={`${message.platform}-${message.id}`}
+                  message={message}
+                  isGroup={chat.is_group}
+                  chatDisplayName={chatName}
+                />
+              ))}
+            </React.Fragment>
+          ))}
+          <div ref={messagesEndRef} />
+          {showScrollDown ? (
+            <button
+              className="wa-scroll-down"
+              onClick={() =>
+                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+              }
+            >
+              <ArrowDown size={18} />
+            </button>
+          ) : null}
+        </div>
+
+        <div className="wa-quick-message-row">
+          {QUICK_MESSAGES.map((item) => (
+            <button
+              type="button"
+              key={item.label}
+              onClick={() => handleQuickAction(item)}
+            >
+              <item.icon size={15} />
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        <form className="wa-composer wa-composer-whatsapp" onSubmit={submitMessage}>
+          {pendingFile ? (
+            <div className="wa-file-chip">
+              <Paperclip size={14} />
+              <span>{pendingFile.name}</span>
+              <button type="button" onClick={() => setPendingFile(null)}>
+                <X size={14} />
+              </button>
+            </div>
+          ) : null}
+          
+          <div className="wa-composer-inner">
+            <div className="wa-composer-left">
+              <div className="wa-emoji-wrap">
+                <button
+                  type="button"
+                  onClick={() => setShowEmojis((value) => !value)}
+                  title="Emoji"
+                  className="wa-icon-btn"
+                >
+                  <Smile size={24} />
+                </button>
+                {showEmojis ? (
+                  <div className="wa-emoji-menu">
+                    {EMOJIS.map((emoji) => (
+                      <button
+                        type="button"
+                        key={emoji}
+                        onClick={() => {
+                          setInputText((value) => `${value}${emoji}`);
+                          setShowEmojis(false);
+                        }}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                onClick={() => openFilePicker('*/*')}
+                title="Anexar arquivo"
+                className="wa-icon-btn"
+              >
+                <Plus size={24} />
+              </button>
               <input
+                ref={fileInputRef}
+                type="file"
+                hidden
+                onChange={(event) =>
+                  setPendingFile(event.target.files?.[0] || null)
+                }
+              />
+            </div>
+            
+            <div className="wa-composer-input-wrap">
+              <textarea
+                value={inputText}
+                onChange={(event) => setInputText(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    void submitMessage();
+                  }
+                }}
+                placeholder="Mensagem"
+                rows={1}
+              />
+              <button
+                type="button"
+                className="wa-ai-button-inline"
+                onClick={() =>
+                  setInputText(
+                    crmLead?.ai_next_action ||
+                      'Olá! Separei uma sugestão personalizada para você. Posso enviar os detalhes?'
+                  )
+                }
+                title="Sugerir mensagem com IA"
+              >
+                <Sparkles size={18} />
+              </button>
+            </div>
+
+            <div className="wa-composer-right">
+              <button
+                type="submit"
+                className="wa-send-btn active"
+                disabled={sendingMessage || (!inputText.trim() && !pendingFile)}
+              >
+                {sendingMessage ? (
+                  <Loader2 size={24} className="animate-spin" />
+                ) : (
+                  <Send size={24} />
+                )}
+              </button>
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <aside className="wa-contact-panel wa-lead-panel">
+        <div className="wa-contact-panel-head">
+          <span>Dados do lead</span>
+          <Check size={16} />
+        </div>
+        <details className="wa-lead-card wa-accordion">
+          <summary>
+            <span>Resumo do lead</span>
+            <ChevronDown size={16} className="wa-accordion-icon" />
+          </summary>
+          <div className="wa-accordion-content wa-lead-identity">
+            <div className="wa-lead-profile-row">
+            <Avatar
+              chat={chat}
+              name={chatName}
+              avatarError={avatarError}
+              onAvatarError={() => setAvatarError(true)}
+              size="large"
+            />
+            <div>
+              {editingName ? (
+                <div className="wa-inline-edit">
+                  <input
+                    value={contactNameDraft}
+                    onChange={(event) =>
+                      setContactNameDraft(event.target.value)
+                    }
+                    autoFocus
+                  />
+                  <button type="button" onClick={saveContactName}>
+                    {savingContact ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Save size={14} />
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="wa-lead-name"
+                  onClick={() => setEditingName(true)}
+                >
+                  {crmLead?.name || chatName}
+                </button>
+              )}
+              <span>💬 {chatPhone}</span>
+              {crmLead?.email ? (
+                <span>
+                  <Mail size={13} /> {crmLead.email}
+                </span>
+              ) : null}
+              {preferenceLocation ? (
+                <span>
+                  <MapPin size={13} /> {preferenceLocation}
+                </span>
+              ) : null}
+            </div>
+          </div>
+          <button
+            type="button"
+            className="wa-outline-button"
+            onClick={() =>
+              crmLead
+                ? navigate(
+                    `${isRural ? '/rural/crm' : '/urban/crm'}?leadId=${crmLead.id}`
+                  )
+                : void ensureLead()
+            }
+          >
+            {crmLead ? 'Ver no CRM' : 'Vincular ao CRM'}
+          </button>
+          <div className="wa-lead-metrics">
+            <div>
+              <span>Funil</span>
+              <strong>{crmLead?.status || 'Novo lead'}</strong>
+            </div>
+            <div>
+              <span>Temperatura</span>
+              <strong className="hot">
+                🔥 {leadTemperature(crmLead?.classification)}
+              </strong>
+            </div>
+            <div>
+              <span>Score</span>
+              <strong className="score">
+                {crmLead?.lead_score ?? crmLead?.qualification_score ?? 0}{' '}
+                pontos
+              </strong>
+            </div>
+          </div>
+          <div className="wa-panel-tags">
+            <span>Tags</span>
+            <div>
+              {crmTags.map((tag) => (
+                <b key={tag}>{tag}</b>
+              ))}
+              <button
+                type="button"
+                onClick={() => document.getElementById('wa-tag-input')?.focus()}
+              >
+                <Plus size={13} />
+              </button>
+            </div>
+            <div className="wa-tag-entry">
+              <input
+                id="wa-tag-input"
                 value={tagDraft}
                 onChange={(event) => setTagDraft(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') {
                     event.preventDefault();
-                    addCrmTag();
+                    void addTag();
                   }
                 }}
-                placeholder="Nova tag"
-                disabled={crmActionLoading}
+                placeholder="Adicionar tag"
               />
               <button
                 type="button"
-                className="wa-icon-btn"
-                onClick={addCrmTag}
-                disabled={crmActionLoading || !tagDraft.trim()}
-                title="Adicionar tag"
+                onClick={() => void addTag()}
+                disabled={!tagDraft.trim() || crmActionLoading}
               >
-                <Tag size={16} />
+                Adicionar
               </button>
             </div>
-          )}
+          </div>
+          </div>
+        </details>
 
-          <div className="wa-contact-actions-grid">
-            <button
-              type="button"
-              className="wa-contact-action"
-              onClick={linkContactToCrm}
-              disabled={
-                crmActionLoading ||
-                chat.is_group ||
-                !rawPhone ||
-                chat.platform === 'instagram'
-              }
-            >
-              <UserRound size={16} />
-              {crmLead ? 'Atualizar CRM' : 'Vincular ao CRM'}
-            </button>
-            <button
-              type="button"
-              className="wa-contact-action"
-              onClick={addCrmTag}
-              disabled={
-                crmActionLoading ||
-                chat.is_group ||
-                !rawPhone ||
-                !tagDraft.trim() ||
-                chat.platform === 'instagram'
-              }
-            >
-              <Tag size={16} />
-              Adicionar tag
-            </button>
-            <button
-              type="button"
-              className="wa-contact-action"
-              onClick={createCrmTask}
-              disabled={
-                crmActionLoading ||
-                chat.is_group ||
-                !rawPhone ||
-                chat.platform === 'instagram'
-              }
-            >
-              <Clock3 size={16} />
-              Criar tarefa
-            </button>
-            <button
-              type="button"
-              className="wa-contact-action"
-              onClick={markCrmPriority}
-              disabled={
-                crmActionLoading ||
-                chat.is_group ||
-                !rawPhone ||
-                chat.platform === 'instagram'
-              }
-            >
-              <ShieldCheck size={16} />
-              Marcar prioridade
-            </button>
+        <details className="wa-lead-card wa-accordion">
+          <summary>
+            <span><CalendarDays size={16} /> Próxima ação</span>
+            <ChevronDown size={16} className="wa-accordion-icon" />
+          </summary>
+          <div className="wa-accordion-content wa-next-action">
+            <strong>
+              {crmLead?.ai_next_action ||
+                pendingTasks[0]?.title ||
+                'Responder e qualificar o atendimento'}
+            </strong>
+            <span>
+              {pendingTasks[0]
+                ? formatDueDate(pendingTasks[0].due_at)
+                : 'Sem prazo definido'}
+            </span>
+            <b>Em andamento</b>
           </div>
-        </aside>
-      )}
+        </details>
 
-      {/* Messages Area */}
-      <div
-        className="wa-messages"
-        ref={messagesContainerRef}
-        onScroll={handleScroll}
-        id="messages-container"
-      >
-        {loading ? (
-          <div className="wa-messages-loading">
-            <Loader2 size={24} className="animate-spin" />
-            <span>Carregando mensagens...</span>
-          </div>
-        ) : visibleMessages.length === 0 ? (
-          <div className="wa-messages-empty">
-            <p>Nenhuma mensagem nesta conversa</p>
-          </div>
-        ) : (
-          groupedMessages.map((group) => (
-            <div key={group.date}>
-              <div className="wa-date-divider">
-                <span>{group.date}</span>
+        <details className="wa-lead-card wa-accordion">
+          <summary>
+            <span><House size={16} /> Imóvel de interesse</span>
+            <ChevronDown size={16} className="wa-accordion-icon" />
+          </summary>
+          <div className="wa-accordion-content">
+            {crmProperty ? (
+            <div className="wa-property-summary">
+              {propertyImage ? (
+                <img src={propertyImage} alt="" />
+              ) : (
+                <div className="wa-property-placeholder">
+                  <Building2 size={22} />
+                </div>
+              )}
+              <div>
+                <strong>{crmProperty.title}</strong>
+                <span>
+                  {[crmProperty.neighborhood, crmProperty.city]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
+                <b>
+                  {formatMoney(crmProperty.price || crmProperty.rental_value)}
+                </b>
               </div>
-              {group.msgs.map((msg) => {
-                const key = msg.id || msg.message_id;
-                return (
-                  <MessageBubble
-                    key={key}
-                    message={msg}
-                    isGroup={chat.is_group}
-                    chatDisplayName={chatName}
-                    onOpenDetails={() => setShowContactPanel(true)}
-                  />
-                );
-              })}
-            </div>
-          ))
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Scroll Down Button */}
-      {showScrollDown && (
-        <button className="wa-scroll-down" onClick={scrollToBottom}>
-          <ArrowDown size={18} />
-        </button>
-      )}
-
-      {/* Input Area */}
-      <form
-        className="wa-input-area"
-        onSubmit={handleSubmit}
-        id="message-input-form"
-      >
-        <button
-          type="button"
-          className="wa-icon-btn"
-          title="Emoji"
-          onClick={() => toast.info('Seletor de Emojis em breve')}
-        >
-          <Smile size={22} />
-        </button>
-        <button
-          type="button"
-          className="wa-icon-btn"
-          title="Anexar"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Paperclip size={22} />
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          className="hidden"
-          accept="image/*,audio/*,video/*,application/pdf,.pdf,.doc,.docx,.xls,.xlsx"
-          onChange={(event) => handleFileSelect(event.target.files?.[0])}
-        />
-        <div className="wa-input-wrapper">
-          {pendingFile && (
-            <div className="wa-file-chip">
-              {fileIconFor(pendingFile)}
-              <span>
-                <strong>{pendingFile.name}</strong>
-                <small>{formatFileSize(pendingFile.size)}</small>
-              </span>
               <button
                 type="button"
-                onClick={clearPendingFile}
-                title="Remover arquivo"
-                disabled={sendingMessage}
+                onClick={() =>
+                  navigate(isRural ? '/rural/properties' : '/urban/properties')
+                }
               >
-                <X size={14} />
+                Ver imóvel
               </button>
             </div>
-          )}
-          <textarea
-            className="wa-message-input"
-            placeholder={
-              pendingFile ? 'Legenda opcional...' : 'Digite uma mensagem...'
-            }
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={sendingMessage}
-            rows={1}
-            id="message-input"
-          />
-        </div>
-        <button
-          type="submit"
-          className={`wa-send-btn ${inputText.trim() || pendingFile ? 'active' : ''}`}
-          disabled={sendingMessage || (!inputText.trim() && !pendingFile)}
-          title="Enviar"
-        >
-          {sendingMessage ? (
-            <Loader2 size={20} className="animate-spin" />
           ) : (
-            <Send size={20} />
+            <button
+              type="button"
+              className="wa-empty-property"
+              onClick={() =>
+                navigate(isRural ? '/rural/properties' : '/urban/properties')
+              }
+            >
+              <Plus size={15} /> Selecionar imóvel
+            </button>
           )}
-        </button>
-      </form>
+          </div>
+        </details>
+
+        <details className="wa-lead-card wa-accordion">
+          <summary>
+            <span><CheckSquare2 size={16} /> Tarefas ({crmTasks.length})</span>
+            <ChevronDown size={16} className="wa-accordion-icon" />
+          </summary>
+          <div className="wa-accordion-content wa-task-list">
+            {crmTasks.length ? (
+              crmTasks.slice(0, 3).map((task) => (
+                <label
+                  key={task.id}
+                  className={task.status === 'completed' ? 'completed' : ''}
+                >
+                  <input
+                    type="checkbox"
+                    checked={task.status === 'completed'}
+                    onChange={() => void toggleTask(task)}
+                  />
+                  <span>
+                    {task.title}
+                    <small>{formatDueDate(task.due_at)}</small>
+                  </span>
+                </label>
+              ))
+            ) : (
+              <span className="wa-panel-empty">Nenhuma tarefa cadastrada.</span>
+            )}
+          </div>
+        </details>
+
+        <details className="wa-lead-card wa-accordion">
+          <summary>
+            <span>Ações rápidas</span>
+            <ChevronDown size={16} className="wa-accordion-icon" />
+          </summary>
+          <div className="wa-accordion-content wa-panel-action-grid">
+            <button type="button" onClick={() => void createTask()}>
+              <ClipboardList size={15} /> Criar tarefa
+            </button>
+            <button
+              type="button"
+              onClick={() => void createTask(`Agendar visita com ${chatName}`)}
+            >
+              <CalendarDays size={15} /> Agendar visita
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setInputText(
+                  'Separei um imóvel que pode combinar com você. Posso enviar os detalhes?'
+                )
+              }
+            >
+              <House size={15} /> Enviar imóvel
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                document
+                  .querySelector<HTMLSelectElement>(
+                    '.wa-lead-header-meta select'
+                  )
+                  ?.focus()
+              }
+            >
+              <ArrowRightLeft size={15} /> Transferir atendimento
+            </button>
+          </div>
+        </details>
+
+        <section className="wa-insight-card">
+          <header>
+            <Bot size={17} /> IA · Insight
+          </header>
+          <p>
+            {crmLead?.ai_last_intent ||
+              'Use o histórico para qualificar orçamento, localização e prazo do lead.'}
+          </p>
+          <button
+            type="button"
+            onClick={() =>
+              setInputText(
+                crmLead?.ai_next_action ||
+                  'Posso preparar algumas opções compatíveis com o que você procura?'
+              )
+            }
+          >
+            Aplicar sugestão
+          </button>
+        </section>
+        {instanceName ? (
+          <span className="wa-instance-footnote">
+            Atendimento via {instanceName}
+          </span>
+        ) : null}
+      </aside>
     </main>
   );
 };
 
-export default ChatWindow;
+function Avatar({
+  chat,
+  name,
+  avatarError,
+  onAvatarError,
+  size,
+}: {
+  chat: UnifiedChat;
+  name: string;
+  avatarError: boolean;
+  onAvatarError: () => void;
+  size: 'small' | 'large';
+}) {
+  const canShowImage =
+    chat.avatar_url && !isWhatsAppCdnUrl(chat.avatar_url) && !avatarError;
+  return (
+    <div className={`wa-smart-avatar ${size}`}>
+      {canShowImage ? (
+        <img src={chat.avatar_url} alt="" onError={onAvatarError} />
+      ) : chat.is_group ? (
+        <Users size={size === 'large' ? 28 : 20} />
+      ) : (
+        <span>{getInitial(name)}</span>
+      )}
+      <i />
+    </div>
+  );
+}
 
 function isRenderableMessage(message: UnifiedMessage) {
-  const content = (message.content || '').trim();
-  const hasMedia = Boolean(
+  if (message.type !== 'text') return true;
+  return Boolean(
+    (message.content || '').trim() ||
     message.media_url ||
     message.media_id ||
     message.media_filename ||
     message.media_status === 'pending'
   );
-  return message.type !== 'text' || content || hasMedia;
 }
 
-function fileIconFor(file: File) {
-  if (file.type.startsWith('image/')) return <ImageIcon size={18} />;
-  if (file.type.startsWith('audio/')) return <FileAudio size={18} />;
-  if (file.type.startsWith('video/')) return <FileVideo size={18} />;
-  return <FileText size={18} />;
-}
-
-function formatFileSize(size: number) {
-  if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
-  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function getPhoneFromJid(jid: string) {
-  if (String(jid || '').includes('@g.us') || String(jid || '').includes('@lid'))
-    return '';
-  const raw = String(jid || '')
-    .split('@')[0]
-    .replace(/\D/g, '');
-  return isValidBrazilianPhone(raw) ? formatPhone(raw) : '';
-}
+export default ChatWindow;

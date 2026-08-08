@@ -45,11 +45,11 @@ const GlobalSettings: React.FC = () => {
   const fetchSettings = async () => {
     try {
       const [{ data }, masterStatus, { data: byobData }] = await Promise.all([
-        supabase.from('saas_settings').select('*').single(),
+        supabase.from('saas_settings').select('*').maybeSingle(),
         oruloService.getMasterCredentials().catch(() => ({
           configured: false,
         })),
-        supabase.from('reseller_infrastructure').select('*').single(),
+        supabase.from('reseller_infrastructure').select('*').maybeSingle(),
       ]);
 
       if (data) setSettings(data);

@@ -4,6 +4,9 @@ import axios from 'axios';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
 import { getOrgAIConfig } from './helpers.js';
+import { AgentOrchestrator } from '../../services/ai/agentOrchestrator.js';
+import { buildAgentSystemPrompt } from '../../services/ai/agentPrompt.js';
+import { ConversationSimulator } from '../../services/ai/conversationSimulator.js';
 
 const router = Router();
 
@@ -67,38 +70,10 @@ async function generateLayoutWithAI(provider, apiKey, prompt, niche) {
 }
 
 function buildMemorySystemPrompt(agent, recentHistory) {
-  const historyBlock = recentHistory?.length
-    ? `\nHistorico recente da conversa:\n${recentHistory.map((m) => `[${m.role.toUpperCase()}]: ${m.content}`).join('\n')}\n`
-    : '\n(Inicio da conversa - nenhum historico ainda)\n';
-
-  return `Voce e ${agent.name || 'um agente WooTech Imob'}, ${agent.role || 'atendente imobiliario'}.
-
-PERSONALIDADE: ${agent.personality || 'Consultiva, clara e objetiva'}
-
-INSTRUCOES: ${agent.instructions || 'Atenda com foco em qualificar o lead'}
-
-ESTILO: ${agent.response_style || 'consultivo'}
-
-CAPACIDADES: ${(agent.capabilities || []).join(', ') || 'Atendimento, Qualificacao, CRM'}
-
-FERRAMENTAS DISPONIVEIS: ${(agent.tools || []).join(', ') || 'WhatsApp, Kanban, CRM'}
-
-NIVEL DE AUTONOMIA: ${agent.autonomy_level || 2} (1=Assistido, 2=Semiautonomo, 3=Autonomo)
-
-REGRAS DE TRANSFERENCIA: ${
-    Object.entries(agent.handoff_rules || {})
-      .filter(([, v]) => v)
-      .map(([k]) => k)
-      .join(', ') || 'Nenhuma'
-  }
-
-${historyBlock}
-
-REGRAS IMPORTANTES:
-- NUNCA repita perguntas que ja foram respondidas no historico acima.
-- Se ja tiver as informacoes do lead, avance na conversa.
-- Mantenha o contexto e nao pergunte a mesma coisa duas vezes.
-- Responda em portugues natural, como um corretor humano faria.`;
+  return buildAgentSystemPrompt(agent, {
+    history: recentHistory,
+    channel: 'WhatsApp',
+  });
 }
 
 router.post('/generate-page', verifyAuth, requireTenant, async (req, res) => {
@@ -144,7 +119,8 @@ router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
 
   try {
     const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
-    const hasGemini = geminiKey && !geminiKey.includes('YOUR_') && geminiKey.length >= 20;
+    const hasGemini =
+      geminiKey && !geminiKey.includes('YOUR_') && geminiKey.length >= 20;
 
     if (!hasGemini) {
       throw new Error(
@@ -183,7 +159,8 @@ router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
 
       if (!groqKey) {
         return res.status(503).json({
-          error: 'Nenhum provedor de IA disponivel. Configure GEMINI_API_KEY ou GROQ_API_KEY no .env do servidor.',
+          error:
+            'Nenhum provedor de IA disponivel. Configure GEMINI_API_KEY ou GROQ_API_KEY no .env do servidor.',
           details: {
             gemini: hasGemini ? 'configured but failed' : 'not configured',
             groq: groqKey ? 'configured' : 'not configured',
@@ -220,15 +197,15 @@ router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
         'Groq Fallback Error:',
         groqError.response?.data || groqError.message
       );
-      return res
-        .status(503)
-        .json({
-          error: 'Falha em todos os provedores de IA. Verifique as chaves de API no .env do servidor.',
-          details: {
-            gemini_error: geminiError.message,
-            groq_error: groqError.response?.data?.error?.message || groqError.message,
-          },
-        });
+      return res.status(503).json({
+        error:
+          'Falha em todos os provedores de IA. Verifique as chaves de API no .env do servidor.',
+        details: {
+          gemini_error: geminiError.message,
+          groq_error:
+            groqError.response?.data?.error?.message || groqError.message,
+        },
+      });
     }
   }
 });
@@ -300,73 +277,99 @@ router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
 
     let reply = '';
 
-    try {
-      if (provider === 'gemini' || !provider) {
-        const geminiResponse = await axios.post(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-          {
-            contents: [{ parts: [{ text: message }] }],
-            generationConfig: { temperature: 0.7 },
-            systemInstruction: systemInstruction
-              ? { parts: [{ text: systemInstruction }] }
-              : undefined,
-          }
+    // Agentes com ferramentas configuradas usam o orquestrador (ReAct/function
+    // calling) no chat de teste, para a conversa se comportar igual ao WhatsApp.
+    const hasActiveTools =
+      Array.isArray(agent?.tools) && agent.tools.length > 0;
+    if ((provider === 'gemini' || !provider) && hasActiveTools) {
+      try {
+        const orchestrator = new AgentOrchestrator(apiKey || null);
+        const autonomousReply = await orchestrator.processAgentConversation({
+          content: message,
+          organizationId: req.orgId,
+          agent,
+          history: recentHistory,
+          leadId: null,
+        });
+        if (autonomousReply) reply = autonomousReply;
+      } catch (orchestratorError) {
+        console.warn(
+          '[AgentChat] Orquestrador indisponivel, usando fluxo padrao:',
+          orchestratorError.message
         );
-        reply =
-          geminiResponse.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      } else if (provider === 'openai') {
-        const openaiResponse = await axios.post(
-          'https://api.openai.com/v1/chat/completions',
-          {
-            model: 'gpt-4o',
-            messages: [
-              { role: 'system', content: systemInstruction },
-              ...(recentHistory || []).map((m) => ({
-                role: m.role === 'assistant' ? 'assistant' : 'user',
-                content: m.content,
-              })),
-              { role: 'user', content: message },
-            ],
-            temperature: 0.7,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-        reply = openaiResponse.data.choices?.[0]?.message?.content || '';
       }
-    } catch (aiError) {
-      console.warn(
-        '[AgentChat] Primary AI failed, trying Groq:',
-        aiError.message
-      );
-      let groqKey = config?.groq?.apiKey || process.env.GROQ_API_KEY;
-      if (groqKey) {
-        const groqResponse = await axios.post(
-          'https://api.groq.com/openai/v1/chat/completions',
-          {
-            model: 'llama-3.3-70b-versatile',
-            messages: [
-              { role: 'system', content: systemInstruction },
-              ...(recentHistory || []).map((m) => ({
-                role: m.role === 'assistant' ? 'assistant' : 'user',
-                content: m.content,
-              })),
-              { role: 'user', content: message },
-            ],
-            temperature: 0.7,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${groqKey}`,
-              'Content-Type': 'application/json',
+    }
+
+    if (!reply) {
+      try {
+        if (provider === 'gemini' || !provider) {
+          const geminiResponse = await axios.post(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+            {
+              contents: [{ parts: [{ text: message }] }],
+              generationConfig: { temperature: 0.7 },
+              systemInstruction: systemInstruction
+                ? { parts: [{ text: systemInstruction }] }
+                : undefined,
+            }
+          );
+          reply =
+            geminiResponse.data.candidates?.[0]?.content?.parts?.[0]?.text ||
+            '';
+        } else if (provider === 'openai') {
+          const openaiResponse = await axios.post(
+            'https://api.openai.com/v1/chat/completions',
+            {
+              model: 'gpt-4o',
+              messages: [
+                { role: 'system', content: systemInstruction },
+                ...(recentHistory || []).map((m) => ({
+                  role: m.role === 'assistant' ? 'assistant' : 'user',
+                  content: m.content,
+                })),
+                { role: 'user', content: message },
+              ],
+              temperature: 0.7,
             },
-          }
+            {
+              headers: {
+                Authorization: `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+          reply = openaiResponse.data.choices?.[0]?.message?.content || '';
+        }
+      } catch (aiError) {
+        console.warn(
+          '[AgentChat] Primary AI failed, trying Groq:',
+          aiError.message
         );
-        reply = groqResponse.data.choices?.[0]?.message?.content || '';
+        let groqKey = config?.groq?.apiKey || process.env.GROQ_API_KEY;
+        if (groqKey) {
+          const groqResponse = await axios.post(
+            'https://api.groq.com/openai/v1/chat/completions',
+            {
+              model: 'llama-3.3-70b-versatile',
+              messages: [
+                { role: 'system', content: systemInstruction },
+                ...(recentHistory || []).map((m) => ({
+                  role: m.role === 'assistant' ? 'assistant' : 'user',
+                  content: m.content,
+                })),
+                { role: 'user', content: message },
+              ],
+              temperature: 0.7,
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${groqKey}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+          reply = groqResponse.data.choices?.[0]?.message?.content || '';
+        }
       }
     }
 
@@ -397,6 +400,45 @@ router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+router.post(
+  '/agents/:id/simulate',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const supabase = getSupabaseServer();
+      const { id } = req.params;
+      const { seed_message, turns = 6, session_id } = req.body;
+      const organizationId = req.orgId;
+
+      const { data: agent, error: agentError } = await supabase
+        .from('ai_agents')
+        .select('*')
+        .eq('id', id)
+        .eq('organization_id', organizationId)
+        .maybeSingle();
+
+      if (agentError || !agent) {
+        return res.status(404).json({ error: 'Agente nao encontrado.' });
+      }
+
+      const simulator = new ConversationSimulator();
+      const result = await simulator.run({
+        agent,
+        organizationId,
+        seedMessage: seed_message || 'oi',
+        turns: Math.min(Number(turns) || 6, 12),
+        sessionId: session_id,
+      });
+
+      res.json({ ...result, agent: { name: agent.name, role: agent.role } });
+    } catch (error) {
+      console.error('[AgentSimulate] Erro:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
 
 router.get(
   '/agents/:id/memory',

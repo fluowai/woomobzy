@@ -6,7 +6,6 @@ import {
   TextBlockConfig,
   ImageBlockConfig,
   CTABlockConfig,
-  FormBlockConfig,
   PropertyGridBlockConfig,
   BlockType,
 } from '../../types';
@@ -46,7 +45,7 @@ export const PropertiesPanel: React.FC = () => {
 
   const renderConfigFields = () => {
     switch (selectedBlock.type) {
-      case BlockType.HERO:
+      case BlockType.HERO: {
         const heroConfig = selectedBlock.config as HeroBlockConfig;
         return (
           <>
@@ -74,60 +73,18 @@ export const PropertiesPanel: React.FC = () => {
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-2">
-                Imagem de Fundo (URL)
+                Texto do CTA
               </label>
               <input
                 type="text"
-                value={heroConfig.backgroundImage}
-                onChange={(e) =>
-                  updateConfig({ backgroundImage: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-2">
-                Opacidade do Overlay: {heroConfig.overlayOpacity}
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                value={heroConfig.overlayOpacity}
-                onChange={(e) =>
-                  updateConfig({ overlayOpacity: parseFloat(e.target.value) })
-                }
-                className="w-full"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-2">
-                Altura (px)
-              </label>
-              <input
-                type="number"
-                value={heroConfig.height}
-                onChange={(e) =>
-                  updateConfig({ height: parseInt(e.target.value) })
-                }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-2">
-                Texto do Botão
-              </label>
-              <input
-                type="text"
-                value={heroConfig.ctaText || ''}
+                value={heroConfig.ctaText}
                 onChange={(e) => updateConfig({ ctaText: e.target.value })}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
               />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-2">
-                Link do Botão
+                Link do CTA
               </label>
               <input
                 type="text"
@@ -138,8 +95,9 @@ export const PropertiesPanel: React.FC = () => {
             </div>
           </>
         );
+      }
 
-      case BlockType.TEXT:
+      case BlockType.TEXT: {
         const textConfig = selectedBlock.config as TextBlockConfig;
         return (
           <>
@@ -180,8 +138,9 @@ export const PropertiesPanel: React.FC = () => {
             </div>
           </>
         );
+      }
 
-      case BlockType.IMAGE:
+      case BlockType.IMAGE: {
         const imageConfig = selectedBlock.config as ImageBlockConfig;
         return (
           <>
@@ -221,8 +180,9 @@ export const PropertiesPanel: React.FC = () => {
             </div>
           </>
         );
+      }
 
-      case BlockType.CTA:
+      case BlockType.CTA: {
         const ctaConfig = selectedBlock.config as CTABlockConfig;
         return (
           <>
@@ -274,8 +234,9 @@ export const PropertiesPanel: React.FC = () => {
             </div>
           </>
         );
+      }
 
-      case BlockType.PROPERTY_GRID:
+      case BlockType.PROPERTY_GRID: {
         const gridConfig = selectedBlock.config as PropertyGridBlockConfig;
         return (
           <>
@@ -335,6 +296,7 @@ export const PropertiesPanel: React.FC = () => {
             </div>
           </>
         );
+      }
 
       default:
         return (
@@ -423,7 +385,9 @@ export const PropertiesPanel: React.FC = () => {
         <PropertySelectorModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          selectedIds={(selectedBlock.config as PropertyGridBlockConfig).propertyIds || []}
+          selectedIds={
+            (selectedBlock.config as PropertyGridBlockConfig).propertyIds || []
+          }
           onSave={(ids) => {
             updateConfig({ propertyIds: ids });
           }}

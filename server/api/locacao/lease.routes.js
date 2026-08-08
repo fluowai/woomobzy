@@ -4,11 +4,23 @@
  */
 import { Router } from 'express';
 import { z } from 'zod';
+import { logger } from '../../utils/logger.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
 
 import { isValidUUID } from '../../lib/shared-utils.js';
+
+const MIGRATION_MSG =
+  'Execute a migration 20260730_fix_all_production_errors.sql no Supabase.';
+
+function handleTableError(error) {
+  return (
+    error?.code === '42P01' ||
+    error?.code === 'PGRST205' ||
+    error?.message?.includes('does not exist')
+  );
+}
 
 const router = Router();
 
@@ -83,7 +95,13 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
       totalPages: Math.ceil((count || 0) / parseInt(limit)),
     });
   } catch (error) {
-    console.error('[LeaseRoutes] List error:', error);
+    logger.error('[LeaseRoutes] List error:', error);
+    if (handleTableError(error)) {
+      return res.status(503).json({
+        error: `Tabela rental_contracts não existe. ${MIGRATION_MSG}`,
+        migration_required: true,
+      });
+    }
     res.status(500).json({ error: error.message });
   }
 });
@@ -124,7 +142,13 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
 
     res.status(201).json({ success: true, data });
   } catch (error) {
-    console.error('[LeaseRoutes] Create error:', error);
+    logger.error('[LeaseRoutes] Create error:', error);
+    if (handleTableError(error)) {
+      return res.status(503).json({
+        error: `Tabela rental_contracts ou lease_history não existe. ${MIGRATION_MSG}`,
+        migration_required: true,
+      });
+    }
     res.status(500).json({ error: error.message });
   }
 });
@@ -150,7 +174,13 @@ router.get('/:id', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true, data });
   } catch (error) {
-    console.error('[LeaseRoutes] Get error:', error);
+    logger.error('[LeaseRoutes] Get error:', error);
+    if (handleTableError(error)) {
+      return res.status(503).json({
+        error: `Tabela rental_contracts não existe. ${MIGRATION_MSG}`,
+        migration_required: true,
+      });
+    }
     res.status(500).json({ error: error.message });
   }
 });
@@ -185,7 +215,13 @@ router.put('/:id', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true, data });
   } catch (error) {
-    console.error('[LeaseRoutes] Update error:', error);
+    logger.error('[LeaseRoutes] Update error:', error);
+    if (handleTableError(error)) {
+      return res.status(503).json({
+        error: `Tabela rental_contracts não existe. ${MIGRATION_MSG}`,
+        migration_required: true,
+      });
+    }
     res.status(500).json({ error: error.message });
   }
 });
@@ -209,7 +245,13 @@ router.delete('/:id', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('[LeaseRoutes] Delete error:', error);
+    logger.error('[LeaseRoutes] Delete error:', error);
+    if (handleTableError(error)) {
+      return res.status(503).json({
+        error: `Tabela rental_contracts não existe. ${MIGRATION_MSG}`,
+        migration_required: true,
+      });
+    }
     res.status(500).json({ error: error.message });
   }
 });
@@ -259,7 +301,13 @@ router.patch('/:id/status', verifyAuth, requireTenant, async (req, res) => {
 
     res.json({ success: true, data });
   } catch (error) {
-    console.error('[LeaseRoutes] Status error:', error);
+    logger.error('[LeaseRoutes] Status error:', error);
+    if (handleTableError(error)) {
+      return res.status(503).json({
+        error: `Tabela rental_contracts não existe. ${MIGRATION_MSG}`,
+        migration_required: true,
+      });
+    }
     res.status(500).json({ error: error.message });
   }
 });

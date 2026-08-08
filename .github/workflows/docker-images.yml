@@ -11,6 +11,10 @@ permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: docker-images-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -35,6 +39,18 @@ jobs:
             image: ghcr.io/fluowai/woomobzy-agro
             dockerfile: Dockerfile.agro
             deployment_alias: ghcr.io/fluowai/woomobzy-agro:latest
+          - name: instagram-service
+            image: ghcr.io/fluowai/woomobzy-instagram-service
+            dockerfile: Dockerfile.instagram-service
+            deployment_alias: ghcr.io/fluowai/woomobzy-instagram-service:latest
+          - name: instagram-worker
+            image: ghcr.io/fluowai/woomobzy-instagram-worker
+            dockerfile: Dockerfile.instagram-worker
+            deployment_alias: ghcr.io/fluowai/woomobzy-instagram-worker:latest
+          - name: coming-soon
+            image: ghcr.io/fluowai/inovebrokers-coming-soon
+            dockerfile: Dockerfile.coming-soon
+            deployment_alias: ghcr.io/fluowai/inovebrokers-coming-soon:latest
 
     steps:
       - name: Checkout
@@ -50,24 +66,54 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push ${{ matrix.name }}
+      - name: Build ${{ matrix.name }}
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ${{ matrix.dockerfile }}
-          push: true
-          tags: |
-            ${{ matrix.image }}:latest
-            ${{ matrix.image }}:${{ github.sha }}
-            ${{ matrix.deployment_alias }}
+          push: false
+          load: true
+          tags: ${{ matrix.image }}:${{ github.sha }}
           build-args: |
             VITE_API_URL=same-origin
             VITE_WHATSAPP_API_URL=/api/whatsapp
             VITE_WHATSAPP_WS_URL=/api/whatsapp/ws
-            VITE_MINIO_PUBLIC_URL=https://nb.consultio.com.br
+            VITE_MINIO_PUBLIC_URL=https://s.wootech.com.br
             VITE_SUPABASE_URL=runtime
             VITE_SUPABASE_ANON_KEY=runtime
             VITE_PANEL_URL=https://imob.wootech.com.br
+
+      - name: Push ${{ matrix.name }} (with retry)
+        shell: bash
+        env:
+          IMAGE: ${{ matrix.image }}
+          SHA_TAG: ${{ github.sha }}
+          ALIAS: ${{ matrix.deployment_alias }}
+        run: |
+          set -euo pipefail
+
+          tags=""
+          for tag in "$IMAGE:$SHA_TAG" "$IMAGE:latest" "$ALIAS"; do
+            case " $tags " in
+              *" $tag "*) continue ;;
+            esac
+            docker tag "$IMAGE:$SHA_TAG" "$tag"
+            tags="${tags} ${tag}"
+          done
+
+          for tag in $tags; do
+            attempt=0
+            until docker push "$tag"; do
+              attempt=$((attempt + 1))
+              if [ "$attempt" -ge 5 ]; then
+                echo "::error::failed to push ${tag} after 5 attempts (GHCR rate limit)"
+                exit 1
+              fi
+              echo "::warning::push ${tag} failed (attempt ${attempt}/5); retrying in $((attempt * 30))s"
+              sleep $((attempt * 30))
+            done
+            echo "pushed ${tag}"
+          done
 
   deploy-portainer:
     runs-on: ubuntu-latest

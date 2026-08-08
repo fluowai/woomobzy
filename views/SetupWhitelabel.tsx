@@ -186,7 +186,15 @@ const SetupWhitelabel: React.FC = () => {
 
           {/* STEP 1 */}
           {step === 1 && (
-            <div className="animate-fade-in space-y-6">
+            <form
+              id="setup-password-form"
+              className="animate-fade-in space-y-6"
+              noValidate
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSetPassword();
+              }}
+            >
               <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Key size={32} className="text-blue-600" />
@@ -208,6 +216,7 @@ const SetupWhitelabel: React.FC = () => {
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
+                    autoComplete="new-password"
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-purple-500 transition-colors"
                     placeholder="Mínimo 6 caracteres"
                   />
@@ -220,6 +229,7 @@ const SetupWhitelabel: React.FC = () => {
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
+                    autoComplete="new-password"
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-purple-500 transition-colors"
                     placeholder="Repita a senha"
                   />
@@ -227,7 +237,8 @@ const SetupWhitelabel: React.FC = () => {
               </div>
 
               <button
-                onClick={handleSetPassword}
+                type="submit"
+                form="setup-password-form"
                 disabled={loading}
                 className="w-full mt-6 bg-purple-600 text-white px-8 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-purple-700 transition-all disabled:opacity-70 shadow-lg shadow-purple-600/20"
               >
@@ -238,7 +249,7 @@ const SetupWhitelabel: React.FC = () => {
                 )}
                 {!loading && <ArrowRight size={18} />}
               </button>
-            </div>
+            </form>
           )}
 
           {/* STEP 2 */}

@@ -106,3 +106,15 @@ export const importLimiter = rateLimit({
     code: 'RATE_LIMIT_IMPORT',
   },
 });
+
+/** Licensing (ativação/validação/heartbeat): max 60 por IP por minuto */
+export const licensingLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: 'Limite de requisicoes de licenciamento atingido.',
+    code: 'RATE_LIMIT_LICENSING',
+  },
+});

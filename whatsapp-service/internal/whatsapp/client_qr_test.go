@@ -16,12 +16,41 @@ func TestPairingFailureMessageRecognizesTerminalErrors(t *testing.T) {
 	}
 
 	for _, event := range events {
-		message, ok := pairingFailureMessage(event)
-		if !ok {
+		message, _ := pairingFailureMessage(event)
+		if message == "" {
 			t.Fatalf("event %q was not recognized as a pairing failure", event)
 		}
+	}
+}
+
+func TestPairingFailureMessageMarksRecoverableErrors(t *testing.T) {
+	recoverable := []string{
+		whatsmeow.QRChannelTimeout.Event,
+		whatsmeow.QRChannelErrUnexpectedEvent.Event,
+	}
+	terminal := []string{
+		whatsmeow.QRChannelEventError,
+		whatsmeow.QRChannelClientOutdated.Event,
+		whatsmeow.QRChannelScannedWithoutMultidevice.Event,
+	}
+
+	for _, event := range recoverable {
+		message, isRecoverable := pairingFailureMessage(event)
 		if message == "" {
-			t.Fatalf("event %q returned an empty user-facing message", event)
+			t.Fatalf("event %q must be a recognized pairing failure", event)
+		}
+		if !isRecoverable {
+			t.Fatalf("event %q must be marked as recoverable", event)
+		}
+	}
+
+	for _, event := range terminal {
+		message, isRecoverable := pairingFailureMessage(event)
+		if message == "" {
+			t.Fatalf("event %q must be a recognized pairing failure", event)
+		}
+		if isRecoverable {
+			t.Fatalf("event %q must be marked as non-recoverable", event)
 		}
 	}
 }
@@ -33,7 +62,7 @@ func TestPairingFailureMessageIgnoresCodeAndSuccess(t *testing.T) {
 	}
 
 	for _, event := range events {
-		if message, ok := pairingFailureMessage(event); ok || message != "" {
+		if message, _ := pairingFailureMessage(event); message != "" {
 			t.Fatalf("event %q must not be handled as failure", event)
 		}
 	}

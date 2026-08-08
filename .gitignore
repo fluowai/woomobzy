@@ -30,6 +30,9 @@ dist-ssr
 *.sln
 *.sw?
 
+# Security scan reports (raw scanner output)
+security-reports/
+
 # Secrets backup
 *.secrets.md
 portainer-stack-*-filled.yml
@@ -56,7 +59,14 @@ traefik/acme.json
 # Test coverage
 coverage
 
+# Playwright generated artifacts
+playwright-report/
+test-results/
+
 # Backup files
 *.bak
 *.backup
 *.new
+
+# Supabase CLI temp download
+supabase/.temp/cli-latest

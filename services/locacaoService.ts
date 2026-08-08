@@ -4,25 +4,44 @@ import { callApi } from '../src/lib/api';
 export interface Contract {
   id?: string;
   property_id?: string;
+  property_title?: string;
   tenant_name: string;
   tenant_email?: string;
   tenant_phone?: string;
   tenant_cpf?: string;
   tenant_rg?: string;
-  start_date: string;
-  end_date: string;
+  start_date?: string;
+  end_date?: string;
   monthly_rent: number;
-  adjustment_index: string;
+  adjustment_index?: string;
   payment_status: 'em_dia' | 'atrasado' | 'inadimplente';
-  status: 'active' | 'expired' | 'terminated';
+  status:
+    | 'draft'
+    | 'cadastral_analysis'
+    | 'income_analysis'
+    | 'pending_signatures'
+    | 'active'
+    | 'suspended'
+    | 'terminated'
+    | 'expired'
+    | 'archived';
   guarantee_type?: string;
   guarantee_document?: string;
   observation?: string;
+  contract_number?: string;
+  due_day?: number;
+  condominium_fee?: number;
+  iptu_amount?: number;
+  late_fee_percent?: number;
+  late_interest_percent?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface DashboardResumo {
-  total_contratos: number;
+  total: number;
   ativos: number;
+  em_andamento: number;
   encerrados: number;
   receita_mensal: number;
   receita_anual: number;
@@ -30,8 +49,8 @@ export interface DashboardResumo {
   atrasados: number;
   em_dia: number;
   valor_inadimplencia: number;
-  contratos_vencendo_30_dias: number;
-  contratos_vencendo_90_dias: number;
+  vencendo_30_dias: number;
+  vencendo_90_dias: number;
 }
 
 export interface ReajusteResponse {
@@ -51,82 +70,112 @@ export class LocacaoService {
     status?: string;
     payment_status?: string;
     property_id?: string;
-  }): Promise<Contract[]> {
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    success: boolean;
+    data: Contract[];
+    count: number;
+    page: number;
+    totalPages: number;
+  }> {
     try {
       const params = new URLSearchParams();
       if (filters?.status) params.set('status', filters.status);
       if (filters?.payment_status)
         params.set('payment_status', filters.payment_status);
       if (filters?.property_id) params.set('property_id', filters.property_id);
+      if (filters?.search) params.set('search', filters.search);
+      if (filters?.page) params.set('page', String(filters.page));
+      if (filters?.limit) params.set('limit', String(filters.limit));
 
       const result = await callApi(
-        `/api/locacao${params.toString() ? '?' + params.toString() : ''}`
+        `/api/locacao/leases${params.toString() ? '?' + params.toString() : ''}`
       );
-      return result.data || [];
+      return result;
     } catch (error) {
       logger.error('Erro ao listar contratos:', error);
-      return [];
+      return { success: false, data: [], count: 0, page: 1, totalPages: 0 };
     }
   }
 
-  async getContract(id: string): Promise<Contract | null> {
+  async getContract(id: string): Promise<{ success: boolean; data: Contract }> {
     try {
-      const result = await callApi(`/api/locacao/${id}`);
-      return result.data || null;
+      const result = await callApi(`/api/locacao/leases/${id}`);
+      return result;
     } catch (error) {
       logger.error('Erro ao buscar contrato:', error);
-      return null;
+      return { success: false, data: {} as Contract };
     }
   }
 
-  async createContract(data: Partial<Contract>): Promise<Contract | null> {
+  async createContract(
+    data: Partial<Contract>
+  ): Promise<{ success: boolean; data: Contract }> {
     try {
-      const result = await callApi('/api/locacao', {
+      const result = await callApi('/api/locacao/leases', {
         method: 'POST',
         body: JSON.stringify(data),
       });
-      return result.data || null;
+      return result;
     } catch (error) {
       logger.error('Erro ao criar contrato:', error);
-      return null;
+      return { success: false, data: {} as Contract };
     }
   }
 
   async updateContract(
     id: string,
     data: Partial<Contract>
-  ): Promise<Contract | null> {
+  ): Promise<{ success: boolean; data: Contract }> {
     try {
-      const result = await callApi(`/api/locacao/${id}`, {
+      const result = await callApi(`/api/locacao/leases/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
-      return result.data || null;
+      return result;
     } catch (error) {
       logger.error('Erro ao atualizar contrato:', error);
-      return null;
+      return { success: false, data: {} as Contract };
     }
   }
 
-  async deleteContract(id: string): Promise<boolean> {
+  async deleteContract(id: string): Promise<{ success: boolean }> {
     try {
-      await callApi(`/api/locacao/${id}`, {
+      await callApi(`/api/locacao/leases/${id}`, {
         method: 'DELETE',
       });
-      return true;
+      return { success: true };
     } catch (error) {
       logger.error('Erro ao excluir contrato:', error);
-      return false;
+      return { success: false };
     }
   }
 
-  async getDashboard(): Promise<DashboardResumo | null> {
+  async getDashboard(): Promise<{ success: boolean; data: DashboardResumo }> {
     try {
       const result = await callApi('/api/locacao/dashboard/resumo');
-      return result.data || null;
+      return result;
     } catch (error) {
       logger.error('Erro ao buscar dashboard:', error);
-      return null;
+      return {
+        success: false,
+        data: {
+          total: 0,
+          ativos: 0,
+          em_andamento: 0,
+          encerrados: 0,
+          receita_mensal: 0,
+          receita_anual: 0,
+          inadimplentes: 0,
+          atrasados: 0,
+          em_dia: 0,
+          valor_inadimplencia: 0,
+          vencendo_30_dias: 0,
+          vencendo_90_dias: 0,
+        },
+      };
     }
   }
 
@@ -135,10 +184,12 @@ export class LocacaoService {
     indice?: string
   ): Promise<ReajusteResponse | null> {
     try {
-      const url = indice
-        ? `/api/locacao/calculo/reajuste/${id}?novo_indice=${indice}`
-        : `/api/locacao/calculo/reajuste/${id}`;
-      const result = await callApi(url);
+      const body: any = { lease_id: id };
+      if (indice) body.index = indice;
+      const result = await callApi('/api/locacao/adjustments/calculate', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
       return result.data || null;
     } catch (error) {
       logger.error('Erro ao calcular reajuste:', error);
@@ -153,13 +204,18 @@ export class LocacaoService {
       novo_aluguel?: number;
       novo_indice?: string;
     }
-  ): Promise<{ renewal: any; novo_aluguel: number } | null> {
+  ): Promise<{ success: boolean; data: any } | null> {
     try {
-      const result = await callApi(`/api/locacao/${id}/renovar`, {
+      const result = await callApi(`/api/locacao/terminations`, {
         method: 'POST',
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          lease_id: id,
+          termination_type: 'acordo',
+          termination_date: data.nova_data_fim,
+          reason: 'Renovação contratual',
+        }),
       });
-      return result.data || null;
+      return result;
     } catch (error) {
       logger.error('Erro ao renovar contrato:', error);
       return null;
@@ -173,13 +229,17 @@ export class LocacaoService {
       valor_pago: number;
       status: 'em_dia' | 'atrasado';
     }
-  ): Promise<Contract | null> {
+  ): Promise<{ success: boolean; data: any } | null> {
     try {
-      const result = await callApi(`/api/locacao/${id}/pagamento`, {
+      const result = await callApi(`/api/locacao/invoices/${id}/pay`, {
         method: 'PUT',
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          payment_date: data.data_pagamento,
+          paid_amount: data.valor_pago,
+          payment_method: 'manual',
+        }),
       });
-      return result.data || null;
+      return result;
     } catch (error) {
       logger.error('Erro ao registrar pagamento:', error);
       return null;

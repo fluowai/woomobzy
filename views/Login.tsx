@@ -88,12 +88,14 @@ const Login: React.FC = () => {
 
   if (user && profile) {
     const role = profile.role?.toLowerCase();
-    
+
     if (role === 'superadmin' || role === 'super_admin') {
       const isMegaAdmin = !profile.organization?.is_reseller;
-      return <Navigate to={isMegaAdmin ? "/megaadmin" : "/superadmin"} replace />;
+      return (
+        <Navigate to={isMegaAdmin ? '/megaadmin' : '/superadmin'} replace />
+      );
     }
-    
+
     if (profile.organization?.niche === 'rural') {
       return <Navigate to="/rural" replace />;
     } else if (profile.organization_id) {

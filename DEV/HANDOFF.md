@@ -1,5 +1,24 @@
 # Handoff
 
+## 2026-08-08 — RLS do módulo urban alinhada ao padrão CRM (fix do 403 no Simulador/Fintech) — APLICADO em produção
+
+- **Sintoma**: superadmin impersonando org (`91b29fed` — Enzo Imoveis) → `POST /rest/v1/urban_financing_simulations` → **403** ao salvar simulação no `/urban/simulador` (e `/urban/fintech`).
+- **Causa raiz (confirmada em `pg_policy`)**: tabelas do módulo urban com policy antiga `organization_id IN (SELECT organization_id FROM profiles WHERE id = auth.uid())` → com impersonação o frontend envia o org impersonado, mas `auth.uid()` real é o superadmin (outra org) → WITH CHECK bloqueia INSERT. Tabelas CRM (leads/properties) já usavam `get_my_org_id() OR is_superadmin()`.
+- **Mudanças no working tree (sem commit)**: `migrations/20260808_fix_urban_module_rls_superadmin.sql` (novo, **aplicado em produção** via `exec_sql` 20/20 OK), `scripts/run-migrations.mjs` (lista canônica), docs DEV.
+- **Verificação**: `pg_policy` direto — 9/9 policies do módulo urban com `is_superadmin()` em USING+WITH CHECK (urban_lots, key_control, condominiums, condominium_tickets, urban_documents, urban_portal_integrations, urban_portal_sync_logs, urban_financing_simulations, urban_property_favorites).
+- **Próxima ação (maestro)**: validar no navegador `/urban/simulador` (Salvar simulação) e `/urban/fintech` em sessão impersonada (Enzo Imoveis); depois decidir commit/push.
+- **Nota WhatsApp**: erro `no LID found for 5548988003260@s.whatsapp.net` é do whatsmeow (número não é usuário WhatsApp válido ou LID não sincronizado) — **não** é bug de código; sem mudança.
+- **Atenção**: working tree tem WIP de várias sessões — conferir `git status` antes de commit; change set desta sessão = 1 migration + `run-migrations.mjs` + docs DEV.
+
+## 2026-08-07 — WhatsApp Inbox: constraints UNIQUE aplicadas em produção (nenhuma mensagem aparecia)
+
+- **Sintoma**: instância conectada + realtime WS OK, mas o inbox não exibia mensagens novas.
+- **Causa raiz (confirmada no banco)**: `whatsapp_chats`/`whatsapp_contacts`/`whatsapp_messages` sem constraints UNIQUE → upserts `ON CONFLICT` falhavam com SQLSTATE 42P10 → `handleMessage` (`whatsapp-service/internal/whatsapp/client.go:724`) abortava antes de salvar e emitir `new_message` (evidência em `whatsapp-service/run_stderr.txt`). A migração `20260531_align_whatsapp_schema.sql` (linhas ~163 e ~337) nunca foi aplicada integralmente em produção.
+- **Mudanças**: `migrations/20260807_add_whatsapp_upsert_constraints.sql` (novo) — dedup defensivo + 3 UNIQUE constraints idempotentes (`chats(instance_id,chat_jid)`, `contacts(instance_id,phone)`, `messages(instance_id,message_id)`). **Aplicado em produção** via conexão direta em transação → OK. Verificado: `pg_constraint` 3/3 + teste transacional (ROLLBACK) dos upserts sem 42P10.
+- **Nenhuma mudança de código/rebuild** — o `whatsapp-service.exe` em execução (PID 19956) foi buildado de `C:/Users/paulo/AppData/Local/Temp/opencode/wasvc-copy/` e pode continuar rodando.
+- **Próxima ação (maestro)**: enviar/receber uma mensagem de teste na instância conectada e conferir que aparece no inbox em tempo real; depois conferir `run_stderr.txt` sem novos 42P10. Se aparecer, fechar o ticket.
+- **Atenção**: working tree tem WIP de várias sessões (refactor de remoção do Instagram sem commit) — conferir `git status`; change set desta sessão = 1 migration + docs DEV. Nenhum commit/push.
+
 ## 2026-08-07 — RPC `match_properties_to_lead` corrigida (400 na aba Matches) e APLICADA em produção
 
 - **Sintoma**: `match_properties_to_lead` → **400** no LeadDetailsModal. Causas: função referenciando colunas inexistentes (`p.bedrooms`, `p.area`) e contrato de saída divergente (`id`/`match_score` vs `property_id`/`score`/`reasons`).

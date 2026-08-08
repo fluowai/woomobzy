@@ -1,5 +1,26 @@
 # Verificação
 
+## 2026-08-08 — RLS do módulo urban alinhada ao padrão CRM (fix do 403 no Simulador/Fintech)
+
+- **Sintoma**: superadmin impersonando org (`91b29fed` — Enzo Imoveis) → `POST /rest/v1/urban_financing_simulations` → **403** ao salvar simulação no `/urban/simulador` (e `/urban/fintech`).
+- **Causa raiz (confirmada em `pg_policy`)**: as tabelas do módulo urban usavam `organization_id IN (SELECT organization_id FROM profiles WHERE id = auth.uid())` — quando o superadmin impersona, o frontend envia o `organization_id` da org impersonada, mas o `auth.uid()` real é o superadmin (outra org) → WITH CHECK bloqueia o INSERT. Tabelas CRM já usam `get_my_org_id() OR is_superadmin()`.
+- **Fix aplicado em produção** (`epgaftsjmqmpczvzsrcc`): `migrations/20260808_fix_urban_module_rls_superadmin.sql` via `exec_sql` → **20/20 statements OK** (helpers `get_my_org_id`/`is_superadmin` garantidos + 9 policies recriadas com `USING`/`WITH CHECK` no padrão CRM).
+- **Evidência (SQL direto `pg_policy`)**: 9/9 policies do módulo urban com `is_superadmin()` em USING e WITH CHECK: `urban_lots`, `key_control`, `condominiums`, `condominium_tickets`, `urban_documents`, `urban_portal_integrations`, `urban_portal_sync_logs`, `urban_financing_simulations`, `urban_property_favorites`.
+- **Gates**: aplicação + verificação contra o banco de produção; `node --check scripts/run-migrations.mjs` ✓.
+- **Pendente (maestro)**: validar no navegador `/urban/simulador` (Salvar simulação) e `/urban/fintech` em sessão impersonada; depois decisão de commit/push.
+
+## 2026-08-07 — WhatsApp Inbox: constraints UNIQUE adicionadas em produção (fix do 42P10)
+
+- **Sintoma**: instância conectada + WS realtime OK, mas nenhuma mensagem aparecia no front.
+- **Causa raiz (confirmada no banco)**: `whatsapp_chats`, `whatsapp_contacts`, `whatsapp_messages` **sem nenhuma** constraint UNIQUE em `pg_constraint` (`[]`) → `ON CONFLICT` dos repos → SQLSTATE 42P10 (`Failed to upsert contact/chat` em `whatsapp-service/run_stderr.txt`) → `handleMessage` abortava antes de salvar/emitir `new_message`.
+- **Fix aplicado em produção** (`epgaftsjmqmpczvzsrcc`): `migrations/20260807_add_whatsapp_upsert_constraints.sql` via conexão direta em transação → **OK** (migration rodou; tabelas estavam vazias, dedup defensivo incluso).
+- **Evidência (SQL direto)**:
+  - `pg_constraint` → 3/3 presentes: `whatsapp_chats_instance_chat_jid_key UNIQUE(instance_id, chat_jid)`, `whatsapp_contacts_instance_phone_key UNIQUE(instance_id, phone)`, `whatsapp_messages_instance_message_id_key UNIQUE(instance_id, message_id)`.
+  - Teste transacional (ROLLBACK) dos upserts exatos de `chat_repo.go`/`contact_repo.go`/`message_repo.go` → **sem 42P10**.
+  - Duplicatas/nulls antes do fix: `0` linhas nas 3 tabelas (sem backfill necessário).
+- **Gates**: aplicação + verificação feitas contra o banco de produção; nenhuma mudança de código (fix é só schema).
+- **Pendente (maestro)**: mensagem de teste real na instância conectada → conferir que aparece no inbox em tempo real; acompanhar `run_stderr.txt` por novos 42P10.
+
 ## 2026-08-07 — RPC `match_properties_to_lead` corrigida e APLICADA em produção
 
 - **Sintoma**: `POST /rest/v1/rpc/match_properties_to_lead` → **400** ao abrir a aba "Matches" do LeadDetailsModal.

@@ -1,5 +1,36 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-08] RLS do módulo urban alinhada ao padrão CRM (fix do 403 no Simulador/Fintech)
+
+- **Sintoma (maestro)**: com impersonação de superadmin ativa ("Enzo Imoveis", org `91b29fed`), salvar simulação no `/urban/simulador` e `/urban/fintech` → **403** em `POST /rest/v1/urban_financing_simulations`.
+- **Causa raiz (confirmada em `pg_policy`)**: as tabelas do módulo urban (criadas em `20260620_urban_operations_modules.sql`) usavam policy `organization_id IN (SELECT organization_id FROM profiles WHERE id = auth.uid())`. Com impersonação o frontend envia o org impersonado no INSERT, mas `auth.uid()` real é o superadmin (perfil com outra org/null) → WITH CHECK rejeita. As tabelas CRM (leads/properties, `20260618_consolidate_crm_rls.sql`) já usavam `get_my_org_id() OR is_superadmin()`.
+- **Correção**: `migrations/20260808_fix_urban_module_rls_superadmin.sql` (novo) — garante helpers `get_my_org_id`/`is_superadmin` e recria 9 policies do módulo urban no padrão CRM com `USING`+`WITH CHECK`. Adicionada à lista canônica de `scripts/run-migrations.mjs`.
+- **Aplicado em produção** (`epgaftsjmqmpczvzsrcc`) via `exec_sql`: **20/20 statements OK**.
+- **Verificação (SQL direto `pg_policy`)**: 9/9 policies com `is_superadmin()` em USING e WITH CHECK — `urban_lots`, `key_control`, `condominiums`, `condominium_tickets`, `urban_documents`, `urban_portal_integrations`, `urban_portal_sync_logs`, `urban_financing_simulations`, `urban_property_favorites`.
+- **Nota WhatsApp**: `no LID found for 5548988003260@s.whatsapp.net` é rejeição do whatsmeow (`send.go:344`) — número não é usuário WhatsApp válido para envio (LID não resolvido); **sem** correção de código.
+- **Pendente (maestro)**: validar no navegador `/urban/simulador` e `/urban/fintech` em sessão impersonada; decidir commit/push. Nenhum commit/push executado.
+
+## [2026-08-07] Fix do 500 em leads + 400 em email/accounts no modo suporte (impersonação de superadmin)
+
+- **Sintoma (maestro)**: com impersonação ativa (superadmin em "Enzo Imoveis"), `GET /api/crm/leads` retornava **500** em todos os status do Kanban e `POST /api/email/accounts` retornava **400**.
+- **Causa raiz (confirmada)**: ambos derivavam de `req.orgId = null` no servidor. Sessão de impersonação tem TTL fixo de 15 min e **nada a renovava**; ao expirar, o client limpava a sessão (`getStoredImpersonationSession`) e as chamadas saíam **sem headers** `x-impersonation-session-*`. O `verifyAuth` então caía no ramo de superadmin sem org (auth.js:207-210) → `req.orgId = null`; o `requireTenant` tinha bypass de superadmin mantendo `null` (tenant.js) → qualquer `.eq('organization_id', null)` quebrava no PostgREST (`invalid input syntax for type uuid: "null"`) → 500 (leads) / 400 (email via `error.statusCode || 400`). Reproduzido 1:1 por script (orgId válido → OK; null → erro exato). Profile do superadmin `df587a67` tem `organization_id=null`.
+- **Correção (renew + guarda)**:
+  1. `server/lib/impersonation-session.js`: `assertValidImpersonationSession` agora **renova** `expires_at`/`last_seen_at` (janela deslizante) quando falta < 5 min (`RENEW_THRESHOLD_MS`).
+  2. `server/middleware/auth.js`: resposta de requisições impersonadas inclui header `x-impersonation-session-expires-at`.
+  3. `src/lib/api.ts` + `src/lib/impersonation.ts`: client lê o header e **sincroniza a expiração armazenada** (`syncImpersonationSessionExpiry`) em `callApi`/`downloadApiFile`.
+  4. `server/middleware/tenant.js`: superadmin **sem** org resolvida agora recebe **403 limpo** (`TENANT_REQUIRED`, mensagem orientando a iniciar o modo suporte) em vez de seguir com `null` → acaba o erro cifrado do PostgREST.
+- **Verificação**: `npm run type-check` ✓; `npm run lint` ✓ (0 erros; warnings pré-existentes); `vitest src/test/impersonationSession.test.ts` → **6/6** (2 novos testes de renewal); `node --check` nos 3 arquivos server ✓.
+- **Pendente (maestro)**: reiniciar o backend (3002) para carregar as mudanças server; validar no navegador o Kanban e a criação de conta de e-mail com impersonação ativa por > 15 min (deve continuar funcionando sem renovar manualmente). Nenhum commit/push.
+
+## [2026-08-07] WhatsApp Inbox: nenhuma mensagem aparecia — constraints UNIQUE ausentes no banco (42P10)
+
+- **Sintoma (maestro)**: instância WhatsApp conectada e WS realtime OK, mas nenhuma mensagem aparecia no front.
+- **Causa raiz (confirmada no banco)**: `whatsapp_chats`, `whatsapp_contacts` e `whatsapp_messages` não tinham **nenhuma** constraint UNIQUE em produção (`pg_constraint` = `[]`). Todos os `ON CONFLICT (instance_id, chat_jid)`, `(instance_id, phone)` e `(instance_id, message_id)` dos repos falhavam com SQLSTATE 42P10; `handleMessage` (`client.go:724`) retornava antes de salvar a mensagem → nada persistia nem era emitido `new_message` (stderr mostrava `Failed to upsert contact/chat`).
+- **Correção**: `migrations/20260807_add_whatsapp_upsert_constraints.sql` (nova) — dedup defensivo (tabelas estavam vazias) + 3 UNIQUE constraints idempotentes (`whatsapp_chats_instance_chat_jid_key`, `whatsapp_contacts_instance_phone_key`, `whatsapp_messages_instance_message_id_key`).
+- **Aplicado em produção** (`epgaftsjmqmpczvzsrcc`) via conexão direta em transação: **OK**. Constraints verificadas em `pg_constraint` (3/3 presentes).
+- **Verificação**: simulação transacional (ROLLBACK) dos 3 upserts exatos → **OK sem 42P10**.
+- **Pendente (maestro)**: enviar/receber uma mensagem de teste na instância conectada e conferir que ela aparece no front em tempo real. Sem restart do whatsapp-service (fix é só schema). Nenhum commit/push.
+
 ## [2026-08-07] Fix do RPC `match_properties_to_lead` (400 na aba "Matches" do LeadDetailsModal)
 
 - **Sintoma (maestro)**: ao abrir o detalhe de um lead, o console mostrava `POST /rest/v1/rpc/match_properties_to_lead 400 (Bad Request)`.

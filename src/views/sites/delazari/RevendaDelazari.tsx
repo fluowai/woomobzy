@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Menu, X, CheckCircle2, ArrowRight, Home, Users, MessageSquare, 
-  FileText, TrendingUp, Key, BarChart3, Smartphone, Clock, Building
+  FileText, TrendingUp, Key, BarChart3, Smartphone, Clock, Building, Instagram
 } from 'lucide-react';
 
 const INOVE_URL = "https://inovebrokers.com.br/";

@@ -1,5 +1,31 @@
 # Verificação
 
+## 2026-08-10 — Superadmin de revenda → painel errado (Mega em vez de Super) ✓
+
+- **Causa**: `AuthContext.tsx:241` carregava `organization` apenas para não-superadmin → `profile.organization` `undefined` para superadmin → `NicheRedirect.tsx:47`/`MegaAdminGuard`/`MegaAdminLayout:69` não enxergavam `is_reseller`.
+- **Fix**: org agora carregada para qualquer perfil com `organization_id`, inclusive superadmin.
+- **Evidência**: `suporte@alexandredelazari.com.br` = role `superadmin`, org `Delazari Imóveis` com `is_reseller: true` (via service role) → após fix roteia para `/superadmin`. Superadmin sem org (mega admin) segue em `/megaadmin`. `type-check` ✓; eslint ✓ (0 errors).
+- **Pendente (maestro)**: deploy do frontend e validação com login real.
+
+## 2026-08-10 — WhatsApp "no LID found" no envio — fix definitivo ✓
+
+- **Causa**: whatsmeow exige LID para DM (`send.go:329-352`); `GetLIDForPN` vazio + `GetUserInfo` full sem LID → `no LID found` → 400. `IsOnWhatsApp` (usync query) aquece o store (`PutManyLIDMappings`) mas só era chamado no `EnsureDirectChat`.
+- **Fix**: `whatsapp-service/internal/whatsapp/media.go` → `Client.ResolveSendJID` (resolve LID via store + `IsOnWhatsApp` para PN canônico) aplicado em `SendTextMessage` e `SendMediaMessage`; exe rebuildado e commitado.
+- **Evidência**: `go build` ✓, `go vet` ✓, `go test ./...` ✓ (cmd/server, handlers, whatsapp, phone) — via cópia ASCII `Temp\opencode\wasvc-lidwarm`.
+- **Commit**: `fb9f623` (enviado p/ `codex/main-whatsapp-media-hotfix`).
+- **Pendente (maestro)**: reimplantar `whatsapp-service` em produção e validar envio ao número antes com LID ausente.
+
+## 2026-08-10 — CI PR #1752 — teste licensing timeout ✓
+
+- **Causa**: `licensing-admin-service.test.ts:813` fazia `dns.lookup` real (timeout 8s) → >5s no GitHub Actions → Vitest timeout.
+- **Fix**: mock de `node:dns/promises` no teste (`dnsVerified: false` preservado).
+- **Evidência**: `npm test` ✓ 36 arquivos / 256 testes. Commit `6bbd26b`, push ✓.
+- **Pendente**: revisão/rebase da PR pelo maestro.
+
+## 2026-08-10 — Sync working tree ✓
+
+- Commit `7b40813` (127 arquivos) + push. Arquivos com secrets (`stack-wootech-imob-prod-portainer.yml`) e temp scripts (`.tmp-*.mjs`) adicionados ao `.gitignore` — nunca serão commitados.
+
 ## 2026-08-09 — Wizard de Locação: auto-save 400 "Dados inválidos" — corrigido ✓
 
 - **Causa**: `PUT /api/locacao/leases/:id` recebia o `lease` inteiro com `null`/`""`/`NaN`/`due_day: 0`; schema zod rejeitava (`.optional()` não aceita `null`/`""`).

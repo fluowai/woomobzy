@@ -238,7 +238,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         } else {
           setIsImpersonating(false);
 
-          if (finalProfile.organization_id && profileData.role !== 'superadmin') {
+          if (finalProfile.organization_id) {
             if (!orgError && orgData) {
               finalProfile.organization = orgData;
             } else if (orgError) {

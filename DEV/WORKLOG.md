@@ -1,5 +1,35 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-10] Superadmin de revenda direcionado ao Mega Admin em vez do Super Admin — CORRIGIDO
+
+- **Solicitação (maestro)**: `suporte@alexandredelazari.com.br` (superadmin, revenda `Delazari Imóveis`) acessava `/megaadmin` em vez de `/superadmin`.
+- **Causa raiz**: `context/AuthContext.tsx:241` condicionava `finalProfile.organization = orgData` a `role !== 'superadmin'` → superadmins nunca tinham `organization` no perfil → `NicheRedirect.tsx:47` (`!profile.organization?.is_reseller`) enviava todos para `/megaadmin`; `MegaAdminGuard`/`MegaAdminLayout:69` também não detectavam revenda.
+- **Fix**: remover a exclusão de superadmin na condição → org carregada para qualquer perfil com `organization_id`. RLS já cobria (`is_superadmin()` full access em organizations).
+- **Gates**: dados confirmados via service role; `npm run type-check` ✓; eslint `context/AuthContext.tsx` ✓ (0 errors; 1 warning pré-existente). Sem commit/push.
+
+## [2026-08-10] WhatsApp "no LID found" no envio — FIX DEFINITIVO: warm-up de LID via IsOnWhatsApp + JID canônico
+
+- **Solicitação (maestro)**: console de produção `POST /api/whatsapp/messages/:id/send` → **400** `O WhatsApp nao autorizou o envio para este numero neste momento (conta sem identificador LID valido)` (erro amigável do `friendlySendError`).
+- **Causa raiz**: whatsmeow exige **LID** para DM (`send.go:329-352`): busca `GetLIDForPN` no store e, se vazio, consulta `GetUserInfo` (usync **full**) que **não devolve LID** para alguns números → `no LID found` (erro amigável 400). Porém `IsOnWhatsApp` (usync **query**, `user.go:184-230`) **devolve e persiste** o mapeamento (`PutManyLIDMappings`). O warm-up só existia no `EnsureDirectChat` (criação de chat), não no envio — chats existentes com JID não-canônico/sem mapeamento continuavam falhando.
+- **Fix aplicado (commit `fb9f623`, enviado p/ `codex/main-whatsapp-media-hotfix`)**:
+  - `whatsapp-service/internal/whatsapp/media.go` — novo `Client.ResolveSendJID(ctx, chatJID)`: se JID é `@s.whatsapp.net`, verifica `Store.LIDs.GetLIDForPN`; se ausente, chama `IsOnWhatsApp` (aquece store) e retorna o **PN canônico** retornado pelo WhatsApp. Grupos/LIDs retornam inalterados. Usado em `SendTextMessage` e `SendMediaMessage` antes do `SendMessage`.
+  - `whatsapp-service/whatsapp-service.exe` rebuildado (commitado, ~48.2MB).
+- **Gates**: `go build ./...` ✓, `go vet ./...` ✓, `go test ./...` ✓ (cmd/server, handlers, whatsapp, phone) — build/test via cópia ASCII `Temp\opencode\wasvc-lidwarm` (acento no path).
+- **Pendente (maestro)**: **reimplantar o whatsapp-service** em produção com o exe novo (o erro veio de produção; serviço não roda local nesta máquina). Validar envio para o número antes com LID ausente e para um contato normal.
+
+## [2026-08-10] CI PR #1752 — teste licensing timeout 5s — CORRIGIDO (mock DNS)
+
+- **Falha**: `server/__tests__/licensing-admin-service.test.ts:813` `binds the domain to the license and organization` → **test timed out in 5000ms** no GitHub Actions (passava local).
+- **Causa raiz**: o teste chama `bindDomainToLicenseViaSetupToken` → `linkDomainToOrganization` → `checkDnsRecord` (`server/domainService.js:175`) faz **`dns.lookup` real com timeout de 8s**. Em CI o lookup de `meucliente.com.br` demora >5s → estoura o timeout do Vitest. Localmente o DNS responde rápido.
+- **Fix (commit `6bbd26b`)**: mock de `node:dns/promises` no teste (lookup resolve imediato com IPs fora da plataforma → `dnsVerified: false` preservado).
+- **Gates**: `npm test` ✓ **36 arquivos / 256 testes** (antes 255; 1 falha). Push p/ `codex/main-whatsapp-media-hotfix` ✓.
+
+## [2026-08-10] Sync working tree — commit `7b40813` (127 arquivos) + push
+
+- **Solicitação (maestro)**: "envia tudo pro git". Commit único com todo o working tree (WhatsApp media hotfix, lease/DNO, Meta Lead Ads, templates de site, migrations, impersonation, etc.).
+- **Segurança**: varredura pré-commit por segredos nos arquivos novos — só referências a env vars, sem chaves hardcoded.
+- **Detectado pós-commit**: `stack-wootech-imob-prod-portainer.yml` (com secrets reais de produção) e `.tmp-run-rpc-sql.mjs` surgiram **não rastreados** → adicionados ao `.gitignore` (stack de secrets + temp scripts) para nunca serem commitados.
+
 ## [2026-08-09] Wizard de Locação: auto-save 400 "Dados inválidos" em PUT /api/locacao/leases/:id — CORRIGIDO
 
 - **Solicitação (maestro)**: console mostrava loop de erros `PUT /api/locacao/leases/:id 400 (Bad Request)` + `Auto-save error: Dados inválidos` a cada 30s no `useLeaseWizard`.

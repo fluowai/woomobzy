@@ -37,6 +37,10 @@ security-reports/
 *.secrets.md
 portainer-stack-*-filled.yml
 portainer-stack-pronta-corrigida.yml
+stack-wootech-imob-prod-portainer.yml
+
+# Temp scripts
+.tmp-*.mjs
 
 # Debug files
 debug_scrape.html

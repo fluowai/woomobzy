@@ -1,5 +1,24 @@
 # Handoff
 
+## 2026-08-10 — Superadmin de revenda ia para o painel Mega Admin em vez do Super Admin — corrigido
+
+- **Solicitação (maestro)**: `suporte@alexandredelazari.com.br` (superadmin da revenda "Delazari Imóveis", org `e2403fc5-fabd-4715-a6e6-eae5d0603106`, `is_reseller: true`) ao acessar era direcionado para `/megaadmin` em vez de `/superadmin`.
+- **Causa raiz**: `context/AuthContext.tsx:241` só anexava `organization` ao perfil quando **`role !== 'superadmin'`**. Para superadmins, `profile.organization` ficava `undefined` → `NicheRedirect.tsx:47` (`!profile.organization?.is_reseller`) → sempre `/megaadmin`; `MegaAdminGuard`/`MegaAdminLayout` (que checam `organization.is_reseller`) também falhavam na detecção. RLS já permitia a leitura (`is_superadmin()`), então era só o frontend.
+- **Fix (working tree, sem commit)**: removida a exclusão de superadmin em `AuthContext.tsx:241` — a org agora é carregada para qualquer perfil com `organization_id` (superadmin incluído). Superadmins sem org (mega admin real `fluowai@gmail.com`, `organization_id: null`) continuam em `/megaadmin`; superadmin de revenda agora cai em `/superadmin`.
+- **Verificação**: dados confirmados via service role (perfil superadmin + org `is_reseller: true`); `npm run type-check` ✓; eslint no arquivo ✓ (0 errors, 1 warning pré-existente `exhaustive-deps`).
+- **Próxima ação (maestro)**: rebuild/deploy do frontend e login com `suporte@alexandredelazari.com.br` para validar o roteamento.
+
+## 2026-08-10 — WhatsApp "no LID found" no envio: fix definitivo commitado (aguarda deploy em produção)
+
+- **Solicitação (maestro)**: console de produção `POST /api/whatsapp/messages/:id/send` → **400** `O WhatsApp nao autorizou o envio para este numero neste momento (conta sem identificador LID valido)`.
+- **Causa raiz**: whatsmeow exige **LID** para DM (`send.go:329-352`). `GetLIDForPN` no store vazio + `GetUserInfo` (usync **full**) não devolve LID para alguns números → `no LID found`. `IsOnWhatsApp` (usync **query**) devolve e **persiste** o mapeamento (`PutManyLIDMappings`), mas o warm-up só existia no `EnsureDirectChat` (criação de chat) — o envio não aquece.
+- **Fix (commit `fb9f623`, push p/ `codex/main-whatsapp-media-hotfix`)**:
+  1. `whatsapp-service/internal/whatsapp/media.go` — `Client.ResolveSendJID(ctx, chatJID)`: para JID `@s.whatsapp.net`, resolve LID via store; se ausente, chama `IsOnWhatsApp` (aquece) e retorna o **PN canônico**; grupos/LIDs inalterados. Aplicado em `SendTextMessage` e `SendMediaMessage`.
+  2. `whatsapp-service/whatsapp-service.exe` rebuildado (commitado, ~48.2MB).
+- **Gates**: `go build` ✓, `go vet` ✓, `go test ./...` ✓ (via cópia ASCII `Temp\opencode\wasvc-lidwarm`).
+- **Próxima ação (maestro)**: **reimplantar o `whatsapp-service` em produção** (o erro é de prod; serviço não roda local nesta máquina) e validar envio para o número com LID ausente + contato normal.
+- **Também nesta sessão**: fix de CI (commit `6bbd26b`, mock DNS em `licensing-admin-service.test.ts` — `npm test` 36 arquivos/256 ✓) e sync do working tree (commit `7b40813`). Arquivos com secrets (`stack-wootech-imob-prod-portainer.yml`) e temp scripts (`.tmp-*.mjs`) agora no `.gitignore`.
+
 ## 2026-08-09 — Wizard de Locação: auto-save 400 "Dados inválidos" corrigido (pronto para revisão)
 
 - **Solicitação (maestro)**: console no `/urban/locacao/novo` com loop `PUT /api/locacao/leases/:id 400` + `Auto-save error: Dados inválidos` a cada 30s (`useLeaseWizard.ts:118`).

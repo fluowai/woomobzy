@@ -1,5 +1,12 @@
 # Verificação
 
+## 2026-08-10 — inovebrokers.com.br servindo "Em breve" em vez da landing Delazari — corrigido ✓
+
+- **Causa**: org Delazari (`e2403fc5`, `is_reseller: true`, slug com espaço final) sem `landing_pages`/`site_settings` → `PublicLandingPage` caía em `ComingSoon`. `RevendaDelazari` não estava mapeada no roteamento público.
+- **Fix**: `PublicLandingPage.tsx` → `isDelazariSite` (casa por `custom_domain` `inovebrokers.com.br`/slug trim/`activeSlug`) renderiza `<RevendaDelazari />`.
+- **Evidência**: DNS A ✓ (207.58.153.219); HTTPS 200 servindo SPA; RPC `get_tenant_by_any_domain('inovebrokers.com.br')` → org Delazari `domain_type=site`; `get_tenant_public('Delazari Imóveis ')` (com espaço) → org encontrada. `type-check` ✓; eslint ✓ (0 errors); `build` ✓.
+- **Pendente (maestro)**: deploy do frontend para validar a landing ao vivo.
+
 ## 2026-08-10 — Superadmin de revenda → painel errado (Mega em vez de Super) ✓
 
 - **Causa**: `AuthContext.tsx:241` carregava `organization` apenas para não-superadmin → `profile.organization` `undefined` para superadmin → `NicheRedirect.tsx:47`/`MegaAdminGuard`/`MegaAdminLayout:69` não enxergavam `is_reseller`.

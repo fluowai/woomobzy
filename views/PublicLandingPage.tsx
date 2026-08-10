@@ -13,6 +13,7 @@ import ComingSoon from '../components/ComingSoon';
 import PublicBlockRenderer from '../components/LandingPageBlocks/PublicBlockRenderer';
 import OkaPublicSite from './OkaPublicSite';
 import FazendasBrasilPublicSite from './FazendasBrasilPublicSite';
+import RevendaDelazari from '../src/views/sites/delazari/RevendaDelazari';
 
 interface PublicLandingPageProps {
   forceSlug?: string;
@@ -308,12 +309,23 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
     organization?.custom_domain === 'fazendasbrasil.com.br' ||
     organization?.custom_domain === 'www.fazendasbrasil.com.br';
 
+  const isDelazariSite =
+    organization?.custom_domain === 'inovebrokers.com.br' ||
+    organization?.custom_domain === 'www.inovebrokers.com.br' ||
+    organization?.slug?.trim().toLowerCase() === 'delazari imóveis' ||
+    organization?.slug?.trim().toLowerCase() === 'delazari imoveis' ||
+    activeSlug === 'delazari';
+
   if (isOkaSite) {
     return <OkaPublicSite organizationId={organization?.id} />;
   }
 
   if (isFazendasBrasilSite) {
     return <FazendasBrasilPublicSite organizationId={organization?.id} />;
+  }
+
+  if (isDelazariSite) {
+    return <RevendaDelazari />;
   }
 
   if ((forceComingSoon || (!isDirectLandingPage && !isLive)) && !isSiteOwner) {

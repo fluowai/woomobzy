@@ -1,5 +1,12 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-10] inovebrokers.com.br não apontava para a landing da revenda Delazari — CORRIGIDO
+
+- **Solicitação (maestro)**: site não aponta para `inovebrokers.com.br`; mesmo com o domínio no ar, não renderiza a landing.
+- **Causa raiz**: org Delazari (`e2403fc5`, slug `"Delazari Imóveis "` com espaço final) **sem `landing_pages`/`site_settings`** → `PublicLandingPage` resolvia a org mas caía no `ComingSoon` ("Em breve"). A landing dedicada `RevendaDelazari` só existia na rota `/delazari` (domínio do painel), não no roteamento público por domínio.
+- **Fix**: `views/PublicLandingPage.tsx` — `isDelazariSite` (por `custom_domain` `inovebrokers.com.br`/`www.`, slug trim `delazari imóveis`/`delazari imoveis` ou `activeSlug === 'delazari'`) → renderiza `<RevendaDelazari />` (mesmo padrão de OKA/FazendasBrasil).
+- **Gates**: type-check ✓; eslint ✓ (0 errors); build ✓. Sem commit/push.
+
 ## [2026-08-10] Superadmin de revenda direcionado ao Mega Admin em vez do Super Admin — CORRIGIDO
 
 - **Solicitação (maestro)**: `suporte@alexandredelazari.com.br` (superadmin, revenda `Delazari Imóveis`) acessava `/megaadmin` em vez de `/superadmin`.

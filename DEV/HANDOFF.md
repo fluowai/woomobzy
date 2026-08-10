@@ -1,5 +1,14 @@
 # Handoff
 
+## 2026-08-10 — inovebrokers.com.br ainda servia "Em breve"/SPA em vez da landing Delazari — landing mapeada
+
+- **Solicitação (maestro)**: `inovebrokers.com.br` não apontava para a landing da revenda Delazari.
+- **Diagnóstico**: DNS A OK (207.58.153.219); HTTPS 200 servindo o SPA ("WooTech Imob"). No cliente, `DomainRouter` resolve o domínio via `get_tenant_by_any_domain` → org Delazari (`e2403fc5`, `is_reseller: true`, slug `"Delazari Imóveis "` com **espaço final**) → `PublicLandingPage forceSlug`. Mas a org **não tem `landing_pages` nem `site_settings`** → caía no `ComingSoon` ("Em breve"). A landing dedicada `RevendaDelazari` (rota `/delazari`) não estava mapeada no `PublicLandingPage`.
+- **Fix (working tree, sem commit)**:
+  - `views/PublicLandingPage.tsx` — import `RevendaDelazari` + `isDelazariSite` (custom_domain `inovebrokers.com.br`/`www.`; slug trim `delazari imóveis`/`delazari imoveis`; `activeSlug === 'delazari'`) → renderiza `<RevendaDelazari />` antes do bloco `ComingSoon`. Segue o padrão de `OkaPublicSite`/`FazendasBrasilPublicSite`.
+- **Gates**: `npm run type-check` ✓; eslint nos 2 arquivos ✓ (0 errors, warnings pré-existentes); `npm run build` ✓.
+- **Próxima ação (maestro)**: rebuild/deploy do frontend em produção (`inovebrokers.com.br` deve renderizar a `RevendaDelazari`). Observação: `get_reseller_branding`/slug com espaço — a landing agora ignora o slug e casa por `custom_domain`.
+
 ## 2026-08-10 — Superadmin de revenda ia para o painel Mega Admin em vez do Super Admin — corrigido
 
 - **Solicitação (maestro)**: `suporte@alexandredelazari.com.br` (superadmin da revenda "Delazari Imóveis", org `e2403fc5-fabd-4715-a6e6-eae5d0603106`, `is_reseller: true`) ao acessar era direcionado para `/megaadmin` em vez de `/superadmin`.

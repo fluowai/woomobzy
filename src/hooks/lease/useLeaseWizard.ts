@@ -19,21 +19,22 @@ export function useLeaseWizard(existingLease?: Lease) {
     ...initialState,
     leaseId: existingLease?.id,
   });
-  const autoSaveTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const isDraftRef = useRef(false);
 
-  // Auto-save every 30 seconds if dirty
+  // Synchronous auto-save to localStorage on any change to prevent data loss
   useEffect(() => {
-    autoSaveTimer.current = setInterval(() => {
-      if (wizard.isDirty && wizard.leaseId) {
-        handleSaveDraft();
-      }
-    }, 30000);
-
-    return () => {
-      if (autoSaveTimer.current) clearInterval(autoSaveTimer.current);
-    };
-  }, [wizard.isDirty, wizard.leaseId, lease]);
+    if (Object.keys(lease).length > 0 || wizard.leaseId) {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          lease: lease,
+          currentStep: wizard.currentStep,
+          completedSteps: wizard.completedSteps,
+          leaseId: wizard.leaseId,
+        })
+      );
+    }
+  }, [lease, wizard.currentStep, wizard.completedSteps, wizard.leaseId]);
 
   // Restore draft from localStorage on mount (if no existing lease)
   useEffect(() => {

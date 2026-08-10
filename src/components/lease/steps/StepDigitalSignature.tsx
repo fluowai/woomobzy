@@ -11,9 +11,11 @@ import {
   User,
   Save,
   Loader2,
+  Link,
 } from 'lucide-react';
 import type { Lease, Signature } from '../../../types/lease';
 import { COMMERCIAL_PRODUCT_NAME } from '../../../../utils/branding';
+import { callApi } from '../../../lib/api';
 
 interface Props {
   lease: Partial<Lease>;
@@ -29,7 +31,7 @@ const SIGNERS = [
   { type: 'testemunha_2', label: 'Testemunha 2' },
 ] as const;
 
-export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
+export const StepDigitalSignature: React.FC<Props> = ({ lease, updateFields }) => {
   const [signers, setSigners] = useState<Partial<Signature>[]>([
     {
       signer_type: 'locador',
@@ -46,7 +48,7 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
       status: 'pending',
     },
   ]);
-  const [signatureMethod, setSignatureMethod] = useState('proprio');
+  const [signatureMethod, setSignatureMethod] = useState(lease.signature_method || 'woosign');
   const [sendMethod, setSendMethod] = useState('ambos');
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
@@ -54,9 +56,12 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
   useEffect(() => {
     if (!lease.id) return;
 
-    fetch(`/api/locacao/signatures/${lease.id}`)
-      .then((res) => res.json())
-      .then((res) => {
+    if (!lease.signature_method) {
+      updateFields({ signature_method: 'woosign' as any });
+    }
+
+    callApi(`/api/locacao/signatures/${lease.id}`)
+      .then((res: any) => {
         if (res.success && res.data && res.data.length > 0) {
           const saved = res.data.map((s: Signature) => ({
             ...s,
@@ -122,7 +127,7 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
       for (const signer of validSigners) {
         const existing = signers.find((s) => s.id === signer.id);
         if (existing?.id) {
-          await fetch(`/api/locacao/signatures/${existing.id}`, {
+          await callApi(`/api/locacao/signatures/${existing.id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -135,7 +140,7 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
             }),
           });
         } else {
-          const res = await fetch('/api/locacao/signatures', {
+          const res = await callApi('/api/locacao/signatures', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -147,13 +152,12 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
               signer_cpf: signer.signer_cpf,
               status: 'pending',
             }),
-          });
-          const data = await res.json();
-          if (data.success && data.data) {
+          }) as any;
+          if (res.success && res.data) {
             setSigners((prev) =>
               prev.map((s) =>
                 s.signer_type === signer.signer_type
-                  ? { ...s, id: data.data.id }
+                  ? { ...s, id: res.data.id }
                   : s
               )
             );
@@ -162,8 +166,8 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
       }
 
       if (lease.id) {
-        await fetch(
-          `/api/locacao/signatures/send-invitation/bulk/${lease.id}`,
+        await callApi(
+          `/api/locacao/signatures/invite/bulk/${lease.id}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -188,12 +192,12 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
 
     setSending(signer.id);
     try {
-      const res = await fetch(`/api/locacao/signatures/invite/${signer.id}`, {
+      const data = await callApi(`/api/locacao/signatures/invite/${signer.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ method: sendMethod }),
-      });
-      const data = await res.json();
+      }) as any;
+      
       if (data.success) {
         toast.success(
           `Convite enviado para ${signer.signer_name || signer.signer_type}`
@@ -228,6 +232,11 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
               desc: `Link seguro ${COMMERCIAL_PRODUCT_NAME}`,
             },
             {
+              id: 'woosign',
+              label: 'WooSign',
+              desc: 'Sistema Próprio Documenso',
+            },
+            {
               id: 'clicksign',
               label: 'Clicksign',
               desc: 'Integração Clicksign',
@@ -237,7 +246,10 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
           ].map((m) => (
             <button
               key={m.id}
-              onClick={() => setSignatureMethod(m.id)}
+              onClick={() => {
+                setSignatureMethod(m.id);
+                updateFields({ signature_method: m.id as any });
+              }}
               className={`p-4 rounded-xl border-2 text-left transition-all ${
                 signatureMethod === m.id
                   ? 'border-blue-500 bg-blue-50'
@@ -344,6 +356,20 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease }) => {
                   ) : (
                     <Send size={16} />
                   )}
+                </button>
+                <button
+                  onClick={() => {
+                    if (signer.id) {
+                      const link = `${window.location.origin}/public/sign/${signer.id}`;
+                      navigator.clipboard.writeText(link);
+                      toast.success('Link de assinatura copiado!');
+                    }
+                  }}
+                  disabled={!signer.id}
+                  className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-all disabled:opacity-50"
+                  title="Copiar Link"
+                >
+                  <Link size={16} />
                 </button>
               </div>
             </div>

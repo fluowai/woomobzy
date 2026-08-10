@@ -240,50 +240,51 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
               return;
             }
 
-            try {
-              const { data, error } = await supabase.rpc('get_tenant_public', {
+          try {
+            const [rpcResult, orgDirectResult] = await Promise.all([
+              supabase.rpc('get_tenant_public', {
                 slug_input: potentialSlug,
-              });
-
-              const tenant = data?.[0];
-              if (tenant && !error) {
-                log(
-                  `[Router] Tenant found via slug: ${tenant.name} (${tenant.slug})`
-                );
-                setResolvedSlug(tenant.slug);
-                setIsPublicSite(true);
-                setLoading(false);
-                return;
-              }
-              if (error)
-                log(
-                  `[Router] RPC error (first site): ${error.message} (${error.code})`
-                );
-            } catch (error) {
-              log(`[Router] Exception resolving tenant slug: ${error}`);
-            }
-
-            try {
-              const { data: orgDirect } = await supabase
+              }),
+              supabase
                 .from('organizations')
                 .select(
                   'id, name, slug, custom_domain, subdomain, niche, logo_url'
                 )
                 .or(
                   `slug.eq.${potentialSlug},custom_domain.eq.${potentialSlug},subdomain.eq.${potentialSlug}`
-                );
+                ),
+            ]);
 
-              const org = orgDirect?.[0];
-              if (org) {
-                log(`[Router] Tenant found via fallback query: ${org.name}`);
-                setResolvedSlug(org.slug);
-                setIsPublicSite(true);
-                setLoading(false);
-                return;
-              }
-            } catch (e2) {
-              log(`[Router] Fallback query also failed: ${e2}`);
+            const { data: rpcData, error: rpcError } = rpcResult;
+            const { data: orgDirect } = orgDirectResult;
+
+            const tenant = rpcData?.[0];
+            if (tenant && !rpcError) {
+              log(
+                `[Router] Tenant found via slug: ${tenant.name} (${tenant.slug})`
+              );
+              setResolvedSlug(tenant.slug);
+              setIsPublicSite(true);
+              setLoading(false);
+              return;
             }
+
+            if (rpcError)
+              log(
+                `[Router] RPC error (first site): ${rpcError.message} (${rpcError.code})`
+              );
+
+            const org = orgDirect?.[0];
+            if (org) {
+              log(`[Router] Tenant found via fallback query: ${org.name}`);
+              setResolvedSlug(org.slug);
+              setIsPublicSite(true);
+              setLoading(false);
+              return;
+            }
+          } catch (error) {
+            log(`[Router] Exception resolving tenant slug: ${error}`);
+          }
           }
 
           log(`[Router] Tenant route ignored because it is not /:slug/site`);

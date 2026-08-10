@@ -1,5 +1,64 @@
 # Verificação
 
+## 2026-08-09 — Wizard de Locação: auto-save 400 "Dados inválidos" — corrigido ✓
+
+- **Causa**: `PUT /api/locacao/leases/:id` recebia o `lease` inteiro com `null`/`""`/`NaN`/`due_day: 0`; schema zod rejeitava (`.optional()` não aceita `null`/`""`).
+- **Fix**: `server/api/locacao/lease.routes.js` → `normalizeLeasePayload` (drop de null/undefined/NaN/strings vazias/due_day 0) em POST e PUT; `useLeaseWizard.ts` → removido `setInterval` duplicado.
+- **Evidência**: `node --check` ✓; teste node do normalizador ✓ (PASS — valores inválidos removidos, `co_tenants: []`/válidos preservados); `npm run type-check` ✓ (exit 0); `npm run lint` ✓ (0 errors, warnings pré-existentes não relacionados).
+- **Pendente (maestro)**: reiniciar backend (3006) para carregar o fix; validar wizard ao vivo. Nenhum commit/push.
+
+## 2026-08-09 — Email Center: diagnóstico do 400 + fix de crash TLS ✓
+
+- **Causa do 400**: servidor de e-mail rejeita as credenciais (`AUTHENTICATIONFAILED` / `535`), confirmado por teste direto com imapflow/nodemailer contra `mail.wootech.com.br` (993, 143 e 465), usuário `paulo@wootech.com.br` e `paulo`. Não é o app.
+- **Fix aplicado** (`server/services/email/emailService.js`): `createImapClient` com `client.on('error', () => {})` (evita crash por `ERR_TLS_CERT_ALTNAME_INVALID` não tratado na porta 143/STARTTLS); `testEmailConnection` fecha IMAP em falha e SMTP em `finally`.
+- **Evidência**: `node --check` ✓; `npx eslint server/services/email/emailService.js` ✓ (exit 0); re-teste dos cenários → erro limpo, processo sobrevive (antes: crash na 143).
+- **Pendente (maestro)**: reiniciar backend (3002) p/ carregar o fix; validar reautenticação com senha correta da caixa. Nenhum commit/push.
+
+## 2026-08-08 — DNO: migration APLICADA em produção + verificação REST (anon) ✓
+
+- **Aplicação**: `migrations/20260808_property_owner_dno.sql` executada em produção `epgaftsjmqmpczvzsrcc` via `exec_sql` → **9/9 statements OK** (roles normalizadas p/ `'Proprietário'`, índice `idx_properties_owner_id`, view `public_available_properties` criada + GRANT anon/authenticated, DROP da policy `"Public read available properties"`, REVOKE SELECT anon em `properties`).
+- **Correção**: bloco de RLS na view removido do arquivo (Postgres não suporta RLS em views); controle de acesso = GRANT + projeção de vitrine + filtro de status.
+- **Verificação real via REST (cliente anon, como os sites públicos usam)**:
+  - `GET /rest/v1/public_available_properties?select=id,title,owner_id,owner_info` → **400** `column public_available_properties.owner_id does not exist` → **anon NÃO vê dados de dono** ✓
+  - `GET /rest/v1/public_available_properties?select=id,title,price,status` → **200**, 366 imóveis → vitrine pública intacta ✓
+  - `GET /rest/v1/properties?select=id,title` (anon) → **401** `permission denied for table properties` → REVOKE aplicado ✓
+- **Pendente (maestro)**: validar acesso autenticado (org vê seus imóveis; outra org não vê) e UI ponta a ponta (cadastro imóvel com DNO, locação com prefill). Nenhum commit/push.
+
+## 2026-08-08 — DNO do Imóvel: Fases 1-3 + hardening anti-vazamento público — gates verdes (parcial)
+
+- **Escopo**: `migrations/20260808_property_owner_dno.sql` (nova), `scripts/run-migrations.mjs`, `services/properties.ts`, `types/property.ts`, `views/PropertyEditor.tsx`, `services/sites.ts`, `services/landingPages.ts`, `views/LandingPage.tsx`, `views/FazendasBrasilPublicSite.tsx`, `src/components/lease/steps/StepProperty.tsx`, `StepOwnerData.tsx`.
+- **Hardening público**: 4 consumidores públicos trocados para a view `public_available_properties` (`sites.ts:345`, `landingPages.ts:244`, `LandingPage.tsx:201`, `FazendasBrasilPublicSite.tsx:557`). Auditado: nenhum `.from('properties').select('*')` público restante (demais são views autenticadas do CRM); `OkaPublicSite` usa array hardcoded (sem DB).
+- **Fase 2**: `PropertyEditor.tsx` grava `owner_id` via create-or-resolve em clients (busca por doc → cria com roles `['Proprietário']`); `mapToDatabase`/`mapToModel` mapeiam `owner_id`.
+- **Fase 3**: `StepProperty.tsx` pré-preenche `owner_*` ao selecionar imóvel (`property.owner_id → clients`); `StepOwnerData.tsx` mostra aviso quando `owner_id`.
+- **Evidência (estática)**: `npm run type-check` exit 0 ✓; eslint nos arquivos alterados 0 erros (warnings pré-existentes em `PropertyEditor`/`sites.ts`/`landingPages.ts`) ✓; `npm run build` ✓ (~2m33s, inclui chunks `PropertyEditor-*.js`, `Locacao-*.js`).
+- **NÃO verificado ainda**: migration aplicada em dev/prod (pendente `exec_sql` — obrigatória junto do código, senão os sites públicos quebram pois a policy anon foi dropada + REVOKE); testes RLS anon/org (Fase 4); UI ponta a ponta (cadastro com DNO novo/existente, locação). Nenhum commit/push executado.
+
+## 2026-08-08 — Agentes IA: guardrails só com agente ativo + prompt grande + swarm compartilhado — gates verdes
+
+- **Escopo**: `server/lib/AIAutomation.js`, `server/services/ai/agentOrchestrator.js`, `server/api/ai/helpers.js`, `components/agents/AgentForm.tsx`, `views/AIAgents.tsx`, `services/aiAgents.ts`.
+- **Guardrail condicionado**: os 4 redirecionamentos de guardrail em `handleWhatsAppMessage` (rate limit, conteúdo sensível, desvio de assunto, fora de contexto imobiliário) agora retornam `skipped` **sem reply** quando `!agent`. Antes respondiam "só ajudo com imóveis" mesmo sem agente ativo conectado.
+- **Prompt grande**: "Instruções operacionais (prompt)" em `AgentForm.tsx` em largura total (`lg:col-span-2`), `min-h-72`, `resize-y`.
+- **Swarm compartilhado**: campo `share_prompt_with_subagents` (tipo `AIAgent`, `views/AIAgents.tsx`, `AgentForm.tsx`) + refactor em `agentOrchestrator.js` (`_runReActLoop`, `_loadSubAgents`, `_detectSpecialist` score≥2, `_delegateToSpecialist`) para delegar ao especialista com prompt compartilhado + histórico da mesma conversa. Persistência via `handoff_rules.__operational360` (`agent_type`, `sub_agents`, `share_prompt_with_subagents`) em `helpers.js`, hidratados por `_loadActiveAgent`/`hydrateAgent`.
+- **Evidência (estática)**: type-check exit 0; eslint 0 erros/0 warnings nos arquivos front alterados; `node --check` OK em `agentOrchestrator.js`, `helpers.js`, `AIAutomation.js`; build Vite ✓ (1m7s).
+- **Pendente (maestro)**: validação visual — orquestrador com compartilhamento de prompt + especialistas conectados, chat acionando o especialista na mesma conversa, e conferir que sem agente ativo não há resposta de guardrail. Nenhum commit/push executado.
+
+## 2026-08-08 — Aba Relatórios reescrita (ReportsCenter) — gates verdes
+
+- **Escopo**: `/urban/reports` (BIUrbano) e `/rural/reports` (BIRural) agora renderizam `views/ReportsCenter.tsx` (prop `mode`) com 5 tipos de relatório: Visão Geral, Comercial, Leads & Funil, Corretores e Locação.
+- **Dados reais**: `properties`, `leads`, `profiles`, `lead_activities` e `rental_contracts` via Supabase (RLS tenant por `organization_id`), com `.limit(100000)` (o default de 1000 do PostgREST truncava as contagens nos BIs antigos). Nicho filtrado por `isRuralProperty`/`isUrbanProperty` e `match_profile`.
+- **Evidência (estática)**: type-check exit 0; eslint 0 erros/0 warnings nos 3 arquivos; build Vite ✓ (chunk `ReportsCenter-*.js`). Ranking de corretores usa `leads.assigned_to`/`profiles.role !== 'superadmin'` (endpoint backend antigo usava `broker_id`/role `BROKER`, inexistentes).
+- **Fix de gate pré-existente**: `src/components/lease/steps/StepProperty.tsx` importava `../../../services/properties` (inexistente) → corrigido para `../../../../services/properties`.
+- **Pendente (maestro)**: validação visual com login real (abas, filtro de período, exportar CSV/PDF) antes de commit/push. Nenhum commit/push executado.
+
+## 2026-08-08 — Seletor de imóvel no contrato de locação (RLS de properties sem policies)
+
+- **Sintoma**: etapa "Selecionar Imóvel" do wizard de locação (`StepProperty.tsx`) listava vazio com imóveis cadastrados.
+- **Causa raiz (confirmada)**: `properties` com RLS habilitado e **nenhuma policy** (`pg_policies` → `[]`); 366 imóveis com status `Disponível` invisíveis para `anon`/`authenticated` via PostgREST (REST anon → `[]`).
+- **Fix aplicado em produção** (`epgaftsjmqmpczvzsrcc`): `migrations/20260808_fix_properties_rls_missing_policies.sql` → 2/2 policies criadas e verificadas em `pg_policy` ("Tenant isolation properties" authenticated + "Public read available properties" anon).
+- **Evidência**: REST anon `GET /rest/v1/properties` retornava `[]` antes e agora retorna imóveis; grants `authenticated` (SELECT/INSERT/UPDATE/DELETE) presentes; todos os imóveis têm `organization_id` (policy tenant resolve por org).
+- **Gates**: aplicação + verificação contra o banco de produção; nenhuma mudança de código frontend.
+- **Pendente (maestro)**: validar no navegador a etapa "Selecionar Imóvel" do wizard de locação; depois decisão de commit/push.
+
 ## 2026-08-08 — RLS do módulo urban alinhada ao padrão CRM (fix do 403 no Simulador/Fintech)
 
 - **Sintoma**: superadmin impersonando org (`91b29fed` — Enzo Imoveis) → `POST /rest/v1/urban_financing_simulations` → **403** ao salvar simulação no `/urban/simulador` (e `/urban/fintech`).

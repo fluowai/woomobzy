@@ -35,7 +35,7 @@ export function filterInboxChats(
 ): UnifiedChat[] {
   const now = options.now ?? Date.now();
   return chats.filter((chat) => {
-    if (chat.is_group !== options.groups) return false;
+    if (Boolean(chat.is_group) !== options.groups) return false;
     if (options.platform === 'site') return false;
     if (options.platform !== 'all' && chat.platform !== options.platform)
       return false;

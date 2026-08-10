@@ -85,6 +85,16 @@ export async function deleteLease(id: string): Promise<{ success: boolean }> {
   return apiFetch(`${BASE_URL}/leases/${id}`, { method: 'DELETE' });
 }
 
+export async function generateContractPdf(
+  id: string,
+  templateContent?: string
+): Promise<{ success: boolean; data: any }> {
+  return apiFetch(`${BASE_URL}/leases/${id}/generate-contract`, {
+    method: 'POST',
+    body: templateContent ? JSON.stringify({ template_content: templateContent }) : undefined,
+  });
+}
+
 // ── TEMPLATES ──
 
 export async function listTemplates(): Promise<{

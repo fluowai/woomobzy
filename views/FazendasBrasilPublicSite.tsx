@@ -554,7 +554,7 @@ const FazendasBrasilPublicSite: React.FC<FazendasBrasilPublicSiteProps> = ({
         }
 
         const { data, error } = await supabase
-          .from('properties')
+          .from('public_available_properties')
           .select(
             'id,title,price,city,state,images,property_type,total_area_ha,useful_area_ha,features,aptitude'
           )

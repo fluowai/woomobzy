@@ -376,12 +376,34 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
         </div>
       )}
       <div className="flex-1">
+        <style>{`
+          .lp-public-root {
+            max-width: 100%;
+            overflow-x: clip;
+          }
+          .lp-public-root img,
+          .lp-public-root video {
+            max-width: 100%;
+            height: auto;
+          }
+          .lp-public-root h1,
+          .lp-public-root h2,
+          .lp-public-root h3 {
+            overflow-wrap: break-word;
+          }
+          @media (max-width: 768px) {
+            .lp-public-root .block-wrapper-style,
+            .lp-public-root [class*='block-wrapper'] {
+              overflow-x: clip;
+            }
+          }
+        `}</style>
         {(page.blocks || [])
           .filter((block) => block.visible)
           .map((block) => (
             <div
               key={block.id}
-              className={getContainerClass(block.containerWidth)}
+              className={`lp-public-root ${getContainerClass(block.containerWidth)}`}
             >
               <style>{`
               .block-wrapper-${block.id} {

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { FileText, Eye, Download, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
+import { FileText, Eye, Download, RefreshCw, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import type { Lease, ContractTemplate } from '../../../types/lease';
-import { listTemplates, validateTemplate } from '../../../services/lease/leaseService';
+import { listTemplates, generateContractPdf, updateLease } from '../../../services/lease/leaseService';
 
 interface Props {
   lease: Partial<Lease>;
@@ -54,12 +54,44 @@ Fica eleito o foro da {{cidade}} para dirimir dúvidas deste contrato.
 {{data_geracao}}
 `;
 
-export const StepContractGeneration: React.FC<Props> = ({ lease }) => {
+// Variáveis obrigatórias para um contrato de locação válido.
+// O valor é uma função que verifica se o campo correspondente está preenchido
+// nos dados reais da locação (não no texto renderizado).
+const REQUIRED_VARS: Record<string, (l: Partial<Lease>) => boolean> = {
+  nome_locador: (l) => !!(l.owner_name || '').trim(),
+  cpf_locador: (l) => !!(l.owner_cpf_cnpj || '').trim(),
+  nome_locatario: (l) => !!(l.tenant_name || '').trim(),
+  cpf_locatario: (l) => !!(l.tenant_cpf || l.tenant_rg || '').trim(),
+  endereco_imovel: (l) => !!(l.property_title || '').trim(),
+  cidade: (l) => !!(l.tenant_city || '').trim(),
+  valor_aluguel: (l) => l.monthly_rent != null && Number(l.monthly_rent) > 0,
+  valor_caucao: (l) =>
+    (l.caution_amount != null && Number(l.caution_amount) > 0) ||
+    (l.guarantee_value != null && Number(l.guarantee_value) > 0),
+  data_inicio: (l) => !!l.start_date,
+  data_fim: (l) => !!l.end_date,
+  prazo_meses: (l) => l.contract_duration_months != null && Number(l.contract_duration_months) > 0,
+  dia_vencimento: (l) => l.due_day != null,
+  indice_reajuste: (l) => !!(l.adjustment_index || '').trim(),
+  tipo_garantia: (l) => !!(l.guarantee_type || '').trim(),
+  multa_atraso: (l) => l.late_fee_percent != null,
+  juros_atraso: (l) => l.late_interest_percent != null,
+  data_geracao: () => true,
+};
+
+const REQUIRED_VAR_ORDER = Object.keys(REQUIRED_VARS);
+
+export const StepContractGeneration: React.FC<Props> = ({ lease, updateFields }) => {
   const [templates, setTemplates] = useState<ContractTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState('default');
   const [previewContent, setPreviewContent] = useState('');
-  const [validationResult, setValidationResult] = useState<any>(null);
+  const [validationResult, setValidationResult] = useState<{
+    is_valid: boolean;
+    missing: string[];
+    missing_count: number;
+  }>({ is_valid: false, missing: [], missing_count: 0 });
   const [showPreview, setShowPreview] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     loadTemplates();
@@ -67,6 +99,7 @@ export const StepContractGeneration: React.FC<Props> = ({ lease }) => {
 
   useEffect(() => {
     generatePreview();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lease, selectedTemplateId]);
 
   const loadTemplates = async () => {
@@ -76,16 +109,31 @@ export const StepContractGeneration: React.FC<Props> = ({ lease }) => {
     } catch {}
   };
 
+  const getTemplateContent = () =>
+    selectedTemplateId === 'default'
+      ? CONTRACT_TEMPLATE
+      : templates.find((t) => t.id === selectedTemplateId)?.content || CONTRACT_TEMPLATE;
+
+  const computeMissingVars = () => {
+    const missing = REQUIRED_VAR_ORDER.filter((name) => !REQUIRED_VARS[name](lease));
+    setValidationResult({
+      is_valid: missing.length === 0,
+      missing,
+      missing_count: missing.length,
+    });
+    return missing;
+  };
+
   const generatePreview = () => {
     const today = new Date().toLocaleDateString('pt-BR');
-    let content = selectedTemplateId === 'default' ? CONTRACT_TEMPLATE : templates.find(t => t.id === selectedTemplateId)?.content || CONTRACT_TEMPLATE;
+    let content = getTemplateContent();
 
     const vars: Record<string, string> = {
       nome_locador: lease.owner_name || '[Nome do Locador]',
-      cpf_locador: lease.owner_name || '[CPF do Locador]',
+      cpf_locador: lease.owner_cpf_cnpj || '[CPF do Locador]',
       nome_locatario: lease.tenant_name || '[Nome do Locatário]',
-      cpf_locatario: lease.tenant_cpf || '[CPF do Locatário]',
-      endereco_imovel: lease.property_title || '[Endereço do Imóvel]',
+      cpf_locatario: lease.tenant_cpf || lease.tenant_rg || '[CPF do Locatário]',
+      endereco_imovel: lease.property_title ? `${lease.property_title} ${lease.property_address || ''}` : '[Endereço do Imóvel]',
       valor_aluguel: (lease.monthly_rent || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
       valor_caucao: (lease.guarantee_value || lease.caution_amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
       data_inicio: lease.start_date ? new Date(lease.start_date).toLocaleDateString('pt-BR') : '[Data de Início]',
@@ -105,9 +153,37 @@ export const StepContractGeneration: React.FC<Props> = ({ lease }) => {
     });
 
     setPreviewContent(content);
+    computeMissingVars();
+  };
 
-    // Validate
-    validateTemplate(content).then(r => setValidationResult(r.data)).catch(() => {});
+  const handleGeneratePdf = async () => {
+    if (!lease.id) {
+      toast.error('Salve o contrato antes de gerar o PDF');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      // Persiste os dados atuais (e o template selecionado) antes de gerar,
+      // para o backend usar os valores mais recentes.
+      const payload: Partial<Lease> = {
+        ...lease,
+        ...(selectedTemplateId !== 'default' ? { current_template_id: selectedTemplateId } : {}),
+      };
+      const { data: saved } = await updateLease(lease.id, payload);
+      if (saved) updateFields(saved);
+
+      const res = await generateContractPdf(lease.id, getTemplateContent());
+      if (res.success) {
+        toast.success('PDF do contrato gerado com sucesso!');
+      } else {
+        toast.error('Falha ao gerar o PDF do contrato');
+      }
+    } catch (err) {
+      toast.error('Erro de comunicação ao gerar o PDF');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -118,10 +194,10 @@ export const StepContractGeneration: React.FC<Props> = ({ lease }) => {
           <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Modelo de Contrato</h4>
         </div>
 
-        <div className="flex gap-3 mb-6">
+        <div className="flex flex-wrap gap-3 mb-6">
           <button
             onClick={() => setSelectedTemplateId('default')}
-            className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${
+            className={`flex-1 min-w-[160px] py-3 rounded-xl text-sm font-bold transition-all ${
               selectedTemplateId === 'default' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
             }`}
           >
@@ -131,7 +207,7 @@ export const StepContractGeneration: React.FC<Props> = ({ lease }) => {
             <button
               key={t.id}
               onClick={() => setSelectedTemplateId(t.id)}
-              className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${
+              className={`flex-1 min-w-[160px] py-3 rounded-xl text-sm font-bold transition-all ${
                 selectedTemplateId === t.id ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
               }`}
             >
@@ -141,22 +217,25 @@ export const StepContractGeneration: React.FC<Props> = ({ lease }) => {
         </div>
 
         {/* Validação */}
-        {validationResult && (
-          <div className={`p-4 rounded-xl mb-4 flex items-center gap-3 ${
-            validationResult.is_valid ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-          }`}>
-            {validationResult.is_valid ? (
-              <CheckCircle size={20} />
-            ) : (
-              <AlertCircle size={20} />
+        <div className={`p-4 rounded-xl mb-4 flex items-start gap-3 ${
+          validationResult.is_valid ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+        }`}>
+          {validationResult.is_valid ? (
+            <CheckCircle size={20} className="shrink-0 mt-0.5" />
+          ) : (
+            <AlertCircle size={20} className="shrink-0 mt-0.5" />
+          )}
+          <div className="text-sm font-bold">
+            {validationResult.is_valid
+              ? 'Contrato válido - todas as variáveis preenchidas'
+              : `${validationResult.missing_count} variáveis obrigatórias não preenchidas`}
+            {!validationResult.is_valid && validationResult.missing.length > 0 && (
+              <p className="text-xs font-medium mt-1 text-amber-600">
+                Faltam: {validationResult.missing.join(', ')}
+              </p>
             )}
-            <span className="text-sm font-bold">
-              {validationResult.is_valid
-                ? 'Contrato válido - todas as variáveis preenchidas'
-                : `${validationResult.missing_count} variáveis obrigatórias não preenchidas`}
-            </span>
           </div>
-        )}
+        </div>
       </section>
 
       {/* Preview */}
@@ -192,10 +271,12 @@ export const StepContractGeneration: React.FC<Props> = ({ lease }) => {
           <RefreshCw size={16} /> Atualizar Preview
         </button>
         <button 
-          onClick={() => toast.success('PDF do contrato gerado e salvo nos arquivos da locação!')}
-          className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-500 shadow-lg transition-all"
+          onClick={handleGeneratePdf}
+          disabled={isGenerating}
+          className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-500 shadow-lg transition-all disabled:opacity-50"
         >
-          <Download size={16} /> Gerar PDF
+          {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />} 
+          Gerar PDF
         </button>
       </div>
     </div>

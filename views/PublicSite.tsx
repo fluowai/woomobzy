@@ -310,6 +310,12 @@ const PublicSite: React.FC<PublicSiteProps> = ({ forceOrgSlug }) => {
           --text-color: ${textColor};
         }
         body { margin: 0; font-family: ${fontFamily}; color: ${textColor}; }
+        .lp-public-root { max-width: 100%; overflow-x: clip; }
+        .lp-public-root img, .lp-public-root video { max-width: 100%; height: auto; }
+        .lp-public-root h1, .lp-public-root h2, .lp-public-root h3 { overflow-wrap: break-word; }
+        @media (max-width: 768px) {
+          .lp-public-root [class*='block-wrapper'] { overflow-x: clip; }
+        }
         ${site.customCss || ''}
       `}</style>
 
@@ -409,7 +415,7 @@ const PublicSite: React.FC<PublicSiteProps> = ({ forceOrgSlug }) => {
       </nav>
 
       {/* PAGE CONTENT */}
-      <main>
+      <main className="lp-public-root">
         {currentPage.blocks
           .sort((a, b) => a.order - b.order)
           .filter((b) => b.visible !== false)

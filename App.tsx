@@ -6,21 +6,12 @@ import DomainRouter from './components/DomainRouter';
 
 import TrackingPixels from './components/TrackingPixels';
 
-import { SettingsProvider, useSettings } from './context/SettingsContext';
+import { SettingsProvider } from './context/SettingsContext';
 import { AuthProvider } from './context/AuthContext';
 import { TextsProvider } from './context/TextsContext';
 import { PlansProvider } from './context/PlansContext';
 
-import FullScreenSpinner from './components/FullScreenSpinner';
 import AppRoutes from './App.routes';
-
-const AppContent: React.FC = () => {
-  const { loading } = useSettings();
-
-  if (loading) return <FullScreenSpinner />;
-
-  return <AppRoutes />;
-};
 
 const App: React.FC = () => {
   return (
@@ -32,7 +23,7 @@ const App: React.FC = () => {
               <TextsProvider>
                 <PlansProvider>
                   <TrackingPixels />
-                  <AppContent />
+                  <AppRoutes />
                 </PlansProvider>
               </TextsProvider>
             </SettingsProvider>

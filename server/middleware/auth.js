@@ -158,6 +158,12 @@ export const verifyAuth = async (req, res, next) => {
       req.isImpersonating = true;
       req.tenantValidated = true;
       req.impersonationSessionId = session.id;
+      if (session.expires_at) {
+        res.setHeader(
+          'x-impersonation-session-expires-at',
+          String(session.expires_at)
+        );
+      }
     } else if (
       profile.role === 'superadmin' &&
       (requestedOrgId || impersonateId)

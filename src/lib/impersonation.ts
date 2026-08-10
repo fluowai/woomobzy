@@ -130,6 +130,21 @@ export function getImpersonationHeaders(): Record<string, string> {
   };
 }
 
+export function syncImpersonationSessionExpiry(expiresAt?: string | null) {
+  if (!expiresAt) return;
+
+  const raw = sessionStorage.getItem(IMPERSONATION_STORAGE_KEY);
+  if (!raw) return;
+
+  try {
+    const parsed = normalizeSession({ ...JSON.parse(raw), expiresAt });
+    if (!parsed) return;
+    sessionStorage.setItem(IMPERSONATION_STORAGE_KEY, JSON.stringify(parsed));
+  } catch {
+    // ignore malformed storage
+  }
+}
+
 export function isImpersonationErrorCode(code?: string | null): boolean {
   return Boolean(code && IMPERSONATION_ERROR_CODES.has(code));
 }

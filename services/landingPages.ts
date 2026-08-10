@@ -241,7 +241,7 @@ export const landingPageService = {
     const config = page.propertySelection;
 
     let query = supabase
-      .from('properties')
+      .from('public_available_properties')
       .select('*')
       .eq('organization_id', page.organizationId);
 

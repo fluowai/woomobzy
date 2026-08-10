@@ -16,6 +16,7 @@
 | `SPECS/NB_CONSULTIO_MINIO_SSL.md`          | Fix SSL MinIO `nb.consultio.com.br` + provisionamento de buckets/key em produção                                                                  | CONCLUÍDO                           |
 | `SPECS/MINIO_INTO_STACK_MIGRATION.md`      | MinIO para dentro da stack (endpoint interno `http://minio:9000`), modo **FRESH START**: MinIO novo + provisionamento automático via `minio-init` | PRONTO PARA SUBIR                   |
 | `SPECS/ONBOARDING_FAST_QR.md`              | Onboarding rápido + WhatsApp QR real no fluxo (Wave 1); Wave 2 = domínio personalizado obrigatório                                                | EM PROGRESSO                        |
+| `SPECS/DNO_PROPRIETARIO_IMOVEL.md`         | Cadastro do Dono do Imóvel (DNO) no cadastro do imóvel + puxada automática no CRM (locação/contrato/bordero) + visibilidade somente no CRM           | EM PROGRESSO (Fases 1-3 no código; migration aplicada em produção) |
 
 ## Módulos Implementados
 

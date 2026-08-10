@@ -14,7 +14,7 @@ import {
   Users,
 } from 'lucide-react';
 
-import { formatPhoneDisplay, getChatDisplayName } from './hooks/api';
+import { formatPhoneVisual, formatPhoneDisplay, getChatDisplayName } from './hooks/api';
 import type { UnifiedChat } from './hooks/unifiedInbox';
 import {
   filterInboxChats,
@@ -98,64 +98,31 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         </button>
       </div>
 
-      <div className="wa-channel-tabs" role="tablist" aria-label="Canais">
-        <ChannelTab
-          active={platform === 'all'}
-          onClick={() => setPlatform('all')}
-          label="Todos"
-        />
-        <ChannelTab
-          active={platform === 'whatsapp'}
-          onClick={() => setPlatform('whatsapp')}
-          label="WhatsApp"
-          icon={<MessageCircle size={15} />}
-        />
-        <ChannelTab
-          active={platform === 'instagram'}
-          onClick={() => setPlatform('instagram')}
-          label="Instagram"
-          icon={<InstagramIcon />}
-        />
-        <ChannelTab
-          active={platform === 'site'}
-          onClick={() => setPlatform('site')}
-          label="Site"
-          icon={<Globe2 size={15} />}
-        />
+      <div className="flex p-2 bg-slate-100 mx-3 mt-1 rounded-lg">
+        <button
+          type="button"
+          className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${
+            !groups
+              ? 'bg-white text-slate-800 shadow-sm'
+              : 'text-slate-500 hover:text-slate-700'
+          }`}
+          onClick={() => setGroups(false)}
+        >
+          Conversas
+        </button>
+        <button
+          type="button"
+          className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${
+            groups
+              ? 'bg-white text-slate-800 shadow-sm'
+              : 'text-slate-500 hover:text-slate-700'
+          }`}
+          onClick={() => setGroups(true)}
+        >
+          Grupos
+        </button>
       </div>
 
-      <div className="wa-queue-tabs">
-        <QueueButton
-          active={queue === 'mine'}
-          onClick={() => setQueue(queue === 'mine' ? 'all' : 'mine')}
-          icon={<Inbox size={14} />}
-          label="Minha fila"
-          count={metrics.mine}
-        />
-        <QueueButton
-          active={queue === 'unassigned'}
-          onClick={() =>
-            setQueue(queue === 'unassigned' ? 'all' : 'unassigned')
-          }
-          icon={<UserMinus size={14} />}
-          label="Sem responsável"
-          count={metrics.unassigned}
-        />
-        <QueueButton
-          active={queue === 'sla'}
-          onClick={() => setQueue(queue === 'sla' ? 'all' : 'sla')}
-          icon={<TimerOff size={14} />}
-          label="SLA vencido"
-          count={metrics.overdue}
-        />
-      </div>
-
-      <div className="wa-inbox-metrics">
-        <Metric value={metrics.conversations} label="conversas" />
-        <Metric value={metrics.open} label="abertas" />
-        <Metric value={metrics.awaiting} label="aguardando resposta" />
-        <Metric value={metrics.overdue} label="SLA vencido" danger />
-      </div>
 
       <div className="wa-inbox-toolbar">
         <button type="button" onClick={() => setNewestFirst((value) => !value)}>
@@ -163,14 +130,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           <ChevronDown size={14} />
         </button>
         <div>
-          <button
-            type="button"
-            onClick={() => setGroups((value) => !value)}
-            className={groups ? 'active' : ''}
-            title="Alternar grupos"
-          >
-            <Users size={17} />
-          </button>
           <button
             type="button"
             onClick={onOpenInstances}
@@ -208,11 +167,11 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   style={{ backgroundColor: avatarColor(name) }}
                 >
                   {chat.avatar_url &&
-                  !isWhatsAppCdnUrl(chat.avatar_url) &&
                   !erroredAvatars.has(chat.id) ? (
                     <img
                       src={chat.avatar_url}
                       alt=""
+                      referrerPolicy="no-referrer"
                       onError={() =>
                         setErroredAvatars((current) =>
                           new Set(current).add(chat.id)
@@ -230,14 +189,14 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   <span className="wa-chat-top">
                     <strong className="wa-chat-name">
                       {name}
-                      <PlatformIcon platform={chat.platform} />
+                      <PlatformIcon platform={chat.platform} isGroup={chat.is_group} />
                     </strong>
-                    <time>{formatTime(chat.last_message_at)}</time>
+                    <time className="wa-chat-time">{formatTime(chat.last_message_at)}</time>
                   </span>
                   <span className="wa-chat-bottom">
                     <span className="wa-chat-preview">
                       {formatChatPreview(chat.last_message) ||
-                        formatPhoneDisplay(chat.chat_jid) ||
+                        formatPhoneVisual(chat.chat_jid) ||
                         'Sem mensagens'}
                     </span>
                     {chat.unread_count > 0 && (
@@ -282,93 +241,10 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   );
 };
 
-function ChannelTab({
-  active,
-  onClick,
-  label,
-  icon,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      className={active ? 'active' : ''}
-      onClick={onClick}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-}
 
-function QueueButton({
-  active,
-  onClick,
-  icon,
-  label,
-  count,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-  count: number;
-}) {
-  return (
-    <button type="button" className={active ? 'active' : ''} onClick={onClick}>
-      {icon}
-      <span>{label}</span>
-      <b>{count}</b>
-    </button>
-  );
-}
-
-function Metric({
-  value,
-  label,
-  danger = false,
-}: {
-  value: number;
-  label: string;
-  danger?: boolean;
-}) {
-  return (
-    <div className={danger ? 'danger' : ''}>
-      <strong>{value}</strong>
-      <span>{label}</span>
-    </div>
-  );
-}
-
-function PlatformIcon({ platform }: { platform: UnifiedChat['platform'] }) {
-  return platform === 'instagram' ? (
-    <InstagramIcon />
-  ) : (
-    <MessageCircle size={14} className="wa-platform-whatsapp-icon" />
-  );
-}
-
-function InstagramIcon() {
-  return (
-    <svg
-      width="15"
-      height="15"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <rect x="3" y="3" width="18" height="18" rx="5" />
-      <circle cx="12" cy="12" r="4" />
-      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
-    </svg>
-  );
+function PlatformIcon({ platform, isGroup }: { platform: UnifiedChat['platform']; isGroup?: boolean }) {
+  if (isGroup) return <Users size={14} className="wa-platform-group-icon text-slate-500" style={{ marginLeft: '4px' }} />;
+  return <MessageCircle size={14} className="wa-platform-whatsapp-icon" style={{ marginLeft: '4px' }} />;
 }
 
 function isWhatsAppCdnUrl(url?: string) {
@@ -379,18 +255,7 @@ function isWhatsAppCdnUrl(url?: string) {
 }
 
 function getChatName(chat: UnifiedChat) {
-  if (chat.platform === 'instagram')
-    return (
-      chat.instagram_contact_full_name ||
-      (chat.instagram_contact_username
-        ? `@${chat.instagram_contact_username}`
-        : 'Contato Instagram')
-    );
-  return (
-    getChatDisplayName(chat) ||
-    formatPhoneDisplay(chat.chat_jid) ||
-    'Contato sem telefone'
-  );
+  return getChatDisplayName(chat) || formatPhoneVisual(chat.chat_jid) || 'Contato sem telefone';
 }
 
 function initials(name: string) {

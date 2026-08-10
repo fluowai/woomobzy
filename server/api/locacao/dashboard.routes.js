@@ -16,74 +16,39 @@ const router = Router();
 router.get('/resumo', verifyAuth, requireTenant, async (req, res) => {
   try {
     const supabase = getSupabaseServer();
+    const orgId = req.orgId;
 
-    const { data: leases } = await supabase
+    const { data: statusAgg, error: statusError } = await supabase
       .from('rental_contracts')
-      .select('*')
-      .eq('organization_id', req.orgId);
+      .select('status, payment_status, monthly_rent, end_date')
+      .eq('organization_id', orgId);
 
-    if (!leases || leases.length === 0) {
-      return res.json({
-        success: true,
-        data: {
-          total: 0,
-          ativos: 0,
-          em_andamento: 0,
-          encerrados: 0,
-          receita_mensal: 0,
-          receita_anual: 0,
-          inadimplentes: 0,
-          atrasados: 0,
-          em_dia: 0,
-          valor_inadimplencia: 0,
-          vencendo_30_dias: 0,
-          vencendo_90_dias: 0,
-        },
-      });
-    }
+    if (statusError) throw statusError;
 
+    const leases = statusAgg || [];
     const ativos = leases.filter((l) => l.status === 'active');
     const em_andamento = leases.filter((l) =>
-      [
-        'draft',
-        'cadastral_analysis',
-        'income_analysis',
-        'pending_signatures',
-      ].includes(l.status)
+      ['draft', 'cadastral_analysis', 'income_analysis', 'pending_signatures'].includes(l.status)
     );
     const encerrados = leases.filter((l) =>
       ['terminated', 'expired', 'archived'].includes(l.status)
     );
-    const inadimplentes = leases.filter(
-      (l) => l.payment_status === 'inadimplente'
-    );
+    const inadimplentes = leases.filter((l) => l.payment_status === 'inadimplente');
     const atrasados = leases.filter((l) => l.payment_status === 'atrasado');
     const emDia = leases.filter((l) => l.payment_status === 'em_dia');
 
-    const receitaMensal = ativos.reduce(
-      (sum, l) => sum + (l.monthly_rent || 0),
-      0
-    );
-    const valorInadimplencia = inadimplentes.reduce(
-      (sum, l) => sum + (l.monthly_rent || 0),
-      0
-    );
+    const receitaMensal = ativos.reduce((sum, l) => sum + (l.monthly_rent || 0), 0);
+    const valorInadimplencia = inadimplentes.reduce((sum, l) => sum + (l.monthly_rent || 0), 0);
 
     const now = new Date();
     const em30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
     const em90Days = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
 
     const vencendo30 = ativos.filter(
-      (l) =>
-        l.end_date &&
-        new Date(l.end_date) >= now &&
-        new Date(l.end_date) <= em30Days
+      (l) => l.end_date && new Date(l.end_date) >= now && new Date(l.end_date) <= em30Days
     );
     const vencendo90 = ativos.filter(
-      (l) =>
-        l.end_date &&
-        new Date(l.end_date) > em30Days &&
-        new Date(l.end_date) <= em90Days
+      (l) => l.end_date && new Date(l.end_date) > em30Days && new Date(l.end_date) <= em90Days
     );
 
     res.json({

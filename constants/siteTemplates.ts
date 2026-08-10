@@ -1,5 +1,6 @@
 import { BlockType } from '../types/landingPage';
 import { SiteTemplate } from '../types/site';
+import { RURAL_SITE_TEMPLATES, URBANO_SITE_TEMPLATES, LOTEADORA_SITE_TEMPLATES, INCORPORADORA_SITE_TEMPLATES } from './siteTemplates/index';
 
 const makeTheme = (o: Record<string, any>) => ({
   primaryColor: '#2563eb',
@@ -59,6 +60,10 @@ const IMG = {
 };
 
 export const SITE_TEMPLATES: SiteTemplate[] = [
+  ...URBANO_SITE_TEMPLATES,
+  ...RURAL_SITE_TEMPLATES,
+  ...LOTEADORA_SITE_TEMPLATES,
+  ...INCORPORADORA_SITE_TEMPLATES,
   {
     id: 'premium-luxo',
     name: 'Luxo Imobiliário Premium',

@@ -964,6 +964,23 @@ export function formatPhoneFriendly(phone: string): string {
   return `+${normalized}`; // Exibição bruta padrão E.164, conforme solicitado
 }
 
+export function formatPhoneVisual(phone: string): string {
+  const normalized = formatPhone(phone).replace(/^55/, '');
+  if (!normalized) return phone;
+  
+  // Format based on length (10 digits vs 11 digits)
+  if (normalized.length === 11) {
+    // 11 digits: +55 (XX) XXXXX-XXXX
+    return `+55 ${normalized.slice(0, 2)} ${normalized.slice(2, 7)}-${normalized.slice(7)}`;
+  } else if (normalized.length === 10) {
+    // 10 digits: +55 (XX) XXXX-XXXX
+    return `+55 ${normalized.slice(0, 2)} ${normalized.slice(2, 6)}-${normalized.slice(6)}`;
+  }
+  
+  // Fallback to standard + if it doesn't match expected Brazilian lengths
+  return `+${formatPhone(phone)}`;
+}
+
 export function getDisplayName(
   pushName: string | null,
   number: string

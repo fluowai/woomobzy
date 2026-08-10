@@ -7,7 +7,10 @@ import {
   ShieldCheck,
   CheckCircle2,
   ChevronDown,
+  Network,
+  Share2,
 } from 'lucide-react';
+import type { AIAgent } from '../../services/aiAgents';
 
 interface FieldProps {
   label: string;
@@ -73,13 +76,17 @@ interface AgentFormProps {
   instructions: string;
   responseStyle: string;
   status: string;
+  agentType: 'orchestrator' | 'specialist';
+  subAgents: string[];
+  sharePromptWithSubAgents: boolean;
+  allAgents: AIAgent[];
   channels: string[];
   capabilities: string[];
   tools: string[];
   autonomyLevel: number;
   handoffRules: Record<string, boolean>;
   onChange: (field: string, value: any) => void;
-  onToggleArray: (field: 'capabilities' | 'tools', value: string) => void;
+  onToggleArray: (field: 'capabilities' | 'tools' | 'sub_agents', value: string) => void;
   onToggleChannel: (value: string) => void;
   onToggleHandoff: (ruleId: string) => void;
 }
@@ -183,6 +190,10 @@ export const AgentForm: React.FC<AgentFormProps> = ({
   instructions,
   responseStyle,
   status,
+  agentType,
+  subAgents = [],
+  sharePromptWithSubAgents = false,
+  allAgents = [],
   channels,
   capabilities,
   tools,
@@ -199,6 +210,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({
     identity: true,
     channels: false,
     operation: false,
+    swarm: true,
     tools: false,
     rules: false,
   });
@@ -256,6 +268,16 @@ export const AgentForm: React.FC<AgentFormProps> = ({
               <option value="Pausado">Pausado</option>
             </select>
           </Field>
+          <Field label="Tipo de Agente (Swarm)">
+            <select
+              value={agentType || 'specialist'}
+              onChange={(e) => onChange('agentType', e.target.value)}
+              className="w-full rounded-lg border border-slate-200 bg-[#F8FAFD] p-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+            >
+              <option value="orchestrator">Orquestrador (Líder / Atendimento)</option>
+              <option value="specialist">Especialista (Bastidores / Skill)</option>
+            </select>
+          </Field>
           <Field label="Personalidade">
             <textarea
               value={personality}
@@ -264,16 +286,125 @@ export const AgentForm: React.FC<AgentFormProps> = ({
               placeholder="Tom de voz, empatia e postura comercial do agente."
             />
           </Field>
-          <Field label="Instruções operacionais">
-            <textarea
-              value={instructions}
-              onChange={(e) => onChange('instructions', e.target.value)}
-              className="min-h-24 w-full resize-none rounded-lg border border-slate-200 bg-[#F8FAFD] p-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-              placeholder="Regras, limites e contexto da imobiliária."
-            />
-          </Field>
+          <div className="lg:col-span-2">
+            <Field label="Instruções operacionais (prompt)">
+              <textarea
+                value={instructions}
+                onChange={(e) => onChange('instructions', e.target.value)}
+                className="min-h-72 w-full resize-y rounded-lg border border-slate-200 bg-[#F8FAFD] p-3 text-sm font-semibold leading-relaxed text-slate-700 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                placeholder="Regras, limites e contexto da imobiliária. Este é o prompt principal do agente."
+              />
+            </Field>
+          </div>
         </div>
       </Section>
+
+      {agentType === 'orchestrator' && (
+        <Section
+          icon={Network}
+          title="Equipe de Especialistas (Swarm)"
+          desc="Selecione quais agentes especialistas este orquestrador pode invocar."
+          open={openSections.swarm}
+          onToggle={() => toggleSection('swarm')}
+        >
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() =>
+                onChange(
+                  'sharePromptWithSubAgents',
+                  !sharePromptWithSubAgents
+                )
+              }
+              className={`flex w-full items-center justify-between rounded-lg border p-4 text-left transition ${
+                sharePromptWithSubAgents
+                  ? 'border-indigo-600 bg-indigo-50/60 shadow-sm'
+                  : 'border-slate-200 bg-white hover:border-slate-300'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={`flex h-10 w-10 items-center justify-center rounded-lg transition ${
+                    sharePromptWithSubAgents
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-100 text-slate-500'
+                  }`}
+                >
+                  <Share2 size={18} />
+                </div>
+                <div>
+                  <div
+                    className={`text-sm font-bold ${sharePromptWithSubAgents ? 'text-indigo-900' : 'text-slate-900'}`}
+                  >
+                    Compartilhar este prompt com sub-agentes
+                  </div>
+                  <div className="text-xs font-medium text-slate-500">
+                    O prompt acima é injetado no especialista acionado, que
+                    atua dentro da mesma conversa para ajudar o agente
+                    principal.
+                  </div>
+                </div>
+              </div>
+              {sharePromptWithSubAgents && (
+                <CheckCircle2 size={20} className="text-indigo-600" />
+              )}
+            </button>
+            <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
+              Especialistas que podem ser acionados
+            </div>
+            {allAgents
+              .filter((a) => a.agent_type === 'specialist')
+              .map((specialist) => {
+                const isActive = subAgents.includes(specialist.id);
+                return (
+                  <button
+                    key={specialist.id}
+                    type="button"
+                    onClick={() => onToggleArray('sub_agents', specialist.id)}
+                    className={`flex w-full items-center justify-between rounded-lg border p-4 text-left transition ${
+                      isActive
+                        ? 'border-indigo-600 bg-indigo-50/50 shadow-sm'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`flex h-10 w-10 items-center justify-center rounded-lg transition ${
+                          isActive
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-slate-100 text-slate-500'
+                        }`}
+                      >
+                        <UserCheck size={18} />
+                      </div>
+                      <div>
+                        <div
+                          className={`text-sm font-bold ${isActive ? 'text-indigo-900' : 'text-slate-900'}`}
+                        >
+                          {specialist.name}
+                        </div>
+                        <div
+                          className={`text-xs font-medium ${isActive ? 'text-indigo-600' : 'text-slate-500'}`}
+                        >
+                          {specialist.role}
+                        </div>
+                      </div>
+                    </div>
+                    {isActive && (
+                      <CheckCircle2 size={20} className="text-indigo-600" />
+                    )}
+                  </button>
+                );
+              })}
+            {allAgents.filter((a) => a.agent_type === 'specialist').length === 0 && (
+              <div className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm font-medium text-slate-500">
+                Nenhum agente especialista encontrado.
+                Crie um especialista primeiro para conectá-lo aqui.
+              </div>
+            )}
+          </div>
+        </Section>
+      )}
 
       <Section
         icon={Radio}

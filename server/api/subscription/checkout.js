@@ -5,6 +5,7 @@ import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { verifyAdmin } from '../../middleware/auth.js';
 import { AsaasService } from '../../services/asaasService.js';
+import { resolveAsaasApiKey } from '../../middleware/asaas.js';
 
 const router = Router();
 
@@ -16,7 +17,11 @@ const checkoutSchema = z.object({
   coupon: z.string().optional(),
 });
 
-router.post('/checkout', verifyAuth, verifyAdmin, async (req, res) => {
+
+
+
+
+router.post('/checkout', verifyAuth, verifyAdmin, resolveAsaasApiKey, async (req, res) => {
   try {
     const parsed = checkoutSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -31,7 +36,7 @@ router.post('/checkout', verifyAuth, verifyAdmin, async (req, res) => {
     const { data: organization, error: orgError } = await supabase
       .from('organizations')
       .select(
-        'id, name, owner_email, owner_name, plan_id, asaas_customer_id, gateway_provider, gateway_api_key'
+        'id, name, owner_email, owner_name, plan_id, asaas_customer_id'
       )
       .eq('id', req.orgId)
       .single();
@@ -85,7 +90,7 @@ router.post('/checkout', verifyAuth, verifyAdmin, async (req, res) => {
         email: ownerEmail,
         mobilePhone: undefined,
         externalReference: organization.id,
-      });
+      }, req.asaasApiKey || undefined);
 
       asaasCustomerId = customer.id;
 
@@ -121,7 +126,8 @@ router.post('/checkout', verifyAuth, verifyAdmin, async (req, res) => {
 
     try {
       subscription = await AsaasService.createSubscription(
-        createSubscriptionPayload
+        createSubscriptionPayload,
+        req.asaasApiKey || undefined
       );
 
       if (subscription?.id) {
@@ -148,7 +154,7 @@ router.post('/checkout', verifyAuth, verifyAdmin, async (req, res) => {
         dueDate: dueDate.toISOString().split('T')[0],
         description,
         externalReference: organization.id,
-      });
+      }, req.asaasApiKey || undefined);
     }
 
     const result = {
@@ -170,13 +176,10 @@ router.post('/checkout', verifyAuth, verifyAdmin, async (req, res) => {
 
 router.post('/webhook/asaas', async (req, res) => {
   try {
-    const signature =
-      req.headers['asaas-access-token'] ||
-      req.headers['x-asaas-signature'] ||
-      '';
     const rawBody = JSON.stringify(req.body);
+    const signature = String(req.headers['x-asaas-signature'] || '');
 
-    if (!AsaasService.verifyWebhookSignature(rawBody, String(signature))) {
+    if (!AsaasService.verifyWebhookSignature(rawBody, signature)) {
       logger.warn('[SubscriptionWebhook] Assinatura invalida ou ausente');
       return res
         .status(401)

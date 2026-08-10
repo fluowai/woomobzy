@@ -45,14 +45,34 @@ router.get('/', async (req, res) => {
 
   if (path === 'properties') {
     try {
-      const { data, error } = await supabase
+      const page = Math.max(1, Number(req.query.page || 1));
+      const limit = Math.min(100, Math.max(1, Number(req.query.limit || 20)));
+      const offset = (page - 1) * limit;
+
+      const { data, error, count } = await supabase
         .from('properties')
-        .select('*')
+        .select(
+          'id, title, price, city, neighborhood, property_type, status, images, description, created_at',
+          { count: 'exact' }
+        )
         .eq('organization_id', tenantId)
         .eq('status', 'published')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
       if (error) throw error;
-      return res.status(200).json({ data, count: data?.length || 0 });
+
+      const total = typeof count === 'number' ? count : (data || []).length;
+      return res.status(200).json({
+        data,
+        count: total,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.max(1, Math.ceil(total / limit)),
+        },
+      });
     } catch (error) {
       console.error('Erro ao buscar propriedades:', error);
       return res.status(500).json({ error: 'Erro ao carregar propriedades' });

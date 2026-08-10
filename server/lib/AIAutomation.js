@@ -302,9 +302,12 @@ Formato:
       organizationId
     );
     if (rateLimitResult.exceeded) {
+      if (!agent) {
+        return { skipped: true, reason: 'rate_limit_exceeded' };
+      }
       await this._saveConversationMemory(
         organizationId,
-        agent?.id,
+        agent.id,
         normalizedPhone,
         'assistant',
         guardrails.buildRateLimitRedirect()
@@ -337,9 +340,12 @@ Formato:
     const topicDrift = guardrails.detectTopicDrift(history, content);
 
     if (guardrails.hasSensitiveContent(content)) {
+      if (!agent) {
+        return { skipped: true, reason: 'sensitive_content' };
+      }
       await this._saveConversationMemory(
         organizationId,
-        agent?.id,
+        agent.id,
         normalizedPhone,
         'assistant',
         guardrails.buildSensitiveTopicRedirect()
@@ -353,9 +359,12 @@ Formato:
     }
 
     if (topicDrift.drifted && existingLead) {
+      if (!agent) {
+        return { skipped: true, reason: 'topic_drift' };
+      }
       await this._saveConversationMemory(
         organizationId,
-        agent?.id,
+        agent.id,
         normalizedPhone,
         'assistant',
         guardrails.buildOffTopicRedirect(agent?.name)
@@ -370,9 +379,12 @@ Formato:
 
     if (!existingLead && !guardrails.isRealEstateContext(content)) {
       if (!this._isGreeting(content)) {
+        if (!agent) {
+          return { skipped: true, reason: 'not_real_estate_context' };
+        }
         await this._saveConversationMemory(
           organizationId,
-          agent?.id,
+          agent.id,
           normalizedPhone,
           'assistant',
           guardrails.buildOffTopicRedirect(agent?.name)
@@ -1417,13 +1429,27 @@ Formato:
     const globalFallback = candidates.find(
       (agent) => this._agentInstanceScope(agent, instanceContext) === 'global'
     );
-    return (
+    const selected =
       exactCandidate ||
       globalCandidate ||
       exactFallback ||
       globalFallback ||
-      null
-    );
+      null;
+
+    if (!selected) return null;
+
+    // Hidrata campos de swarm (agent_type, sub_agents, share_prompt_with_subagents)
+    // que sao persistidos em handoff_rules.__operational360.
+    const operational = selected.handoff_rules?.__operational360 || {};
+    return {
+      ...selected,
+      agent_type: selected.agent_type || operational.agent_type || 'specialist',
+      sub_agents: selected.sub_agents || operational.sub_agents || [],
+      share_prompt_with_subagents:
+        selected.share_prompt_with_subagents ??
+        operational.share_prompt_with_subagents ??
+        false,
+    };
   }
 
   _agentInstanceScope(agent, { instanceId, instanceName } = {}) {

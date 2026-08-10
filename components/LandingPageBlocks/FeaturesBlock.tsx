@@ -9,14 +9,18 @@ interface FeaturesBlockProps {
 const FeaturesBlock: React.FC<FeaturesBlockProps> = ({ config, theme }) => {
   const columns = Math.min(4, Math.max(1, config.columns || 3));
 
+  const gridClasses =
+    columns === 1
+      ? 'grid-cols-1'
+      : columns === 2
+        ? 'grid-cols-1 sm:grid-cols-2'
+        : columns === 3
+          ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+          : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
+
   return (
     <section className="px-4 py-12 sm:px-6 sm:py-16">
-      <div
-        className="mx-auto grid max-w-7xl grid-cols-1 gap-6 md:grid-cols-2"
-        style={{
-          gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-        }}
-      >
+      <div className={`mx-auto grid max-w-7xl gap-6 ${gridClasses}`}>
         {(config.features || []).map((feature, index) => (
           <article
             key={`${feature.title}-${index}`}

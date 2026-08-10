@@ -21,6 +21,7 @@ function mapToDatabase(
     features: source.features || {},
     images: source.images || [],
     highlighted: source.highlighted,
+    owner_id: source.owner_id || source.ownerId || null,
     owner_info: source.ownerInfo || source.owner_info,
     total_area_ha:
       source.total_area_ha || source.features?.areaHectares || null,
@@ -116,6 +117,8 @@ export const mapToModel = (dbItem: any): Property =>
     imported_at: dbItem.imported_at,
     published_at: dbItem.published_at,
     broker_id: dbItem.broker_id || '',
+    owner_id: dbItem.owner_id || '',
+    owner_info: dbItem.owner_info || null,
     niche: dbItem.niche || 'urbano',
     total_area_ha: dbItem.total_area_ha || 0,
     created_at: dbItem.created_at,

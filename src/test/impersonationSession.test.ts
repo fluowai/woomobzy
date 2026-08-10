@@ -6,6 +6,7 @@ import {
   getStoredImpersonationSession,
   isImpersonationErrorCode,
   persistImpersonationSession,
+  syncImpersonationSessionExpiry,
 } from '../lib/impersonation';
 
 describe('impersonation session helper', () => {
@@ -60,6 +61,41 @@ describe('impersonation session helper', () => {
     expect(sessionStorage.getItem('impersonated_org_id')).toBeNull();
     expect(localStorage.getItem('impersonatedOrgId')).toBeNull();
     expect(localStorage.getItem('isImpersonating')).toBeNull();
+  });
+
+  it('extends the stored expiry when the server renews the session', () => {
+    persistImpersonationSession({
+      id: 'session-1',
+      secret: 'secret-1',
+      expiresAt: '2000-01-01T00:00:00.000Z',
+      organizationId: 'org-1',
+    });
+
+    syncImpersonationSessionExpiry('2099-01-01T00:00:00.000Z');
+
+    const stored = getStoredImpersonationSession({ allowExpired: true });
+    expect(stored?.expiresAt).toBe('2099-01-01T00:00:00.000Z');
+    expect(stored?.id).toBe('session-1');
+    expect(stored?.organizationId).toBe('org-1');
+    expect(getImpersonationHeaders()).toEqual({
+      'x-impersonation-session-id': 'session-1',
+      'x-impersonation-session-secret': 'secret-1',
+    });
+  });
+
+  it('ignores an empty renew header', () => {
+    persistImpersonationSession({
+      id: 'session-1',
+      secret: 'secret-1',
+      expiresAt: '2099-01-01T00:00:00.000Z',
+      organizationId: 'org-1',
+    });
+
+    syncImpersonationSessionExpiry(null);
+
+    expect(getStoredImpersonationSession()?.expiresAt).toBe(
+      '2099-01-01T00:00:00.000Z'
+    );
   });
 
   it('recognizes impersonation failures that must clear local session state', () => {

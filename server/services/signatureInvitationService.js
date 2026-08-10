@@ -1,6 +1,7 @@
 import { getSupabaseServer } from '../lib/supabase-server.js';
 import { sendContactFormEmail } from './emailService.js';
 import { PLATFORM_COMMERCIAL_NAME } from '../lib/platform-config.js';
+import { woosignService } from './woosign.js';
 
 const NOTIFICATION_FROM_EMAIL =
   process.env.NOTIFICATION_FROM_EMAIL || 'noreply@wootech.com.br';
@@ -279,7 +280,44 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
     }
   }
 
-  static async _sendWooSign(sig, documentUrl, lease, orgId, userId) {}
+  static async _sendWooSign(sig, documentUrl, lease, orgId, userId) {
+    const envelope = await woosignService.createEnvelope({
+      title: `Contrato de Locação - ${lease.property_title || 'Imóvel'}`,
+      pdfUrl: documentUrl,
+      recipients: [
+        {
+          name: sig.signer_name,
+          email: sig.signer_email,
+          role: 'SIGNER',
+        },
+      ],
+      metadata: {
+        organizationId: orgId,
+        userId: userId,
+        leaseId: lease.id,
+      },
+    });
+
+    if (envelope && envelope.id) {
+      await woosignService.sendEnvelope(envelope.id);
+      
+      const supabase = getSupabaseServer();
+      await supabase
+        .from('signatures')
+        .update({
+          external_id: envelope.id,
+          invitation_url: `http://localhost:3000/sign/${envelope.id}`, // Placeholder or fetch actual link if API returns it
+        })
+        .eq('id', sig.id);
+
+      return {
+        id: envelope.id,
+        status: 'sent',
+      };
+    }
+    
+    throw new Error('Falha ao gerar envelope WooSign');
+  }
 
   static async _sendClickSign(sig, documentUrl, orgId, userId) {
     const config = await getProviderConfig(orgId, userId, 'clicksign');

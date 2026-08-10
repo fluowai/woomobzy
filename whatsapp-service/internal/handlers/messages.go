@@ -145,7 +145,7 @@ func (h *MessageHandler) SendMessage(c *gin.Context) {
 	messageID, sentAt, err := client.SendTextMessage(ctx, chat.ChatJID, req.Content)
 	if err != nil {
 		h.logger.Error("Failed to send message", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": friendlySendError(err)})
 		return
 	}
 
@@ -313,6 +313,14 @@ func messageTypeFromMime(mimeType string) string {
 	default:
 		return "document"
 	}
+}
+
+func friendlySendError(err error) string {
+	msg := err.Error()
+	if strings.Contains(msg, "no LID found") || strings.Contains(msg, "failed to get LID") {
+		return "O WhatsApp nao autorizou o envio para este numero neste momento (conta sem identificador LID valido). Confirme se o numero esta ativo no WhatsApp e tente novamente."
+	}
+	return msg
 }
 
 func mediaStatusFromSend(mediaURL, mediaError string) string {

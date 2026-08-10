@@ -56,23 +56,19 @@ export const SettingsProvider: React.FC<{
 }> = ({ children, organizationId: propsOrgId }) => {
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
   const [settingsLoading, setSettingsLoading] = useState(true);
-  // After the first successful load, subsequent reloads (ex.: org becomes
-  // available right after onboarding auto-login) must run in background. Flipping
-  // settingsLoading back to true unmounts AppRoutes (AppContent spinner gate),
-  // which destroys Onboarding's local step state and restarts the wizard (loop).
   const hasLoadedOnce = React.useRef(false);
+  const authLoadingRef = React.useRef(false);
 
   const authContext = useAuth();
   const platformTenant = useContext(PlatformTenantContext);
   const profileOrgId = authContext?.profile?.organization_id;
-  const authLoading = authContext?.loading || false;
+
+  authLoadingRef.current = authContext?.loading || false;
 
   const loadSettings = useCallback(async () => {
-    // Determine which organization ID to load settings for
     const activeOrgId = propsOrgId || profileOrgId || platformTenant?.id;
 
-    // If no explicit org ID is provided and auth is still loading, wait before fetching
-    if (!propsOrgId && !platformTenant?.id && authLoading) {
+    if (!propsOrgId && !platformTenant?.id && authLoadingRef.current) {
       return;
     }
 
@@ -93,7 +89,6 @@ export const SettingsProvider: React.FC<{
         `📡 [SettingsContext] Loading site settings for org: ${activeOrgId}...`
       );
 
-      // Fetch specific organization settings
       const { data, error } = await supabase
         .from('site_settings')
         .select('*')
@@ -147,7 +142,7 @@ export const SettingsProvider: React.FC<{
       hasLoadedOnce.current = true;
       setSettingsLoading(false);
     }
-  }, [propsOrgId, profileOrgId, platformTenant?.id, authLoading]);
+  }, [propsOrgId, profileOrgId, platformTenant?.id]);
 
   useEffect(() => {
     loadSettings();

@@ -10,13 +10,14 @@ import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
 import { isValidUUID } from '../../lib/shared-utils.js';
 import { AsaasService } from '../../services/asaasService.js';
+import { resolveAsaasApiKey } from '../../middleware/asaas.js';
 
 const router = Router();
 
 /**
  * GET /api/locacao/invoices/:lease_id
  */
-router.get('/:lease_id', verifyAuth, requireTenant, async (req, res) => {
+router.get('/:lease_id', verifyAuth, requireTenant, resolveAsaasApiKey, async (req, res) => {
   try {
     const { lease_id } = req.params;
     const { status, year, month } = req.query;
@@ -52,7 +53,7 @@ router.get('/:lease_id', verifyAuth, requireTenant, async (req, res) => {
  * POST /api/locacao/invoices/generate
  * Gera boletos para uma locação e cria no Asaas com Split
  */
-router.post('/generate', verifyAuth, requireTenant, async (req, res) => {
+router.post('/generate', verifyAuth, requireTenant, resolveAsaasApiKey, async (req, res) => {
   try {
     const { lease_id, start_month, months = 12 } = req.body;
 
@@ -109,7 +110,7 @@ router.post('/generate', verifyAuth, requireTenant, async (req, res) => {
           tenant_cpf: lease.tenant_cpf,
           tenant_email: lease.tenant_email,
           tenant_phone: lease.tenant_phone,
-        });
+        }, req.asaasApiKey || undefined);
 
         // Salva o Customer ID no contrato para não criar duplicado
         if (asaasCustomerId) {
@@ -150,9 +151,8 @@ router.post('/generate', verifyAuth, requireTenant, async (req, res) => {
       const description = `Aluguel Ref: ${String(refMonth.getMonth() + 1).padStart(2, '0')}/${refMonth.getFullYear()} - Imóvel: ${lease.property?.title || 'Não informado'}`;
 
       let asaasCharge = null;
-      if (asaasCustomerId && process.env.ASAAS_API_KEY) {
+      if (asaasCustomerId && req.asaasApiKey) {
         try {
-          // Cria no Asaas com Split!
           asaasCharge = await AsaasService.createChargeWithSplit({
             customer: asaasCustomerId,
             value: total,
@@ -160,6 +160,7 @@ router.post('/generate', verifyAuth, requireTenant, async (req, res) => {
             description,
             ownerWalletId,
             imobzyFeePercentage,
+            apiKey: req.asaasApiKey,
           });
         } catch (err) {
           logger.error(

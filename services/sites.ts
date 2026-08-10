@@ -341,7 +341,7 @@ export const siteService = {
     };
 
     let query = supabase
-      .from('properties')
+      .from('public_available_properties')
       .select('*')
       .eq('organization_id', site.organizationId);
 

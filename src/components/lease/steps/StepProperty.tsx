@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Building2, Search, Home, MapPin } from 'lucide-react';
+import { Building2, Search, Home, MapPin, UserCheck } from 'lucide-react';
+import { toast } from 'sonner';
 import type { Lease } from '../../../types/lease';
+import { propertyService } from '../../../../services/properties';
 import { supabase } from '../../../../services/supabase';
 
 interface Props {
@@ -12,21 +14,71 @@ interface Props {
 const inputClass = 'w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-300 transition-all';
 const labelClass = 'text-[10px] font-bold text-slate-500 uppercase tracking-widest';
 
-export const StepProperty: React.FC<Props> = ({ lease, updateField }) => {
+export const StepProperty: React.FC<Props> = ({ lease, updateField, updateFields }) => {
   const [properties, setProperties] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [pullingOwner, setPullingOwner] = useState(false);
 
   useEffect(() => {
     loadProperties();
   }, []);
 
   const loadProperties = async () => {
-    const { data } = await supabase
-      .from('properties')
-      .select('id, title, city, state, address, neighborhood, price, property_type')
-      .eq('status', 'Disponível')
-      .order('title');
-    setProperties(data || []);
+    try {
+      const data = await propertyService.list(1, 1000);
+      setProperties(data.filter(p => p.status === 'Disponível') || []);
+    } catch (err) {
+      console.error('Erro ao buscar imóveis:', err);
+    }
+  };
+
+  const handleSelectProperty = async (p: any) => {
+    updateFields({
+      property_id: p.id,
+      property_title: p.title as any,
+      property_address: p.address as any,
+    });
+
+    if (!p.owner_id) {
+      updateFields({
+        owner_id: undefined,
+        owner_name: undefined,
+        owner_cpf_cnpj: undefined,
+        owner_email: undefined,
+        owner_phone: undefined,
+        owner_address_zip: undefined,
+      });
+      return;
+    }
+
+    setPullingOwner(true);
+    try {
+      const { data: owner, error } = await supabase
+        .from('clients')
+        .select(
+          'id,name,email,phone,document_number,address_city,address_state,address_street,address_neighborhood,address_zip'
+        )
+        .eq('id', p.owner_id)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (owner) {
+        updateFields({
+          owner_id: owner.id,
+          owner_name: owner.name || '',
+          owner_cpf_cnpj: owner.document_number || '',
+          owner_email: owner.email || '',
+          owner_phone: owner.phone || '',
+          owner_address_zip: owner.address_zip || '',
+        });
+        toast.success(`Dados do proprietário (${owner.name}) carregados automaticamente.`);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar proprietário do imóvel:', err);
+    } finally {
+      setPullingOwner(false);
+    }
   };
 
   const filtered = properties.filter(p =>
@@ -60,7 +112,7 @@ export const StepProperty: React.FC<Props> = ({ lease, updateField }) => {
           {filtered.map((p) => (
             <button
               key={p.id}
-              onClick={() => updateField('property_id', p.id)}
+              onClick={() => handleSelectProperty(p)}
               className={`text-left p-4 rounded-xl border-2 transition-all ${
                 lease.property_id === p.id
                   ? 'border-blue-500 bg-blue-50'
@@ -103,6 +155,27 @@ export const StepProperty: React.FC<Props> = ({ lease, updateField }) => {
                 {selectedProperty.property_type} - R$ {selectedProperty.price?.toLocaleString('pt-BR')}
               </p>
             </div>
+
+            {pullingOwner && (
+              <p className="text-xs text-slate-500 mt-3 flex items-center gap-2">
+                <UserCheck size={14} className="animate-pulse" />
+                Carregando dados do proprietário...
+              </p>
+            )}
+            {!pullingOwner && lease.owner_name && (
+              <div className="mt-4 p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-3">
+                <UserCheck size={18} className="text-emerald-600" />
+                <div className="text-xs text-emerald-800">
+                  <p className="font-bold">
+                    {lease.owner_id ? 'Proprietário vinculado ao CRM' : 'Proprietário informado'}
+                  </p>
+                  <p>
+                    {lease.owner_name}
+                    {lease.owner_cpf_cnpj && ` • ${lease.owner_cpf_cnpj}`}
+                  </p>
+                </div>
+              </div>
+            )}
           </section>
 
           {/* Utilidades e Encargos */}

@@ -1,15 +1,20 @@
 package handlers
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"go.mau.fi/whatsmeow/types"
 	"go.uber.org/zap"
 
 	"whatsapp-service/internal/models"
 	"whatsapp-service/internal/repository"
+	"whatsapp-service/internal/whatsapp"
 	"whatsapp-service/pkg/phone"
 )
 
@@ -18,15 +23,17 @@ type ChatHandler struct {
 	chatRepo     *repository.ChatRepo
 	contactRepo  *repository.ContactRepo
 	instanceRepo *repository.InstanceRepo
+	manager      *whatsapp.Manager
 	logger       *zap.Logger
 }
 
 // NewChatHandler creates a new ChatHandler
-func NewChatHandler(chatRepo *repository.ChatRepo, contactRepo *repository.ContactRepo, instanceRepo *repository.InstanceRepo, logger *zap.Logger) *ChatHandler {
+func NewChatHandler(chatRepo *repository.ChatRepo, contactRepo *repository.ContactRepo, instanceRepo *repository.InstanceRepo, manager *whatsapp.Manager, logger *zap.Logger) *ChatHandler {
 	return &ChatHandler{
 		chatRepo:     chatRepo,
 		contactRepo:  contactRepo,
 		instanceRepo: instanceRepo,
+		manager:      manager,
 		logger:       logger,
 	}
 }
@@ -90,14 +97,40 @@ func (h *ChatHandler) EnsureDirectChat(c *gin.Context) {
 		return
 	}
 
+	onWhatsApp, canonicalPN, err := h.isNumberOnWhatsApp(c.Request.Context(), instanceID, normalizedPhone)
+	if err != nil {
+		h.logger.Warn("Failed to verify WhatsApp number",
+			zap.String("instance", instanceID.String()),
+			zap.String("phone", normalizedPhone),
+			zap.Error(err),
+		)
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "Conecte a instancia do WhatsApp para validar o numero antes de criar a conversa.",
+			"code":  "WHATSAPP_INSTANCE_OFFLINE",
+		})
+		return
+	}
+	if !onWhatsApp {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{
+			"error": "Este numero nao esta registrado no WhatsApp. Confira o numero e tente novamente.",
+			"code":  "NUMBER_NOT_ON_WHATSAPP",
+		})
+		return
+	}
+
+	effectivePN := normalizedPhone
+	if canonicalPN != "" {
+		effectivePN = canonicalPN
+	}
+
 	displayName := strings.TrimSpace(req.Name)
 	if displayName == "" {
-		displayName = phone.FormatDisplay(normalizedPhone)
+		displayName = phone.FormatDisplay(effectivePN)
 	}
 
 	chat := &models.Chat{
 		InstanceID:  instanceID,
-		ChatJID:     normalizedPhone + "@s.whatsapp.net",
+		ChatJID:     effectivePN + "@s.whatsapp.net",
 		Name:        displayName,
 		IsGroup:     false,
 		LastMessage: "",
@@ -110,7 +143,7 @@ func (h *ChatHandler) EnsureDirectChat(c *gin.Context) {
 
 	contact := &models.Contact{
 		InstanceID:  instanceID,
-		Phone:       normalizedPhone,
+		Phone:       effectivePN,
 		DisplayName: displayName,
 	}
 	if err := h.contactRepo.Upsert(c.Request.Context(), contact); err != nil {
@@ -118,6 +151,59 @@ func (h *ChatHandler) EnsureDirectChat(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, chat)
+}
+
+// isNumberOnWhatsApp checks whether the phone number is registered on WhatsApp.
+// It uses the connected client so the LID mapping is also warmed in the store,
+// avoiding the "no LID found" error on later sends.
+// It also returns the canonical phone number reported by WhatsApp (when
+// available), which may differ from the typed number (e.g. extra/missing digit).
+func (h *ChatHandler) isNumberOnWhatsApp(ctx context.Context, instanceID uuid.UUID, normalizedPhone string) (bool, string, error) {
+	client, err := h.getConnectedClient(ctx, instanceID)
+	if err != nil {
+		return false, "", err
+	}
+	resp, err := client.GetWAClient().IsOnWhatsApp(ctx, []string{"+" + normalizedPhone})
+	if err != nil {
+		return false, "", err
+	}
+	if len(resp) == 0 {
+		return false, "", nil
+	}
+	canonicalPN := ""
+	if !resp[0].PhoneNumber.IsEmpty() && resp[0].PhoneNumber.Server == types.DefaultUserServer {
+		canonicalPN = phone.ExtractFromJID(resp[0].PhoneNumber.String())
+	}
+	return resp[0].IsIn, canonicalPN, nil
+}
+
+func (h *ChatHandler) getConnectedClient(ctx context.Context, instanceID uuid.UUID) (*whatsapp.Client, error) {
+	client, exists := h.manager.GetClient(instanceID)
+	if exists && client.IsConnected() {
+		return client, nil
+	}
+
+	if err := h.manager.ConnectInstance(ctx, instanceID); err != nil {
+		return nil, fmt.Errorf("instancia WhatsApp nao conectada: %w", err)
+	}
+
+	deadline := time.After(8 * time.Second)
+	ticker := time.NewTicker(250 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("instancia WhatsApp nao conectada")
+		case <-deadline:
+			return nil, fmt.Errorf("instancia WhatsApp reconectando, tente novamente em alguns segundos")
+		case <-ticker.C:
+			client, exists = h.manager.GetClient(instanceID)
+			if exists && client.IsConnected() {
+				return client, nil
+			}
+		}
+	}
 }
 
 // DeleteAllChats handles DELETE /api/chats.

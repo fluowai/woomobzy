@@ -14,7 +14,7 @@ type StorageBucket =
   | 'imobzymsg'
   | 'whatsapp-media'
   | 'documents';
-type ResolvedStorageBucket = 'imobzyimg' | 'imobzymsg' | 'whatsapp-media';
+type ResolvedStorageBucket = 'imobzyimg' | 'imobzymsg' | 'whatsapp-media' | 'documents';
 
 export const uploadFile = async (
   file: File,
@@ -74,6 +74,10 @@ function resolveStorageBucket(bucket: StorageBucket): ResolvedStorageBucket {
 
   if (bucket === 'imobzymsg' || bucket === 'whatsapp-media') {
     return bucket;
+  }
+
+  if (bucket === 'documents') {
+    return 'documents';
   }
 
   return 'imobzyimg';

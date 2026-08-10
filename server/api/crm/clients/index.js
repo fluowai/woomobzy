@@ -8,12 +8,20 @@ const router = Router();
 router.get('/', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { search, roles } = req.query;
+    const page = Math.max(1, Number(req.query.page || 1));
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit || 20)));
+    const offset = (page - 1) * limit;
+
     const supabase = getSupabaseServer();
     let query = supabase
       .from('clients')
-      .select('*')
+      .select(
+        'id, name, email, phone, document_number, document_type, roles, address_city, address_state, address_street, address_neighborhood, address_zip, notes, created_at',
+        { count: 'exact' }
+      )
       .eq('organization_id', req.orgId)
-      .order('name', { ascending: true });
+      .order('name', { ascending: true })
+      .range(offset, offset + limit - 1);
 
     if (search) {
       const term = `%${search}%`;
@@ -22,7 +30,7 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
       );
     }
 
-    const { data, error } = await query;
+    const { data, error, count } = await query;
     if (error) {
       if (
         error.code === '42P01' ||
@@ -62,7 +70,17 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
       );
     }
 
-    res.json({ success: true, clients });
+    const total = typeof count === 'number' ? count : clients.length;
+    res.json({
+      success: true,
+      clients,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+      },
+    });
   } catch (error) {
     console.error('List clients error:', error);
     res.status(500).json({ error: error.message });

@@ -35,7 +35,7 @@ import MessageBubble from './MessageBubble';
 import {
   chatApi,
   crmContactApi,
-  formatPhoneDisplay,
+  formatPhoneVisual,
   getChatDisplayName,
   type CrmAssignee,
   type CrmLead,
@@ -149,25 +149,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const rawPhone =
-    chat.platform === 'instagram'
-      ? ''
-      : chat.phone || getPhoneFromJid(chat.chat_jid);
-  const chatPhone =
-    chat.platform === 'instagram'
-      ? chat.instagram_contact_username
-        ? `@${chat.instagram_contact_username}`
-        : 'Instagram'
-      : chat.phone_display || formatPhoneDisplay(chat.chat_jid);
+  const rawPhone = chat.phone || getPhoneFromJid(chat.chat_jid);
+  const chatPhone = chat.phone_display || formatPhoneVisual(chat.chat_jid);
   const chatName =
-    chat.platform === 'instagram'
-      ? chat.instagram_contact_full_name ||
-        (chat.instagram_contact_username
-          ? `@${chat.instagram_contact_username}`
-          : 'Contato Instagram')
-      : chat.is_group
-        ? chat.name || 'Grupo sem nome'
-        : getChatDisplayName(chat);
+    chat.is_group
+      ? chat.name || 'Grupo sem nome'
+      : getChatDisplayName(chat);
   const currentAssignee = assignees.find(
     (item) => item.id === selectedAssignee
   );
@@ -180,7 +167,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   }, [chat.id, chatName]);
 
   useEffect(() => {
-    if (chat.is_group || !rawPhone || chat.platform === 'instagram') {
+    if (chat.is_group || !rawPhone) {
       setCrmLead(null);
       setCrmTags([]);
       setCrmTasks([]);
@@ -400,14 +387,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               onAvatarError={() => setAvatarError(true)}
               size="small"
             />
-            <div>
-              <strong>{chatName}</strong>
-              <span>
-                {chat.platform === 'instagram'
-                  ? 'Instagram'
-                  : `WhatsApp · ${chatPhone}`}
-              </span>
-            </div>
+              <div>
+                <strong>{chatName}</strong>
+                <span>WhatsApp · {chatPhone}</span>
+              </div>
           </div>
           <div className="wa-lead-header-meta">
             <div>
@@ -621,9 +604,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       </section>
 
       <aside className="wa-contact-panel wa-lead-panel">
-        <div className="wa-contact-panel-head">
+        <div className="wa-contact-panel-head flex items-center justify-between">
           <span>Dados do lead</span>
-          <Check size={16} />
+          <button type="button" onClick={() => setIsLeadPanelOpen(false)} className="text-slate-400 hover:text-slate-700">
+            <X size={18} />
+          </button>
         </div>
         <details className="wa-lead-card wa-accordion">
           <summary>
@@ -930,12 +915,11 @@ function Avatar({
   onAvatarError: () => void;
   size: 'small' | 'large';
 }) {
-  const canShowImage =
-    chat.avatar_url && !isWhatsAppCdnUrl(chat.avatar_url) && !avatarError;
+  const canShowImage = chat.avatar_url && !avatarError;
   return (
     <div className={`wa-smart-avatar ${size}`}>
       {canShowImage ? (
-        <img src={chat.avatar_url} alt="" onError={onAvatarError} />
+        <img src={chat.avatar_url} alt="" referrerPolicy="no-referrer" onError={onAvatarError} />
       ) : chat.is_group ? (
         <Users size={size === 'large' ? 28 : 20} />
       ) : (

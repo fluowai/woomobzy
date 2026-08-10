@@ -167,15 +167,36 @@ func (r *InstanceRepo) UpdateConnected(ctx context.Context, id uuid.UUID, phone,
 	return err
 }
 
-// Delete removes an instance by ID
+// Delete removes an instance by ID along with all of its dependent WhatsApp data
 func (r *InstanceRepo) Delete(ctx context.Context, id uuid.UUID) error {
-	query := `DELETE FROM whatsapp_instances WHERE id = $1`
-	tag, err := r.db.Exec(ctx, query, id)
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin delete transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	dependencyQueries := []string{
+		`DELETE FROM whatsapp_media WHERE instance_id = $1`,
+		`DELETE FROM whatsapp_messages WHERE instance_id = $1`,
+		`DELETE FROM whatsapp_chats WHERE instance_id = $1`,
+		`DELETE FROM whatsapp_contacts WHERE instance_id = $1`,
+	}
+	for _, query := range dependencyQueries {
+		if _, err := tx.Exec(ctx, query, id); err != nil {
+			return fmt.Errorf("failed to delete instance dependencies: %w", err)
+		}
+	}
+
+	tag, err := tx.Exec(ctx, `DELETE FROM whatsapp_instances WHERE id = $1`, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete instance: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
 		return fmt.Errorf("instance not found: %s", id)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit instance delete: %w", err)
 	}
 	return nil
 }

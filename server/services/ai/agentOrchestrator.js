@@ -500,12 +500,168 @@ export class AgentOrchestrator {
     history,
     leadId,
   }) {
+    const supabase = getSupabaseServer();
+    const operational = agent?.handoff_rules?.__operational360 || {};
+    const sharePrompt =
+      agent?.share_prompt_with_subagents ??
+      operational.share_prompt_with_subagents ??
+      false;
+    const subAgents =
+      agent?.sub_agents?.length
+        ? agent.sub_agents
+        : operational.sub_agents || [];
+
+    // Swarm dinamico: se o orquestrador compartilha o prompt com sub-agentes,
+    // detecta a atividade da mensagem e delega para o especialista que mais
+    // se encaixa, mantendo a mesma conversa (mesmo historico/session).
+    if (sharePrompt && subAgents.length) {
+      try {
+        const specialists = await this._loadSubAgents(
+          supabase,
+          organizationId,
+          subAgents
+        );
+        const specialist = this._detectSpecialist(content, specialists);
+        if (specialist) {
+          const delegated = await this._delegateToSpecialist({
+            content,
+            organizationId,
+            agent,
+            specialist,
+            history,
+            leadId,
+          });
+          if (delegated) return delegated;
+        }
+      } catch (err) {
+        console.warn(
+          '[AgentOrchestrator] Falha ao delegar para sub-agente:',
+          err.message
+        );
+      }
+    }
+
     const model = await this._ensureModel(agent?.tools || []);
     if (!model) {
       // Se nao ha tools ativas configuradas, retorna nulo para usar fluxo padrao
       return null;
     }
 
+    const systemInstruction = buildAgentSystemPrompt(agent, {
+      history,
+      channel: 'WhatsApp',
+    });
+
+    return this._runReActLoop({
+      model,
+      systemInstruction,
+      history,
+      content,
+      organizationId,
+      leadId,
+    });
+  }
+
+  async _loadSubAgents(supabase, organizationId, subAgentIds) {
+    if (!Array.isArray(subAgentIds) || subAgentIds.length === 0) return [];
+    const { data, error } = await supabase
+      .from('ai_agents')
+      .select('*')
+      .in('id', subAgentIds)
+      .eq('organization_id', organizationId)
+      .eq('is_active', true);
+    if (error) return [];
+    return data || [];
+  }
+
+  _detectSpecialist(content, specialists) {
+    if (!Array.isArray(specialists) || specialists.length === 0) return null;
+
+    const normalize = (value) =>
+      String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+    const text = normalize(content);
+    const tokens = text.split(/[^a-z0-9]+/).filter((t) => t.length >= 3);
+
+    let best = null;
+    let bestScore = 0;
+    for (const spec of specialists) {
+      const keywords = normalize(
+        [
+          spec.role,
+          spec.name,
+          ...(spec.capabilities || []),
+          ...(spec.tools || []),
+        ]
+          .filter(Boolean)
+          .join(' ')
+      );
+      const phrases = keywords.split(/[^a-z0-9]+/).filter((t) => t.length >= 3);
+
+      let score = 0;
+      for (const phrase of phrases) {
+        if (text.includes(phrase)) score += 2;
+      }
+      for (const token of tokens) {
+        if (keywords.includes(token)) score += 1;
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
+        best = spec;
+      }
+    }
+
+    return best && bestScore >= 2 ? best : null;
+  }
+
+  async _delegateToSpecialist({
+    content,
+    organizationId,
+    agent,
+    specialist,
+    history,
+    leadId,
+  }) {
+    const model = await this._ensureModel(specialist?.tools || []);
+    if (!model) return null;
+
+    const sharedPrompt = String(agent?.instructions || '').trim();
+    const specialistPrompt = buildAgentSystemPrompt(specialist, {
+      history,
+      channel: 'WhatsApp',
+    });
+
+    const systemInstruction = [
+      sharedPrompt
+        ? `PROMPT COMPARTILHADO DO ORQUESTRADOR (${agent?.name || 'agente principal'}):\n${sharedPrompt}`
+        : '',
+      specialistPrompt,
+      `VOCE FOI ACIONADO PELO AGENTE PRINCIPAL (${agent?.name || 'orquestrador'}) COMO ESPECIALISTA PARA AJUDAR NESTA MESMA CONVERSA. Responda como se fosse o ${specialist?.name || 'especialista'}, mantendo o contexto e o historico da conversa que o cliente ja teve.`,
+    ]
+      .filter(Boolean)
+      .join('\n\n');
+
+    return this._runReActLoop({
+      model,
+      systemInstruction,
+      history,
+      content,
+      organizationId,
+      leadId,
+    });
+  }
+
+  async _runReActLoop({
+    model,
+    systemInstruction,
+    history,
+    content,
+    organizationId,
+    leadId,
+  }) {
     // Inicia um chat para manter o estado da execucao das tools (ReAct loop)
     const chat = model.startChat({
       history: history.map((msg) => ({
@@ -516,12 +672,9 @@ export class AgentOrchestrator {
         parts: [
           {
             text:
-              buildAgentSystemPrompt(agent, {
-                history,
-                channel: 'WhatsApp',
-              }) +
+              systemInstruction +
               `
-
+ 
 DIRETRIZES DE FERRAMENTAS (apenas quando aplicavel ao contexto):
 - Use "buscar_imoveis" para verificar disponibilidade antes de oferecer um imovel.
 - Use "agendar_visita" apenas quando o cliente confirmar o dia e o horario.

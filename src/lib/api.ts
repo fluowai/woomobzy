@@ -6,6 +6,7 @@ import {
   clearImpersonationSession,
   getImpersonationHeaders,
   isImpersonationErrorCode,
+  syncImpersonationSessionExpiry,
 } from './impersonation';
 
 const DEFAULT_API_URL = 'same-origin';
@@ -151,6 +152,10 @@ export const callApi = async (path: string, options: CallApiOptions = {}) => {
       throw new Error(`Backend indisponível em ${url}: resposta HTML`);
     }
 
+    syncImpersonationSessionExpiry(
+      response.headers.get('x-impersonation-session-expires-at')
+    );
+
     return response.json();
   } catch (error: any) {
     if (error.name === 'AbortError') {
@@ -192,6 +197,10 @@ export const downloadApiFile = async (path: string, filename: string) => {
       errorData.error || `Erro ao baixar arquivo: ${response.statusText}`
     );
   }
+
+  syncImpersonationSessionExpiry(
+    response.headers.get('x-impersonation-session-expires-at')
+  );
 
   const blob = await response.blob();
   const objectUrl = URL.createObjectURL(blob);

@@ -4,6 +4,7 @@ import { logger } from '../../utils/logger.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { AsaasService } from '../../services/asaasService.js';
+import { resolveAsaasApiKey } from '../../middleware/asaas.js';
 
 const router = Router();
 
@@ -15,7 +16,7 @@ const listSchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(50),
 });
 
-router.get('/invoices', verifyAuth, async (req, res) => {
+router.get('/invoices', verifyAuth, resolveAsaasApiKey, async (req, res) => {
   try {
     const parsed = listSchema.safeParse(req.query);
     if (!parsed.success) {
@@ -39,20 +40,27 @@ router.get('/invoices', verifyAuth, async (req, res) => {
         .json({ error: 'Organizacao nao encontrada', code: 'ORG_NOT_FOUND' });
     }
 
+    const asaasApiKey = req.asaasApiKey || undefined;
     let asaasInvoices = [];
     try {
       if (org.asaas_subscription_id) {
-        asaasInvoices = await AsaasService.listSubscriptions({
-          customer: org.asaas_customer_id,
-          offset: (page - 1) * limit,
-          limit,
-        });
+        asaasInvoices = await AsaasService.listSubscriptions(
+          {
+            customer: org.asaas_customer_id,
+            offset: (page - 1) * limit,
+            limit,
+          },
+          asaasApiKey
+        );
       } else {
-        asaasInvoices = await AsaasService.listPayments({
-          customer: org.asaas_customer_id,
-          offset: (page - 1) * limit,
-          limit,
-        });
+        asaasInvoices = await AsaasService.listPayments(
+          {
+            customer: org.asaas_customer_id,
+            offset: (page - 1) * limit,
+            limit,
+          },
+          asaasApiKey
+        );
       }
     } catch (error) {
       logger.warn(
@@ -110,7 +118,7 @@ router.get('/invoices', verifyAuth, async (req, res) => {
   }
 });
 
-router.get('/invoices/:id', verifyAuth, async (req, res) => {
+router.get('/invoices/:id', verifyAuth, resolveAsaasApiKey, async (req, res) => {
   try {
     const { id } = req.params;
     const supabase = getSupabaseServer();
@@ -131,8 +139,15 @@ router.get('/invoices/:id', verifyAuth, async (req, res) => {
     let asaasPayment = null;
     if (invoice.gateway_payment_id) {
       try {
+        const { data: org } = await supabase
+          .from('organizations')
+          .select('gateway_api_key')
+          .eq('id', req.orgId)
+          .maybeSingle();
+
         asaasPayment = await AsaasService.getPayment(
-          invoice.gateway_payment_id
+          invoice.gateway_payment_id,
+          req.asaasApiKey || org?.gateway_api_key || undefined
         );
       } catch (error) {
         logger.warn(

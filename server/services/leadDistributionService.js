@@ -185,16 +185,57 @@ export async function bulkDistributeLeads(
   leadIds,
   strategy = DISTRIBUTION_STRATEGIES.BALANCED
 ) {
-  const results = [];
-  for (const leadId of leadIds) {
-    try {
-      const broker = await distributeLead(organizationId, leadId, strategy);
-      results.push({ leadId, brokerId: broker?.id || null, success: !!broker });
-    } catch (err) {
-      results.push({ leadId, success: false, error: err.message });
+  if (!leadIds.length) return [];
+
+  const supabase = getSupabaseServer();
+  const brokers = await getActiveBrokers(organizationId);
+  if (!brokers.length) {
+    return leadIds.map((leadId) => ({ leadId, brokerId: null, success: false, error: 'No active brokers' }));
+  }
+
+  const brokerIds = brokers.map((b) => b.id);
+  let selectedBroker;
+
+  switch (strategy) {
+    case DISTRIBUTION_STRATEGIES.ROUND_ROBIN: {
+      const { data: lastLead } = await supabase
+        .from('leads')
+        .select('broker_id')
+        .eq('organization_id', organizationId)
+        .not('broker_id', 'is', null)
+        .in('broker_id', brokerIds)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      selectedBroker = roundRobin(brokers, lastLead?.broker_id);
+      break;
+    }
+    case DISTRIBUTION_STRATEGIES.PERFORMANCE:
+      selectedBroker = await performance(organizationId, brokers);
+      break;
+    case DISTRIBUTION_STRATEGIES.BALANCED:
+    default: {
+      const leadCounts = await getBrokerLeadCounts(organizationId, brokerIds);
+      selectedBroker = balanced(brokers, leadCounts);
+      break;
     }
   }
-  return results;
+
+  if (!selectedBroker) {
+    return leadIds.map((leadId) => ({ leadId, brokerId: null, success: false, error: 'No broker selected' }));
+  }
+
+  const { error } = await supabase
+    .from('leads')
+    .update({ broker_id: selectedBroker.id })
+    .in('id', leadIds)
+    .eq('organization_id', organizationId);
+
+  if (error) {
+    return leadIds.map((leadId) => ({ leadId, brokerId: null, success: false, error: error.message }));
+  }
+
+  return leadIds.map((leadId) => ({ leadId, brokerId: selectedBroker.id, success: true }));
 }
 
 export { DISTRIBUTION_STRATEGIES };

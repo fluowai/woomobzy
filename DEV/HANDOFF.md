@@ -1,5 +1,83 @@
 # Handoff
 
+## 2026-08-09 — Wizard de Locação: auto-save 400 "Dados inválidos" corrigido (pronto para revisão)
+
+- **Solicitação (maestro)**: console no `/urban/locacao/novo` com loop `PUT /api/locacao/leases/:id 400` + `Auto-save error: Dados inválidos` a cada 30s (`useLeaseWizard.ts:118`).
+- **Causa raiz**: auto-save envia o `lease` inteiro com valores inválidos de rascunho — colunas `null` do banco, strings vazias (`tenant_email`/`tenant_phone`), `NaN`→`null` de `Number(e.target.value)` em inputs vazios (`StepCommercialTerms.tsx`), e `due_day: 0` (`Number('')`=0). O zod `.optional()` só aceita `undefined` → `400 Dados inválidos` em POST/PUT.
+- **Fix aplicado (working tree, sem commit)**:
+  1. `server/api/locacao/lease.routes.js` — `normalizeLeasePayload` (remove null/undefined/NaN/empty-string/`due_day===0`) antes do `safeParse`, em POST e PUT.
+  2. `src/hooks/lease/useLeaseWizard.ts` — removido o `setInterval` interno de 30s que duplicava o auto-save do componente (`useAutoSave` em `LeaseWizard.tsx`).
+- **Gates**: `node --check` ✓; teste node do normalizador ✓ (PASS); `npm run type-check` ✓; `npm run lint` ✓ (0 errors). Nenhum commit/push.
+- **Próxima ação (maestro)**: reiniciar o backend para carregar o fix (porta 3006) e validar o wizard ao vivo (criar rascunho, deixar campos vazios, conferir que auto-save persiste sem erro). Observação: `tenant_phone` ainda exige `.min(10)` — um telefone parcialmente digitado ainda falha no auto-save (draft fica seguro no localStorage); se quiser, posso relaxar também.
+
+## 2026-08-09 — Email Center: 400 em POST /api/email/accounts = credenciais inválidas no servidor de e-mail; fix de crash TLS aplicado
+
+- **Diagnóstico (maestro)**: `POST /api/email/accounts` retorna 400 ao conectar `paulo@wootech.com.br` em `mail.wootech.com.br:587`. Reproduzido com as libs do servidor → **o servidor de e-mail rejeita o login** (IMAP `NO [AUTHENTICATIONFAILED]`, SMTP `535 Incorrect authentication data`) para `paulo@wootech.com.br` e `paulo`. Portas/certificado (993/587) corretos.
+- **Fix aplicado** (`server/services/email/emailService.js`): handler de `'error'` no `ImapFlow` (`createImapClient`) + `testEmailConnection` fecha IMAP/SMTP em falha — elimina crash do processo quando o certificado não bate com o hostname (porta 143/STARTTLS). Gates: `node --check` ✓, eslint ✓.
+- **Próxima ação (maestro)**: 1) **corrigir a senha da caixa** no cPanel/webmail (`https://mail.wootech.com.br`) ou confirmar que a senha digitada no app está exata — a atual é rejeitada pelo servidor; 2) reiniciar o backend (3002, `node --env-file=.env server/index.js`) para carregar o fix de robustez; 3) reconectar a conta no Email Center (IMAP 993 SSL / SMTP 587 STARTTLS). Nenhum commit/push.
+
+## 2026-08-08 — WhatsApp "no LID found" RESOLVIDO: envio usa PN canônico do WhatsApp (teste real OK)
+
+- **Solicitação (maestro)**: enviar "e ai Paulo tudo certo segue teste" para `5548988003260` → **ENTREGUE** (2 envios 200: message_id `3EB09BF38114B112669E49` e `3EB0B84C863BFF93427606`).
+- **Causa raiz real (confirmada com log temporário)**: o WhatsApp conhece o contato como **PN canônico `554888003260@s.whatsapp.net` + LID `104565810663442@lid`** (mapeamento já existia em `whatsmeow_lid_map`). O chat era criado com o JID digitado `5548988003260@s.whatsapp.net` → envio não achava LID para esse PN (usync full retorna vazio) → "no LID found". Número digitado ≠ PN canônico.
+- **Fix**: `EnsureDirectChat` (`whatsapp-service/internal/handlers/chats.go`) usa o **PN canônico retornado por `IsOnWhatsApp`** (`resp[0].PhoneNumber` quando `@s.whatsapp.net`) para criar chat/contato — digitar o número "errado" agora cria o chat com o PN correto. Mantidas: validação 422 `NUMBER_NOT_ON_WHATSAPP` / 503 `WHATSAPP_INSTANCE_OFFLINE` e o erro amigável 400 no envio.
+- **Gates**: build ✓, `go test` handlers+whatsapp ✓ (vet rodou, sem erros reportados). REST: ensure número errado → chat com PN canônico 200; envio → 200; número inexistente → 422. Serviço no ar (`:3100`).
+- **Próxima ação (maestro)**: confirmar no WhatsApp do Paulo se a mensagem chegou; validar no painel `/urban/whatsapp` (criar conversa digitando `5548988003260` → deve criar com `554888003260`); decidir commit/push. Nenhum commit/push.
+- **Atenção**: working tree tem WIP de outras sessões (instance_repo.go/client.go diffs pré-existentes). Change set desta sessão = `chats.go`, `messages.go`, `main.go`, exe rebuildado + docs DEV.
+
+## 2026-08-08 — WhatsApp "no LID found": validação de número no create-chat + erro amigável (pronto para revisão)
+
+- **Solicitação (maestro)**: resolver o erro `no LID found for 5548988003260@s.whatsapp.net` ao enviar no inbox; escolhido **"Validar número ao criar conversa"**.
+- **Causa raiz**: whatsmeow `send.go:344` exige LID para DM; `5548988003260` está registrado no WhatsApp (`IsOnWhatsApp` → `IsIn: true`) mas o WhatsApp **não expõe LID** para ele (usync full não traz; `whatsmeow_lid_map` sem mapeamento — 12.321 mapeamentos para outros contatos). Envio DM a esse número fica impossível no whatsmeow `v0.0.0-20260730092514-662ad1dc6900`. Não é bug do app.
+- **Implementado (working tree, sem commit)**: `whatsapp-service/internal/handlers/chats.go` — `EnsureDirectChat` valida via `IsOnWhatsApp` antes de criar: **422** `NUMBER_NOT_ON_WHATSAPP` ("Este numero nao esta registrado no WhatsApp...") / **503** `WHATSAPP_INSTANCE_OFFLINE` ("Conecte a instancia do WhatsApp para validar o numero antes de criar a conversa."); helpers `isNumberOnWhatsApp` + `getConnectedClient` (aguarda conexão até 8s). `messages.go` — `friendlySendError` converte `no LID found`/`failed to get LID` → **400** amigável (antes 500 cru). `cmd/server/main.go` — `NewChatHandler(..., manager, ...)`. Frontend intacto (erros já chegam ao toast via `WhatsAppApiError`).
+- **Gates**: Go build/vet/test ✓ (cópia ASCII em `Temp\opencode\wasvc-lidfix` por causa do acento no path); serviço no ar (`:3100` health OK). REST: número válido → 200; número inexistente → 422; envio ao `5548988003260` → 400 amigável.
+- **Próxima ação (maestro)**: (1) testar envio para um contato **normal** (com LID) para confirmar que o sistema funciona e que o caso-limite é só desse número; (2) decidir se quer tentar remover esse contato e recadastrar; (3) commit/push quando aprovar. Nenhum commit/push.
+- **Atenção**: working tree tem WIP de outras sessões (instance_repo.go/client.go têm diffs pré-existentes de sessão anterior, não tocados). Change set desta sessão = `chats.go`, `messages.go`, `main.go`, exe rebuildado + docs DEV.
+
+## 2026-08-08 — DNO do Imóvel: Fases 1-3 + migration APLICADA em produção (verificação REST ✓)
+
+- **Migration aplicada em produção** `epgaftsjmqmpczvzsrcc` via `exec_sql` → **9/9 OK** (roles → `'Proprietário'`, índice `idx_properties_owner_id`, view `public_available_properties` + GRANT anon/authenticated, DROP policy `"Public read available properties"`, REVOKE SELECT anon em `properties`).
+- **Correção na migration**: RLS em view removido (Postgres não suporta); acesso via GRANT + projeção de vitrine + filtro de status. Arquivo idempotente (reexecução 9/9).
+- **Verificação REST (anon)**: view sem `owner_id`/`owner_info` (400 column not found) ✓; vitrine 366 imóveis ✓; `properties` direto → 401 permission denied ✓.
+- **Estado do código (working tree, sem commit)**: Fases 1-3 implementadas (ver entrada abaixo) — PropertyEditor com seção DNO + create-or-resolve, `services/properties.ts` grava `owner_id`, locação pré-preenche `owner_*` no `StepProperty`, aviso no `StepOwnerData`.
+- **Próxima ação (maestro)**: (1) validar acesso autenticado (org vê seus imóveis, outra org não); (2) validar UI ponta a ponta (cadastro imóvel com DNO novo/existente, locação com prefill, contrato com `nome_locador` do DNO); (3) decidir commit/push. Nenhum commit/push.
+- **Atenção**: outra sessão está editando em paralelo `StepContractGeneration.tsx`/`StepDigitalSignature.tsx` (WIP WooSign/PDF às 14:46–14:50) — o type-check falha só nesses arquivos deles; não mexi para evitar conflito. Working tree tem WIP de várias sessões — conferir `git status` antes de commit. Change set desta sessão = 1 migration (nova) + `run-migrations.mjs` + `services/properties.ts` + `types/property.ts` + `views/PropertyEditor.tsx` + `services/sites.ts` + `services/landingPages.ts` + `views/LandingPage.tsx` + `views/FazendasBrasilPublicSite.tsx` + `StepProperty.tsx` + `StepOwnerData.tsx` + docs DEV.
+
+## 2026-08-08 — DNO do Imóvel: Fases 1-3 implementadas + hardening anti-vazamento público (pronto para aplicar migration + revisão)
+
+- **Execução do plano** `DEV/SPECS/DNO_PROPRIETARIO_IMOVEL.md` (status → EM PROGRESSO).
+- **Migration** `migrations/20260808_property_owner_dno.sql` (nova, na lista canônica de `scripts/run-migrations.mjs`): normaliza `clients.roles` para `'Proprietário'`, índice `idx_properties_owner_id`, e **hardening anti-vazamento**: view `public_available_properties` (colunas de vitrine; RLS: anon vê tudo, authenticated vê a org), GRANT anon+authenticated na view, **DROP da policy `"Public read available properties"`** e **REVOKE SELECT anon em `properties`**.
+- **Consumidores públicos na view** (nenhum `.select('*')` em `properties` público restante): `services/sites.ts`, `services/landingPages.ts`, `views/LandingPage.tsx`, `views/FazendasBrasilPublicSite.tsx`. `OkaPublicSite` é array hardcoded (sem DB).
+- **DNO no PropertyEditor** (`views/PropertyEditor.tsx`): seção "Dono do Imóvel (DNO)" com busca incremental em clients (`clientService.list`), vínculo/desvínculo, formulário de criação, create-or-resolve no `handleSave`; `services/properties.ts` grava `owner_id`.
+- **Puxada automática na locação**: `StepProperty.tsx` pré-preenche `owner_*` ao selecionar imóvel (via `property.owner_id → clients`); `StepOwnerData.tsx` mostra aviso de dados carregados do CRM.
+- **Gates**: type-check ✓, eslint arquivos alterados 0 erros ✓, build ✓ (~2m33s).
+- **Próxima ação (maestro)**: (1) **aplicar a migration em dev/prod via `exec_sql`** — obrigatório junto com o código, senão os sites públicos quebram (policy anon dropada + REVOKE); (2) Fase 4: testes RLS anon/org (anon sem `owner_*` em `properties`, `clients` vazio p/ anon); (3) validar UI (cadastro com DNO novo e existente, locação ponta a ponta) e decidir commit/push. Nenhum commit/push.
+- **Atenção**: working tree tem WIP de várias sessões (Agentes IA, ReportsCenter, WooSign em `StepDigitalSignature.tsx`) — conferir `git status` antes de commit. Change set desta sessão = 1 migration + `run-migrations.mjs` + `services/properties.ts` + `types/property.ts` + `views/PropertyEditor.tsx` + `services/sites.ts` + `services/landingPages.ts` + `views/LandingPage.tsx` + `views/FazendasBrasilPublicSite.tsx` + `StepProperty.tsx` + `StepOwnerData.tsx` + docs DEV.
+
+## 2026-08-08 — Agentes IA: guardrails só com agente ativo, prompt grande e swarm com prompt compartilhado (pronto para revisão)
+
+- **Solicitação (maestro)**: (1) mensagem de guardrail "No momento eu ajudo apenas com imoveis..." não deve aparecer sem agente ativo conectado; (2) campo grande para cadastrar o prompt na aba Agentes; (3) compartilhar o mesmo prompt com sub-agentes — sistema detecta a atividade e delega para o especialista relevante dentro da mesma conversa.
+- **Implementado (working tree, sem commit)**:
+  - `server/lib/AIAutomation.js` — guardrails só respondem com agente ativo (`skipped` sem reply quando `!agent`).
+  - `components/agents/AgentForm.tsx` — prompt em largura total (`lg:col-span-2`, `min-h-72`, `resize-y`); toggle **"Compartilhar este prompt com sub-agentes"** na seção Swarm + lista de especialistas.
+  - `views/AIAgents.tsx` + `services/aiAgents.ts` — campo `share_prompt_with_subagents` no state/default/load/save e na interface.
+  - `server/api/ai/helpers.js` — `agent_type`, `sub_agents`, `share_prompt_with_subagents` persistidos em `handoff_rules.__operational360`.
+  - `server/services/ai/agentOrchestrator.js` — refactor: `_runReActLoop` extraído; swarm dinâmico (`_loadSubAgents`, `_detectSpecialist` por score de keywords de role/capabilities/tools, `_delegateToSpecialist` com prompt compartilhado + histórico da mesma conversa).
+- **Gates**: type-check ✓, eslint arquivos alterados 0 erros ✓, `node --check` (agentOrchestrator.js, helpers.js, AIAutomation.js) ✓, build ✓ (1m7s).
+- **Próxima ação (maestro)**: validar no navegador — criar orquestrador com compartilhamento + especialistas conectados, testar chat acionando especialista na mesma conversa, e conferir que sem agente ativo não há resposta de guardrail. Depois decidir commit/push.
+- **Atenção**: working tree tem WIP de várias sessões (ReportsCenter, StepProperty, docs). Change set desta sessão = 6 arquivos (`AIAutomation.js`, `agentOrchestrator.js`, `helpers.js`, `AgentForm.tsx`, `AIAgents.tsx`, `aiAgents.ts`) + docs DEV. Nenhum commit/push.
+
+## 2026-08-08 — Aba Relatórios reescrita: central profissional com dados reais (pronto para revisão)
+
+- **Solicitação (maestro)**: melhorar a aba Relatórios (`/urban/reports`, `/rural/reports`) — mais profissional, dados reais, diversos tipos.
+- **Implementado (working tree, sem commit)**:
+  - `views/ReportsCenter.tsx` (novo): abas **Visão Geral / Comercial / Leads & Funil / Corretores / Locação**, filtro de período (30d/90d/6m/1y/todo), KPIs, gráficos (área/barras/pizza), ranking de corretores e exportação **CSV (por relatório + completo) e Imprimir/PDF**.
+  - `views/BIRural.tsx` / `views/BIUrbano.tsx` → wrappers de `<ReportsCenter mode>` (rotas/lazy intactos).
+  - Dados reais via Supabase tenant: `properties`, `leads`, `profiles`, `lead_activities`, `rental_contracts`, com `.limit(100000)` (default 1000 truncava antes). Nicho por `isRuralProperty`/`isUrbanProperty` + `match_profile`.
+- **Gates**: type-check ✓, lint 0 erros/0 warnings ✓, build ✓. Fix de gate pré-existente: import de `StepProperty.tsx` (`services/properties` raiz) — WIP de outra sessão, apenas caminho corrigido.
+- **Próxima ação (maestro)**: validar `/urban/reports` e `/rural/reports` no navegador (abas, período, exportações) com login real; decidir commit/push. Nenhum commit/push.
+- **Atenção**: working tree tem WIP de várias sessões — conferir `git status`; change set desta sessão = `views/ReportsCenter.tsx` (novo), `views/BIRural.tsx`, `views/BIUrbano.tsx`, `src/components/lease/steps/StepProperty.tsx` (1 linha), docs DEV.
+
 ## 2026-08-08 — RLS do módulo urban alinhada ao padrão CRM (fix do 403 no Simulador/Fintech) — APLICADO em produção
 
 - **Sintoma**: superadmin impersonando org (`91b29fed` — Enzo Imoveis) → `POST /rest/v1/urban_financing_simulations` → **403** ao salvar simulação no `/urban/simulador` (e `/urban/fintech`).

@@ -19,15 +19,26 @@ export function useWebSocket(enabled = true) {
   const reconnectAttempts = useRef(0);
   const maxReconnectDelay = 30000;
   const intentionalClose = useRef(false);
+  const currentMountId = useRef(0);
 
-  const connect = useCallback(async () => {
+  const connect = useCallback(async (mountId: number) => {
+    logger.info(`[WS] connect(${mountId}) started. enabled=${enabled}`);
     if (!enabled) return;
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      logger.info(`[WS] Already open.`);
+      return;
+    }
 
     try {
-      intentionalClose.current = false;
+      logger.info(`[WS] Fetching URL...`);
       const wsUrl = await getAuthorizedWhatsAppWsUrl();
-      if (intentionalClose.current || !enabled) return;
+      logger.info(`[WS] URL fetched. mountId=${mountId}, current=${currentMountId.current}, intentional=${intentionalClose.current}`);
+      if (!enabled || currentMountId.current !== mountId || intentionalClose.current) {
+        logger.info(`[WS] Aborting connect. enabled=${enabled}, intentionalClose=${intentionalClose.current}`);
+        return;
+      }
+      
+      logger.info(`[WS] Creating new WebSocket instance...`);
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
@@ -54,10 +65,12 @@ export function useWebSocket(enabled = true) {
       };
 
       ws.onclose = () => {
-        setIsConnected(false);
-        wsRef.current = null;
+        if (wsRef.current === ws) {
+          setIsConnected(false);
+          wsRef.current = null;
+        }
 
-        if (intentionalClose.current || !enabled) {
+        if (intentionalClose.current || !enabled || wsRef.current !== ws && wsRef.current !== null) {
           return;
         }
 
@@ -69,7 +82,7 @@ export function useWebSocket(enabled = true) {
         logger.warn(
           `WhatsApp WebSocket disconnected. Reconnecting in ${delay}ms.`
         );
-        reconnectTimeoutRef.current = setTimeout(connect, delay);
+        reconnectTimeoutRef.current = setTimeout(() => connect(mountId), delay);
       };
 
       ws.onerror = (event) => {
@@ -78,6 +91,8 @@ export function useWebSocket(enabled = true) {
 
       wsRef.current = ws;
     } catch (err) {
+      if (currentMountId.current !== mountId) return;
+      
       const delay = getReconnectDelay(
         reconnectAttempts.current,
         maxReconnectDelay
@@ -87,16 +102,27 @@ export function useWebSocket(enabled = true) {
         `Failed to create WhatsApp WebSocket. Reconnecting in ${delay}ms.`,
         err
       );
-      reconnectTimeoutRef.current = setTimeout(connect, delay);
+      reconnectTimeoutRef.current = setTimeout(() => connect(mountId), delay);
     }
   }, [enabled]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
     }
     intentionalClose.current = true;
-    wsRef.current?.close();
+    
+    if (wsRef.current) {
+      const ws = wsRef.current;
+      if (ws.readyState === WebSocket.CONNECTING) {
+        // Prevent console error by waiting for open before closing
+        ws.onopen = () => ws.close();
+      } else {
+        ws.close();
+      }
+    }
+    
     wsRef.current = null;
     setIsConnected(false);
   }, []);
@@ -119,8 +145,13 @@ export function useWebSocket(enabled = true) {
       return;
     }
 
+    currentMountId.current += 1;
+    const mountId = currentMountId.current;
+    intentionalClose.current = false;
     reconnectAttempts.current = 0;
-    connect();
+    
+    connect(mountId);
+    
     return () => disconnect();
   }, [connect, disconnect, enabled]);
 

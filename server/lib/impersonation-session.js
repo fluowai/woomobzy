@@ -1,6 +1,7 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 
 const SESSION_TTL_MS = 15 * 60 * 1000;
+const RENEW_THRESHOLD_MS = 5 * 60 * 1000;
 
 export class ImpersonationSessionError extends Error {
   constructor(message, code, status = 403) {
@@ -166,7 +167,28 @@ export async function assertValidImpersonationSession(
     );
   }
 
+  await renewImpersonationSessionIfNeeded(supabase, data);
+
   return data;
+}
+
+async function renewImpersonationSessionIfNeeded(supabase, session) {
+  const now = Date.now();
+  const expiresAtMs = new Date(session.expires_at).getTime();
+  if (expiresAtMs - now > RENEW_THRESHOLD_MS) return;
+
+  const renewedExpiresAt = new Date(now + SESSION_TTL_MS).toISOString();
+  const { error } = await supabase
+    .from('impersonation_sessions')
+    .update({
+      expires_at: renewedExpiresAt,
+      last_seen_at: new Date().toISOString(),
+    })
+    .eq('id', session.id);
+
+  if (!error) {
+    session.expires_at = renewedExpiresAt;
+  }
 }
 
 export async function revokeImpersonationSession(

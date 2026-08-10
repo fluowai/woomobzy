@@ -50,6 +50,8 @@ import campaignContactsRoutes from './api/campaigns/contacts.js';
 import campaignSerperRoutes from './api/campaigns/serper.js';
 import campaignBlacklistRoutes from './api/campaigns/blacklist.js';
 import woosignRoutes from './api/woosign/index.js';
+import metaWebhookRoutes from './api/webhooks/meta.js';
+import metaAdminRoutes from './api/meta/index.js';
 import {
   getPlatformOriginList,
   PLATFORM_COMMERCIAL_NAME,
@@ -352,6 +354,8 @@ app.use(
 );
 app.use('/api/campaigns', verifyAuth, requireTenant, campaignRoutes);
 app.use('/api/woosign', verifyAuth, requireTenant, woosignRoutes);
+app.use('/api/webhooks/meta', metaWebhookRoutes);
+app.use('/api/meta', verifyAuth, metaAdminRoutes);
 
 // System Status & Health
 app.get('/api/system-status', async (req, res) => {

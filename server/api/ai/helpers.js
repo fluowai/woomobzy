@@ -44,6 +44,9 @@ function normalizeAgentPayload(body, partial = false) {
     metrics: body.metrics || [],
     simulation: body.simulation || {},
     limits: body.limits || {},
+    agent_type: body.agent_type || 'specialist',
+    sub_agents: body.sub_agents || [],
+    share_prompt_with_subagents: body.share_prompt_with_subagents ?? false,
   };
 
   Object.keys(extendedConfig).forEach((key) => {

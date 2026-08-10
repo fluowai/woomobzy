@@ -111,8 +111,21 @@ async function runDispatchLoop(state) {
   const supabase = getSupabaseServer();
   const { campaign, instances } = state;
 
+  const preloadedBlacklist = new Set(
+    (
+      await supabase
+        .from('campaign_blacklist')
+        .select('phone')
+        .eq('organization_id', campaign.organization_id)
+    ).data?.map((row) => row.phone) || []
+  );
+
+  const instanceDailyCounters = new Map();
+  for (const instance of instances) {
+    instanceDailyCounters.set(instance.id, 0);
+  }
+
   while (!state.abortController.signal.aborted) {
-    // 1. Check working hours
     if (
       !isWithinWorkingHours(
         campaign.working_hours_start,
@@ -126,7 +139,6 @@ async function runDispatchLoop(state) {
       if (state.abortController.signal.aborted) break;
     }
 
-    // 2. Get next pending contact
     const { data: contact } = await supabase
       .from('campaign_contacts')
       .select('*')
@@ -142,15 +154,7 @@ async function runDispatchLoop(state) {
       break;
     }
 
-    // 3. Check blacklist
-    const { data: blacklisted } = await supabase
-      .from('campaign_blacklist')
-      .select('id')
-      .eq('organization_id', campaign.organization_id)
-      .eq('phone', contact.phone)
-      .maybeSingle();
-
-    if (blacklisted) {
+    if (preloadedBlacklist.has(contact.phone)) {
       await supabase
         .from('campaign_contacts')
         .update({ status: 'blacklisted', error_message: 'Número na blacklist' })
@@ -159,7 +163,6 @@ async function runDispatchLoop(state) {
       continue;
     }
 
-    // 4. Validate phone
     if (!isValidBrazilPhone(contact.phone)) {
       await supabase
         .from('campaign_contacts')
@@ -169,7 +172,6 @@ async function runDispatchLoop(state) {
       continue;
     }
 
-    // 5. Select instance (round-robin or random)
     const instance = selectInstance(state);
     if (!instance) {
       console.log(`[CampaignDispatcher] Nenhuma instância disponível`);
@@ -177,22 +179,15 @@ async function runDispatchLoop(state) {
       continue;
     }
 
-    // 6. Check daily limit
-    const dailyCheck = await checkDailyLimit(
-      supabase,
-      instance,
-      campaign.daily_limit_per_instance
-    );
-    if (dailyCheck.exceeded) {
+    const sentCount = instanceDailyCounters.get(instance.id) || 0;
+    if (sentCount >= campaign.daily_limit_per_instance) {
       console.log(
         `[CampaignDispatcher] Limite diário atingido para instância ${instance.whatsapp_instances.name}`
       );
-      // Try next instance
       state.currentIndex = (state.currentIndex + 1) % state.instances.length;
       continue;
     }
 
-    // 7. Generate message via AI or use template
     let messageText;
     try {
       messageText = await generateMessage(campaign, contact);
@@ -208,14 +203,12 @@ async function runDispatchLoop(state) {
       );
     }
 
-    // 8. Send message
     try {
       const waInstance = instance.whatsapp_instances;
       const chatJid = formatPhoneToJid(contact.phone);
 
       await sendWhatsAppMessage(waInstance, chatJid, messageText);
 
-      // Success
       await supabase
         .from('campaign_contacts')
         .update({
@@ -226,16 +219,17 @@ async function runDispatchLoop(state) {
         })
         .eq('id', contact.id);
 
-      // Update instance counter
+      const newCount = sentCount + 1;
+      instanceDailyCounters.set(instance.id, newCount);
+
       await supabase
         .from('campaign_instances')
         .update({
-          daily_sent_count: dailyCheck.current + 1,
+          daily_sent_count: newCount,
           last_sent_at: new Date().toISOString(),
         })
         .eq('id', instance.id);
 
-      // Log
       await supabase.from('campaign_dispatch_log').insert({
         campaign_id: state.campaignId,
         contact_id: contact.id,
@@ -247,7 +241,6 @@ async function runDispatchLoop(state) {
         },
       });
 
-      // Update campaign counters
       state.totalSent++;
       await supabase
         .from('campaigns')
@@ -283,7 +276,6 @@ async function runDispatchLoop(state) {
         .eq('id', state.campaignId);
     }
 
-    // 9. Random delay (anti-ban)
     const delay = randomDelay(
       campaign.min_delay_seconds,
       campaign.max_delay_seconds
@@ -308,24 +300,6 @@ function selectInstance(state) {
 
 function advanceInstance(state) {
   state.currentIndex = (state.currentIndex + 1) % state.instances.length;
-}
-
-async function checkDailyLimit(supabase, instance, limit) {
-  const today = new Date().toISOString().split('T')[0];
-
-  const { count } = await supabase
-    .from('campaign_contacts')
-    .select('*', { count: 'exact', head: true })
-    .eq('campaign_id', instance.campaign_id)
-    .eq('instance_id', instance.instance_id)
-    .eq('status', 'sent')
-    .gte('sent_at', `${today}T00:00:00Z`);
-
-  return {
-    exceeded: (count || 0) >= limit,
-    current: count || 0,
-    limit,
-  };
 }
 
 async function generateMessage(campaign, contact) {

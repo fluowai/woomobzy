@@ -1510,6 +1510,59 @@ router.put(
   }
 );
 
+// ==========================================
+// Invite new user / broker
+// ==========================================
+router.post('/users/invite', verifyAdmin, requireTenant, async (req, res) => {
+  try {
+    const { email, name, role = 'broker', phone, creci, commission_rate, payment_info } = req.body;
+    const organization_id = req.orgId;
+
+    if (!email || !name) {
+      return res.status(400).json({ error: 'E-mail e Nome são obrigatórios.' });
+    }
+
+    // Invite the user via Supabase Auth Admin
+    const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(email, {
+      data: { name, organization_id, role }
+    });
+
+    if (authError) {
+      console.error('Error inviting user:', authError);
+      const message = /already registered/i.test(authError.message || '')
+        ? `O e-mail ${email} já está cadastrado na plataforma.`
+        : authError.message;
+      return res.status(400).json({ error: message });
+    }
+
+    const userId = authData.user.id;
+
+    // Update the profile with the extra broker fields
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        name,
+        role,
+        organization_id,
+        phone: phone || null,
+        creci: creci || null,
+        commission_rate: commission_rate !== undefined ? commission_rate : 0,
+        payment_info: payment_info || {}
+      })
+      .eq('id', userId);
+
+    if (profileError) {
+      console.error('Error updating profile:', profileError);
+      return res.status(500).json({ error: 'Usuário convidado, mas erro ao salvar ficha completa.' });
+    }
+
+    res.json({ message: 'Convite enviado com sucesso.', user: authData.user });
+  } catch (err) {
+    console.error('Error in /users/invite:', err);
+    res.status(500).json({ error: 'Erro interno no servidor' });
+  }
+});
+
 router.delete('/users/:id', verifyAdmin, requireTenant, async (req, res) => {
   const { id } = req.params;
   if (id === req.user.id)

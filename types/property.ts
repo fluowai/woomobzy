@@ -221,7 +221,10 @@ export interface Property {
   imported_at?: string;
   published_at?: string;
   highlighted?: boolean;
+  owner_id?: string;
+  ownerId?: string;
   ownerInfo?: {
+    id?: string;
     name: string;
     email: string;
     phone: string;

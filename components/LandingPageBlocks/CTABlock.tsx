@@ -20,7 +20,8 @@ const CTABlock: React.FC<CTABlockProps> = ({ config, theme }) => {
           className="font-bold mb-3 sm:mb-4"
           style={{
             fontFamily: theme.headingFontFamily || theme.fontFamily,
-            fontSize: '2.5em',
+            fontSize: 'clamp(1.7rem, 5vw, 2.5rem)',
+            lineHeight: 1.2,
           }}
         >
           {config.title}

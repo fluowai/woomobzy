@@ -1108,15 +1108,8 @@ func (c *Client) resolveGroupName(ctx context.Context, chat types.JID, fallbackJ
 			}
 		}
 	}
-	// Clean fallback: extract meaningful part of JID
-	if strings.Contains(fallbackJID, "@g.us") {
-		parts := strings.Split(fallbackJID, "@")
-		if len(parts) > 0 && parts[0] != "" {
-			return fmt.Sprintf("Grupo (%s...)", parts[0][:min(6, len(parts[0]))])
-		}
-		return "Grupo"
-	}
-	return fallbackJID
+	// Return empty string instead of fake group name so the DB won't persist it as the real name.
+	return ""
 }
 
 // resolveMentions replaces @mentioned JIDs in the content with their pushnames.

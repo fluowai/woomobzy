@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import AudioMessagePlayer from './AudioMessagePlayer';
 import {
-  formatPhoneDisplay,
+  formatPhoneVisual,
   isPlaceholderName,
   mediaApi,
   type Message,
@@ -42,6 +42,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   const [mediaLoadError, setMediaLoadError] = useState('');
   const autoRefreshMedia = useRef(false);
   const isSent = message.is_from_me;
+  const [userRequestedMedia, setUserRequestedMedia] = useState(isSent || Boolean(message.media_url));
   const content = (message.content || '').trim();
   const hasMedia = Boolean(
     message.media_url ||
@@ -62,6 +63,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     if (!message.media_id || message.type === 'audio') return;
 
     if (currentUrl) return;
+    
+    if (!userRequestedMedia) return;
 
     setMediaLoading(true);
     mediaApi
@@ -92,7 +95,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
   if (!isRenderable) return null;
 
-  const senderPhone = formatPhoneDisplay(message.sender_phone);
+  const senderPhone = formatPhoneVisual(message.sender_phone);
   const senderName = resolveSenderName(
     message.sender_name,
     chatDisplayName,
@@ -117,6 +120,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   ) => {
     if (event) event.stopPropagation();
     if (!message.media_id || mediaLoading) return;
+    
+    setUserRequestedMedia(true);
     setMediaLoading(true);
     setMediaLoadError('');
     setMediaError(false);
@@ -174,9 +179,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 label={mediaPlaceholderLabel(
                   message,
                   mediaLoading,
-                  mediaLoadError
+                  mediaLoadError,
+                  'Imagem',
+                  userRequestedMedia
                 )}
                 onRetry={message.media_id ? refreshMediaUrl : undefined}
+                needsDownload={!userRequestedMedia}
               />
             )}
             {content && <p className="wa-bubble-caption">{content}</p>}
@@ -213,9 +221,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                   message,
                   mediaLoading,
                   mediaLoadError,
-                  'Video'
+                  'Video',
+                  userRequestedMedia
                 )}
                 onRetry={message.media_id ? refreshMediaUrl : undefined}
+                needsDownload={!userRequestedMedia}
               />
             )}
             {content && <p className="wa-bubble-caption">{content}</p>}
@@ -248,9 +258,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               message,
               mediaLoading,
               mediaLoadError,
-              message.media_filename || 'Documento'
+              message.media_filename || 'Documento',
+              userRequestedMedia
             )}
             onRetry={message.media_id ? refreshMediaUrl : undefined}
+            needsDownload={!userRequestedMedia}
           />
         );
 
@@ -288,9 +300,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                   message,
                   mediaLoading,
                   mediaLoadError,
-                  'Figurinha'
+                  'Figurinha',
+                  userRequestedMedia
                 )}
                 onRetry={message.media_id ? refreshMediaUrl : undefined}
+                needsDownload={!userRequestedMedia}
               />
             )}
           </div>
@@ -306,12 +320,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       {!isSent && (
         <div className="wa-message-avatar">
           {message.sender_avatar_url &&
-          !isWhatsAppCdnUrl(message.sender_avatar_url) &&
           !avatarError ? (
             <img
               src={message.sender_avatar_url}
               alt=""
               className="wa-avatar-img"
+              referrerPolicy="no-referrer"
               onError={() => setAvatarError(true)}
             />
           ) : (
@@ -359,12 +373,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       {isSent && (
         <div className="wa-message-avatar wa-message-avatar-sent">
           {message.sender_avatar_url &&
-          !isWhatsAppCdnUrl(message.sender_avatar_url) &&
           !avatarError ? (
             <img
               src={message.sender_avatar_url}
               alt=""
               className="wa-avatar-img"
+              referrerPolicy="no-referrer"
               onError={() => setAvatarError(true)}
             />
           ) : (
@@ -380,22 +394,24 @@ interface MediaPlaceholderProps {
   icon: React.ReactNode;
   label: string;
   onRetry?: (event: React.MouseEvent) => void;
+  needsDownload?: boolean;
 }
 
 const MediaPlaceholder: React.FC<MediaPlaceholderProps> = ({
   icon,
   label,
   onRetry,
+  needsDownload,
 }) => (
   <button
     type="button"
-    className="wa-bubble-media-placeholder"
+    className={`wa-bubble-media-placeholder ${needsDownload ? 'wa-needs-download' : ''}`}
     onClick={onRetry}
     disabled={!onRetry}
-    title={onRetry ? 'Tentar carregar midia novamente' : undefined}
+    title={onRetry ? (needsDownload ? 'Baixar mídia' : 'Tentar carregar midia novamente') : undefined}
   >
     {icon}
-    <span>{label}</span>
+    <span>{needsDownload ? 'Baixar arquivo' : label}</span>
   </button>
 );
 
@@ -403,8 +419,10 @@ function mediaPlaceholderLabel(
   message: Message,
   loading: boolean,
   loadError: string,
-  fallback = 'Imagem'
+  fallback = 'Imagem',
+  userRequestedMedia = true
 ): string {
+  if (!userRequestedMedia) return 'Baixar arquivo';
   if (loading) return 'Carregando midia';
   if (loadError) return loadError;
   if (message.media_error) return message.media_error;

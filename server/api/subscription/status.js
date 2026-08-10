@@ -3,10 +3,11 @@ import { logger } from '../../utils/logger.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { AsaasService } from '../../services/asaasService.js';
+import { resolveAsaasApiKey } from '../../middleware/asaas.js';
 
 const router = Router();
 
-router.get('/status', verifyAuth, async (req, res) => {
+router.get('/status', verifyAuth, resolveAsaasApiKey, async (req, res) => {
   try {
     const supabase = getSupabaseServer();
     const { data: org, error } = await supabase
@@ -27,7 +28,8 @@ router.get('/status', verifyAuth, async (req, res) => {
     if (org.asaas_subscription_id) {
       try {
         asaasSubscription = await AsaasService.getSubscription(
-          org.asaas_subscription_id
+          org.asaas_subscription_id,
+          req.asaasApiKey || undefined
         );
       } catch (error) {
         logger.warn(

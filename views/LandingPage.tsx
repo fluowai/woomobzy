@@ -198,7 +198,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
         setLoading(true);
         if (organizationId) {
           const { data, error } = await supabase
-            .from('properties')
+            .from('public_available_properties')
             .select('*')
             .eq('organization_id', organizationId)
             .eq('status', 'Disponível')

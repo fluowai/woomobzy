@@ -10,6 +10,7 @@ import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
 
 import { isValidUUID } from '../../lib/shared-utils.js';
+import { ContractGenerationService } from '../../services/contractGenerationService.js';
 
 const MIGRATION_MSG =
   'Execute a migration 20260730_fix_all_production_errors.sql no Supabase.';
@@ -24,33 +25,81 @@ function handleTableError(error) {
 
 const router = Router();
 
-const leaseCreateSchema = z.object({
-  property_id: z.string().uuid().optional(),
-  tenant_name: z.string().min(2).max(200),
-  tenant_email: z.string().email().optional(),
-  tenant_phone: z.string().min(10).max(20).optional(),
-  tenant_cpf: z.string().optional(),
-  tenant_type: z.enum(['PF', 'PJ']).optional(),
-  start_date: z.string().optional(),
-  end_date: z.string().optional(),
-  monthly_rent: z.number().positive().optional(),
-  due_day: z.number().int().min(1).max(31).optional(),
-  adjustment_index: z
-    .enum(['IGPM', 'IPCA', 'INCC', 'ICV', 'POUPANCA'])
-    .optional(),
-  guarantee_type: z
-    .enum([
-      'fiador',
-      'seguro_fianca',
-      'deposito_caucao',
-      'titulo_capitalizacao',
-      'sem',
-    ])
-    .optional(),
-  observation: z.string().optional(),
-});
+const leaseCreateSchema = z
+  .object({
+    property_id: z.string().uuid().optional(),
+    tenant_name: z.string().min(2).max(200),
+    tenant_email: z.string().email().optional(),
+    tenant_phone: z.string().min(10).max(20).optional(),
+    tenant_cpf: z.string().optional(),
+    tenant_type: z.enum(['PF', 'PJ']).optional(),
+    start_date: z.string().optional(),
+    end_date: z.string().optional(),
+    monthly_rent: z.number().optional(),
+    due_day: z.number().int().min(1).max(31).optional(),
+    adjustment_index: z
+      .enum(['IGPM', 'IPCA', 'INCC', 'ICV', 'POUPANCA'])
+      .optional(),
+    guarantee_type: z
+      .enum([
+        'fiador',
+        'seguro_fianca',
+        'deposito_caucao',
+        'titulo_capitalizacao',
+        'sem',
+      ])
+      .optional(),
+    observation: z.string().optional(),
+  })
+  .passthrough();
 
 const leaseUpdateSchema = leaseCreateSchema.partial();
+
+// Campos gerenciados pelo servidor (nunca devem vir do cliente) ou calculados
+// que não possuem coluna na tabela rental_contracts.
+const PROTECTED_FIELDS = [
+  'id',
+  'organization_id',
+  'created_by',
+  'updated_by',
+  'created_at',
+  'updated_at',
+  'signed_at',
+  'activated_at',
+  'terminated_at',
+  'dias_restantes',
+  'meses_restantes',
+];
+
+function sanitizeLeasePayload(body) {
+  const clean = { ...(body || {}) };
+  for (const field of PROTECTED_FIELDS) delete clean[field];
+  return clean;
+}
+
+// Drafts are auto-saved with partial data: DB nulls, empty inputs and NaN are
+// dropped before validation so optional fields do not reject the whole payload.
+function normalizeLeasePayload(body) {
+  const clean = { ...(body || {}) };
+  for (const [key, value] of Object.entries(clean)) {
+    if (value === null || value === undefined) {
+      delete clean[key];
+      continue;
+    }
+    if (typeof value === 'string' && value.trim() === '') {
+      delete clean[key];
+      continue;
+    }
+    if (typeof value === 'number' && !Number.isFinite(value)) {
+      delete clean[key];
+      continue;
+    }
+    if (key === 'due_day' && value === 0) {
+      delete clean[key];
+    }
+  }
+  return clean;
+}
 
 /**
  * GET /api/locacao/leases
@@ -111,7 +160,7 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
  */
 router.post('/', verifyAuth, requireTenant, async (req, res) => {
   try {
-    const validation = leaseCreateSchema.safeParse(req.body);
+    const validation = leaseCreateSchema.safeParse(normalizeLeasePayload(req.body));
     if (!validation.success) {
       return res
         .status(400)
@@ -125,7 +174,7 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
         organization_id: req.orgId,
         created_by: req.userId,
         status: 'draft',
-        ...validation.data,
+        ...sanitizeLeasePayload(validation.data),
       })
       .select()
       .single();
@@ -193,7 +242,7 @@ router.put('/:id', verifyAuth, requireTenant, async (req, res) => {
     const { id } = req.params;
     if (!isValidUUID(id)) return res.status(400).json({ error: 'ID inválido' });
 
-    const validation = leaseUpdateSchema.safeParse(req.body);
+    const validation = leaseUpdateSchema.safeParse(normalizeLeasePayload(req.body));
     if (!validation.success) {
       return res
         .status(400)
@@ -203,7 +252,10 @@ router.put('/:id', verifyAuth, requireTenant, async (req, res) => {
     const supabase = getSupabaseServer();
     const { data, error } = await supabase
       .from('rental_contracts')
-      .update({ ...validation.data, updated_by: req.userId })
+      .update({
+        ...sanitizeLeasePayload(validation.data),
+        updated_by: req.userId,
+      })
       .eq('id', id)
       .eq('organization_id', req.orgId)
       .select()
@@ -252,6 +304,42 @@ router.delete('/:id', verifyAuth, requireTenant, async (req, res) => {
         migration_required: true,
       });
     }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/locacao/leases/:id/generate-contract
+ * Opcional: enviar { template_content } para usar um template específico
+ * (ex.: Modelo Padrão do frontend). Sem ele, usa o template do contrato
+ * (current_template_id) ou o default da organização.
+ */
+router.post('/:id/generate-contract', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isValidUUID(id)) return res.status(400).json({ error: 'ID inválido' });
+
+    const templateContent = req.body?.template_content;
+
+    let generated;
+    if (templateContent) {
+      generated = await ContractGenerationService.generateFromTemplate(
+        id,
+        templateContent,
+        req.orgId,
+        req.userId
+      );
+    } else {
+      generated = await ContractGenerationService.regenerateContract(
+        id,
+        req.orgId,
+        req.userId
+      );
+    }
+
+    res.json({ success: true, data: generated });
+  } catch (error) {
+    logger.error('[LeaseRoutes] Generate contract error:', error);
     res.status(500).json({ error: error.message });
   }
 });

@@ -68,6 +68,9 @@ const WhatsAppDashboard: React.FC = () => {
   const attentionCount = filteredChats.filter(
     (chat) => chat.unread_count > 0
   ).length;
+  const connectedCount = instances.filter(
+    (inst) => inst.status === 'connected'
+  ).length;
 
   if (loading) {
     return (
@@ -130,9 +133,11 @@ const WhatsAppDashboard: React.FC = () => {
           >
             <Smartphone size={16} />
             <span>
-              {selectedInstance?.status === 'connected'
+              {connectedCount > 1
+                ? `${connectedCount} WhatsApps conectados`
+                : connectedCount === 1
                 ? 'WhatsApp conectado'
-                : selectedInstance?.name || 'Conectar WhatsApp'}
+                : 'Conectar WhatsApp'}
             </span>
           </button>
 
@@ -198,8 +203,8 @@ const WhatsAppDashboard: React.FC = () => {
             messages={messages}
             onSendMessage={handleSendMessage}
             loading={loadingMessages}
-            instanceName={selectedInstance?.name || ''}
-            instanceId={selectedInstance?.id || ''}
+            instanceName={instances.find(i => i.id === selectedChat.instance_id)?.name || ''}
+            instanceId={selectedChat.instance_id}
             onChatUpdated={handleChatUpdated}
             onBack={clearSelectedChat}
           />
@@ -213,7 +218,7 @@ const WhatsAppDashboard: React.FC = () => {
               <p>
                 As mensagens, o histórico e os dados do lead aparecerão aqui.
               </p>
-              {selectedInstance && selectedInstance.status !== 'connected' && (
+              {connectedCount === 0 && (
                 <button
                   className="wa-empty-warning"
                   onClick={() => setShowInstanceManager(true)}
@@ -222,21 +227,6 @@ const WhatsAppDashboard: React.FC = () => {
                 </button>
               )}
             </div>
-            <aside className="wa-empty-contact-panel">
-              <div className="wa-contact-panel-head">
-                <span>Dados do lead</span>
-              </div>
-              <div className="wa-empty-contact-body">
-                <div className="wa-empty-contact-avatar">
-                  <UserRound size={28} />
-                </div>
-                <h3>Atendimento completo</h3>
-                <p>
-                  Selecione uma conversa para consultar CRM, tarefas, imóvel,
-                  tags e ações rápidas.
-                </p>
-              </div>
-            </aside>
           </div>
         )}
       </div>

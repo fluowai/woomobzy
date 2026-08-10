@@ -129,6 +129,40 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
 });
 
 /**
+ * PATCH /api/locacao/signatures/:id
+ */
+router.patch('/:id', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isValidUUID(id)) return res.status(400).json({ error: 'ID inválido' });
+
+    const validation = signerSchema.partial().safeParse(req.body);
+    if (!validation.success) {
+      return res
+        .status(400)
+        .json({ error: 'Dados inválidos', details: validation.error.issues });
+    }
+
+    const supabase = getSupabaseServer();
+    const { data, error } = await supabase
+      .from('signatures')
+      .update(validation.data)
+      .eq('id', id)
+      .eq('organization_id', req.orgId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: 'Signatário não encontrado' });
+
+    res.json({ success: true, data });
+  } catch (error) {
+    logger.error('[SignatureRoutes] Update error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * PATCH /api/locacao/signatures/:id/status
  */
 router.patch('/:id/status', verifyAuth, requireTenant, async (req, res) => {

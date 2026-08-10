@@ -87,6 +87,9 @@ const MIGRATIONS = [
   'migrations/20260807_reseller_branding_rpc.sql',
   'migrations/20260807_fix_match_properties_to_lead.sql',
   'migrations/20260808_fix_urban_module_rls_superadmin.sql',
+  'migrations/20260808_property_owner_dno.sql',
+  'migrations/20260808_asaas_rental_owner_columns.sql',
+  'migrations/20260808_fix_lease_contract_flow.sql',
 ];
 
 async function executeMigrations() {

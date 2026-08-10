@@ -31,6 +31,9 @@ export interface AIAgent {
   tools: string[];
   response_style: string;
   working_hours?: Record<string, unknown>;
+  agent_type?: 'orchestrator' | 'specialist';
+  sub_agents?: string[];
+  share_prompt_with_subagents?: boolean;
   created_at: string;
 }
 

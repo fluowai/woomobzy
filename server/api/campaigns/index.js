@@ -38,7 +38,10 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
 
     let query = supabase
       .from('campaigns')
-      .select('*', { count: 'exact' })
+      .select(
+        'id, name, description, status, dispatch_mode, daily_limit_per_instance, working_hours_start, working_hours_end, scheduled_at, started_at, completed_at, sent_count, failed_count, created_at',
+        { count: 'exact' }
+      )
       .eq('organization_id', req.orgId)
       .order('created_at', { ascending: false });
 

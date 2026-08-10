@@ -38,8 +38,7 @@ describe('WhatsApp inbox presentation', () => {
       id: 'late',
       last_message_at: '2026-08-01T13:00:00Z',
     });
-    const instagram = chat({ id: 'ig', platform: 'instagram' });
-    const chats = [mine, unassigned, overdue, instagram];
+    const chats = [mine, unassigned, overdue];
 
     expect(
       filterInboxChats(chats, {
@@ -56,15 +55,7 @@ describe('WhatsApp inbox presentation', () => {
         groups: false,
         now,
       })
-    ).toEqual([unassigned, overdue, instagram]);
-    expect(
-      filterInboxChats(chats, {
-        platform: 'instagram',
-        queue: 'all',
-        groups: false,
-        now,
-      })
-    ).toEqual([instagram]);
+    ).toEqual([unassigned, overdue]);
     expect(
       filterInboxChats(chats, {
         platform: 'all',

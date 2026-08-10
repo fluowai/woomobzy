@@ -40,6 +40,7 @@ import { generateSmartDescription } from '../services/geminiService';
 import { uploadFile } from '../services/storage';
 import { propertyService } from '../services/properties';
 import { propertyAnalysisService } from '../services/propertyAnalysisService';
+import { clientService } from '../services/clients';
 import { PropertyAnalysisCard } from '../components/PropertyAnalysisCard';
 import {
   toHectares,
@@ -215,6 +216,73 @@ const PropertyEditor: React.FC = () => {
     images: [],
   });
 
+  const [ownerSearch, setOwnerSearch] = useState('');
+  const [ownerResults, setOwnerResults] = useState<any[]>([]);
+  const [ownerSearching, setOwnerSearching] = useState(false);
+  const [ownerLinkedName, setOwnerLinkedName] = useState('');
+
+  const ownerForm =
+    formData.ownerInfo && (formData.ownerInfo as any).name
+      ? (formData.ownerInfo as any)
+      : { name: '', document: '', email: '', phone: '' };
+
+  const setOwnerField = (key: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      ownerInfo: { ...((prev.ownerInfo as any) || {}), [key]: value },
+    }));
+  };
+
+  const searchOwners = async (term: string) => {
+    setOwnerSearch(term);
+    if (term.trim().length < 2) {
+      setOwnerResults([]);
+      return;
+    }
+    setOwnerSearching(true);
+    try {
+      const clients = await clientService.list(term, ['Proprietário']);
+      const filtered =
+        clients.length > 0
+          ? clients
+          : await clientService.list(term, ['proprietario']);
+      setOwnerResults(filtered || []);
+    } catch (err) {
+      logger.error('[PropertyEditor] Erro ao buscar proprietário', err);
+      setOwnerResults([]);
+    } finally {
+      setOwnerSearching(false);
+    }
+  };
+
+  const linkOwner = (client: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      owner_id: client.id,
+      ownerId: client.id,
+      ownerInfo: {
+        id: client.id,
+        name: client.name || '',
+        email: client.email || '',
+        phone: client.phone || '',
+        document: client.document_number || '',
+      },
+    }));
+    setOwnerLinkedName(client.name || '');
+    setOwnerSearch('');
+    setOwnerResults([]);
+  };
+
+  const clearOwner = () => {
+    setFormData((prev) => ({
+      ...prev,
+      owner_id: undefined,
+      ownerId: undefined,
+      ownerInfo: undefined,
+    }));
+    setOwnerLinkedName('');
+  };
+
   // Detecção dinâmica do tipo de imóvel para exibição de campos
   const isRuralType =
     formData.type && RURAL_TYPES.includes(formData.type as PropertyType);
@@ -229,6 +297,32 @@ const PropertyEditor: React.FC = () => {
           setLoading(true);
           const data = await propertyService.getById(id);
           setFormData(data);
+          if (data.owner_id) {
+            try {
+              const { data: owner } = await supabase
+                .from('clients')
+                .select(
+                  'id,name,email,phone,document_number,address_city,address_state,address_zip'
+                )
+                .eq('id', data.owner_id)
+                .maybeSingle();
+              if (owner) {
+                setOwnerLinkedName(owner.name || '');
+                setFormData((prev) => ({
+                  ...prev,
+                  ownerInfo: {
+                    id: owner.id,
+                    name: owner.name || '',
+                    email: owner.email || '',
+                    phone: owner.phone || '',
+                    document: owner.document_number || '',
+                  },
+                }));
+              }
+            } catch (err) {
+              logger.warn('[PropertyEditor] Falha ao carregar dono', err);
+            }
+          }
         } catch (error) {
           logger.error('Erro ao carregar imóvel', error);
           navigate(`/${nichePath}/properties`);
@@ -273,11 +367,66 @@ const PropertyEditor: React.FC = () => {
       const isRuralNiche = location.pathname.includes('/rural');
       const nicheValue = isRuralNiche ? 'rural' : 'urbano';
 
+      // ---- DNO: create-or-resolve do proprietário antes de salvar o imóvel ----
+      const ownerDraft = (formData.ownerInfo as any) || {};
+      let ownerId: string | undefined =
+        formData.owner_id || formData.ownerId || ownerDraft.id;
+
+      if (ownerDraft.name) {
+        if (!ownerId) {
+          const doc = (ownerDraft.document || '').trim();
+          try {
+            const matches = doc
+              ? await clientService.list(doc, ['Proprietário'])
+              : [];
+            const byDoc = (matches || []).find(
+              (c: any) =>
+                c.document_number === doc || c.id === ownerDraft.id
+            );
+            if (byDoc) {
+              ownerId = byDoc.id;
+            } else {
+              const created = await clientService.create({
+                name: ownerDraft.name,
+                email: ownerDraft.email || '',
+                phone: ownerDraft.phone || '',
+                document_number: doc || undefined,
+                document_type: 'CPF',
+                roles: ['Proprietário'],
+              });
+              ownerId = created.id;
+            }
+          } catch (err: any) {
+            logger.warn('[PropertyEditor] create-or-resolve DNO falhou', err);
+            toast.error(
+              'Não foi possível vincular o proprietário: ' +
+                (err?.message || 'erro ao criar cliente')
+            );
+            setLoading(false);
+            return;
+          }
+        } else {
+          try {
+            await clientService.update(ownerId, {
+              name: ownerDraft.name,
+              email: ownerDraft.email || '',
+              phone: ownerDraft.phone || '',
+              document_number: (ownerDraft.document || '').trim() || undefined,
+            });
+          } catch (err) {
+            logger.warn('[PropertyEditor] Atualização do DNO falhou', err);
+          }
+        }
+      }
+
       const payload = {
         ...formData,
         organization_id: orgId,
         niche: nicheValue,
+        owner_id: ownerId || null,
       };
+      delete (payload as any).owner_info;
+      delete (payload as any).ownerInfo;
 
       logger.info('📦 Payload de salvamento:', payload);
 
@@ -624,6 +773,169 @@ const PropertyEditor: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Seção DNO: Dono do Imóvel (visível somente no CRM) */}
+        <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+          <div className="flex items-center gap-2 mb-6 text-indigo-600">
+            <UserCheck size={20} />
+            <h2 className="font-bold uppercase tracking-wider text-sm">
+              Dono do Imóvel (DNO)
+            </h2>
+          </div>
+
+          {formData.owner_id || formData.ownerId || ownerLinkedName ? (
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 bg-indigo-50/60 rounded-2xl border border-indigo-100">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">
+                  {((ownerLinkedName ||
+                    (formData.ownerInfo as any)?.name ||
+                    'D')[0] || 'D').toUpperCase()}
+                </div>
+                <div>
+                  <p className="font-bold text-slate-900">
+                    {(formData.ownerInfo as any)?.name ||
+                      ownerLinkedName ||
+                      'Proprietário vinculado'}
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    {(formData.ownerInfo as any)?.document ||
+                      (formData.ownerInfo as any)?.email ||
+                      (formData.ownerInfo as any)?.phone ||
+                      'Dados registrados no CRM'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                {!formData.owner_id && !formData.ownerId && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        owner_id: (formData.ownerInfo as any)?.id,
+                        ownerId: (formData.ownerInfo as any)?.id,
+                      }))
+                    }
+                    className="text-xs font-bold text-indigo-600 bg-white border border-indigo-200 px-4 py-2 rounded-lg hover:bg-indigo-50 transition-colors"
+                  >
+                    Confirmar vínculo
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={clearOwner}
+                  className="text-xs font-bold text-red-500 bg-white border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 transition-colors"
+                >
+                  Remover vínculo
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-5">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Buscar proprietário existente (nome, CPF, e-mail ou telefone)
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={ownerSearch}
+                    onChange={(e) => searchOwners(e.target.value)}
+                    placeholder="Digite para buscar..."
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none pr-10"
+                  />
+                  {ownerSearching && (
+                    <Loader2
+                      size={18}
+                      className="absolute right-3 top-3.5 animate-spin text-slate-400"
+                    />
+                  )}
+                </div>
+                {ownerResults.length > 0 && (
+                  <div className="mt-2 max-h-52 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100 bg-white">
+                    {ownerResults.map((owner: any) => (
+                      <button
+                        key={owner.id}
+                        type="button"
+                        onClick={() => linkOwner(owner)}
+                        className="w-full text-left px-4 py-3 hover:bg-indigo-50 transition-colors flex items-center justify-between gap-3"
+                      >
+                        <div>
+                          <p className="font-semibold text-slate-900 text-sm">
+                            {owner.name}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {[owner.document_number, owner.phone, owner.email]
+                              .filter(Boolean)
+                              .join(' · ') || 'Sem contato'}
+                          </p>
+                        </div>
+                        <span className="text-xs font-bold text-indigo-600 shrink-0">
+                          Vincular
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Nome / Razão Social
+                  </label>
+                  <input
+                    type="text"
+                    value={ownerForm.name || ''}
+                    onChange={(e) => setOwnerField('name', e.target.value)}
+                    placeholder="Nome do proprietário"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    CPF / CNPJ
+                  </label>
+                  <input
+                    type="text"
+                    value={ownerForm.document || ''}
+                    onChange={(e) => setOwnerField('document', e.target.value)}
+                    placeholder="000.000.000-00"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    E-mail
+                  </label>
+                  <input
+                    type="email"
+                    value={ownerForm.email || ''}
+                    onChange={(e) => setOwnerField('email', e.target.value)}
+                    placeholder="email@exemplo.com"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Telefone
+                  </label>
+                  <input
+                    type="tel"
+                    value={ownerForm.phone || ''}
+                    onChange={(e) => setOwnerField('phone', e.target.value)}
+                    placeholder="(11) 99999-9999"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-slate-400">
+                Estes dados ficam visíveis apenas dentro do CRM. Ao salvar, o
+                proprietário é criado ou vinculado automaticamente.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Seção 2: Localização */}

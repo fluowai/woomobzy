@@ -42,10 +42,12 @@ export default function PropertyManagement() {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
+    const currentNiche = window.location.pathname.startsWith('/rural') ? 'rural' : 'urbano';
+
     const fetchProperties = async () => {
       setLoading(true);
       try {
-        const data = await propertyService.list(1, 100);
+        const data = await propertyService.list(1, 100, currentNiche);
         setProperties(data || []);
       } catch (err) {
         toast.error('Erro ao buscar imóveis');
@@ -435,15 +437,16 @@ export default function PropertyManagement() {
                       </td>
                       <td className="py-4 px-4 min-w-[280px]">
                         <div className="flex gap-4">
-                          <div className="w-20 h-16 bg-slate-200 rounded-lg overflow-hidden shrink-0">
-                            <img
-                              src={
-                                prop.images?.[0] ||
-                                'https://via.placeholder.com/200?text=Sem+Foto'
-                              }
-                              alt="Imóvel"
-                              className="w-full h-full object-cover"
-                            />
+                          <div className="w-20 h-16 bg-slate-100 border border-slate-200 rounded-lg overflow-hidden shrink-0 flex items-center justify-center">
+                            {prop.images?.[0] ? (
+                              <img
+                                src={prop.images[0]}
+                                alt="Imóvel"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <Camera size={24} className="text-slate-300" />
+                            )}
                           </div>
                           <div>
                             <p className="text-xs font-bold text-slate-400">

@@ -28,6 +28,7 @@ import { AgentDashboard } from '../components/agents/AgentDashboard';
 import { AgentChatTest } from '../components/agents/AgentChatTest';
 import { AgentFlowSteps } from '../components/agents/AgentFlowSteps';
 import { AgentStatusBadge } from '../components/agents/AgentStatusBadge';
+import { SwarmBuilder } from '../components/agents/SwarmBuilder';
 
 type BuilderState = {
   name: string;
@@ -42,6 +43,9 @@ type BuilderState = {
   autonomy_level: number;
   operation_mode: string;
   handoff_rules: Record<string, boolean>;
+  agent_type: 'orchestrator' | 'specialist';
+  sub_agents: string[];
+  share_prompt_with_subagents: boolean;
 };
 
 const STATUS_ACTIVE = ['Ativo', 'Em teste'];
@@ -69,6 +73,9 @@ const DEFAULTS: BuilderState = {
   autonomy_level: 2,
   operation_mode: 'Semiautônomo',
   handoff_rules: { ...defaultHandoff },
+  agent_type: 'orchestrator',
+  sub_agents: [],
+  share_prompt_with_subagents: false,
 };
 
 const presets: PresetAgent[] = [
@@ -211,6 +218,7 @@ const AIAgents: React.FC = () => {
   const [metrics, setMetrics] = useState<AgentMetrics | null>(null);
   const [metricsLoading, setMetricsLoading] = useState(false);
   const [view, setView] = useState<'builder' | 'dashboard'>('builder');
+  const [mainTab, setMainTab] = useState<'swarms' | 'specialists'>('swarms');
   const { pathname } = useLocation();
 
   const selectedAgent = useMemo(
@@ -270,6 +278,9 @@ const AIAgents: React.FC = () => {
           ...defaultHandoff,
           ...(a.handoff_rules || {}),
         } as Record<string, boolean>,
+        agent_type: a.agent_type || 'specialist',
+        sub_agents: a.sub_agents || [],
+        share_prompt_with_subagents: !!a.share_prompt_with_subagents,
       });
     }
   }, [selectedAgent]);
@@ -308,7 +319,7 @@ const AIAgents: React.FC = () => {
     setDraft((prev) => ({ ...prev, [field]: value }));
   };
 
-  const toggleArray = (field: 'capabilities' | 'tools', value: string) => {
+  const toggleArray = (field: 'capabilities' | 'tools' | 'sub_agents', value: string) => {
     setDraft((prev) => {
       const current = prev[field] || [];
       return {
@@ -362,6 +373,9 @@ const AIAgents: React.FC = () => {
       autonomy_level: draft.autonomy_level,
       operation_mode: draft.operation_mode,
       handoff_rules: draft.handoff_rules,
+      agent_type: draft.agent_type,
+      sub_agents: draft.sub_agents,
+      share_prompt_with_subagents: draft.share_prompt_with_subagents,
     };
 
     try {
@@ -471,13 +485,42 @@ const AIAgents: React.FC = () => {
 
       <div className="p-4 lg:p-7">
         <div className="mx-auto max-w-[1500px]">
-          {selectedId === 'new' && !selectedAgent && agents.length === 0 ? (
+          <div className="mb-6 flex gap-2 border-b border-slate-200">
+            <button
+              onClick={() => setMainTab('swarms')}
+              className={`pb-3 px-4 text-sm font-bold transition ${mainTab === 'swarms' ? 'border-b-2 border-emerald-500 text-emerald-600' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              Swarms Autônomos
+            </button>
+            <button
+              onClick={() => setMainTab('specialists')}
+              className={`pb-3 px-4 text-sm font-bold transition ${mainTab === 'specialists' ? 'border-b-2 border-emerald-500 text-emerald-600' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              Agentes Especialistas
+            </button>
+          </div>
+
+          {mainTab === 'swarms' ? (
+            <SwarmBuilder
+              agents={agents}
+              onSelectAgent={(id) => {
+                setMainTab('specialists');
+                selectAgent(id);
+              }}
+              onCreateNew={() => {
+                setMainTab('specialists');
+                startNew();
+                setDraft({ ...DEFAULTS, agent_type: 'orchestrator' });
+              }}
+            />
+          ) : selectedId === 'new' && !selectedAgent && agents.length === 0 ? (
             <div className="space-y-5">
               <AgentPresetGrid presets={presets} onSelect={applyPreset} />
               <AgentFlowSteps />
               <BuilderView
                 draft={draft}
                 saving={saving}
+                agents={agents}
                 onChange={updateDraft}
                 onToggleArray={toggleArray}
                 onToggleChannel={toggleChannel}
@@ -517,6 +560,7 @@ const AIAgents: React.FC = () => {
                     <BuilderView
                       draft={draft}
                       saving={saving}
+                      agents={agents}
                       onChange={updateDraft}
                       onToggleArray={toggleArray}
                       onToggleChannel={toggleChannel}
@@ -544,8 +588,9 @@ const AIAgents: React.FC = () => {
 interface BuilderViewProps {
   draft: BuilderState;
   saving: boolean;
+  agents: AIAgent[];
   onChange: (field: string, value: any) => void;
-  onToggleArray: (field: 'capabilities' | 'tools', value: string) => void;
+  onToggleArray: (field: 'capabilities' | 'tools' | 'sub_agents', value: string) => void;
   onToggleChannel: (value: string) => void;
   onToggleHandoff: (ruleId: string) => void;
   onSave: (status?: string) => void;
@@ -558,6 +603,7 @@ interface BuilderViewProps {
 const BuilderView: React.FC<BuilderViewProps> = ({
   draft,
   saving,
+  agents,
   onChange,
   onToggleArray,
   onToggleChannel,
@@ -614,6 +660,10 @@ const BuilderView: React.FC<BuilderViewProps> = ({
       instructions={draft.instructions}
       responseStyle={draft.response_style}
       status={draft.status}
+      agentType={draft.agent_type}
+      subAgents={draft.sub_agents}
+      sharePromptWithSubAgents={draft.share_prompt_with_subagents}
+      allAgents={agents}
       channels={draft.channels}
       capabilities={draft.capabilities}
       tools={draft.tools}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, User, DollarSign, Building2 } from 'lucide-react';
+import { User, DollarSign, Info } from 'lucide-react';
 import type { Lease } from '../../../types/lease';
 
 interface Props {
@@ -19,6 +19,17 @@ export const StepOwnerData: React.FC<Props> = ({ lease, updateField }) => {
           <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><User size={20} /></div>
           <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Dados do Proprietário</h4>
         </div>
+
+        {lease.owner_id && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-3">
+            <Info size={18} className="text-blue-600 shrink-0" />
+            <p className="text-xs font-bold text-blue-800">
+              Dados carregados automaticamente do proprietário vinculado ao imóvel no CRM.
+              Você pode ajustar se necessário.
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2">
             <label className={labelClass}>Nome / Razão Social</label>

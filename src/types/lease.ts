@@ -158,6 +158,9 @@ export interface Lease {
   tenant_employer_phone?: string;
   income_proof_status?: string;
 
+  // Uploads de documentos (imagens/PDF) por tipo: { doc_rg: [url, ...] }
+  documents?: Record<string, string[]>;
+
   // Guarantor spouse
   guarantor_spouse_name?: string;
   guarantor_spouse_cpf?: string;
@@ -169,6 +172,7 @@ export interface Lease {
   property_title?: string;
   property_city?: string;
   property_state?: string;
+  property_address?: string;
   dias_restantes?: number;
   meses_restantes?: number;
 }

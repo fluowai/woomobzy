@@ -99,6 +99,7 @@ export async function getBrokerPerformance(
  */
 export async function getBrokerRanking(organizationId, dateRange = {}) {
   const supabase = getSupabaseServer();
+  const { startDate, endDate } = dateRange;
 
   const { data: brokers, error } = await supabase
     .from('profiles')
@@ -109,41 +110,112 @@ export async function getBrokerRanking(organizationId, dateRange = {}) {
   if (error) throw error;
   if (!brokers?.length) return [];
 
-  const rankings = await Promise.all(
-    brokers.map(async (broker) => {
-      const perf = await getBrokerPerformance(
-        organizationId,
-        broker.id,
-        dateRange
-      );
-      return {
-        ...broker,
-        ...perf.summary,
-      };
-    })
-  );
+  const brokerIds = brokers.map((b) => b.id);
+
+  let leadsQuery = supabase
+    .from('leads')
+    .select('broker_id, status, budget, created_at')
+    .eq('organization_id', organizationId)
+    .in('broker_id', brokerIds);
+
+  if (startDate) leadsQuery = leadsQuery.gte('created_at', startDate);
+  if (endDate) leadsQuery = leadsQuery.lte('created_at', endDate);
+
+  const { data: leads } = await leadsQuery;
+
+  let activitiesQuery = supabase
+    .from('lead_activities')
+    .select('created_by', { count: 'exact', head: true })
+    .eq('organization_id', organizationId)
+    .in('created_by', brokerIds);
+
+  if (startDate) activitiesQuery = activitiesQuery.gte('created_at', startDate);
+  if (endDate) activitiesQuery = activitiesQuery.lte('created_at', endDate);
+
+  const { count: totalActivities } = await activitiesQuery;
+
+  const statsByBroker = {};
+  brokerIds.forEach((id) => {
+    statsByBroker[id] = {
+      total_leads: 0,
+      converted_leads: 0,
+      lost_leads: 0,
+      total_budget: 0,
+      total_activities: 0,
+      source_breakdown: {},
+      status_breakdown: {},
+      monthly_trend: {},
+    };
+  });
+
+  (leads || []).forEach((lead) => {
+    const stats = statsByBroker[lead.broker_id];
+    if (!stats) return;
+    stats.total_leads++;
+    if (lead.status === 'Fechado') stats.converted_leads++;
+    if (lead.status === 'Perdido') stats.lost_leads++;
+    stats.total_budget += lead.budget || 0;
+    const src = lead.source || 'Desconhecido';
+    stats.source_breakdown[src] = (stats.source_breakdown[src] || 0) + 1;
+    stats.status_breakdown[lead.status] = (stats.status_breakdown[lead.status] || 0) + 1;
+    const month = lead.created_at?.slice(0, 7) || 'unknown';
+    if (!stats.monthly_trend[month]) stats.monthly_trend[month] = { total: 0, converted: 0 };
+    stats.monthly_trend[month].total++;
+    if (lead.status === 'Fechado') stats.monthly_trend[month].converted++;
+  });
+
+  const activityCount = totalActivities || 0;
+  const perBrokerActivities = Math.floor(activityCount / (brokerIds.length || 1));
+  brokerIds.forEach((id) => {
+    statsByBroker[id].total_activities = perBrokerActivities;
+  });
+
+  const rankings = brokers.map((broker) => {
+    const stats = statsByBroker[broker.id] || statsByBroker[brokerIds[0]];
+    const conversionRate =
+      stats.total_leads > 0
+        ? (stats.converted_leads / stats.total_leads) * 100
+        : 0;
+    return {
+      ...broker,
+      ...stats,
+      summary: {
+        total_leads: stats.total_leads,
+        converted_leads: stats.converted_leads,
+        active_leads: stats.total_leads - stats.converted_leads - stats.lost_leads,
+        lost_leads: stats.lost_leads,
+        conversion_rate: Number(conversionRate.toFixed(1)),
+        total_activities: stats.total_activities,
+        avg_budget: stats.total_leads > 0 ? Math.round(stats.total_budget / stats.total_leads) : 0,
+      },
+    };
+  });
 
   return rankings.sort(
     (a, b) =>
-      b.conversion_rate - a.conversion_rate ||
-      b.converted_leads - a.converted_leads
+      b.summary.conversion_rate - a.summary.conversion_rate ||
+      b.summary.converted_leads - a.summary.converted_leads
   );
 }
 
 /**
  * Get pipeline summary for the whole organization.
  */
-export async function getPipelineSummary(organizationId) {
+export async function getPipelineSummary(organizationId, dateRange = {}) {
   const supabase = getSupabaseServer();
+  const { startDate, endDate } = dateRange;
 
-  const { data: leads, error } = await supabase
+  let leadsQuery = supabase
     .from('leads')
-    .select('id, status, broker_id, created_at, budget')
+    .select('status, budget', { count: 'exact', head: false })
     .eq('organization_id', organizationId);
 
+  if (startDate) leadsQuery = leadsQuery.gte('created_at', startDate);
+  if (endDate) leadsQuery = leadsQuery.lte('created_at', endDate);
+
+  const { data: leads, error } = await leadsQuery;
   if (error) throw error;
 
-  const pipeline = {};
   const statuses = [
     'Novo',
     'Qualificação',
@@ -155,25 +227,31 @@ export async function getPipelineSummary(organizationId) {
     'Fechado',
     'Perdido',
   ];
+
+  const pipeline = {};
   statuses.forEach((s) => {
     pipeline[s] = { count: 0, totalBudget: 0 };
   });
 
+  let totalLeads = 0;
   (leads || []).forEach((lead) => {
     if (pipeline[lead.status]) {
       pipeline[lead.status].count++;
       pipeline[lead.status].totalBudget += lead.budget || 0;
+      totalLeads++;
     }
   });
 
   return {
-    total_leads: (leads || []).length,
-    pipeline: Object.entries(pipeline).map(([status, data]) => ({
-      status,
-      count: data.count,
-      total_budget: data.totalBudget,
-      avg_budget:
-        data.count > 0 ? Math.round(data.totalBudget / data.count) : 0,
-    })),
+    total_leads: totalLeads,
+    pipeline: statuses.map((status) => {
+      const data = pipeline[status];
+      return {
+        status,
+        count: data.count,
+        total_budget: data.totalBudget,
+        avg_budget: data.count > 0 ? Math.round(data.totalBudget / data.count) : 0,
+      };
+    }),
   };
 }

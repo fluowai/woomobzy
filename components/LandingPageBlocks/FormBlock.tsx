@@ -117,13 +117,14 @@ const FormBlock: React.FC<FormBlockProps> = ({
 
   return (
     <div className="py-8 sm:py-12 px-4">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-2xl mx-auto w-full">
         <h2
           className="font-bold text-center mb-6 sm:mb-8"
           style={{
             color: theme.textColor,
             fontFamily: theme.headingFontFamily || theme.fontFamily,
-            fontSize: '2.5em',
+            fontSize: 'clamp(1.6rem, 5vw, 2.5rem)',
+            lineHeight: 1.2,
           }}
         >
           {config.title}

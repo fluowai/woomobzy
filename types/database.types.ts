@@ -3724,6 +3724,10 @@ export type Database = {
           name: string | null;
           organization_id: string | null;
           role: string | null;
+          phone: string | null;
+          creci: string | null;
+          commission_rate: number | null;
+          payment_info: Json | null;
           updated_at: string | null;
         };
         Insert: {

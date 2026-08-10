@@ -105,8 +105,8 @@ const HeroWithFormBlock: React.FC<HeroWithFormBlockProps> = ({
         />
 
         {/* Hero Content */}
-        <div className="relative z-10 max-w-4xl text-center mb-12">
-          <h2 className="text-sm uppercase tracking-widest text-white/90 font-medium mb-2 drop-shadow-md">
+        <div className="relative z-10 w-full max-w-4xl text-center mb-10 md:mb-12">
+          <h2 className="text-xs sm:text-sm uppercase tracking-widest text-white/90 font-medium mb-2 drop-shadow-md">
             Encontre sua
           </h2>
           <h1
@@ -115,7 +115,8 @@ const HeroWithFormBlock: React.FC<HeroWithFormBlockProps> = ({
               color: '#ffffff',
               fontFamily:
                 theme.headingFontFamily || "'Playfair Display', serif",
-              fontSize: '3em',
+              fontSize: 'clamp(1.9rem, 7vw, 3rem)',
+              lineHeight: 1.15,
             }}
           >
             {config.title}
@@ -123,7 +124,7 @@ const HeroWithFormBlock: React.FC<HeroWithFormBlockProps> = ({
           {config.subtitle && (
             <p
               className="text-white drop-shadow-md max-w-2xl mx-auto"
-              style={{ fontSize: '1.25em' }}
+              style={{ fontSize: 'clamp(1rem, 3.5vw, 1.25rem)' }}
             >
               {config.subtitle}
             </p>
@@ -131,9 +132,9 @@ const HeroWithFormBlock: React.FC<HeroWithFormBlockProps> = ({
         </div>
 
         {/* Form and Guide Section */}
-        <div className="relative z-10 w-full max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-end -mb-24 px-4 md:px-0">
+        <div className="relative z-10 w-full max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 md:items-end md:-mb-24">
           {/* Form Card */}
-          <div className="bg-[#fdfbf7] p-6 rounded-t-xl shadow-2xl border-t-8 border-[#4a5d23]">
+          <div className="w-full bg-[#fdfbf7] p-5 sm:p-6 rounded-2xl md:rounded-t-xl md:rounded-b-none shadow-2xl border-t-8 border-[#4a5d23]">
             <h3 className="text-xl font-bold text-[#333333] mb-4 text-center leading-tight">
               {config.formTitle}
             </h3>
@@ -237,8 +238,8 @@ const HeroWithFormBlock: React.FC<HeroWithFormBlockProps> = ({
       </div>
 
       {/* Trust Badges Section */}
-      <div className="pt-32 pb-12 px-4 bg-white border-b border-gray-100">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="pt-10 pb-10 sm:pt-32 sm:pb-12 px-4 bg-white border-b border-gray-100">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
           {config.badges?.map((badge, idx) => (
             <div
               key={idx}

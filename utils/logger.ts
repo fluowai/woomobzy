@@ -85,7 +85,8 @@ class Logger {
   private log(level: LogLevel, message: string, ...optionalParams: any[]) {
     if (!isDebugMode() && level === 'debug') return;
 
-    const maskedParams = optionalParams.map(maskData);
+    const maskedParams =
+      import.meta.env.DEV ? optionalParams : optionalParams.map(maskData);
 
     switch (level) {
       case 'debug':
@@ -101,9 +102,7 @@ class Logger {
         console.error(`[ERROR] ${message}`, ...maskedParams);
         break;
       case 'audit':
-        // Send to backend securely, do not log to console in production
         if (isDebugMode()) console.log(`[AUDIT] ${message}`, ...maskedParams);
-        // TODO: fetch('/api/audit', { method: 'POST', body: JSON.stringify({ message, data: maskedParams }) });
         break;
     }
   }

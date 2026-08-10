@@ -31,7 +31,7 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ config }) => {
     <img
       src={src}
       alt={alt}
-      className="rounded-lg shadow-md"
+      className="rounded-lg shadow-md max-w-full h-auto"
       style={{
         width,
         height,

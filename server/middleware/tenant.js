@@ -28,11 +28,20 @@ export const requireTenant = async (req, res, next) => {
   if (!req.orgId) {
     if (req.userRole === 'superadmin') {
       console.warn(
-        `[TenantMiddleware] Superadmin bypass: sem orgId para ${req.method} ${req.path}`
+        `[TenantMiddleware] Superadmin sem org resolvida para ${req.method} ${req.path}`
       );
-      req.orgId = req.realOrgId || null;
-      req.tenantValidated = true;
-      return next();
+      return res.status(403).json({
+        error:
+          'Nenhuma organização selecionada. Inicie o modo suporte ou selecione uma organização antes de acessar este recurso.',
+        code: 'TENANT_REQUIRED',
+        auth_context: {
+          user_id: req.user?.id || null,
+          email: maskEmail(req.user?.email),
+          role: req.userRole || null,
+          real_org_id: req.realOrgId || null,
+          impersonating: !!req.isImpersonating,
+        },
+      });
     }
 
     console.error(

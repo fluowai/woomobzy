@@ -87,7 +87,7 @@ func main() {
 
 	// Initialize handlers
 	instanceHandler := handlers.NewInstanceHandler(manager, instanceRepo, log)
-	chatHandler := handlers.NewChatHandler(chatRepo, contactRepo, instanceRepo, log)
+	chatHandler := handlers.NewChatHandler(chatRepo, contactRepo, instanceRepo, manager, log)
 	messageHandler := handlers.NewMessageHandler(messageRepo, mediaRepo, chatRepo, manager, log)
 	callHandler := handlers.NewCallHandler(manager, instanceRepo, callRepo, log)
 

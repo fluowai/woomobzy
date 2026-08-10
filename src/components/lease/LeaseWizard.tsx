@@ -8,6 +8,8 @@ import { useLeaseWizard } from '../../hooks/lease/useLeaseWizard';
 import { useAutoSave } from '../../hooks/lease/useAutoSave';
 import { WIZARD_STEPS, LEASE_STATUS_LABELS } from '../../types/lease';
 import type { Lease } from '../../types/lease';
+import { updateLeaseStatus } from '../../services/lease/leaseService';
+import { toast } from 'sonner';
 
 // Step components
 import { StepTenantData } from './steps/StepTenantData';
@@ -60,6 +62,22 @@ export const LeaseWizard: React.FC<LeaseWizardProps> = ({ existingLease, onCompl
   const handleSaveAndExit = async () => {
     await saveDraft();
     onCancel?.();
+  };
+
+  const handleActivate = async () => {
+    if (!wizard.leaseId) {
+      toast.error('Nenhum rascunho salvo para ativar.');
+      return;
+    }
+    
+    try {
+      await updateLeaseStatus(wizard.leaseId, 'active');
+      clearDraft();
+      toast.success('Contrato ativado com sucesso!');
+      onComplete?.();
+    } catch (error) {
+      toast.error('Erro ao ativar contrato.');
+    }
   };
 
   return (
@@ -199,7 +217,7 @@ export const LeaseWizard: React.FC<LeaseWizardProps> = ({ existingLease, onCompl
               </button>
             ) : (
               <button
-                onClick={onComplete}
+                onClick={handleActivate}
                 className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl shadow-lg shadow-emerald-600/20 transition-all"
               >
                 <CheckCircle size={16} /> Ativar Contrato

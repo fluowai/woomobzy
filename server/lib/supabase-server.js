@@ -65,7 +65,17 @@ export function getSupabaseServer() {
     );
   }
 
-  _client = createClient(url, key);
+  _client = createClient(url, key, {
+    global: {
+      fetch: (input, init = {}) => {
+        const headers = new Headers(init.headers);
+        if (!headers.has('Connection')) {
+          headers.set('Connection', 'keep-alive');
+        }
+        return fetch(input, { ...init, headers });
+      },
+    },
+  });
   return _client;
 }
 

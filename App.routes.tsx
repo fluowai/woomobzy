@@ -153,6 +153,7 @@ const WooSignCreateEnvelope = lazy(
   () => import('./views/woosign/WooSignCreateEnvelope')
 );
 const WooSignWallets = lazy(() => import('./views/woosign/WooSignWallets'));
+const MetaLeadAdsSettings = lazy(() => import('./views/MetaLeadAdsSettings'));
 
 const AppRoutes: React.FC = () => {
   return (
@@ -420,6 +421,7 @@ const AppRoutes: React.FC = () => {
           <Route path="audit-log" element={<AuditLog />} />
           <Route path="templates" element={<TemplateManager />} />
           <Route path="settings" element={<GlobalSettings />} />
+          <Route path="meta-ads" element={<MetaLeadAdsSettings />} />
         </Route>
 
         <Route

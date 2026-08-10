@@ -1,8 +1,12 @@
 import { supabase } from '@/services/supabase';
+import { getImpersonatedOrganizationId, getImpersonationHeaders } from '@/src/lib/impersonation';
 
 const INSTAGRAM_API = '/api/instagram';
 
 async function getCompanyId(): Promise<string | null> {
+  const impersonatedOrgId = getImpersonatedOrganizationId();
+  if (impersonatedOrgId) return impersonatedOrgId;
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -22,6 +26,11 @@ async function apiFetch(path: string, options: RequestInit = {}) {
     ...((options.headers as Record<string, string>) || {}),
   };
   if (companyId) headers['x-company-id'] = companyId;
+
+  const impersonationHeaders = getImpersonationHeaders();
+  if (Object.keys(impersonationHeaders).length > 0) {
+    Object.assign(headers, impersonationHeaders);
+  }
 
   const {
     data: { session },

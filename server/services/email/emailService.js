@@ -280,7 +280,7 @@ export function createImapClient(
   { allowInsecureTls = false } = {}
 ) {
   const config = normalizeEmailConnectionConfig(account);
-  return new ImapFlow({
+  const client = new ImapFlow({
     host: config.imap_host,
     port: config.imap_port,
     secure: config.imap_secure,
@@ -293,6 +293,8 @@ export function createImapClient(
       ? { rejectUnauthorized: false, servername: config.imap_host }
       : undefined,
   });
+  client.on('error', () => {});
+  return client;
 }
 
 function createSmtpTransport(
@@ -322,13 +324,22 @@ export async function testEmailConnection(accountConfig) {
     const imapClient = createImapClient(config, config.password, {
       allowInsecureTls,
     });
-    await imapClient.connect();
-    await imapClient.logout();
+    try {
+      await imapClient.connect();
+      await imapClient.logout();
+    } catch (error) {
+      await imapClient.logout().catch(() => {});
+      throw error;
+    }
 
     const smtpTransport = createSmtpTransport(config, config.password, {
       allowInsecureTls,
     });
-    await smtpTransport.verify();
+    try {
+      await smtpTransport.verify();
+    } finally {
+      smtpTransport.close();
+    }
   };
 
   try {

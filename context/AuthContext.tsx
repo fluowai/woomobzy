@@ -139,15 +139,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
     try {
       fetchInProgress.current = userId;
-      // Define a flag to track if we're silently refreshing so we don't flicker the loading state
       const isSilentRefresh = profile && profile.id === userId;
       if (!isSilentRefresh) {
         setLoading(true);
       }
       logger.info('📡 [AuthContext] Querying profile for:', userId);
 
-      // Keep the profile query lean. Joining organizations here can hang on slow
-      // PostgREST/RLS paths and block the whole app bootstrap.
       const queryPromise = supabase
         .from('profiles')
         .select(
@@ -159,7 +156,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
       const timeoutPromise = new Promise(
         (_, reject) =>
-          setTimeout(() => reject(new Error('Profile query timeout')), 30000) // 30s timeout
+          setTimeout(() => reject(new Error('Profile query timeout')), 30000)
       );
 
       const { data: profileData, error: profileError } = (await Promise.race([
@@ -200,21 +197,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         const impOrgId =
           getStoredImpersonationSession()?.organizationId || null;
 
-        if (
-          profileData.role === 'superadmin' &&
-          impOrgId &&
-          impOrgId !== 'null' &&
-          impOrgId !== 'undefined'
-        ) {
-          logger.info('🚀 [AuthContext] Checking impersonated org:', impOrgId);
-          const { data: orgData, error: orgError } = await supabase
-            .from('organizations')
-            .select(
-              'id, name, slug, niche, custom_domain, plan_id, trial_ends_at, subscription_status, is_reseller, parent_id'
-            )
-            .eq('id', impOrgId)
-            .single();
+        const orgPromise =
+          profileData.role === 'superadmin' && impOrgId && impOrgId !== 'null' && impOrgId !== 'undefined'
+            ? supabase
+                .from('organizations')
+                .select(
+                  'id, name, slug, niche, custom_domain, plan_id, trial_ends_at, subscription_status, is_reseller, parent_id'
+                )
+                .eq('id', impOrgId)
+                .maybeSingle()
+            : profileData.organization_id
+              ? supabase
+                  .from('organizations')
+                  .select(
+                    'id, name, slug, niche, custom_domain, plan_id, trial_ends_at, subscription_status, is_reseller, parent_id'
+                  )
+                  .eq('id', profileData.organization_id)
+                  .maybeSingle()
+              : Promise.resolve({ data: null, error: null });
 
+        const { data: orgData, error: orgError } = await orgPromise;
+
+        if (profileData.role === 'superadmin' && impOrgId && impOrgId !== 'null' && impOrgId !== 'undefined') {
           if (!orgError && orgData) {
             logger.info('✅ [AuthContext] Impersonation active:', orgData.name);
             finalProfile = {
@@ -234,15 +238,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         } else {
           setIsImpersonating(false);
 
-          if (finalProfile.organization_id) {
-            const { data: orgData, error: orgError } = await supabase
-              .from('organizations')
-              .select(
-                'id, name, slug, niche, custom_domain, plan_id, trial_ends_at, subscription_status, is_reseller, parent_id'
-              )
-              .eq('id', finalProfile.organization_id)
-              .maybeSingle();
-
+          if (finalProfile.organization_id && profileData.role !== 'superadmin') {
             if (!orgError && orgData) {
               finalProfile.organization = orgData;
             } else if (orgError) {
@@ -271,7 +267,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         err.message
       );
 
-      // AUTO-RETRY LOGIC: If it's a timeout or network error, and we haven't hit max retries
       if (retryCount.current < 2) {
         retryCount.current += 1;
         const delay = retryCount.current * 2000;
@@ -279,7 +274,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           `🔄 [AuthContext] Retrying profile fetch in ${delay}ms (Attempt ${retryCount.current}/2)...`
         );
         await new Promise((resolve) => setTimeout(resolve, delay));
-        fetchInProgress.current = null; // Reset to allow retry
+        fetchInProgress.current = null;
         return loadProfile(userId);
       }
 

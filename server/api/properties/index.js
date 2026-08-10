@@ -46,7 +46,12 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
     }
 
     // 2. Montar a query com o filtro de nicho
-    let query = supabase.from('properties').select('*', { count: 'exact' });
+    let query = supabase
+      .from('properties')
+      .select(
+        'id, title, price, city, neighborhood, property_type, status, images, description, niche, created_at',
+        { count: 'exact' }
+      );
 
     if (req.orgId) {
       query = query.eq('organization_id', req.orgId);

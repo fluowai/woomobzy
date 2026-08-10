@@ -4,17 +4,17 @@ import crypto from 'crypto';
 
 const VARIABLE_MAP = {
   nome_locador: 'owner_name',
-  cpf_locador: 'owner_cpf',
+  cpf_locador: 'owner_cpf_cnpj',
   rg_locador: 'owner_rg',
   endereco_locador: 'owner_address',
   nome_locatario: 'tenant_name',
   cpf_locatario: 'tenant_cpf',
   rg_locatario: 'tenant_rg',
   endereco_locatario: 'tenant_address',
-  endereco_imovel: 'property_title',
+  endereco_imovel: 'endereco_imovel_computed',
   cidade: 'tenant_city',
   valor_aluguel: 'monthly_rent',
-  valor_caucao: 'caution_amount',
+  valor_caucao: 'valor_caucao_computed',
   data_inicio: 'start_date',
   data_fim: 'end_date',
   prazo_meses: 'contract_duration_months',
@@ -43,12 +43,40 @@ function buildVariableValues(lease) {
       vars[placeholder] = today;
       continue;
     }
+
+    if (field === 'endereco_imovel_computed') {
+      const parts = [
+        lease.property_title,
+        lease.property_address,
+        lease.property_city && lease.property_state
+          ? `${lease.property_city}/${lease.property_state}`
+          : null,
+      ].filter(Boolean);
+      vars[placeholder] = parts.join(', ') || `[${placeholder}]`;
+      continue;
+    }
+
+    if (field === 'valor_caucao_computed') {
+      const value =
+        lease.caution_amount ??
+        lease.guarantee_value ??
+        lease.deposit_caucao_amount;
+      vars[placeholder] =
+        value !== null && value !== undefined
+          ? Number(value).toLocaleString('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+            })
+          : `[${placeholder}]`;
+      continue;
+    }
+
     const value = lease[field];
     if (value === null || value === undefined) {
       vars[placeholder] = `[${placeholder}]`;
       continue;
     }
-    if (field === 'monthly_rent' || field === 'caution_amount') {
+    if (field === 'monthly_rent') {
       vars[placeholder] = Number(value).toLocaleString('pt-BR', {
         style: 'currency',
         currency: 'BRL',

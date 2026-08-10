@@ -5,6 +5,7 @@ import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { verifyAdmin } from '../../middleware/auth.js';
 import { AsaasService } from '../../services/asaasService.js';
+import { resolveAsaasApiKey } from '../../middleware/asaas.js';
 
 const router = Router();
 
@@ -12,7 +13,7 @@ const cancelSchema = z.object({
   asaasSubscriptionId: z.string().optional(),
 });
 
-router.post('/cancel', verifyAuth, verifyAdmin, async (req, res) => {
+router.post('/cancel', verifyAuth, verifyAdmin, resolveAsaasApiKey, async (req, res) => {
   try {
     const parsed = cancelSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -46,7 +47,7 @@ router.post('/cancel', verifyAuth, verifyAdmin, async (req, res) => {
 
     let asaasResponse = null;
     try {
-      asaasResponse = await AsaasService.deleteSubscription(subscriptionId);
+      asaasResponse = await AsaasService.deleteSubscription(subscriptionId, req.asaasApiKey || undefined);
     } catch (error) {
       logger.warn(
         '[SubscriptionCancel] Falha ao cancelar no Asaas:',

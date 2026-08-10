@@ -1,5 +1,14 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { generateKeyPair, verifyLicenseKey } from '../lib/licensing/crypto.js';
+
+vi.mock('node:dns/promises', () => ({
+  default: {
+    lookup: vi.fn(async () => [
+      { address: '1.2.3.4', family: 4 },
+      { address: '1.2.3.5', family: 4 },
+    ]),
+  },
+}));
 import {
   createLicense,
   bindDomainToLicenseViaSetupToken,

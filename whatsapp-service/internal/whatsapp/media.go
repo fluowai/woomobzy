@@ -20,9 +20,12 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"go.mau.fi/whatsmeow"
 	waE2E "go.mau.fi/whatsmeow/proto/waE2E"
+	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
+
+	"whatsapp-service/pkg/phone"
 )
 
 // downloadAndUploadMedia downloads media from WhatsApp and uploads it to object storage.
@@ -355,10 +358,54 @@ func extensionFromMime(mimeType string) string {
 	return ext
 }
 
+// ResolveSendJID ensures the store has a LID mapping for a one-to-one phone
+// chat before sending, returning the canonical JID to use. Some numbers only
+// expose their LID through the usync query (IsOnWhatsApp) and not through the
+// usync full (GetUserInfo) path, so without this warm-up the send fails with
+// "no LID found". Non-phone chats (groups, LIDs, etc.) are returned unchanged.
+func (c *Client) ResolveSendJID(ctx context.Context, chatJID string) (string, error) {
+	jid, err := parseJID(chatJID)
+	if err != nil {
+		return "", err
+	}
+	if jid.Server != types.DefaultUserServer {
+		return jid.String(), nil
+	}
+
+	if c.waClient.Store != nil && c.waClient.Store.LIDs != nil {
+		lid, lidErr := c.waClient.Store.LIDs.GetLIDForPN(ctx, jid)
+		if lidErr == nil && !lid.IsEmpty() {
+			return jid.String(), nil
+		}
+	}
+
+	resp, err := c.waClient.IsOnWhatsApp(ctx, []string{"+" + jid.User})
+	if err != nil {
+		return "", fmt.Errorf("failed to warm LID mapping for %s: %w", jid, err)
+	}
+	if len(resp) == 0 || !resp[0].IsIn {
+		return "", fmt.Errorf("number %s is not on WhatsApp", jid)
+	}
+	// IsOnWhatsApp already persisted the LID mapping in the store
+	// (user.go PutManyLIDMappings). Prefer the canonical PN reported by
+	// WhatsApp, which may differ from the typed number.
+	if !resp[0].PhoneNumber.IsEmpty() && resp[0].PhoneNumber.Server == types.DefaultUserServer {
+		if canonical := phone.ExtractFromJID(resp[0].PhoneNumber.String()); canonical != "" {
+			return canonical + "@s.whatsapp.net", nil
+		}
+	}
+	return jid.String(), nil
+}
+
 // SendTextMessage sends a text message via WhatsMeow and returns the canonical
 // WhatsApp message ID used by delivery/read receipts.
 func (c *Client) SendTextMessage(ctx context.Context, chatJID string, text string) (string, time.Time, error) {
-	jid, err := parseJID(chatJID)
+	resolvedJID, err := c.ResolveSendJID(ctx, chatJID)
+	if err != nil {
+		return "", time.Time{}, fmt.Errorf("failed to send message: %w", err)
+	}
+
+	jid, err := parseJID(resolvedJID)
 	if err != nil {
 		return "", time.Time{}, fmt.Errorf("invalid JID: %w", err)
 	}
@@ -372,7 +419,7 @@ func (c *Client) SendTextMessage(ctx context.Context, chatJID string, text strin
 
 	c.logger.Info("Message sent",
 		zap.String("instance", c.instanceID.String()),
-		zap.String("to", chatJID),
+		zap.String("to", resolvedJID),
 	)
 
 	timestamp := resp.Timestamp
@@ -384,7 +431,12 @@ func (c *Client) SendTextMessage(ctx context.Context, chatJID string, text strin
 
 // SendMediaMessage uploads and sends image, audio, video or document media via WhatsMeow.
 func (c *Client) SendMediaMessage(ctx context.Context, chatJID string, msgType string, data []byte, mimeType, fileName, caption string) (messageID, mediaURL, mediaMimetype, mediaFilename, mediaError string, err error) {
-	jid, err := parseJID(chatJID)
+	resolvedJID, err := c.ResolveSendJID(ctx, chatJID)
+	if err != nil {
+		return "", "", "", "", "", fmt.Errorf("failed to send media message: %w", err)
+	}
+
+	jid, err := parseJID(resolvedJID)
 	if err != nil {
 		return "", "", "", "", "", fmt.Errorf("invalid JID: %w", err)
 	}

@@ -136,6 +136,9 @@ const SiteManager = lazy(() => import('./views/SiteManager'));
 const MegaTheme = lazy(
   () => import('./src/views/sites/megainvestimentos/MegaTheme')
 );
+const RevendaDelazari = lazy(
+  () => import('./src/views/sites/delazari/RevendaDelazari')
+);
 const SitePageEditor = lazy(() => import('./views/SitePageEditor'));
 const Checkout = lazy(() => import('./views/Checkout'));
 const PublicSite = lazy(() => import('./views/PublicSite'));
@@ -160,6 +163,7 @@ const AppRoutes: React.FC = () => {
     <Suspense fallback={<FullScreenSpinner />}>
       <Routes>
         <Route path="/megainvestimentos" element={<MegaTheme />} />
+        <Route path="/delazari" element={<RevendaDelazari />} />
         <Route path="/" element={<SystemSalesPage />} />
         <Route path="/vendas" element={<SystemSalesPage />} />
         <Route path="/consultoria" element={<SystemSalesPage />} />

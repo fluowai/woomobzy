@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
 import { Building, Send, Loader2, DollarSign } from 'lucide-react';
+import { useSettings } from '../../context/SettingsContext';
+import { useAuth } from '../../context/AuthContext';
+import { leadService } from '../../services/leads';
+import { logger } from '@/utils/logger';
 
 const SellPropertyForm: React.FC = () => {
+  const { settings } = useSettings();
+  const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -18,9 +25,41 @@ const SellPropertyForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulação
-    setLoading(false);
-    setSuccess(true);
+    setError('');
+
+    try {
+      const notes = [
+        `Tipo de imóvel: ${formData.propertyType}`,
+        formData.location ? `Localização: ${formData.location}` : null,
+        formData.area ? `Área: ${formData.area} ha` : null,
+        formData.value ? `Valor pretendido: R$ ${formData.value}` : null,
+      ]
+        .filter(Boolean)
+        .join('\n');
+
+      await leadService.create({
+        organization_id: profile?.organization_id,
+        organization_slug: (settings as any)?.organization_slug,
+        organization_domain:
+          window.location.hostname.replace(/^www\./, '') || undefined,
+        site_key: (settings as any)?.site_key,
+        referrer_url: window.location.href,
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email,
+        source: 'Site - Avaliação de Imóvel',
+        classification: 'proprietario',
+        notes,
+      } as any);
+
+      logger.info('Imóvel cadastrado pelo SellPropertyForm:', formData);
+      setSuccess(true);
+    } catch (err) {
+      logger.error('Erro ao cadastrar imóvel no SellPropertyForm:', err);
+      setError('Não foi possível enviar. Tente novamente em instantes.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (success) {
@@ -150,6 +189,12 @@ const SellPropertyForm: React.FC = () => {
         {loading ? <Loader2 className="animate-spin" /> : <Send size={20} />}
         SOLICITAR AVALIAÇÃO
       </button>
+
+      {error && (
+        <p className="text-center text-xs font-semibold text-red-400 mt-3">
+          {error}
+        </p>
+      )}
     </form>
   );
 };

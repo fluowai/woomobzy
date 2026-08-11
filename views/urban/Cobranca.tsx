@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import {
   DollarSign,
-  FileText,
   Plus,
   Trash2,
   X,
@@ -12,10 +11,8 @@ import {
   Clock,
   RefreshCw,
   TrendingUp,
-  TrendingDown,
   CreditCard,
   QrCode,
-  AlertCircle,
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { cobrancaService, Billing } from '../../services/cobrancaService';
@@ -46,7 +43,9 @@ const Cobranca: React.FC = () => {
   const loadContracts = useCallback(async () => {
     const { data } = await supabase
       .from('rental_contracts')
-      .select('id, tenant_name, property:property_id(title), monthly_rent')
+      .select(
+        'id, tenant_name, tenant_email, tenant_phone, tenant_cpf, property:property_id(title), monthly_rent'
+      )
       .eq('status', 'active')
       .order('tenant_name');
     setContracts(data || []);
@@ -122,19 +121,34 @@ const Cobranca: React.FC = () => {
 
   const handleGenerateInvoice = async (billing: Billing) => {
     setIsLoading(true);
+    const contract = contracts.find((c) => c.id === billing.contract_id);
+    const tenant = contract || billing.contract || {};
     const invoice = await paymentService.createInvoice({
       amount: billing.amount || 0,
       dueDate: billing.due_date || '',
       description: billing.description || 'Cobrança WooTech Imob',
       client: {
-        name: billing.contract?.tenant_name || 'Cliente',
-        email: 'cliente@email.com',
-        cpfCnpj: '000.000.000-00',
+        name: tenant.tenant_name || billing.contract?.tenant_name || 'Cliente',
+        email:
+          tenant.tenant_email ||
+          billing.contract?.tenant_name?.toLowerCase().replace(/\s+/g, '.') +
+            '@cliente.com' ||
+          '',
+        cpfCnpj: tenant.tenant_cpf || '',
       },
     });
 
     if (invoice) {
-      // Aqui atualizaríamos o banco via cobrancaService
+      const { error } = await supabase
+        .from('billing')
+        .update({
+          invoice_url: invoice.invoiceUrl,
+          payment_gateway_id: invoice.id,
+        })
+        .eq('id', billing.id);
+      if (error) {
+        console.error('Erro ao salvar fatura:', error);
+      }
       setBillings((prev) =>
         prev.map((b) =>
           b.id === billing.id
@@ -146,6 +160,7 @@ const Cobranca: React.FC = () => {
             : b
         )
       );
+      toast.success('Fatura gerada com sucesso');
     }
     setIsLoading(false);
   };

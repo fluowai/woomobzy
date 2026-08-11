@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useEffect, useMemo } from 'react';
 import { leadService } from '@/services/leads';
 import type { Lead } from '@/types';
+import { supabase } from '../../services/supabase';
+import { useAuth } from '../../context/AuthContext';
+import { logger } from '@/utils/logger';
 
 import {
   Search,
@@ -19,58 +22,117 @@ import {
   Briefcase,
   Flame,
   Star,
-  MoreVertical,
   Plus,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 export default function CRMLeads() {
-  const navigate = useNavigate();
+  const { profile } = useAuth();
   const [viewMode, setViewMode] = useState<'Kanban' | 'Lista' | 'Agenda'>(
     'Kanban'
   );
 
-  // MOCK DATA for Kanban columns
-
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [slaDeadlines, setSlaDeadlines] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const fetchLeads = async () => {
-      setLoading(true);
       try {
         const data = await leadService.list(1, 100);
         setLeads(data || []);
       } catch (err) {
-        console.error('Erro ao buscar leads', err);
-      } finally {
-        setLoading(false);
+        logger.error('Erro ao buscar leads', err);
+      }
+      if (profile?.organization_id) {
+        try {
+          const { data: slaRows } = await supabase
+            .from('leads')
+            .select('id, sla_deadline')
+            .eq('organization_id', profile.organization_id);
+          const map: Record<string, string> = {};
+          (slaRows || []).forEach((r: any) => {
+            if (r.sla_deadline) map[r.id] = r.sla_deadline;
+          });
+          setSlaDeadlines(map);
+        } catch (err) {
+          logger.error('Erro ao buscar SLA dos leads', err);
+        }
       }
     };
     fetchLeads();
-  }, []);
+  }, [profile?.organization_id]);
 
-  const getCards = (status: string) => {
-    return leads
-      .filter((l) => (l.status || 'Novo') === status)
-      .map((l) => ({
-        id: l.id,
-        avatar: (l.name || 'L').substring(0, 2).toUpperCase(),
-        name: l.name || 'Sem nome',
-        source: l.source || 'CRM',
-        temperature: l.lead_score && l.lead_score > 70 ? 'Quente' : 'Morno',
-        property: l.property ? l.property.title : 'Sem imóvel associado',
-        actionIcon: <Phone size={14} className="text-emerald-600" />,
-        actionText: l.next_follow_up_at
-          ? new Date(l.next_follow_up_at).toLocaleDateString()
-          : 'Acompanhar',
-        actionColor: 'text-emerald-600',
-        slaText: 'SLA OK',
-        slaColor: 'text-emerald-500',
-        whatsapp: !!l.phone,
-        starred: l.lead_score && l.lead_score > 80,
-      }));
-  };
+  const getSla = useCallback(
+    (lead: Lead): { text: string; color: string } => {
+      const deadline = slaDeadlines[lead.id]
+        ? new Date(slaDeadlines[lead.id])
+        : null;
+      const now = new Date();
+      if (!deadline) return { text: 'Sem SLA', color: 'text-slate-400' };
+      const lastContact = lead.last_contacted_at
+        ? new Date(lead.last_contacted_at)
+        : null;
+      const stale =
+        lastContact &&
+        now.getTime() - lastContact.getTime() > 7 * 24 * 60 * 60 * 1000;
+      if (deadline.getTime() < now.getTime())
+        return { text: 'SLA Atrasado', color: 'text-red-500' };
+      if (
+        deadline.getTime() - now.getTime() < 24 * 60 * 60 * 1000 ||
+        stale
+      )
+        return { text: 'SLA Urgente', color: 'text-amber-500' };
+      return { text: 'SLA OK', color: 'text-emerald-500' };
+    },
+    [slaDeadlines]
+  );
+
+  const getCards = useCallback(
+    (status: string) => {
+      return leads
+        .filter((l) => (l.status || 'Novo') === status)
+        .map((l) => {
+          const sla = getSla(l);
+          return {
+            id: l.id,
+            avatar: (l.name || 'L').substring(0, 2).toUpperCase(),
+            name: l.name || 'Sem nome',
+            source: l.source || 'CRM',
+            temperature: l.lead_score && l.lead_score > 70 ? 'Quente' : 'Morno',
+            property: l.property ? l.property.title : 'Sem imóvel associado',
+            actionIcon: <Phone size={14} className="text-emerald-600" />,
+            actionText: l.next_follow_up_at
+              ? new Date(l.next_follow_up_at).toLocaleDateString()
+              : 'Acompanhar',
+            actionColor: 'text-emerald-600',
+            slaText: sla.text,
+            slaColor: sla.color,
+            whatsapp: !!l.phone,
+            starred: l.lead_score && l.lead_score > 80,
+          };
+        });
+    },
+    [leads, getSla]
+  );
+
+  const slaOverdue = leads.filter((l) => getSla(l).text === 'SLA Atrasado');
+  const slaUrgent = leads.filter((l) => getSla(l).text === 'SLA Urgente');
+  const noNextStep = leads.filter((l) => !l.next_follow_up_at);
+  const hotLeads = leads.filter((l) => (l.lead_score || 0) > 70);
+  const unconfirmedVisits = leads.filter(
+    (l) => l.status === 'Visita' && !l.next_follow_up_at
+  );
+  const inProgress = leads.filter((l) =>
+    ['Qualificacao', 'Visita', 'Proposta'].includes(l.status)
+  );
+  const withBudget = leads.filter((l) => (l.budget || 0) > 0);
+  const noSla = leads.filter((l) => !slaDeadlines[l.id]);
+  const vgvPotencial = leads.reduce((s, l) => s + (l.budget || 0), 0);
+  const formatCompactBRL = (val: number) =>
+    new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      notation: 'compact',
+    }).format(val);
 
   const columns = useMemo(
     () => [
@@ -99,7 +161,7 @@ export default function CRMLeads() {
         cards: getCards('Proposta'),
       },
     ],
-    [leads]
+    [leads, getCards]
   );
 
   return (
@@ -150,28 +212,31 @@ export default function CRMLeads() {
           <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 border border-red-100 rounded-lg text-red-700">
             <AlertTriangle size={14} />
             <span className="text-xs font-bold">
-              <span className="text-sm">4</span> SLA vencido
+              <span className="text-sm">{slaOverdue.length}</span> SLA vencido
             </span>
           </div>
 
           <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-100 rounded-lg text-amber-700">
             <Clock size={14} />
             <span className="text-xs font-bold">
-              <span className="text-sm">6</span> sem próximo passo
+              <span className="text-sm">{noNextStep.length}</span> sem próximo
+              passo
             </span>
           </div>
 
           <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-100 rounded-lg text-amber-700">
             <CalendarX size={14} />
             <span className="text-xs font-bold">
-              <span className="text-sm">3</span> visitas sem confirmação
+              <span className="text-sm">{unconfirmedVisits.length}</span>{' '}
+              visitas sem confirmação
             </span>
           </div>
 
           <div className="flex items-center gap-2 ml-auto text-emerald-600 px-4">
             <Sparkles size={16} />
             <span className="text-sm font-bold">
-              IA: priorize Paulo e André até 17h
+              IA: {slaOverdue.length + slaUrgent.length} leads demandam atenção
+              hoje
             </span>
           </div>
         </div>
@@ -187,7 +252,7 @@ export default function CRMLeads() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-slate-900 leading-none mb-1">
-                  32
+                  {leads.length}
                 </p>
                 <p className="text-xs text-slate-500 font-medium">
                   Leads ativos
@@ -196,12 +261,10 @@ export default function CRMLeads() {
             </div>
             <div className="text-right">
               <p className="text-xs font-bold text-emerald-600 flex items-center justify-end gap-1">
-                ↗ 14%
+                {inProgress.length} em andamento
               </p>
               <p className="text-[10px] text-slate-400 mt-0.5">
-                vs. semana
-                <br />
-                passada
+                qualificação a proposta
               </p>
             </div>
           </div>
@@ -215,7 +278,7 @@ export default function CRMLeads() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-slate-900 leading-none mb-1">
-                  R$ 4,8 mi
+                  {formatCompactBRL(vgvPotencial)}
                 </p>
                 <p className="text-xs text-slate-500 font-medium">
                   VGV potencial
@@ -224,13 +287,9 @@ export default function CRMLeads() {
             </div>
             <div className="text-right">
               <p className="text-xs font-bold text-emerald-600 flex items-center justify-end gap-1">
-                ↗ 9%
+                {withBudget.length} com budget
               </p>
-              <p className="text-[10px] text-slate-400 mt-0.5">
-                vs. semana
-                <br />
-                passada
-              </p>
+              <p className="text-[10px] text-slate-400 mt-0.5">definido</p>
             </div>
           </div>
         </div>
@@ -243,7 +302,7 @@ export default function CRMLeads() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-slate-900 leading-none mb-1">
-                  9
+                  {hotLeads.length}
                 </p>
                 <p className="text-xs text-slate-500 font-medium">
                   Leads quentes
@@ -252,13 +311,9 @@ export default function CRMLeads() {
             </div>
             <div className="text-right">
               <p className="text-xs font-bold text-emerald-600 flex items-center justify-end gap-1">
-                ↗ 12%
+                {slaUrgent.length} urgentes
               </p>
-              <p className="text-[10px] text-slate-400 mt-0.5">
-                vs. semana
-                <br />
-                passada
-              </p>
+              <p className="text-[10px] text-slate-400 mt-0.5">em 24h</p>
             </div>
           </div>
         </div>
@@ -271,7 +326,7 @@ export default function CRMLeads() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-slate-900 leading-none mb-1">
-                  4
+                  {slaOverdue.length}
                 </p>
                 <p className="text-xs text-slate-500 font-medium">
                   SLA vencido
@@ -280,13 +335,9 @@ export default function CRMLeads() {
             </div>
             <div className="text-right">
               <p className="text-xs font-bold text-emerald-600 flex items-center justify-end gap-1">
-                ↗ 33%
+                {noSla.length} sem SLA
               </p>
-              <p className="text-[10px] text-slate-400 mt-0.5">
-                vs. semana
-                <br />
-                passada
-              </p>
+              <p className="text-[10px] text-slate-400 mt-0.5">definido</p>
             </div>
           </div>
         </div>

@@ -208,7 +208,7 @@ function HeroSection() {
               </div>
               <div>
                 <div className="text-sm text-slate-500">Conversão</div>
-                <div className="text-xl font-bold text-slate-800">+24% hoje</div>
+                <div className="text-xl font-bold text-slate-800">em tempo real</div>
               </div>
             </div>
           </motion.div>
@@ -316,8 +316,8 @@ function DataAutomations() {
               
               <div className="absolute bottom-6 left-6 right-6">
                 <div className="uppercase tracking-widest text-xs font-bold text-white mb-2">APARTAMENTO</div>
-                <h3 className="text-3xl font-light text-white mb-1">3 DORMITÓRIOS</h3>
-                <p className="text-slate-300 text-sm mb-4">VILA OLÍMPIA</p>
+                <h3 className="text-3xl font-light text-white mb-1">SEU IMÓVEL</h3>
+                <p className="text-slate-300 text-sm mb-4">EXEMPLO DE VITRINE</p>
                 <div className="flex gap-2 mb-4">
                    <span className="text-xs px-2 py-1 bg-white/20 rounded backdrop-blur text-white">90m²</span>
                    <span className="text-xs px-2 py-1 bg-white/20 rounded backdrop-blur text-white">2 vagas</span>
@@ -362,11 +362,11 @@ function DataAutomations() {
 
 function PipelineSection() {
   const columns = [
-    { title: "Novo lead", count: "142 leads", color: "bg-slate-100" },
-    { title: "Em atendimento", count: "302 leads", color: "bg-blue-50" },
-    { title: "Visita agendada", count: "258 leads", color: "bg-amber-50" },
-    { title: "Proposta", count: "75 leads", color: "bg-purple-50" },
-    { title: "Fechado", count: "42 leads", color: "bg-green-50" },
+    { title: "Novo lead", count: "Exemplo", color: "bg-slate-100" },
+    { title: "Em atendimento", count: "Exemplo", color: "bg-blue-50" },
+    { title: "Visita agendada", count: "Exemplo", color: "bg-amber-50" },
+    { title: "Proposta", count: "Exemplo", color: "bg-purple-50" },
+    { title: "Fechado", count: "Exemplo", color: "bg-green-50" },
   ];
 
   return (
@@ -391,15 +391,15 @@ function PipelineSection() {
                   <div key={card} className="bg-white p-3 rounded-lg shadow-sm border border-slate-100 cursor-grab active:cursor-grabbing hover:border-blue-300 transition-colors">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-8 h-8 rounded-full bg-slate-200 flex-shrink-0 overflow-hidden">
-                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${col.title}${card}`} alt="avatar" />
+                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${col.title}${card}`} alt="avatar ilustrativo" />
                       </div>
                       <div>
-                        <div className="text-sm font-semibold text-slate-800">Nome do Lead</div>
-                        <div className="text-[10px] text-slate-500 flex items-center gap-1"><Smartphone size={10}/> WhatsApp • Há 2 min</div>
+                        <div className="text-sm font-semibold text-slate-800">Lead exemplo</div>
+                        <div className="text-[10px] text-slate-500 flex items-center gap-1"><Smartphone size={10}/> WhatsApp</div>
                       </div>
                     </div>
                     <div className="text-xs text-slate-600 bg-slate-50 p-2 rounded truncate">
-                      Interesse em Apartamento Zona Sul
+                      Interesse em um imóvel da sua vitrine
                     </div>
                   </div>
                 ))}
@@ -407,38 +407,44 @@ function PipelineSection() {
             </div>
           ))}
         </div>
+        <p className="text-center text-[11px] text-slate-400 mt-6">
+          Exemplo ilustrativo do funil do produto — os dados exibidos não são reais.
+        </p>
 
         {/* Bottom Metrics Bar */}
         <div className="mt-8 flex flex-wrap gap-4 justify-between bg-white border border-slate-200 rounded-2xl p-6 shadow-xl shadow-slate-100">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center"><CheckCircle2 size={20} /></div>
             <div>
-              <p className="text-xs text-slate-500 font-medium">Taxa de conversão geral</p>
-              <p className="text-xl font-bold text-slate-800">8,3%</p>
+              <p className="text-xs text-slate-500 font-medium">Conversão acompanhada</p>
+              <p className="text-xl font-bold text-slate-800">em cada etapa</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center"><Clock size={20} /></div>
             <div>
-              <p className="text-xs text-slate-500 font-medium">Tempo médio de resposta</p>
-              <p className="text-xl font-bold text-slate-800">4m 12s</p>
+              <p className="text-xs text-slate-500 font-medium">Atendimento centralizado</p>
+              <p className="text-xl font-bold text-slate-800">WhatsApp, e-mail e chat</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center"><Users size={20} /></div>
             <div>
-              <p className="text-xs text-slate-500 font-medium">Negociações no período</p>
-              <p className="text-xl font-bold text-slate-800">287</p>
+              <p className="text-xs text-slate-500 font-medium">Gestão de negociações</p>
+              <p className="text-xl font-bold text-slate-800">funil completo</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center"><TrendingUp size={20} /></div>
             <div>
-              <p className="text-xs text-slate-500 font-medium">Faturamento estimado</p>
-              <p className="text-xl font-bold text-green-600">R$ 2.480.000</p>
+              <p className="text-xs text-slate-500 font-medium">Relatórios financeiros</p>
+              <p className="text-xl font-bold text-green-600">dados em tempo real</p>
             </div>
           </div>
         </div>
+        <p className="text-center text-[11px] text-slate-400 mt-4">
+          Interface ilustrativa do produto. Resultados dependem da operação de cada imobiliária.
+        </p>
       </div>
     </section>
   );

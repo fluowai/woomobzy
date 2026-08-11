@@ -11,7 +11,6 @@ import {
   Activity,
   Target,
   Briefcase,
-  MapPin,
   Trees,
   Sprout,
 } from 'lucide-react';
@@ -34,6 +33,7 @@ const RuralDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [ruralProperties, setRuralProperties] = useState<any[]>([]);
   const [leadCount, setLeadCount] = useState(0);
+  const [leadDelta, setLeadDelta] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -53,8 +53,44 @@ const RuralDashboard: React.FC = () => {
           .select('*', { count: 'exact', head: true })
           .eq('organization_id', profile.organization_id);
 
+        const now = new Date();
+        const currentMonthStart = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          1
+        ).toISOString();
+        const previousMonthStart = new Date(
+          now.getFullYear(),
+          now.getMonth() - 1,
+          1
+        ).toISOString();
+
+        const [{ count: currentMonthLeads }, { count: previousMonthLeads }] =
+          await Promise.all([
+            supabase
+              .from('leads')
+              .select('*', { count: 'exact', head: true })
+              .eq('organization_id', profile.organization_id)
+              .gte('created_at', currentMonthStart),
+            supabase
+              .from('leads')
+              .select('*', { count: 'exact', head: true })
+              .eq('organization_id', profile.organization_id)
+              .gte('created_at', previousMonthStart)
+              .lt('created_at', currentMonthStart),
+          ]);
+
+        const prevCount = previousMonthLeads || 0;
+        const delta =
+          prevCount > 0
+            ? Math.round(
+                (((currentMonthLeads || 0) - prevCount) / prevCount) * 100
+              )
+            : 0;
+
         setRuralProperties((propertyRows || []).filter(isRuralProperty));
         setLeadCount(lCount || 0);
+        setLeadDelta(delta);
       } catch (err) {
         logger.error('Loader error:', err);
       } finally {
@@ -92,12 +128,51 @@ const RuralDashboard: React.FC = () => {
       maximumFractionDigits: 1,
     }).format(value);
 
+  const currentQuarterStart = (() => {
+    const now = new Date();
+    const quarter = Math.floor(now.getMonth() / 3);
+    return new Date(now.getFullYear(), quarter * 3, 1);
+  })();
+
+  const previousQuarterStart = (() => {
+    const now = new Date();
+    const quarter = Math.floor(now.getMonth() / 3);
+    return new Date(now.getFullYear(), quarter * 3 - 3, 1);
+  })();
+
+  const capturedThisQuarter = ruralProperties
+    .filter((property) => {
+      const createdAt = property.created_at ? new Date(property.created_at) : null;
+      return createdAt && createdAt >= currentQuarterStart;
+    })
+    .reduce((sum, property) => sum + Number(property.price || 0), 0);
+
+  const capturedLastQuarter = ruralProperties
+    .filter((property) => {
+      const createdAt = property.created_at ? new Date(property.created_at) : null;
+      return (
+        createdAt &&
+        createdAt >= previousQuarterStart &&
+        createdAt < currentQuarterStart
+      );
+    })
+    .reduce((sum, property) => sum + Number(property.price || 0), 0);
+
+  const quarterTarget = capturedLastQuarter > 0
+    ? capturedLastQuarter * 1.25
+    : capturedThisQuarter || 1;
+
+  const goalProgress = Math.min(
+    100,
+    Math.round((capturedThisQuarter / quarterTarget) * 100)
+  );
+
   const kpis = [
     {
       label: 'Propriedades Rurais',
       value: loading ? '—' : String(propertyCount),
       change: 'Fazendas',
-      trend: 'up',
+      trend: 'neutral' as const,
       icon: Wheat,
       color: 'text-amber-600',
       bg: 'bg-amber-50',
@@ -105,8 +180,8 @@ const RuralDashboard: React.FC = () => {
     {
       label: 'Investidores Ativos',
       value: loading ? '—' : String(leadCount),
-      change: '+5%',
-      trend: 'up',
+      change: `${leadDelta > 0 ? '+' : ''}${leadDelta}%`,
+      trend: leadDelta >= 0 ? 'up' : 'down',
       icon: UsersIcon,
       color: 'text-emerald-600',
       bg: 'bg-emerald-50',
@@ -396,27 +471,42 @@ const RuralDashboard: React.FC = () => {
             <div className="absolute right-0 bottom-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl translate-x-1/3 translate-y-1/3"></div>
             <div className="relative z-10">
               <h3 className="text-[11px] font-bold text-gray-400 mb-4 uppercase tracking-widest">
-                Meta de Captação Q3
+                Meta de Captação do Trimestre
               </h3>
               <div className="flex items-end justify-between mb-3">
                 <span className="text-lg font-bold text-white">
-                  R$ 12.5M{' '}
+                  {formatCurrency(capturedThisQuarter)}{' '}
                   <span className="text-sm font-medium text-gray-400">
-                    / R$ 15M
+                    / {formatCurrency(quarterTarget)}
                   </span>
                 </span>
-                <span className="text-sm font-bold text-emerald-400">82%</span>
+                <span className="text-sm font-bold text-emerald-400">
+                  {goalProgress}%
+                </span>
               </div>
               <div className="w-full h-2 bg-gray-700/50 rounded-full overflow-hidden mb-4">
                 <div
                   className="h-full bg-emerald-500 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
-                  style={{ width: '82%' }}
+                  style={{ width: `${goalProgress}%` }}
                 />
               </div>
               <p className="text-xs text-gray-300 font-medium leading-relaxed">
-                Você está a apenas{' '}
-                <strong className="text-emerald-400">R$ 2.5M</strong> da meta
-                trimestral. Mantenha o foco em grandes ativos.
+                {capturedLastQuarter > 0 ? (
+                  <>
+                    Você captou{' '}
+                    <strong className="text-emerald-400">
+                      {formatCurrency(capturedThisQuarter)}
+                    </strong>{' '}
+                    no trimestre ({Math.round(
+                      (capturedThisQuarter / quarterTarget) * 100
+                    )}% da meta), meta calculada sobre o trimestre anterior.
+                  </>
+                ) : (
+                  <>
+                    Sem captação no trimestre anterior para referência. Este é
+                    o volume acumulado em grandes ativos no trimestre atual.
+                  </>
+                )}
               </p>
             </div>
           </div>

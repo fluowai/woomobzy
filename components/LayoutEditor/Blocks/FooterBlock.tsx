@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { Block } from '../../../types';
 import { Instagram, Facebook, Mail, Phone } from 'lucide-react';
 import { useSettings } from '../../../context/SettingsContext';
+import { useAuth } from '../../../context/AuthContext';
+import { leadService } from '../../../services/leads';
+import { logger } from '@/utils/logger';
 
 interface FooterBlockProps {
   block: Block;
@@ -12,6 +15,40 @@ interface FooterBlockProps {
 export const FooterBlock: React.FC<FooterBlockProps> = ({ block }) => {
   const config = block.config as any;
   const { settings } = useSettings();
+  const { profile } = useAuth();
+  const [email, setEmail] = useState('');
+  const [subscribing, setSubscribing] = useState(false);
+
+  const handleSubscribe = async () => {
+    const normalized = email.trim();
+    if (!normalized || !/^\S+@\S+\.\S+$/.test(normalized)) {
+      toast.error('Informe um e-mail válido');
+      return;
+    }
+
+    setSubscribing(true);
+    try {
+      await leadService.create({
+        organization_id: profile?.organization_id,
+        organization_slug: (settings as any)?.organization_slug,
+        organization_domain:
+          window.location.hostname.replace(/^www\./, '') || undefined,
+        site_key: (settings as any)?.site_key,
+        referrer_url: window.location.href,
+        name: normalized.split('@')[0],
+        email: normalized,
+        source: 'Site - Newsletter',
+        classification: 'newsletter',
+      } as any);
+      setEmail('');
+      toast.success('Inscrição realizada com sucesso!');
+    } catch (err) {
+      logger.error('Erro ao capturar newsletter:', err);
+      toast.error('Não foi possível concluir a inscrição. Tente novamente.');
+    } finally {
+      setSubscribing(false);
+    }
+  };
 
   const backgroundColor = config.backgroundColor || '#1a1a1a';
   const textColor = config.textColor || '#ffffff';
@@ -118,14 +155,23 @@ export const FooterBlock: React.FC<FooterBlockProps> = ({ block }) => {
               <div className="flex gap-2">
                 <input
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSubscribe();
+                    }
+                  }}
                   placeholder="Seu e-mail"
                   className="flex-1 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-sm outline-none"
                 />
                 <button
-                  onClick={() => toast.info('Inscrição realizada com sucesso!')}
-                  className="px-4 py-2 bg-white text-slate-900 rounded-lg text-sm font-bold hover:bg-opacity-90"
+                  onClick={handleSubscribe}
+                  disabled={subscribing}
+                  className="px-4 py-2 bg-white text-slate-900 rounded-lg text-sm font-bold hover:bg-opacity-90 disabled:opacity-70"
                 >
-                  OK
+                  {subscribing ? '...' : 'OK'}
                 </button>
               </div>
             </div>

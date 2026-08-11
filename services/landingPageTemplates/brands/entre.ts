@@ -603,28 +603,28 @@ const entreHtml = `
         <div class="entre-cat-card">
           <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" class="entre-cat-img" alt="Casas">
           <div class="entre-cat-overlay">
-            <span class="entre-cat-count">124 imóveis</span>
+            <span class="entre-cat-count">Sua vitrine</span>
             <h3 class="entre-cat-title">Casas de Luxo</h3>
           </div>
         </div>
         <div class="entre-cat-card">
           <img src="https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" class="entre-cat-img" alt="Aptos">
           <div class="entre-cat-overlay">
-            <span class="entre-cat-count">86 imóveis</span>
+            <span class="entre-cat-count">Sua vitrine</span>
             <h3 class="entre-cat-title">Aptos Modernos</h3>
           </div>
         </div>
         <div class="entre-cat-card">
           <img src="https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" class="entre-cat-img" alt="Coberturas">
           <div class="entre-cat-overlay">
-            <span class="entre-cat-count">42 imóveis</span>
+            <span class="entre-cat-count">Sua vitrine</span>
             <h3 class="entre-cat-title">Coberturas</h3>
           </div>
         </div>
         <div class="entre-cat-card">
           <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" class="entre-cat-img" alt="Campos">
           <div class="entre-cat-overlay">
-            <span class="entre-cat-count">35 imóveis</span>
+            <span class="entre-cat-count">Sua vitrine</span>
             <h3 class="entre-cat-title">Refúgios Naturais</h3>
           </div>
         </div>

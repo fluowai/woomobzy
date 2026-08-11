@@ -1,18 +1,15 @@
 import { logger } from '@/utils/logger';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import {
   Zap,
-  Search,
   Target,
   TrendingUp,
   MapPin,
-  DollarSign,
   Users,
   ArrowRight,
   Sparkles,
   MessageSquare,
-  ChevronRight,
   Building2,
   SlidersHorizontal,
   Bot,
@@ -55,14 +52,11 @@ function MatchMetric({
 const Matchmaking360: React.FC = () => {
   const { profile } = useAuth();
   const [matches, setMatches] = useState<Match[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!profile?.organization_id) return;
-    loadMatches();
-  }, [profile?.organization_id]);
-
-  const loadMatches = async () => {
+  const loadMatches = useCallback(async () => {
     try {
       setLoading(true);
       const organizationId = profile?.organization_id;
@@ -78,6 +72,9 @@ const Matchmaking360: React.FC = () => {
         .select('*')
         .eq('organization_id', organizationId)
         .limit(20);
+
+      setProperties(properties || []);
+      setLeads(leads || []);
 
       if (properties && leads) {
         const potentialMatches: Match[] = [];
@@ -123,7 +120,46 @@ const Matchmaking360: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile?.organization_id]);
+
+  useEffect(() => {
+    if (!profile?.organization_id) return;
+    loadMatches();
+  }, [profile?.organization_id, loadMatches]);
+
+  const matchRate =
+    leads.length && properties.length
+      ? Math.round((matches.length / (leads.length * properties.length)) * 100)
+      : 0;
+
+  const vgvMatchmaking = new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    notation: 'compact',
+  }).format(
+    matches.reduce(
+      (sum, match) => sum + Number(match.property.price || 0),
+      0
+    )
+  );
+
+  const regionCounts: Record<string, number> = {};
+  leads.forEach((l) => {
+    const key = l.region || 'Indefinido';
+    regionCounts[key] = (regionCounts[key] || 0) + 1;
+  });
+  const topRegion = Object.keys(regionCounts).sort(
+    (a, b) => regionCounts[b] - regionCounts[a]
+  )[0];
+
+  const stateCounts: Record<string, number> = {};
+  properties.forEach((p) => {
+    const state = (p as any).state || p.location?.state || 'Indefinido';
+    stateCounts[state] = (stateCounts[state] || 0) + 1;
+  });
+  const topState = Object.keys(stateCounts).sort(
+    (a, b) => stateCounts[b] - stateCounts[a]
+  )[0];
 
   return (
     <div className="wootech-reference-screen space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -341,16 +377,18 @@ const Matchmaking360: React.FC = () => {
               </div>
 
               <p className="text-xs text-white/60 leading-relaxed italic">
-                O cruzamento inteligente de dados sugere que investidores de{' '}
-                <strong>São Paulo</strong> estão buscando ativamente glebas
-                acima de <strong>1000ha</strong> no Mato Grosso.
+                O cruzamento de <strong>{leads.length} leads</strong> e{' '}
+                <strong>{properties.length} imóveis</strong> mostra maior
+                demanda em{' '}
+                <strong>{topRegion || 'regiões diversas'}</strong> para imóveis
+                em <strong>{topState || 'diversas localidades'}</strong>.
               </p>
 
               <div className="space-y-4">
                 {[
                   { label: 'Oportunidades Ativas', value: matches.length },
-                  { label: 'Eficácia de Match', value: '74%' },
-                  { label: 'Conversão Estimada', value: 'R$ 4.2M' },
+                  { label: 'Eficácia de Match', value: `${matchRate}%` },
+                  { label: 'VGV Recomendado', value: vgvMatchmaking },
                 ].map((stat, i) => (
                   <div
                     key={i}

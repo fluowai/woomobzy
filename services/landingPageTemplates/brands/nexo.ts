@@ -898,25 +898,25 @@ const nexoHtml = `
           <div class="nexo-match-body">
             <div class="nexo-circle-progress">
               <div class="nexo-circle-inner">
-                <h2>92%</h2>
-                <p>Match perfeito</p>
+                <h2>Match</h2>
+                <p>Com seus critérios</p>
               </div>
             </div>
             <div class="nexo-match-info">
-              <h3>Apartamento na Vila Nova Conceição</h3>
-              <p><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path></svg> São Paulo, SP</p>
+              <h3>Imóvel da sua vitrine</h3>
+              <p><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path></svg> Sua cidade</p>
               <div class="nexo-match-specs">
-                <span class="nexo-match-spec"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg> 2 quartos</span>
-                <span class="nexo-match-spec"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect></svg> 1 suíte</span>
-                <span class="nexo-match-spec"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect></svg> 1 vaga</span>
-                <span class="nexo-match-spec"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg> 72 m²</span>
+                <span class="nexo-match-spec"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg> Quartos</span>
+                <span class="nexo-match-spec"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect></svg> Suíte</span>
+                <span class="nexo-match-spec"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect></svg> Vaga</span>
+                <span class="nexo-match-spec"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg> Área</span>
               </div>
             </div>
           </div>
           <div class="nexo-match-footer">
             <div class="nexo-match-price">
-              <h4>R$ 4.200 <span>/mês</span></h4>
-              <p>Condomínio R$ 780 • IPTU R$ 120</p>
+              <h4>Preço a definir</h4>
+              <p>Condomínio e IPTU conforme o imóvel</p>
             </div>
             <button class="nexo-btn-primary" style="padding: 0.8rem 2rem;">Ver detalhes &rarr;</button>
           </div>
@@ -936,72 +936,72 @@ const nexoHtml = `
       <div class="nexo-grid">
         <div class="nexo-card">
           <div class="nexo-card-img" style="background-image: url('https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')">
-            <span class="nexo-card-match">92% match</span>
+            <span class="nexo-card-match">Exemplo</span>
           </div>
           <div class="nexo-card-content">
-            <h3 class="nexo-card-title">Vila Nova Conceição</h3>
-            <p class="nexo-card-loc">São Paulo, SP</p>
+            <h3 class="nexo-card-title">Seu bairro</h3>
+            <p class="nexo-card-loc">Sua cidade</p>
             <div class="nexo-card-specs">
-              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg> 2</span>
-              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect></svg> 1</span>
-              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg> 72m²</span>
+              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg> Quartos</span>
+              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect></svg> Suíte</span>
+              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg> Área</span>
             </div>
             <div class="nexo-card-footer">
-              <div class="nexo-card-price">R$ 4.200 <small>/mês</small></div>
+              <div class="nexo-card-price">Preço a definir</div>
               <button class="nexo-btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></button>
             </div>
           </div>
         </div>
         <div class="nexo-card">
           <div class="nexo-card-img" style="background-image: url('https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')">
-            <span class="nexo-card-match" style="color:#FBBF24; border-color:rgba(251,191,36,0.3); background:rgba(251,191,36,0.1);">89% match</span>
+            <span class="nexo-card-match" style="color:#FBBF24; border-color:rgba(251,191,36,0.3); background:rgba(251,191,36,0.1);">Exemplo</span>
           </div>
           <div class="nexo-card-content">
-            <h3 class="nexo-card-title">Pinheiros</h3>
-            <p class="nexo-card-loc">São Paulo, SP</p>
+            <h3 class="nexo-card-title">Seu bairro</h3>
+            <p class="nexo-card-loc">Sua cidade</p>
             <div class="nexo-card-specs">
-              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg> 2</span>
-              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect></svg> 1</span>
-              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg> 68m²</span>
+              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg> Quartos</span>
+              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect></svg> Suíte</span>
+              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg> Área</span>
             </div>
             <div class="nexo-card-footer">
-              <div class="nexo-card-price">R$ 3.900 <small>/mês</small></div>
+              <div class="nexo-card-price">Preço a definir</div>
               <button class="nexo-btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></button>
             </div>
           </div>
         </div>
         <div class="nexo-card">
           <div class="nexo-card-img" style="background-image: url('https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')">
-            <span class="nexo-card-match" style="color:#FBBF24; border-color:rgba(251,191,36,0.3); background:rgba(251,191,36,0.1);">87% match</span>
+            <span class="nexo-card-match" style="color:#FBBF24; border-color:rgba(251,191,36,0.3); background:rgba(251,191,36,0.1);">Exemplo</span>
           </div>
           <div class="nexo-card-content">
-            <h3 class="nexo-card-title">Perdizes</h3>
-            <p class="nexo-card-loc">São Paulo, SP</p>
+            <h3 class="nexo-card-title">Seu bairro</h3>
+            <p class="nexo-card-loc">Sua cidade</p>
             <div class="nexo-card-specs">
-              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg> 2</span>
-              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect></svg> 2</span>
-              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg> 75m²</span>
+              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg> Quartos</span>
+              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect></svg> Suíte</span>
+              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg> Área</span>
             </div>
             <div class="nexo-card-footer">
-              <div class="nexo-card-price">R$ 4.600 <small>/mês</small></div>
+              <div class="nexo-card-price">Preço a definir</div>
               <button class="nexo-btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></button>
             </div>
           </div>
         </div>
         <div class="nexo-card">
           <div class="nexo-card-img" style="background-image: url('https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')">
-            <span class="nexo-card-match" style="color:#F87171; border-color:rgba(248,113,113,0.3); background:rgba(248,113,113,0.1);">65% match</span>
+            <span class="nexo-card-match" style="color:#F87171; border-color:rgba(248,113,113,0.3); background:rgba(248,113,113,0.1);">Exemplo</span>
           </div>
           <div class="nexo-card-content">
-            <h3 class="nexo-card-title">Moema</h3>
-            <p class="nexo-card-loc">São Paulo, SP</p>
+            <h3 class="nexo-card-title">Seu bairro</h3>
+            <p class="nexo-card-loc">Sua cidade</p>
             <div class="nexo-card-specs">
-              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg> 1</span>
-              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect></svg> 1</span>
-              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg> 55m²</span>
+              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg> Quartos</span>
+              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect></svg> Suíte</span>
+              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg> Área</span>
             </div>
             <div class="nexo-card-footer">
-              <div class="nexo-card-price">R$ 3.400 <small>/mês</small></div>
+              <div class="nexo-card-price">Preço a definir</div>
               <button class="nexo-btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></button>
             </div>
           </div>
@@ -1016,14 +1016,14 @@ const nexoHtml = `
         <div class="nexo-gauge">
           <div class="nexo-gauge-arc"></div>
           <div class="nexo-gauge-value">
-            <p>Você pode alugar até</p>
-            <h4>R$ 5.200</h4>
+            <p>Simule seu poder de aluguel</p>
+            <h4>Com base na sua renda</h4>
           </div>
         </div>
         <div class="nexo-sim-stats">
-          <div class="nexo-sim-stat"><span>Renda mensal</span> <strong>R$ 9.200</strong></div>
-          <div class="nexo-sim-stat"><span>Comprometimento recomendado</span> <strong>30%</strong></div>
-          <div class="nexo-sim-stat"><span>Outras despesas</span> <strong>R$ 1.800</strong></div>
+          <div class="nexo-sim-stat"><span>Renda mensal</span> <strong>Informe</strong></div>
+          <div class="nexo-sim-stat"><span>Comprometimento recomendado</span> <strong>Até 30%</strong></div>
+          <div class="nexo-sim-stat"><span>Outras despesas</span> <strong>Considere</strong></div>
         </div>
         <div style="background: rgba(168,242,92,0.1); border: 1px solid rgba(168,242,92,0.2); padding: 0.8rem; border-radius: 8px; margin-top: 1rem; color: #A8F25C; font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem; justify-content: center;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Perfil aprovado com alta chance!

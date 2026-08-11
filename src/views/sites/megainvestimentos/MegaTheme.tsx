@@ -1,26 +1,83 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, BedDouble, Home } from 'lucide-react';
+import { MapPin, BedDouble } from 'lucide-react';
 import Header from './Header';
 import HeroSearch from './HeroSearch';
+import { supabase } from '../../../../services/supabase';
+
+interface Property {
+  id: string;
+  title: string;
+  price: string;
+  image: string;
+  type: string;
+  bedrooms: number;
+  area: number;
+}
+
+const formatPrice = (value: number): string =>
+  new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    maximumFractionDigits: 0,
+  }).format(value || 0);
 
 export default function MegaTheme() {
-  const [properties, setProperties] = useState([]);
+  const [properties, setProperties] = useState<Property[]>([]);
 
-  // Fetch properties (mocked or you can fetch from backend in a real scenario)
   useEffect(() => {
-    // In a real app, you would fetch from /api/properties?organization_id=...
-    setProperties([
-      {
-        id: '1',
-        title: 'Apartamento 2 Quartos no Spetacollo Residencial - Laranjeira',
-        price: 'R$ 250.000',
-        image:
-          'https://cdn.imobisoft.com.br/megainvestimentos/layout/capa_1779904550.webp',
-        type: 'Apartamento',
-        bedrooms: 2,
-        area: 50,
-      },
-    ]);
+    let cancelled = false;
+
+    const loadProperties = async () => {
+      try {
+        const { data: tenant } = await supabase.rpc('get_tenant_public', {
+          slug_input: 'megainvestimentos',
+        });
+        const orgId = tenant?.[0]?.id;
+        if (!orgId) return;
+
+        const { data, error } = await supabase
+          .from('public_available_properties')
+          .select(
+            'id,title,price,city,state,property_type,images,thumbnail,features,total_area_ha'
+          )
+          .eq('organization_id', orgId)
+          .order('created_at', { ascending: false })
+          .limit(24);
+
+        if (error) throw error;
+        if (cancelled) return;
+
+        setProperties(
+          (data || []).map((property: any) => {
+            const features = property.features || {};
+            const images = Array.isArray(property.images)
+              ? property.images
+              : [];
+            return {
+              id: property.id,
+              title: property.title || 'Imóvel',
+              price: formatPrice(Number(property.price || 0)),
+              image: property.thumbnail || images[0] || '',
+              type: property.property_type || 'Imóvel',
+              bedrooms: features.bedrooms || features.suites || 0,
+              area:
+                features.areaM2 ||
+                features.built_area ||
+                Math.round(Number(property.total_area_ha || 0) * 10000) ||
+                0,
+            };
+          })
+        );
+      } catch (err) {
+        console.error('Erro ao carregar imóveis:', err);
+      }
+    };
+
+    loadProperties();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (

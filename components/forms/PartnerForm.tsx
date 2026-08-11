@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
 import { Users, Send, Loader2, CheckCircle2 } from 'lucide-react';
+import { useSettings } from '../../context/SettingsContext';
+import { useAuth } from '../../context/AuthContext';
+import { leadService } from '../../services/leads';
+import { logger } from '@/utils/logger';
 
 const PartnerForm: React.FC = () => {
+  const { settings } = useSettings();
+  const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -17,9 +24,40 @@ const PartnerForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setLoading(false);
-    setSuccess(true);
+    setError('');
+
+    try {
+      const notes = [
+        `CRECI: ${formData.creci}`,
+        formData.city ? `Cidade base: ${formData.city}` : null,
+        `Especialidade: ${formData.specialty}`,
+      ]
+        .filter(Boolean)
+        .join('\n');
+
+      await leadService.create({
+        organization_id: profile?.organization_id,
+        organization_slug: (settings as any)?.organization_slug,
+        organization_domain:
+          window.location.hostname.replace(/^www\./, '') || undefined,
+        site_key: (settings as any)?.site_key,
+        referrer_url: window.location.href,
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email,
+        source: 'Site - Cadastro de Parceiro',
+        classification: 'parceiro',
+        notes,
+      } as any);
+
+      logger.info('Parceiro cadastrado pelo PartnerForm:', formData);
+      setSuccess(true);
+    } catch (err) {
+      logger.error('Erro ao cadastrar parceiro no PartnerForm:', err);
+      setError('Não foi possível enviar. Tente novamente em instantes.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (success) {
@@ -159,6 +197,12 @@ const PartnerForm: React.FC = () => {
         {loading ? <Loader2 className="animate-spin" /> : <Send size={20} />}
         ENVIAR CADASTRO
       </button>
+
+      {error && (
+        <p className="text-center text-xs font-semibold text-red-600 mt-3">
+          {error}
+        </p>
+      )}
     </form>
   );
 };

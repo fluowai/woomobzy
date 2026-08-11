@@ -1,5 +1,11 @@
 # Verificação
 
+## 2026-08-11 — OkaPublicSite e MegaTheme com dados reais ✓ (código)
+
+- **Fix**: `views/OkaPublicSite.tsx` e `src/views/sites/megainvestimentos/MegaTheme.tsx` deixam de usar imóveis hardcoded e carregam de `public_available_properties` via `get_tenant_public` (RPC com GRANT anon); `cities`/`propertyTypes` derivados dos dados; fallback de imagem para `HERO_IMAGE`.
+- **Evidência**: `npm run type-check` ✓ (0 erros).
+- **Pendente (maestro)**: validar no navegador `/site/okaimoveis` (ou domínio OKA) e `/megainvestimentos` que os imóveis reais aparecem com preço/cidade/imagem corretos; conferir se a org OKA (`okaimoveis`) tem imóveis com `status` público e `show_on_site`.
+
 ## 2026-08-10 — Plano não setava / checkout 404 — prefixo duplicado em subscription ✓ (código)
 
 - **Causa**: `server/api/subscription/index.js` montava sub-routers com prefixo duplicado → rotas reais `/api/subscription/checkout/checkout`, `/api/subscription/status/status`, `/api/subscription/invoices/invoices`, `/api/subscription/cancel/cancel`; frontend chamava `/api/subscription/checkout` e `/api/subscription/invoices` (sem `Authorization`) → 404.

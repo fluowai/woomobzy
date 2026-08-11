@@ -96,8 +96,8 @@ const vivaeHtml = `
         <img src="https://images.unsplash.com/photo-1537726235470-daa00d5f2a6f?auto=format&fit=crop&w=400&q=80" style="border-radius: 40px;" />
       </div>
       <div class="vivae-verified-badge">
-        <strong>+ de 8 mil</strong>
-        <p>imóveis<br/>verificados</p>
+        <strong>Seu bairro</strong>
+        <p>imóveis<br/>da sua vitrine</p>
       </div>
     </div>
   </section>
@@ -109,31 +109,31 @@ const vivaeHtml = `
     </div>
     <div class="vivae-grid">
       <div class="vivae-card">
-        <div class="vivae-card-img"><img src="https://images.unsplash.com/photo-1502672260266-1c1cd2cb449c?auto=format&fit=crop&w=400&q=80"/><span class="badge yellow">Perto do trabalho</span></div>
+        <div class="vivae-card-img"><img src="https://images.unsplash.com/photo-1502672260266-1c1cd2cb449c?auto=format&fit=crop&w=400&q=80"/><span class="badge yellow">Exemplo</span></div>
         <div class="vivae-card-content">
-          <h3>Vila Madalena</h3><p>Studio | 35 m² | Mobiliado</p>
-          <strong>R$ 2.100</strong><small>Condomínio incluso</small>
+          <h3>Seu bairro</h3><p>Studio | 35 m² | Mobiliado</p>
+          <strong>Preço a definir</strong><small>Edite este card</small>
         </div>
       </div>
       <div class="vivae-card">
-        <div class="vivae-card-img"><img src="https://images.unsplash.com/photo-1522771731478-44fb8fa5c512?auto=format&fit=crop&w=400&q=80"/><span class="badge orange">Aceita pet</span></div>
+        <div class="vivae-card-img"><img src="https://images.unsplash.com/photo-1522771731478-44fb8fa5c512?auto=format&fit=crop&w=400&q=80"/><span class="badge orange">Exemplo</span></div>
         <div class="vivae-card-content">
-          <h3>Pinheiros</h3><p>1 quarto | 35 m²</p>
-          <strong>R$ 2.400</strong><small>Condomínio incluso</small>
+          <h3>Seu bairro</h3><p>1 quarto | 35 m²</p>
+          <strong>Preço a definir</strong><small>Edite este card</small>
         </div>
       </div>
       <div class="vivae-card">
-        <div class="vivae-card-img"><img src="https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=400&q=80"/><span class="badge blue">Sem fiador</span></div>
+        <div class="vivae-card-img"><img src="https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=400&q=80"/><span class="badge blue">Exemplo</span></div>
         <div class="vivae-card-content">
-          <h3>Bela Vista</h3><p>1 quarto | 40 m²</p>
-          <strong>R$ 1.900</strong><small>Condomínio incluso</small>
+          <h3>Seu bairro</h3><p>1 quarto | 40 m²</p>
+          <strong>Preço a definir</strong><small>Edite este card</small>
         </div>
       </div>
       <div class="vivae-card">
-        <div class="vivae-card-img"><img src="https://images.unsplash.com/photo-1536376072261-38c75010e6c9?auto=format&fit=crop&w=400&q=80"/><span class="badge yellow">Mobiliado</span></div>
+        <div class="vivae-card-img"><img src="https://images.unsplash.com/photo-1536376072261-38c75010e6c9?auto=format&fit=crop&w=400&q=80"/><span class="badge yellow">Exemplo</span></div>
         <div class="vivae-card-content">
-          <h3>Moema</h3><p>1 quarto | 30 m²</p>
-          <strong>R$ 2.600</strong><small>Condomínio incluso</small>
+          <h3>Seu bairro</h3><p>1 quarto | 30 m²</p>
+          <strong>Preço a definir</strong><small>Edite este card</small>
         </div>
       </div>
     </div>
@@ -244,27 +244,27 @@ const neroHtml = `
       <div class="nero-card big">
         <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80" />
         <div class="nero-card-info">
-          <small>IPANEMA</small>
-          <h3>Cobertura Frente Mar</h3>
-          <div class="nero-features"><span>4 suítes</span><span>5 banheiros</span><span>420 m²</span></div>
+          <small>SEU BAIRRO</small>
+          <h3>Imóvel em destaque</h3>
+          <div class="nero-features"><span>Suítes</span><span>Banheiros</span><span>Área</span></div>
           <a href="#">Ver detalhes &rarr;</a>
         </div>
       </div>
       <div class="nero-card">
         <img src="https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=400&q=80" />
         <div class="nero-card-info">
-          <small>ITAIM BIBI</small>
-          <h3>Penthouse Design<br/>Contemporâneo</h3>
-          <div class="nero-features"><span>3 suítes</span><span>310 m²</span></div>
+          <small>SEU BAIRRO</small>
+          <h3>Imóvel em destaque</h3>
+          <div class="nero-features"><span>Suítes</span><span>Área</span></div>
           <a href="#">Ver detalhes &rarr;</a>
         </div>
       </div>
       <div class="nero-card">
         <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=400&q=80" />
         <div class="nero-card-info">
-          <small>TRANCOSO</small>
-          <h3>Villa Exclusiva<br/>em Trancoso</h3>
-          <div class="nero-features"><span>5 suítes</span><span>600 m²</span></div>
+          <small>SEU BAIRRO</small>
+          <h3>Imóvel em destaque</h3>
+          <div class="nero-features"><span>Suítes</span><span>Área</span></div>
           <a href="#">Ver detalhes &rarr;</a>
         </div>
       </div>
@@ -354,10 +354,10 @@ const morarHtml = `
     </div>
     
     <div class="morar-stats">
-      <div class="morar-stat"><div class="morar-icon">✓</div><strong>+12 anos</strong><p>Conectando pessoas<br/>a novos lares</p></div>
-      <div class="morar-stat"><div class="morar-icon">⌂</div><strong>+35 mil</strong><p>Imóveis disponíveis<br/>para aluguel</p></div>
-      <div class="morar-stat"><div class="morar-icon">👥</div><strong>+250 mil</strong><p>Pessoas já encontraram<br/>seu novo lar</p></div>
-      <div class="morar-stat"><div class="morar-icon">⭐</div><strong>4,8/5</strong><p>Avaliação média dos<br/>nossos clientes</p></div>
+      <div class="morar-stat"><div class="morar-icon">✓</div><strong>Seu portfólio</strong><p>Imóveis<br/>da sua imobiliária</p></div>
+      <div class="morar-stat"><div class="morar-icon">⌂</div><strong>Em destaque</strong><p>Imóveis disponíveis<br/>na sua vitrine</p></div>
+      <div class="morar-stat"><div class="morar-icon">👥</div><strong>Seus clientes</strong><p>Leads e atendimentos<br/>centralizados</p></div>
+      <div class="morar-stat"><div class="morar-icon">⭐</div><strong>Sua avaliação</strong><p>Atendimento de<br/>qualidade todos os dias</p></div>
     </div>
   </section>
 
@@ -370,37 +370,37 @@ const morarHtml = `
       <div class="morar-card">
         <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=400&q=80" />
         <div class="morar-card-body">
-          <small>Vila Madalena, São Paulo - SP</small>
-          <h3>Apartamento 2 quartos</h3>
-          <p>62 m² • 2 quartos • 1 vaga</p>
-          <strong>R$ 3.200 <span>/mês</span></strong>
+          <small>Seu bairro, Sua cidade</small>
+          <h3>Imóvel em destaque</h3>
+          <p>Metragem • quartos • vagas</p>
+          <strong>Preço a definir</strong>
         </div>
       </div>
       <div class="morar-card">
         <img src="https://images.unsplash.com/photo-1502672260266-1c1cd2cb449c?auto=format&fit=crop&w=400&q=80" />
         <div class="morar-card-body">
-          <small>Barra da Tijuca, Rio de Janeiro - RJ</small>
-          <h3>Apartamento 3 quartos</h3>
-          <p>85 m² • 3 quartos • 2 vagas</p>
-          <strong>R$ 4.500 <span>/mês</span></strong>
+          <small>Seu bairro, Sua cidade</small>
+          <h3>Imóvel em destaque</h3>
+          <p>Metragem • quartos • vagas</p>
+          <strong>Preço a definir</strong>
         </div>
       </div>
       <div class="morar-card">
         <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=400&q=80" />
         <div class="morar-card-body">
-          <small>Savassi, Belo Horizonte - MG</small>
-          <h3>Apartamento 2 quartos</h3>
-          <p>70 m² • 2 quartos • 1 vaga</p>
-          <strong>R$ 2.900 <span>/mês</span></strong>
+          <small>Seu bairro, Sua cidade</small>
+          <h3>Imóvel em destaque</h3>
+          <p>Metragem • quartos • vagas</p>
+          <strong>Preço a definir</strong>
         </div>
       </div>
       <div class="morar-card">
         <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=400&q=80" />
         <div class="morar-card-body">
-          <small>Aldeota, Fortaleza - CE</small>
-          <h3>Apartamento 3 quartos</h3>
-          <p>90 m² • 3 quartos • 2 vagas</p>
-          <strong>R$ 5.200 <span>/mês</span></strong>
+          <small>Seu bairro, Sua cidade</small>
+          <h3>Imóvel em destaque</h3>
+          <p>Metragem • quartos • vagas</p>
+          <strong>Preço a definir</strong>
         </div>
       </div>
     </div>

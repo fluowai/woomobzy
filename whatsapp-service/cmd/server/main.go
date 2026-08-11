@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -44,6 +45,20 @@ func main() {
 		log.Fatal(fmt.Sprintf("Failed to parse database config: %v", err))
 	}
 	poolConfig.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
+
+	// Default do pgxpool e 4 conexoes. Com reconexao de sessoes + media worker +
+	// multi-tenant, o pool curto satura e envia deixa de responder a tempo,
+	// virando 502 no proxy Node. Ajuste via env com limites seguros.
+	if v := os.Getenv("WHATSAPP_DB_MAX_CONNS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			poolConfig.MaxConns = int32(n)
+		}
+	} else {
+		poolConfig.MaxConns = 20
+	}
+	poolConfig.MinConns = 4
+	poolConfig.MaxConnLifetime = 30 * time.Minute
+	poolConfig.MaxConnIdleTime = 10 * time.Minute
 
 	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
 	if err != nil {

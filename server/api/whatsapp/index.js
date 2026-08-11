@@ -135,12 +135,18 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     '[WhatsApp] Montando WhatsMeow provider (WooAPI 1) em /api/whatsapp'
   );
 
+  // Enviar mensagem no whatsmeow pode levar mais de 5s (reconexao da sessao,
+  // warm-up de LID/usync, DB). Timeout curto transforma envios lentos em 502
+  // `WHATSAPP_SERVICE_UNREACHABLE` mesmo com o servico saudavel.
+  const whatsappProxyTimeoutMs =
+    Number(process.env.WHATSAPP_PROXY_TIMEOUT_MS) || 30000;
+
   const proxy = createProxyMiddleware({
     target,
     changeOrigin: true,
     ws: false,
-    proxyTimeout: 5000,
-    timeout: 5000,
+    proxyTimeout: whatsappProxyTimeoutMs,
+    timeout: whatsappProxyTimeoutMs,
     pathRewrite: rewriteWhatsAppPath,
     on: {
       proxyReq: (proxyReq, req) => {

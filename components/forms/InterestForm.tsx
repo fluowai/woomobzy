@@ -1,12 +1,16 @@
 import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Send, Loader2 } from 'lucide-react';
+import { MapPin, Send, Loader2 } from 'lucide-react';
 import { useSettings } from '../../context/SettingsContext';
+import { useAuth } from '../../context/AuthContext';
+import { leadService } from '../../services/leads';
 
 const InterestForm: React.FC = () => {
   const { settings } = useSettings();
+  const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -23,15 +27,44 @@ const InterestForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
 
-    // Simular envio
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const notes = [
+        `Finalidade: ${formData.purpose === 'COMPRA' ? 'Compra' : 'Arrendamento'}`,
+        `Tipo: ${formData.type}`,
+        formData.location ? `Região de interesse: ${formData.location}` : null,
+        formData.minArea ? `Área mínima: ${formData.minArea} ha` : null,
+        formData.maxBudget
+          ? `Orçamento máximo: ${formData.maxBudget}`
+          : null,
+        formData.message ? `Detalhes: ${formData.message}` : null,
+      ]
+        .filter(Boolean)
+        .join('\n');
 
-    // TODO: Integrar com serviço de Leads/CRM
-    logger.info('Lead Capturado:', formData);
+      await leadService.create({
+        organization_id: profile?.organization_id,
+        organization_slug: (settings as any)?.organization_slug,
+        organization_domain:
+          window.location.hostname.replace(/^www\./, '') || undefined,
+        site_key: (settings as any)?.site_key,
+        referrer_url: window.location.href,
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email,
+        source: 'Site - Formulário de Interesse',
+        notes,
+      } as any);
 
-    setLoading(false);
-    setSuccess(true);
+      logger.info('Lead capturado pelo InterestForm:', formData);
+      setSuccess(true);
+    } catch (err) {
+      logger.error('Erro ao capturar lead no InterestForm:', err);
+      setError('Não foi possível enviar. Tente novamente em instantes.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (success) {
@@ -210,6 +243,12 @@ const InterestForm: React.FC = () => {
         {loading ? <Loader2 className="animate-spin" /> : <Send size={20} />}
         ENVIAR SOLICITAÇÃO
       </button>
+
+      {error && (
+        <p className="text-center text-xs font-semibold text-red-600 mt-3">
+          {error}
+        </p>
+      )}
 
       <p className="text-center text-[10px] text-slate-400 mt-4">
         Seus dados estão protegidos. Não compartilhamos com terceiros.

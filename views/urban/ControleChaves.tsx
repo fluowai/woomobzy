@@ -1,6 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ArrowDownLeft,
   ArrowUpRight,
   Clock,
   Home,
@@ -8,15 +7,12 @@ import {
   Plus,
   Search,
   User,
-  Bell,
   CheckCircle2,
   Filter,
   List,
   LayoutGrid,
-  MoreVertical,
   QrCode,
   AlertCircle,
-  HelpCircle,
   ChevronRight,
   MoreHorizontal,
 } from 'lucide-react';
@@ -69,9 +65,9 @@ export default function ControleChaves() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('Todas');
   const [keys, setKeys] = useState<KeyRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
-  const loadKeys = async () => {
+  const loadKeys = useCallback(async () => {
     if (!profile?.organization_id) return;
 
     setLoading(true);
@@ -85,11 +81,11 @@ export default function ControleChaves() {
 
     setKeys((data || []) as KeyRecord[]);
     setLoading(false);
-  };
+  }, [profile?.organization_id]);
 
   useEffect(() => {
     loadKeys();
-  }, [profile?.organization_id]);
+  }, [loadKeys]);
 
   const filteredKeys = useMemo(() => {
     let result = keys;
@@ -132,6 +128,48 @@ export default function ControleChaves() {
     ],
     [keys]
   );
+
+  const overdueKeys = useMemo(
+    () => keys.filter((item) => item.status === 'overdue'),
+    [keys]
+  );
+
+  const upcomingReturns = useMemo(
+    () =>
+      keys
+        .filter(
+          (item) => item.status === 'checked_out' && item.expected_return_at
+        )
+        .sort(
+          (a, b) =>
+            new Date(a.expected_return_at!).getTime() -
+            new Date(b.expected_return_at!).getTime()
+        )
+        .slice(0, 3),
+    [keys]
+  );
+
+  const formatReturnDate = (iso?: string) => {
+    if (!iso) return '';
+    const date = new Date(iso);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(now.getDate() + 1);
+    const isTomorrow = date.toDateString() === tomorrow.toDateString();
+    const time = date.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    if (isToday) return `Hoje, ${time}`;
+    if (isTomorrow) return `Amanhã, ${time}`;
+    return date.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
 
   const registerKey = async () => {
     if (!profile?.organization_id) return;
@@ -417,7 +455,7 @@ export default function ControleChaves() {
                               : 'JG'}
                           </div>
                           <span className="text-sm font-medium text-slate-700">
-                            {item.responsible_name || 'Juliana Gomes'}
+                            {item.responsible_name || 'Não definido'}
                           </span>
                         </div>
                       </td>
@@ -483,31 +521,39 @@ export default function ControleChaves() {
               <MoreHorizontal size={18} className="text-slate-400" />
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <p className="text-orange-500 font-bold text-sm">CH-031</p>
-                <p className="text-slate-700 font-medium text-sm">
-                  Sunset Residence • Casa 12
-                </p>
-              </div>
+            {overdueKeys.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                Nenhuma chave atrasada no momento.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {overdueKeys.slice(0, 3).map((item) => (
+                  <div key={item.id}>
+                    <p className="text-orange-500 font-bold text-sm">
+                      {item.code}
+                    </p>
+                    <p className="text-slate-700 font-medium text-sm">
+                      {item.label}
+                    </p>
 
-              <div className="flex items-center justify-between text-xs border-t border-slate-100 pt-3">
-                <div>
-                  <p className="text-slate-500">Retirada por</p>
-                  <p className="font-bold text-slate-700 mt-0.5">Rafael Lima</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-slate-500">Atrasada desde</p>
-                  <p className="font-bold text-orange-500 mt-0.5">
-                    Ontem, 18:00
-                  </p>
-                </div>
+                    <div className="flex items-center justify-between text-xs border-t border-slate-100 pt-3">
+                      <div>
+                        <p className="text-slate-500">Retirada por</p>
+                        <p className="font-bold text-slate-700 mt-0.5">
+                          {item.responsible_name || '—'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-slate-500">Atrasada desde</p>
+                        <p className="font-bold text-orange-500 mt-0.5">
+                          {formatReturnDate(item.expected_return_at)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-
-              <button className="w-full py-2.5 mt-2 border border-orange-200 text-orange-500 font-bold text-sm rounded-lg hover:bg-orange-50 transition-colors">
-                Cobrar devolução
-              </button>
-            </div>
+            )}
           </div>
 
           {/* Next returns */}
@@ -517,58 +563,33 @@ export default function ControleChaves() {
               Próximas devoluções
             </h3>
 
-            <div className="relative border-l-2 border-slate-100 ml-3 space-y-8">
-              {/* Timeline Item 1 */}
-              <div className="relative pl-6">
-                <div className="absolute -left-1.5 top-1.5 w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-white"></div>
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-sm font-bold text-slate-900">
-                    Hoje, 17:30
-                  </p>
-                  <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
-                    CH-024
-                  </span>
-                </div>
-                <p className="text-xs font-medium text-slate-600">
-                  Residencial Aurora • Apto 401
-                </p>
-                <p className="text-xs text-slate-500 mt-0.5">Carlos Mendes</p>
+            {upcomingReturns.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                Nenhuma devolução programada.
+              </p>
+            ) : (
+              <div className="relative border-l-2 border-slate-100 ml-3 space-y-8">
+                {upcomingReturns.map((item) => (
+                  <div key={item.id} className="relative pl-6">
+                    <div className="absolute -left-1.5 top-1.5 w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-white"></div>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-sm font-bold text-slate-900">
+                        {formatReturnDate(item.expected_return_at)}
+                      </p>
+                      <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
+                        {item.code}
+                      </span>
+                    </div>
+                    <p className="text-xs font-medium text-slate-600">
+                      {item.label}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {item.responsible_name || '—'}
+                    </p>
+                  </div>
+                ))}
               </div>
-
-              {/* Timeline Item 2 */}
-              <div className="relative pl-6">
-                <div className="absolute -left-1.5 top-1.5 w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-white"></div>
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-sm font-bold text-slate-900">
-                    Amanhã, 10:00
-                  </p>
-                  <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
-                    CH-012
-                  </span>
-                </div>
-                <p className="text-xs font-medium text-slate-600">
-                  Parque das Flores • Apto 203
-                </p>
-                <p className="text-xs text-slate-500 mt-0.5">Lucas Almeida</p>
-              </div>
-
-              {/* Timeline Item 3 */}
-              <div className="relative pl-6">
-                <div className="absolute -left-1.5 top-1.5 w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-white"></div>
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-sm font-bold text-slate-900">
-                    22/05, 14:00
-                  </p>
-                  <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
-                    CH-015
-                  </span>
-                </div>
-                <p className="text-xs font-medium text-slate-600">
-                  Ed. Green Office • Sala 1201
-                </p>
-                <p className="text-xs text-slate-500 mt-0.5">Patrícia Souza</p>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* QR Code Card */}

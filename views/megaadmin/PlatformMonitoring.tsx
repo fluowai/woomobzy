@@ -3,19 +3,14 @@ import {
   Activity,
   Server,
   Database,
-  Wifi,
   Clock,
   CheckCircle,
   AlertTriangle,
   XCircle,
   RefreshCw,
-  Cpu,
   HardDrive,
-  MemoryStick,
   Globe,
   Users,
-  TrendingUp,
-  BarChart3,
   Zap,
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
@@ -41,11 +36,26 @@ const PlatformMonitoring: React.FC = () => {
   const [checks, setChecks] = useState<HealthCheck[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
-  const [uptime] = useState('99.97%');
+  const [stats, setStats] = useState({
+    organizations: 0,
+    profiles: 0,
+    properties: 0,
+  });
 
   const runHealthChecks = async () => {
     setLoading(true);
     const results: HealthCheck[] = [];
+
+    const [orgRes, profRes, propRes] = await Promise.all([
+      supabase.from('organizations').select('id', { count: 'exact', head: true }),
+      supabase.from('profiles').select('id', { count: 'exact', head: true }),
+      supabase.from('properties').select('id', { count: 'exact', head: true }),
+    ]);
+    setStats({
+      organizations: orgRes.count || 0,
+      profiles: profRes.count || 0,
+      properties: propRes.count || 0,
+    });
 
     // Supabase DB check
     const dbStart = performance.now();
@@ -74,7 +84,7 @@ const PlatformMonitoring: React.FC = () => {
     // Supabase Auth check
     const authStart = performance.now();
     try {
-      const { data } = await supabase.auth.getSession();
+      await supabase.auth.getSession();
       const authLatency = Math.round(performance.now() - authStart);
       results.push({
         name: 'Supabase Auth',
@@ -182,8 +192,10 @@ const PlatformMonitoring: React.FC = () => {
   const metrics: SystemMetric[] = [
     {
       label: 'Uptime',
-      value: uptime,
-      change: '30 dias',
+      value: checks.length
+        ? `${Math.round((healthyCount / checks.length) * 100)}%`
+        : '—',
+      change: 'agora',
       icon: Activity,
       color: 'text-emerald-600',
       bg: 'bg-emerald-50',
@@ -208,10 +220,10 @@ const PlatformMonitoring: React.FC = () => {
       bg: 'bg-indigo-50',
     },
     {
-      label: 'Requisições/min',
-      value: '~120',
-      change: 'estimado',
-      icon: TrendingUp,
+      label: 'Registros no banco',
+      value: String(stats.organizations + stats.profiles + stats.properties),
+      change: 'organizações + perfis + imóveis',
+      icon: Database,
       color: 'text-amber-600',
       bg: 'bg-amber-50',
     },
@@ -353,33 +365,48 @@ const PlatformMonitoring: React.FC = () => {
         </div>
       </div>
 
-      {/* Uptime History — simulated last 30 days */}
+      {/* Real health-check latencies from the last probe */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <h3 className="text-lg font-bold text-gray-800 mb-4">
-          Uptime — Últimos 30 dias
+          Latência por serviço (última verificação)
         </h3>
-        <div className="flex gap-1">
-          {Array.from({ length: 30 }, (_, i) => {
-            const isToday = i === 29;
-            const hasIssue = i === 12 || i === 22;
+        <div className="flex gap-1 items-end h-32">
+          {checks.length === 0 && (
+            <p className="text-sm text-gray-400">
+              Aguardando verificação...
+            </p>
+          )}
+          {checks.map((check, i) => {
+            const barHeight = Math.min(Math.max(check.latency, 8), 112);
             return (
               <div
                 key={i}
-                className={`flex-1 h-8 rounded-sm transition-all hover:scale-y-125 ${
-                  isToday
-                    ? 'bg-blue-500'
-                    : hasIssue
-                      ? 'bg-amber-400'
-                      : 'bg-emerald-400'
-                }`}
-                title={`Dia ${i + 1}: ${hasIssue ? '99.8%' : '100%'}`}
-              />
+                className="flex-1 flex flex-col items-center gap-1"
+              >
+                <span className="text-[9px] font-bold text-gray-400">
+                  {check.latency}ms
+                </span>
+                <div
+                  className={`w-full rounded-sm transition-all hover:opacity-80 ${
+                    check.status === 'healthy'
+                      ? 'bg-emerald-400'
+                      : check.status === 'warning'
+                        ? 'bg-amber-400'
+                        : 'bg-red-400'
+                  }`}
+                  style={{ height: barHeight }}
+                  title={`${check.name}: ${check.latency}ms (${check.status})`}
+                />
+                <span className="text-[8px] text-gray-400 font-bold text-center truncate w-full">
+                  {check.name}
+                </span>
+              </div>
             );
           })}
         </div>
         <div className="flex justify-between mt-2 text-[10px] text-gray-400 font-bold uppercase">
-          <span>30 dias atrás</span>
-          <span>Hoje</span>
+          <span>Serviços</span>
+          <span>Latência (ms)</span>
         </div>
       </div>
     </div>

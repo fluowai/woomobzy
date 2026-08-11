@@ -1,5 +1,50 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-11] Agentes IA — análise, implementação de tools faltantes e hidratação — IMPLEMENTADO
+
+- **Solicitação (maestro)**: analisar a aba de Agentes de IA; verificar se há campos para o prompt, se o agente segue o prompt e se consegue usar as ferramentas determinadas; fazer funcionar.
+- **Análise realizada**:
+  - Prompt: campo "Instruções operacionais" em `AgentForm.tsx:290` (textarea full-width `min-h-72`). ✅
+  - Prompt é seguido: `buildAgentSystemPrompt` (agentPrompt.js:47) injeta `agent.instructions` no system prompt, usado tanto pelo flow de test/chat quanto pelo WhatsApp. ✅
+  - Seleção de tools: 15 tool options em `AgentForm.tsx:501`, mapeadas no `_ensureModel` (agentOrchestrator.js). ✅
+  - **GAP 1**: 6 tools sem function declaration (`follow-up`, `notificar-corretor`, `criar-tarefa`, `documentos`, `pdf-reader`, `audio-stt`) — o agente podia selecionar mas não executava. ❌
+  - **GAP 2**: `chat.routes.js` POST `/agents/:id/chat` e `/agents/:id/simulate` não hidratavam o agente via `hydrateAgent()` — campos swarm ficavam em `handoff_rules.__operational360`. ⚠️
+- **Fix (working tree, sem commit)**:
+  1. `server/services/ai/agentOrchestrator.js`:
+     - 3 novas function declarations: `notificar_corretor` (notifica corretor + cria follow-up), `criar_follow_up` (cria lead_followup com due_at), `criar_tarefa` (cria lead_activity atribuída a corretor).
+     - Mapeamento no `_ensureModel`: `notificar-corretor` → `notificar_corretor`, `follow-up` → `criar_follow_up`, `criar-tarefa` → `criar_tarefa`.
+     - `executeToolCall` implementado para os 3 novos tools (consultas ao Supabase, criação de `lead_activities` + `lead_followups`, fallback de corretor via `lead.assigned_to` → primeiro perfil da org).
+     - Diretrizes atualizadas no `_runReActLoop` com orientações dos novos tools.
+  2. `server/api/ai/chat.routes.js`:
+     - Import de `hydrateAgent` de `./helpers.js`.
+     - POST `/agents/:id/chat`: agente passa por `hydrateAgent(agent)` antes do orchestrator e do `buildMemorySystemPrompt`.
+     - POST `/agents/:id/simulate`: agente passa por `hydrateAgent(agent)` antes do simulator.
+- **Gates**: `node --check` em `agentOrchestrator.js`, `chat.routes.js`, `helpers.js` ✓; `npm run type-check` ✓ (0 erros). ESLint e build pendentes (timeouts de ambiente).
+- **Não implementado** (scope futuro): tools `documentos`, `pdf-reader`, `audio-stt` — dependem de integração com storage/STT que não existe no orchestrator; `node --check` confirma sintaxe válida.
+- **Próxima ação (maestro)**: deploy backend; validar no chat test — salvar agente com tools `notificar-corretor` + `follow-up`, enviar mensagem que dispare a notificação, conferir `lead_activities` + `lead_followups` criados no Supabase; validar swarm com `share_prompt_with_subagents`. Nenhum commit/push.
+
+
+
+## [2026-08-11] WhatsApp 502 Bad Gateway no envio diário — causa raiz: timeout do proxy Node (5s) < serviço Go — CORRIGIDO
+
+- **Solicitação (maestro)**: todos os dias, ao acessar a plataforma, `POST /api/whatsapp/messages/:id/send` → **502 Bad Gateway** (`WHATSAPP_SERVICE_UNREACHABLE`).
+- **Causa raiz**: o proxy Express (`server/api/whatsapp/index.js`) encaminha `/api/whatsapp/*` para o serviço Go whatsmeow (`whatsapp-service`, `:3100`) com `proxyTimeout/timeout = 5000ms` fixos. O handler Go `getConnectedClient` (`internal/handlers/messages.go`) espera **até 8s** para reconectar uma sessão + tempo do envio (warm-up de LID/usync, WhatsApp, DB). A cada manhã as sessões reconectam → primeiro envio estoura 5s → proxy responde 502 mesmo com o serviço saudável. Container sem healthcheck/restart no stack de produção.
+- **Fix (working tree, sem commit)**:
+  1. `server/api/whatsapp/index.js` — timeout do proxy configurável (`WHATSAPP_PROXY_TIMEOUT_MS`, default **30000ms**).
+  2. `whatsapp-service/cmd/server/main.go` — pool pgx com `MaxConns=20` (default pgxpool é 4; sujeito a exaustão com reconnect + media worker + multi-tenant), `MinConns=4`, `MaxConnLifetime=30m`, `MaxConnIdleTime=10m`, override por env `WHATSAPP_DB_MAX_CONNS`.
+  3. `stack-wootech-imob-prod.yml` e `stack-wootech-imob-prod-portainer.yml` — `healthcheck` (`curl /health`) + `deploy.restart_policy` + limite de memória no `whatsapp-service`.
+  4. `views/WhatsApp/ChatWindow.tsx` — `catch` no `submitMessage` (elimina `Uncaught (in promise)`; texto digitado permanece no campo para retry).
+- **Gates**: `npm run type-check` ✓; eslint ChatWindow ✓ (0 errors, 6 warnings pré-existentes); `npm run build` ✓; Go build/vet/test ✓ (via cópia ASCII `Temp\opencode\wasvc-proxytimeout`); YAML dos 2 stacks parseado ✓.
+- **Próxima ação (maestro)**: rebuild+redeploy do `api` e `whatsapp-service` em produção (Portainer) com o novo stack; validar envio logo após a reconexão diária.
+
+## [2026-08-11] OkaPublicSite e MegaTheme servindo dados reais (public_available_properties) — IMPLEMENTADO
+
+- **Solicitação (maestro)**: sites públicos de demonstração (Oka Public Site e Mega Investimentos) exibiam imóveis fictícios/hardcoded; devem mostrar imóveis reais da organização.
+- **Fix (working tree, sem commit)**:
+  - `views/OkaPublicSite.tsx` — removidos os 4 imóveis hardcoded e a lista fixa de cidades; componente agora resolve a org via `get_tenant_public('okaimoveis')` (ou `organizationId` prop) e busca `public_available_properties` (view pública com GRANT anon); `cities`/`propertyTypes` derivados dos dados; mapeamento de `features` (suites, area, vagas) e `images`/`thumbnail`; estado de carregamento no grid.
+  - `src/views/sites/megainvestimentos/MegaTheme.tsx` — removido imóvel mock; mesma resolução de tenant (`get_tenant_public('megainvestimentos')`) + `public_available_properties`; `formatPrice` com `Intl`; `bedrooms`/`area` de `features`.
+- **Gates**: `npm run type-check` ✓ (0 erros). Sem commit/push.
+
 ## [2026-08-10] Seleção de plano não persistia / checkout de assinatura quebrava — CAUSA RAIZ: prefixo duplicado nas rotas de subscription — CORRIGIDO
 
 - **Solicitação (maestro)**: selecionar um plano em qualquer nível (superadmin/onboarding/guard) não "seta" o plano.

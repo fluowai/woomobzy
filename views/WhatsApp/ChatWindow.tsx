@@ -30,6 +30,7 @@ import {
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 import MessageBubble from './MessageBubble';
 import {
@@ -239,6 +240,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       setInputText('');
       setPendingFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch (error: any) {
+      // Mensagem nao foi enviada; mantem o texto digitado no campo para o
+      // usuario tentar novamente. O toast de erro ja foi exibido pelo envio.
+      logger.error(
+        'Falha ao enviar mensagem (conteudo mantido no campo):',
+        error
+      );
     } finally {
       setSendingMessage(false);
     }

@@ -90,6 +90,7 @@ const MIGRATIONS = [
   'migrations/20260808_property_owner_dno.sql',
   'migrations/20260808_asaas_rental_owner_columns.sql',
   'migrations/20260808_fix_lease_contract_flow.sql',
+  'migrations/20260811_billing_invoice_columns.sql',
 ];
 
 async function executeMigrations() {

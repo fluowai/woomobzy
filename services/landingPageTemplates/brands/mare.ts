@@ -744,41 +744,41 @@ const mareHtml = `
       <div class="mare-grid">
         <div class="mare-card" style="background-image: url('https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')">
           <span class="mare-tag">DESTAQUE</span>
-          <p class="mare-card-loc">Jurerê Internacional</p>
-          <h3 class="mare-card-title">Apartamento 3 suítes</h3>
-          <p class="mare-card-specs">125 m² • 2 vagas</p>
+          <p class="mare-card-loc">Seu bairro</p>
+          <h3 class="mare-card-title">Imóvel em destaque</h3>
+          <p class="mare-card-specs">Metragem • vagas</p>
           <div class="mare-card-bottom">
-            <p class="mare-card-price">R$ 9.500<span>/mês</span></p>
+            <p class="mare-card-price">Preço a definir</p>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
           </div>
         </div>
         <div class="mare-card" style="background-image: url('https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')">
           <span class="mare-tag">VISTA MAR</span>
-          <p class="mare-card-loc">Cacupé</p>
-          <h3 class="mare-card-title">Casa 4 suítes</h3>
-          <p class="mare-card-specs">360 m² • 3 vagas</p>
+          <p class="mare-card-loc">Seu bairro</p>
+          <h3 class="mare-card-title">Imóvel em destaque</h3>
+          <p class="mare-card-specs">Metragem • vagas</p>
           <div class="mare-card-bottom">
-            <p class="mare-card-price">R$ 14.000<span>/mês</span></p>
+            <p class="mare-card-price">Preço a definir</p>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
           </div>
         </div>
         <div class="mare-card" style="background-image: url('https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')">
           <span class="mare-tag">NOVO</span>
-          <p class="mare-card-loc">Campeche</p>
-          <h3 class="mare-card-title">Apartamento 2 suítes</h3>
-          <p class="mare-card-specs">80 m² • 1 vaga</p>
+          <p class="mare-card-loc">Seu bairro</p>
+          <h3 class="mare-card-title">Imóvel em destaque</h3>
+          <p class="mare-card-specs">Metragem • vagas</p>
           <div class="mare-card-bottom">
-            <p class="mare-card-price">R$ 4.800<span>/mês</span></p>
+            <p class="mare-card-price">Preço a definir</p>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
           </div>
         </div>
         <div class="mare-card" style="background-image: url('https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')">
           <span class="mare-tag">PET FRIENDLY</span>
-          <p class="mare-card-loc">Trindade</p>
-          <h3 class="mare-card-title">Apartamento 2 quartos</h3>
-          <p class="mare-card-specs">90 m² • 2 vagas</p>
+          <p class="mare-card-loc">Seu bairro</p>
+          <h3 class="mare-card-title">Imóvel em destaque</h3>
+          <p class="mare-card-specs">Metragem • vagas</p>
           <div class="mare-card-bottom">
-            <p class="mare-card-price">R$ 5.200<span>/mês</span></p>
+            <p class="mare-card-price">Preço a definir</p>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
           </div>
         </div>

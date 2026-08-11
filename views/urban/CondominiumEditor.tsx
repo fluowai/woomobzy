@@ -1,5 +1,6 @@
+import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   Upload,
@@ -7,38 +8,155 @@ import {
   Building2,
   Users,
   Info,
-  CheckCircle2,
   Circle,
   LayoutTemplate,
+  Loader2,
 } from 'lucide-react';
+import { supabase } from '../../services/supabase';
+import { useAuth } from '../../context/AuthContext';
+
+type FormData = {
+  name: string;
+  type: string;
+  cnpj: string;
+  status: string;
+  developer: string;
+  deliveryYear: string;
+  zipcode: string;
+  street: string;
+  number: string;
+  complement: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  totalUnits: string;
+  floors: string;
+  parkingSpots: string;
+};
+
+const emptyForm: FormData = {
+  name: '',
+  type: 'Residencial',
+  cnpj: '',
+  status: 'Ativo',
+  developer: '',
+  deliveryYear: '',
+  zipcode: '',
+  street: '',
+  number: '',
+  complement: '',
+  neighborhood: '',
+  city: '',
+  state: 'SC',
+  totalUnits: '',
+  floors: '',
+  parkingSpots: '',
+};
 
 export default function CondominiumEditor() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const { profile } = useAuth();
 
-  const [formData, setFormData] = useState({
-    name: 'Residencial Aurora',
-    type: 'Residencial',
-    cnpj: '12.345.678/0001-90',
-    status: 'Ativo',
-    developer: 'Construtora Horizonte',
-    deliveryYear: '2022',
-    zipcode: '88000-000',
-    street: 'Avenida das Palmeiras',
-    number: '1250',
-    complement: 'Torre Central',
-    neighborhood: 'Centro',
-    city: 'Florianópolis',
-    state: 'SC',
-    totalUnits: '144',
-    floors: '12',
-    parkingSpots: '180',
-  });
+  const [formData, setFormData] = useState<FormData>(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [searchingCep, setSearchingCep] = useState(false);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const searchCep = async () => {
+    const cep = formData.zipcode.replace(/\D/g, '');
+    if (cep.length !== 8) {
+      toast.error('Informe um CEP válido (8 dígitos)');
+      return;
+    }
+
+    setSearchingCep(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await response.json();
+      if (data.erro) {
+        toast.error('CEP não encontrado');
+        return;
+      }
+      setFormData((prev) => ({
+        ...prev,
+        street: data.logradouro || prev.street,
+        neighborhood: data.bairro || prev.neighborhood,
+        city: data.localidade || prev.city,
+        state: data.uf || prev.state,
+      }));
+      toast.success('Endereço preenchido pelo CEP');
+    } catch (err) {
+      logger.error('Erro ao buscar CEP:', err);
+      toast.error('Não foi possível buscar o CEP');
+    } finally {
+      setSearchingCep(false);
+    }
+  };
+
+  const saveCondominium = async (status: 'active' | 'inactive') => {
+    if (!profile?.organization_id) {
+      toast.error('Organização não identificada');
+      return;
+    }
+    if (!formData.name.trim()) {
+      toast.error('Informe o nome do condomínio');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const addressParts = [
+        formData.street,
+        formData.number,
+        formData.complement,
+        formData.neighborhood,
+      ].filter(Boolean);
+      const address = addressParts.join(', ');
+
+      const payload = {
+        organization_id: profile.organization_id,
+        name: formData.name.trim(),
+        cnpj: formData.cnpj.trim() || null,
+        status,
+        address: address || null,
+        city: formData.city.trim() || null,
+        state: formData.state,
+        units_count: Number(formData.totalUnits) || 0,
+        year_built: formData.deliveryYear
+          ? Number(formData.deliveryYear)
+          : null,
+      };
+
+      if (id) {
+        const { error } = await supabase
+          .from('condominiums')
+          .update(payload)
+          .eq('id', id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('condominiums').insert(payload);
+        if (error) throw error;
+      }
+
+      toast.success(
+        status === 'active'
+          ? 'Condomínio salvo com sucesso'
+          : 'Rascunho salvo com sucesso'
+      );
+      navigate('/urban/condominios');
+    } catch (err) {
+      logger.error('Erro ao salvar condomínio:', err);
+      toast.error('Não foi possível salvar o condomínio');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -52,11 +170,11 @@ export default function CondominiumEditor() {
             <span className="font-medium text-slate-400">Condomínios</span>
             <span className="text-slate-300">/</span>
             <span className="text-emerald-600 font-semibold">
-              Novo cadastro
+              {id ? 'Edição' : 'Novo cadastro'}
             </span>
           </div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
-            Cadastrar condomínio
+            {id ? 'Editar condomínio' : 'Cadastrar condomínio'}
           </h1>
           <p className="text-sm text-slate-500 mt-1">
             Centralize estrutura, administração, contatos e documentos em um só
@@ -65,16 +183,19 @@ export default function CondominiumEditor() {
         </div>
         <div className="flex items-center gap-4">
           <button
-            onClick={() => toast.info('Rascunho salvo com sucesso')}
-            className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-sm rounded-lg transition-all shadow-sm"
+            onClick={() => saveCondominium('inactive')}
+            disabled={saving}
+            className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-sm rounded-lg transition-all shadow-sm disabled:opacity-70"
           >
             Salvar rascunho
           </button>
           <button
-            onClick={() => toast.info('Avançar para próxima etapa')}
-            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg transition-all shadow-sm"
+            onClick={() => saveCondominium('active')}
+            disabled={saving}
+            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg transition-all shadow-sm disabled:opacity-70 flex items-center gap-2"
           >
-            Continuar
+            {saving && <Loader2 size={16} className="animate-spin" />}
+            {id ? 'Salvar alterações' : 'Continuar'}
           </button>
         </div>
       </div>
@@ -259,9 +380,13 @@ export default function CondominiumEditor() {
                       className="w-48 px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                     />
                     <button
-                      onClick={() => toast.info('Busca de CEP em breve')}
-                      className="text-sm font-bold text-emerald-600 hover:text-emerald-700"
+                      onClick={searchCep}
+                      disabled={searchingCep}
+                      className="text-sm font-bold text-emerald-600 hover:text-emerald-700 disabled:opacity-70 flex items-center gap-1.5"
                     >
+                      {searchingCep && (
+                        <Loader2 size={14} className="animate-spin" />
+                      )}
                       Buscar CEP
                     </button>
                   </div>
@@ -440,7 +565,7 @@ export default function CondominiumEditor() {
                   {formData.name || 'Nome do condomínio'}
                 </p>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 mt-1">
-                  Ativo
+                  {formData.status}
                 </span>
               </div>
             </div>
@@ -575,16 +700,19 @@ export default function CondominiumEditor() {
               Cancelar
             </button>
             <button
-              onClick={() => toast.info('Rascunho salvo com sucesso')}
-              className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-sm rounded-lg transition-all hidden sm:block"
+              onClick={() => saveCondominium('inactive')}
+              disabled={saving}
+              className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-sm rounded-lg transition-all hidden sm:block disabled:opacity-70"
             >
               Salvar rascunho
             </button>
             <button
-              onClick={() => toast.info('Avançar para próxima etapa')}
-              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-lg transition-all shadow-sm"
+              onClick={() => saveCondominium('active')}
+              disabled={saving}
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-lg transition-all shadow-sm disabled:opacity-70 flex items-center gap-2"
             >
-              Continuar para Estrutura
+              {saving && <Loader2 size={16} className="animate-spin" />}
+              {id ? 'Salvar alterações' : 'Continuar para Estrutura'}
             </button>
           </div>
         </div>

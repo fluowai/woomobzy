@@ -1,26 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import {
-  LayoutDashboard,
   Users,
-  MessageSquare,
   DollarSign,
   FileCheck,
   TrendingUp,
   ArrowUpRight,
-  ShieldCheck,
   Briefcase,
-  ExternalLink,
-  Smartphone,
   CheckCircle2,
   AlertCircle,
-  Zap,
   Sparkles,
   Target,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../services/supabase';
+import { cobrancaService } from '../../services/cobrancaService';
 import WelcomeTour from '../../components/WelcomeTour';
 import AgroMarketWidget from '../../components/AgroMarketWidget';
 
@@ -30,29 +25,92 @@ const Dashboard360: React.FC = () => {
     leads: 0,
     properties: 0,
     activeContracts: 0,
+    matches: 0,
+    vgv: 0,
+    commission: 0,
   });
+  const [recentLeads, setRecentLeads] = useState<any[]>([]);
+  const [fintech, setFintech] = useState<any>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
 
   useEffect(() => {
     if (!profile?.organization_id) return;
 
     const fetchStats = async () => {
-      const organizationId = profile.organization_id;
-      const { count: leadsCount } = await supabase
-        .from('leads')
-        .select('*', { count: 'exact', head: true })
-        .eq('organization_id', organizationId);
-      const { count: propsCount } = await supabase
-        .from('properties')
-        .select('*', { count: 'exact', head: true })
-        .eq('organization_id', organizationId);
-      setStats({
-        leads: leadsCount || 0,
-        properties: propsCount || 0,
-        activeContracts: 12,
-      });
+      try {
+        const organizationId = profile.organization_id;
+        const [leadsRes, propsRes, contractsRes, dashboard] =
+          await Promise.all([
+            supabase
+              .from('leads')
+              .select('*', { count: 'exact', head: true })
+              .eq('organization_id', organizationId),
+            supabase
+              .from('properties')
+              .select('*', { count: 'exact', head: true })
+              .eq('organization_id', organizationId),
+            supabase
+              .from('contracts')
+              .select('*', { count: 'exact', head: true })
+              .in('status', ['draft', 'signed', 'active'])
+              .eq('organization_id', organizationId),
+            cobrancaService.getDashboard(),
+          ]);
+
+        const leadRows = await supabase
+          .from('leads')
+          .select(
+            'id, name, phone, status, created_at, lead_score, classification, property:property_id(title)'
+          )
+          .eq('organization_id', organizationId)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        const { count: matchedCount } = await supabase
+          .from('leads')
+          .select('*', { count: 'exact', head: true })
+          .not('matched_properties', 'is', null)
+          .neq('matched_properties', '[]')
+          .eq('organization_id', organizationId);
+
+        setStats({
+          leads: leadsRes.count || 0,
+          properties: propsRes.count || 0,
+          activeContracts: contractsRes.count || 0,
+          matches: matchedCount || 0,
+          vgv: dashboard?.totais?.receita_mensal_projetada || 0,
+          commission: dashboard?.totais?.total_recebido_ano || 0,
+        });
+        setRecentLeads(leadRows.data || []);
+        setFintech(dashboard?.totais || null);
+      } catch (err) {
+        console.error('Erro ao carregar Dashboard360:', err);
+      } finally {
+        setLoadingStats(false);
+      }
     };
     fetchStats();
   }, [profile?.organization_id]);
+
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    }).format(value);
+
+  const formatLeadTime = (createdAt?: string) => {
+    if (!createdAt) return '';
+    const diffMs = Date.now() - new Date(createdAt).getTime();
+    const minutes = Math.floor(diffMs / 60000);
+    if (minutes < 1) return 'agora';
+    if (minutes < 60) return `há ${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `há ${hours} hora${hours > 1 ? 's' : ''}`;
+    const days = Math.floor(hours / 24);
+    return `há ${days} dia${days > 1 ? 's' : ''}`;
+  };
 
   return (
     <div className="min-h-full space-y-8 animate-in fade-in duration-700">
@@ -76,8 +134,11 @@ const Dashboard360: React.FC = () => {
           </h1>
           <p className="text-white/40 font-medium italic mt-4 max-w-xl">
             Bem-vindo de volta, {profile?.full_name?.split(' ')[0]}.
-            Identificamos 12 novas oportunidades de match para sua carteira
-            rural hoje.
+            {stats.matches > 0
+              ? ` Identificamos ${stats.matches} ${
+                  stats.matches === 1 ? 'oportunidade de match' : 'oportunidades de match'
+                } para sua carteira hoje.`
+              : ' Seu pipeline está pronto para novos matches.'}
           </p>
         </div>
         <div className="relative z-10 flex items-center gap-4">
@@ -107,29 +168,29 @@ const Dashboard360: React.FC = () => {
         <StatCard
           icon={Users}
           label="Total de Leads"
-          value={stats.leads}
-          change="+18%"
+          value={loadingStats ? '—' : stats.leads}
+          change="CRM"
           variant="primary"
         />
         <StatCard
           icon={Sparkles}
           label="Matches Sugeridos"
-          value="12"
+          value={loadingStats ? '—' : String(stats.matches)}
           change="IA Ativa"
           variant="primary"
         />
         <StatCard
           icon={FileCheck}
-          label="VGV Negociado"
-          value="R$ 1.8M"
-          change="+12%"
+          label="Contratos Ativos"
+          value={loadingStats ? '—' : String(stats.activeContracts)}
+          change="Legal"
           variant="accent"
         />
         <StatCard
           icon={DollarSign}
-          label="Comissão Prevista"
-          value="R$ 108k"
-          change="+R$ 15k"
+          label="Receita Mensal Projetada"
+          value={loadingStats ? '—' : formatCurrency(stats.vgv)}
+          change="Financeiro"
           variant="support"
         />
       </div>
@@ -161,47 +222,33 @@ const Dashboard360: React.FC = () => {
             </div>
 
             <div className="space-y-4">
-              {[
-                {
-                  name: 'Ricardo Santos',
-                  time: 'Há 5 min',
-                  status: 'Novo Lead',
-                  location: 'Fazenda Sol Nascente (MT)',
-                },
-                {
-                  name: 'Ana Carolina',
-                  time: 'Há 15 min',
-                  status: 'Em Qualificação',
-                  location: 'Haras Tatuí',
-                },
-                {
-                  name: 'Carlos Eduardo',
-                  time: 'Há 1 hora',
-                  status: 'Proposta Enviada',
-                  location: 'Gleba A',
-                },
-              ].map((lead, i) => (
+              {recentLeads.length === 0 && (
+                <p className="text-sm text-secondary">
+                  Nenhum lead recente ainda. Crie seu primeiro lead no Kanban.
+                </p>
+              )}
+              {recentLeads.map((lead) => (
                 <div
-                  key={i}
+                  key={lead.id}
                   className="flex items-center justify-between p-5 bg-bg-hover rounded-2xl hover:bg-bg-hover/80 transition-all border border-subtle group cursor-pointer"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand/20 to-brand/5 border border-brand/20 flex items-center justify-center text-brand font-bold text-lg shadow-inner">
-                      {lead.name.charAt(0)}
+                      {(lead.name || 'L').charAt(0)}
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-0.5">
                         <p className="font-bold text-text-primary text-sm">
-                          {lead.name}
+                          {lead.name || 'Lead sem nome'}
                         </p>
                         <span className="text-[10px] text-tertiary bg-bg-primary px-2 py-0.5 rounded-full border border-subtle">
-                          {lead.time}
+                          {formatLeadTime(lead.created_at)}
                         </span>
                       </div>
                       <p className="text-xs text-secondary font-medium truncate max-w-[250px]">
-                        Interesse: {lead.location} •{' '}
+                        {lead.property?.title || 'Sem imóvel vinculado'} •{' '}
                         <span className="text-brand font-bold">
-                          {lead.status}
+                          {lead.status || 'Novo'}
                         </span>
                       </p>
                     </div>
@@ -233,28 +280,42 @@ const Dashboard360: React.FC = () => {
                 Cobrabilidade este mês
               </p>
               <h4 className="text-3xl font-bold text-text-primary tracking-tight mb-6">
-                R$ 48.250,00
+                {fintech
+                  ? formatCurrency(fintech.receita_mensal_projetada || 0)
+                  : '—'}
               </h4>
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-xs font-medium border-b border-subtle pb-2">
-                  <span className="text-secondary">Contas Pendentes</span>
-                  <span className="text-accent font-bold">R$ 4.100,00</span>
+                  <span className="text-secondary">Inadimplência</span>
+                  <span className="text-accent font-bold">
+                    {fintech
+                      ? formatCurrency(fintech.valor_inadimplencia || 0)
+                      : '—'}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between text-xs font-medium border-b border-subtle pb-2">
-                  <span className="text-secondary">Repasse Imobiliária</span>
-                  <span className="text-brand font-bold">R$ 5.800,00</span>
+                  <span className="text-secondary">Total Recebido (Ano)</span>
+                  <span className="text-brand font-bold">
+                    {fintech
+                      ? formatCurrency(fintech.total_recebido_ano || 0)
+                      : '—'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs font-medium border-b border-subtle pb-2">
+                  <span className="text-secondary">Contratos Ativos</span>
+                  <span className="text-brand font-bold">
+                    {fintech?.contratos_ativos ?? '—'}
+                  </span>
                 </div>
               </div>
 
-              <button
-                onClick={() =>
-                  toast.info('Módulo financeiro estará disponível em breve')
-                }
+              <Link
+                to="/urban/fintech"
                 className="btn-primary w-full mt-6 text-xs"
               >
                 Ir para Financeiro
-              </button>
+              </Link>
             </div>
           </div>
 

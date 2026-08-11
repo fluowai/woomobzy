@@ -6,6 +6,8 @@ import {
   type Contract,
   type DashboardResumo,
 } from '@/services/locacaoService';
+import { supabase } from '../services/supabase';
+import { useAuth } from '../context/AuthContext';
 
 import {
   FileText,
@@ -21,8 +23,6 @@ import {
   BarChart3,
   Wallet,
   ArrowRightLeft,
-  CheckCircle2,
-  CalendarDays,
   MoreVertical,
   Filter,
   Users,
@@ -44,6 +44,7 @@ import { toast } from 'sonner';
 import { generateLeaseAssistantResponse } from '@/services/geminiService';
 
 export default function RentalsManagement() {
+  const { profile } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Todos');
   const [agendaMonth, setAgendaMonth] = useState(new Date().getMonth());
@@ -51,6 +52,8 @@ export default function RentalsManagement() {
   const [showFilters, setShowFilters] = useState(false);
 
   const [contracts, setContracts] = useState<Contract[]>([]);
+  const [billings, setBillings] = useState<any[]>([]);
+  const [renewals, setRenewals] = useState<any[]>([]);
   const [dashboard, setDashboard] = useState<DashboardResumo | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -65,12 +68,26 @@ export default function RentalsManagement() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [dashRes, listRes] = await Promise.all([
+        const [dashRes, listRes, billingRes, renewalRes] = await Promise.all([
           locacaoService.getDashboard(),
           locacaoService.listContracts(),
+          profile?.organization_id
+            ? supabase
+                .from('billing')
+                .select('*')
+                .eq('organization_id', profile.organization_id)
+            : Promise.resolve({ data: null }),
+          profile?.organization_id
+            ? supabase
+                .from('contract_renewals')
+                .select('*')
+                .eq('organization_id', profile.organization_id)
+            : Promise.resolve({ data: null }),
         ]);
         setDashboard(dashRes.data);
         setContracts(listRes.data);
+        setBillings(billingRes.data || []);
+        setRenewals(renewalRes.data || []);
       } catch (e) {
         logger.error('Erro ao carregar dados do dashboard:', e);
       } finally {
@@ -78,7 +95,7 @@ export default function RentalsManagement() {
       }
     };
     fetchData();
-  }, []);
+  }, [profile?.organization_id]);
 
   const filteredContracts = useMemo(() => {
     let result = contracts;
@@ -102,30 +119,58 @@ export default function RentalsManagement() {
     return result;
   }, [contracts, activeTab, searchQuery]);
 
-  // MOCK DATA for Recharts
-  const fluxoData = dashboard
-    ? [
-        {
-          name: 'Previsto',
-          value: dashboard.receita_mensal || 0,
-          color: '#10b981',
-        },
-        {
-          name: 'Recebido',
-          value: Math.round((dashboard.receita_anual || 0) / 12),
-          color: '#10b981',
-        },
-        {
-          name: 'Repassado',
-          value: Math.round(((dashboard.receita_anual || 0) / 12) * 0.9),
-          color: '#10b981',
-        },
-      ]
-    : [
-        { name: 'Previsto', value: 0, color: '#10b981' },
-        { name: 'Recebido', value: 0, color: '#10b981' },
-        { name: 'Repassado', value: 0, color: '#10b981' },
-      ];
+  const contractMap = useMemo(
+    () => new Map<string, Contract>(contracts.map((c) => [c.id || '', c])),
+    [contracts]
+  );
+
+  const repassePendentes = useMemo(
+    () => billings.filter((b) => b.status === 'aberto' || b.status === 'vencido'),
+    [billings]
+  );
+  const repassePendenteTotal = repassePendentes.reduce(
+    (sum, b) => sum + (Number(b.amount) || 0),
+    0
+  );
+  const recebidoTotal = billings
+    .filter((b) => b.status === 'pago')
+    .reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
+  const reajustesCount = renewals.filter(
+    (r) => r.renewal_type === 'reajuste'
+  ).length;
+
+  const agendaItems = useMemo(() => {
+    const startOfMonth = new Date(agendaYear, agendaMonth, 1);
+    const endOfMonth = new Date(agendaYear, agendaMonth + 1, 1);
+    return billings
+      .filter((b) => {
+        if (!b.due_date) return false;
+        const d = new Date(b.due_date + 'T00:00:00');
+        return d >= startOfMonth && d < endOfMonth;
+      })
+      .sort(
+        (a, b) =>
+          new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+      );
+  }, [billings, agendaMonth, agendaYear]);
+
+  const fluxoData = [
+    {
+      name: 'Previsto',
+      value: dashboard?.receita_mensal || 0,
+      color: '#10b981',
+    },
+    {
+      name: 'Recebido',
+      value: recebidoTotal,
+      color: '#10b981',
+    },
+    {
+      name: 'Pendente',
+      value: repassePendenteTotal,
+      color: '#f59e0b',
+    },
+  ];
 
   const emDiaCount = useMemo(
     () => contracts.filter((c) => c.payment_status === 'em_dia').length,
@@ -221,10 +266,9 @@ export default function RentalsManagement() {
   const monthName = new Date(agendaYear, agendaMonth).toLocaleString('pt-BR', {
     month: 'long',
   });
-
-  const handleRegisterPayment = (contractId: string) => {
-    navigate(`/urban/locacao/${contractId}`);
-  };
+  const monthYearLabel = `${
+    monthName.charAt(0).toUpperCase() + monthName.slice(1)
+  } de ${agendaYear}`;
 
   const handleNewInspection = () => {
     navigate('/urban/locacao/novo');
@@ -243,7 +287,7 @@ export default function RentalsManagement() {
       } else {
         toast.error('Erro ao enviar lembretes');
       }
-    } catch (e) {
+    } catch {
       toast.error('Erro ao enviar lembretes');
     }
   };
@@ -343,12 +387,10 @@ export default function RentalsManagement() {
               <div className="flex-1">
                 <div className="flex items-center justify-between">
                   <p className="text-xl font-bold text-slate-900">
-                    {formatCompactCurrency(
-                      (dashboard?.receita_mensal || 0) * 0.9
-                    )}
+                    {formatCompactCurrency(repassePendenteTotal)}
                   </p>
                   <span className="text-[10px] font-bold text-slate-400">
-                    Julho de 2026
+                    {monthYearLabel}
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">
@@ -363,7 +405,7 @@ export default function RentalsManagement() {
             <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
               Agenda financeira{' '}
               <span className="text-slate-400 text-sm font-medium">
-                • Julho
+                • {monthName.charAt(0).toUpperCase() + monthName.slice(1)}
               </span>
             </h3>
 
@@ -397,112 +439,94 @@ export default function RentalsManagement() {
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors group cursor-pointer border border-transparent hover:border-slate-100">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
-                    <Download size={18} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">
-                      Recebimento{' '}
-                      <span className="text-slate-400 font-normal">
-                        • Residencial Aurora, Apto 401
-                      </span>
-                    </p>
-                  </div>
-                </div>
-                <p className="text-sm font-medium text-slate-700">R$ 2.850</p>
-                <p className="text-xs font-bold text-emerald-600">Hoje</p>
-                <p className="text-sm font-medium text-emerald-600 group-hover:underline flex items-center gap-1">
-                  Registrar pagamento <ChevronRight size={14} />
+              {agendaItems.length === 0 ? (
+                <p className="text-sm text-slate-400 italic text-center py-6">
+                  Nenhum registro para este mês.
                 </p>
-              </div>
+              ) : (
+                agendaItems.map((b) => {
+                  const contract = contractMap.get(b.contract_id);
+                  const isPaid = b.status === 'pago';
+                  const isOverdue = b.status === 'vencido';
+                  const due = b.due_date
+                    ? new Date(b.due_date + 'T00:00:00')
+                    : null;
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const tomorrow = new Date(today);
+                  tomorrow.setDate(tomorrow.getDate() + 1);
 
-              <div className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors group cursor-pointer border border-transparent hover:border-slate-100">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
-                    <Upload size={18} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">
-                      Repasse{' '}
-                      <span className="text-slate-400 font-normal">
-                        • Carlos Mendes
-                      </span>
-                    </p>
-                  </div>
-                </div>
-                <p className="text-sm font-medium text-slate-700">R$ 2.430</p>
-                <p className="text-xs font-bold text-emerald-600">Hoje</p>
-                <p className="text-sm font-medium text-emerald-600 group-hover:underline flex items-center gap-1">
-                  Realizar repasse <ChevronRight size={14} />
-                </p>
-              </div>
+                  let dateLabel = '';
+                  if (isPaid) {
+                    dateLabel = 'Pago';
+                  } else if (isOverdue) {
+                    dateLabel = 'Vencido';
+                  } else if (due) {
+                    if (due.getTime() === today.getTime()) dateLabel = 'Hoje';
+                    else if (due.getTime() === tomorrow.getTime())
+                      dateLabel = 'Amanhã';
+                    else
+                      dateLabel = due.toLocaleDateString('pt-BR', {
+                        day: '2-digit',
+                        month: 'short',
+                      });
+                  }
 
-              <div className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors group cursor-pointer border border-transparent hover:border-slate-100">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">
-                    <Percent size={18} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">
-                      Reajuste IPCA{' '}
-                      <span className="text-slate-400 font-normal">
-                        • Contrato LOC-0084
-                      </span>
-                    </p>
-                  </div>
-                </div>
-                <p className="text-sm font-medium text-slate-700">+4,23%</p>
-                <p className="text-xs font-bold text-amber-600">Amanhã</p>
-                <p className="text-sm font-medium text-emerald-600 group-hover:underline flex items-center gap-1">
-                  Aplicar reajuste <ChevronRight size={14} />
-                </p>
-              </div>
+                  const meta = isPaid
+                    ? {
+                        icon: Upload,
+                        bg: 'bg-emerald-50',
+                        color: 'text-emerald-600',
+                      }
+                    : isOverdue
+                      ? {
+                          icon: AlertCircle,
+                          bg: 'bg-red-50',
+                          color: 'text-red-600',
+                        }
+                      : {
+                          icon: Download,
+                          bg: 'bg-blue-50',
+                          color: 'text-blue-600',
+                        };
+                  const Icon = meta.icon;
 
-              <div className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors group cursor-pointer border border-transparent hover:border-slate-100">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center text-purple-600">
-                    <Search size={18} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">
-                      Vistoria de saída{' '}
-                      <span className="text-slate-400 font-normal">
-                        • Casa Jardim Europa
-                      </span>
-                    </p>
-                  </div>
-                </div>
-                <p className="text-sm font-medium text-slate-700"></p>
-                <p className="text-xs font-medium text-slate-500">
-                  02 ago, 14:00
-                </p>
-                <p className="text-sm font-medium text-emerald-600 group-hover:underline flex items-center gap-1">
-                  Ver detalhes <ChevronRight size={14} />
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors group cursor-pointer border border-transparent hover:border-slate-100">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
-                    <FileText size={18} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">
-                      Renovação contratual{' '}
-                      <span className="text-slate-400 font-normal">
-                        • Mariana Costa
-                      </span>
-                    </p>
-                  </div>
-                </div>
-                <p className="text-sm font-medium text-slate-700"></p>
-                <p className="text-xs font-medium text-slate-500">Em 12 dias</p>
-                <p className="text-sm font-medium text-emerald-600 group-hover:underline flex items-center gap-1">
-                  Antecipar renovação <ChevronRight size={14} />
-                </p>
-              </div>
+                  return (
+                    <div
+                      key={b.id}
+                      className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors group cursor-pointer border border-transparent hover:border-slate-100"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div
+                          className={`w-10 h-10 rounded-full ${meta.bg} flex items-center justify-center ${meta.color}`}
+                        >
+                          <Icon size={18} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">
+                            {isPaid ? 'Pagamento registrado' : 'Recebimento'}{' '}
+                            <span className="text-slate-400 font-normal">
+                              • {contract?.tenant_name || 'Cobrança'}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-sm font-medium text-slate-700">
+                        {formatCompactCurrency(b.amount || 0)}
+                      </p>
+                      <p
+                        className={`text-xs font-bold ${isOverdue ? 'text-red-500' : 'text-emerald-600'}`}
+                      >
+                        {dateLabel}
+                      </p>
+                      <p className="text-sm font-medium text-emerald-600 group-hover:underline flex items-center gap-1">
+                        {isPaid ? 'Ver detalhes' : 'Registrar pagamento'}{' '}
+                        <ChevronRight size={14} />
+                      </p>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
 
@@ -754,7 +778,7 @@ export default function RentalsManagement() {
                 />
                 <div className="flex-1">
                   <p className="text-sm font-bold text-slate-900">
-                    6 reajustes aguardando aplicação
+                    {reajustesCount} reajustes registrados
                   </p>
                   <p className="text-xs text-slate-500 mt-1">
                     Atualize os valores
@@ -827,7 +851,7 @@ export default function RentalsManagement() {
               </div>
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase">
-                  Repassado
+                  Pendente
                 </p>
                 <p className="text-xs font-bold text-slate-700">
                   {formatCompactCurrency(fluxoData[2]?.value || 0)}
@@ -849,9 +873,11 @@ export default function RentalsManagement() {
                 </div>
                 <div>
                   <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                    12 programados hoje
+                    {repassePendentes.length} pendentes de pagamento
                   </p>
-                  <p className="text-xl font-bold text-slate-900">R$ 28.460</p>
+                  <p className="text-xl font-bold text-slate-900">
+                    {formatCompactCurrency(repassePendenteTotal)}
+                  </p>
                 </div>
               </div>
               <button

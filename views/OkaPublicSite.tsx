@@ -26,6 +26,8 @@ import {
   X,
   Youtube,
 } from 'lucide-react';
+import { supabase } from '../services/supabase';
+import { logger } from '@/utils/logger';
 
 interface OkaPublicSiteProps {
   organizationId?: string;
@@ -53,79 +55,7 @@ const PHONE_LABEL = '(44) 99722-3030';
 const HERO_IMAGE = '/templates/urban/urban_luxury_pool.png';
 const SEA_VIEW_IMAGE = '/templates/urban/urban_sea_view.png';
 const GATED_IMAGE = '/templates/urban/urban_gated_community.png';
-const READY_IMAGE = '/templates/urban/urban_ready_move.png';
 
-const properties: OkaProperty[] = [
-  {
-    id: 'frente-mar',
-    tag: 'Frente Mar',
-    title: 'Apartamento Frente Mar',
-    type: 'Apartamento',
-    city: 'Itapema',
-    state: 'SC',
-    suites: 4,
-    area: 205,
-    vagas: 3,
-    price: 4950000,
-    yield: '0,68% a.m.',
-    image: SEA_VIEW_IMAGE,
-    imagePosition: 'center 48%',
-  },
-  {
-    id: 'condominio',
-    tag: 'Condomínio Fechado',
-    title: 'Casa em Condomínio',
-    type: 'Casa',
-    city: 'Curitiba',
-    state: 'PR',
-    suites: 3,
-    area: 290,
-    vagas: 4,
-    price: 2650000,
-    yield: '0,75% a.m.',
-    image: GATED_IMAGE,
-    imagePosition: 'center 68%',
-  },
-  {
-    id: 'alto-padrao',
-    tag: 'Alto Padrão',
-    title: 'Apartamento Alto Padrão',
-    type: 'Apartamento',
-    city: 'Florianópolis',
-    state: 'SC',
-    suites: 3,
-    area: 156,
-    vagas: 2,
-    price: 2260000,
-    yield: '0,82% a.m.',
-    image: HERO_IMAGE,
-    imagePosition: 'center 44%',
-  },
-  {
-    id: 'vista',
-    tag: 'Destaque',
-    title: 'Apartamento com Vista',
-    type: 'Apartamento',
-    city: 'Maringá',
-    state: 'PR',
-    suites: 2,
-    area: 120,
-    vagas: 2,
-    price: 1180000,
-    yield: '0,89% a.m.',
-    image: READY_IMAGE,
-    imagePosition: 'center 72%',
-  },
-];
-
-const cities = [
-  'Itapema',
-  'Balneário Camboriú',
-  'Florianópolis',
-  'Curitiba',
-  'Maringá',
-];
-const propertyTypes = ['Apartamento', 'Casa', 'Comercial', 'Terreno'];
 const priceOptions = [
   { label: 'Todos', value: 0 },
   { label: 'Até R$ 1.500.000', value: 1500000 },
@@ -147,12 +77,106 @@ function whatsappUrl(
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
-const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
+const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [purpose, setPurpose] = useState<'comprar' | 'investir'>('comprar');
   const [type, setType] = useState('');
   const [city, setCity] = useState('');
   const [priceMax, setPriceMax] = useState(0);
+  const [propertyList, setPropertyList] = useState<OkaProperty[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadProperties = async () => {
+      try {
+        let orgId = organizationId;
+
+        if (!orgId) {
+          const { data: tenant } = await supabase
+            .rpc('get_tenant_public', { slug_input: 'okaimoveis' });
+          orgId = tenant?.[0]?.id || undefined;
+        }
+
+        if (!orgId) {
+          setPropertyList([]);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('public_available_properties')
+          .select(
+            'id,title,price,city,state,property_type,images,thumbnail,features,total_area_ha,highlighted'
+          )
+          .eq('organization_id', orgId)
+          .order('created_at', { ascending: false })
+          .limit(24);
+
+        if (error) throw error;
+
+        setPropertyList(
+          (data || []).map((property: any) => {
+            const features = property.features || {};
+            const images = Array.isArray(property.images)
+              ? property.images
+              : [];
+            return {
+              id: property.id,
+              tag: property.highlighted
+                ? 'Destaque'
+                : property.property_type || 'Imóvel',
+              title: property.title || 'Imóvel',
+              type: property.property_type || '',
+              city: property.city || '',
+              state: property.state || '',
+              suites: features.suites || features.bedrooms || 0,
+              area:
+                features.areaM2 ||
+                features.built_area ||
+                Number(property.total_area_ha || 0) * 10000 ||
+                0,
+              vagas: features.vagas || features.parking || 0,
+              price: Number(property.price || 0),
+              yield: '',
+              image:
+                property.thumbnail || images[0] || HERO_IMAGE,
+              imagePosition: 'center',
+            } as OkaProperty;
+          })
+        );
+      } catch (err) {
+        logger.error('Erro ao carregar imóveis OKA:', err);
+        setPropertyList([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProperties();
+  }, [organizationId]);
+
+  const cities = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          propertyList
+            .map((property) => property.city)
+            .filter((c): c is string => Boolean(c))
+        )
+      ).sort(),
+    [propertyList]
+  );
+
+  const propertyTypes = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          propertyList
+            .map((property) => property.type)
+            .filter((t): t is string => Boolean(t))
+        )
+      ),
+    [propertyList]
+  );
 
   useEffect(() => {
     const previousTitle = document.title;
@@ -177,13 +201,13 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
   }, []);
 
   const filteredProperties = useMemo(() => {
-    return properties.filter((property) => {
+    return propertyList.filter((property) => {
       if (type && property.type !== type) return false;
       if (city && property.city !== city) return false;
       if (priceMax > 0 && property.price > priceMax) return false;
       return true;
     });
-  }, [city, priceMax, type]);
+  }, [city, priceMax, type, propertyList]);
 
   return (
     <div className="oka-site">
@@ -1402,7 +1426,11 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = () => {
           </div>
 
           <div className="oka-property-grid">
-            {filteredProperties.length === 0 ? (
+            {loading ? (
+              <div className="oka-empty">
+                Carregando imóveis...
+              </div>
+            ) : filteredProperties.length === 0 ? (
               <div className="oka-empty">
                 Nenhum imóvel encontrado com os filtros selecionados.
               </div>

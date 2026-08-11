@@ -59,6 +59,12 @@ const SYSTEM_ROUTES = [
   '/error',
 ];
 
+const PUBLIC_ACCESSOR_ROUTES = new Set(['/lp/', '/site/', '/sites/', '/quiz/']);
+
+const PANEL_REDIRECT_ROUTES = SYSTEM_ROUTES.filter(
+  (route) => !PUBLIC_ACCESSOR_ROUTES.has(route)
+);
+
 const NESTED_SITE_ROUTE_PREFIXES = new Set(['admin', 'rural', 'urban']);
 
 function isTenantSitePath(path: string) {
@@ -99,7 +105,21 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const debugMode = searchParams.get('debug') === 'true';
+  const initialHostname = window.location.hostname;
+  const initialPanelHost = cleanHost(
+    cleanDomain(getRuntimeEnv('VITE_PANEL_URL', 'https://imob.wootech.com.br'))
+  );
+  const initialIsSystemHost =
+    initialHostname.includes('localhost') ||
+    initialHostname === '127.0.0.1' ||
+    isIpAddress(initialHostname) ||
+    getAllPlatformHosts().some(
+      (host) => cleanHost(initialHostname) === cleanHost(host)
+    ) ||
+    cleanHost(initialHostname) === initialPanelHost;
+
   const initialSystemPath =
+    initialIsSystemHost &&
     !isTenantSitePath(window.location.pathname) &&
     (SYSTEM_ROUTES.some((route) =>
       window.location.pathname.startsWith(route)
@@ -195,6 +215,31 @@ const DomainRouter: React.FC<DomainRouterProps> = ({ children }) => {
                 log(
                   `[Router] Public Site Tenant found via domain: ${tenant.name} (${tenant.slug})`
                 );
+
+                const isPanelRoute = PANEL_REDIRECT_ROUTES.some(
+                  (route) =>
+                    currentPath === route ||
+                    currentPath.startsWith(`${route}/`) ||
+                    currentPath.startsWith(route)
+                );
+
+                const platformTarget = tenant.platform_domain
+                  ? cleanDomain(tenant.platform_domain)
+                  : null;
+
+                if (
+                  isPanelRoute &&
+                  platformTarget &&
+                  platformTarget !== currentHost
+                ) {
+                  const targetUrl = `https://${platformTarget}${currentPath}${window.location.search || ''}`;
+                  log(
+                    `[Router] System route on site domain → redirecting to platform domain: ${targetUrl}`
+                  );
+                  window.location.replace(targetUrl);
+                  return;
+                }
+
                 setResolvedSlug(tenant.slug);
                 setIsPublicSite(true);
                 setLoading(false);

@@ -154,6 +154,89 @@ const allTools = [
       required: ['texto_falado'],
     },
   },
+  {
+    name: 'notificar_corretor',
+    description:
+      'Notifica um corretor humano sobre um lead qualificado. Cria uma atividade no CRM, um follow-up e aciona o corretor indicado (ou o mais disponivel da organizacao).',
+    parameters: {
+      type: 'object',
+      properties: {
+        motivo: {
+          type: 'string',
+          description:
+            'Motivo da notificacao (ex: "Lead com alta intencao, quer visita hoje").',
+        },
+        corretor_id: {
+          type: 'string',
+          description:
+            'ID do corretor/perfil a ser notificado (se conhecido). Se omitido, usa o corretor atribuido ao lead ou o mais disponivel.',
+        },
+        prioridade: {
+          type: 'string',
+          description:
+            'Prioridade da notificacao: "alta", "media" ou "baixa".',
+        },
+      },
+      required: ['motivo'],
+    },
+  },
+  {
+    name: 'criar_follow_up',
+    description:
+      'Cria um follow-up (tarefa de retorno) para um lead no Kanban. Ideal para marcar que um corretor deve dar continuidade.',
+    parameters: {
+      type: 'object',
+      properties: {
+        titulo: {
+          type: 'string',
+          description: 'Titulo curto do follow-up (ex: "Retornar com proposta").',
+        },
+        due_at: {
+          type: 'string',
+          description:
+            'Data/hora de vencimento em ISO 8601 (ex: 2026-08-12T10:00:00Z).',
+        },
+        notas: {
+          type: 'string',
+          description: 'Notas adicionais sobre o follow-up.',
+        },
+        kind: {
+          type: 'string',
+          description:
+            'Tipo de follow-up: "follow_up" (padrao), "visit" ou "call".',
+        },
+      },
+      required: ['titulo', 'due_at'],
+    },
+  },
+  {
+    name: 'criar_tarefa',
+    description:
+      'Cria uma tarefa generica para o time dentro do CRM. Pode ser atribuida a um corretor especifico.',
+    parameters: {
+      type: 'object',
+      properties: {
+        titulo: {
+          type: 'string',
+          description: 'Titulo da tarefa (ex: "Verificar disponibilidade do imovel").',
+        },
+        descricao: {
+          type: 'string',
+          description: 'Descricao detalhada da tarefa.',
+        },
+        corretor_id: {
+          type: 'string',
+          description: 'ID do corretor responsavel (se conhecido).',
+        },
+        due_at: {
+          type: 'string',
+          description:
+            'Data/hora de vencimento em ISO 8601 (ex: 2026-08-12T10:00:00Z).',
+        },
+      },
+      required: ['titulo'],
+    },
+  },
 ];
 
 export class AgentOrchestrator {
@@ -209,6 +292,23 @@ export class AgentOrchestrator {
     ) {
       activeFunctionDeclarations.push(
         allTools.find((t) => t.name === 'consultar_agenda_disponibilidade')
+      );
+    }
+    if (
+      agentToolsConfig?.includes('notificar-corretor')
+    ) {
+      activeFunctionDeclarations.push(
+        allTools.find((t) => t.name === 'notificar_corretor')
+      );
+    }
+    if (agentToolsConfig?.includes('follow-up')) {
+      activeFunctionDeclarations.push(
+        allTools.find((t) => t.name === 'criar_follow_up')
+      );
+    }
+    if (agentToolsConfig?.includes('criar-tarefa')) {
+      activeFunctionDeclarations.push(
+        allTools.find((t) => t.name === 'criar_tarefa')
       );
     }
 
@@ -486,6 +586,185 @@ export class AgentOrchestrator {
         };
       }
 
+      if (name === 'notificar_corretor') {
+        if (!leadId)
+          return {
+            erro: 'Lead nao identificado. Nao e possivel notificar corretor sem um lead salvo.',
+          };
+
+        const brokerId = args.corretor_id || null;
+        let broker = null;
+
+        if (brokerId) {
+          const { data: brokerData } = await supabase
+            .from('profiles')
+            .select('id, name, email')
+            .eq('id', brokerId)
+            .eq('organization_id', organizationId)
+            .maybeSingle();
+          broker = brokerData;
+        }
+
+        if (!broker) {
+          const leadRes = await supabase
+            .from('leads')
+            .select('assigned_to')
+            .eq('id', leadId)
+            .eq('organization_id', organizationId)
+            .maybeSingle();
+          broker = leadRes.data?.assigned_to;
+        }
+
+        if (!broker) {
+          const profileRes = await supabase
+            .from('profiles')
+            .select('id, name')
+            .eq('organization_id', organizationId)
+            .in('role', ['broker', 'corretor', 'admin'])
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          broker = profileRes.data;
+        }
+
+        if (!broker) {
+          return {
+            erro: 'Nenhum corretor encontrado nesta organizacao para notificar.',
+          };
+        }
+
+        const prioridade = args.prioridade || 'media';
+        const motivo = args.motivo || 'Lead requer atencao.';
+
+        await Promise.allSettled([
+          supabase.from('lead_activities').insert({
+            organization_id: organizationId,
+            lead_id: leadId,
+            type: 'notificar_corretor',
+            description: `[${prioridade.toUpperCase()}] ${motivo}`,
+            metadata: {
+              broker_id: broker.id,
+              assigned_broker: broker.name,
+              priority: prioridade,
+              source: 'ai_agent',
+            },
+          }),
+          supabase.from('lead_followups').insert({
+            organization_id: organizationId,
+            lead_id: leadId,
+            title: `Notificação: ${motivo}`,
+            notes: `Agente IA solicitou contato do corretor. Prioridade: ${prioridade}.`,
+            due_at: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+            kind: 'follow_up',
+            status: 'pending',
+            metadata: {
+              broker_id: broker.id,
+              source: 'ai_agent',
+              priority: prioridade,
+            },
+          }),
+        ]);
+
+        return {
+          sucesso: true,
+          corretor: broker.name || broker.id,
+          prioridade,
+          mensagem: `Corretor ${broker.name || broker.id} notificado com sucesso.`,
+        };
+      }
+
+      if (name === 'criar_follow_up') {
+        if (!leadId)
+          return {
+            erro: 'Lead nao identificado. Nao e possivel criar follow-up sem um lead salvo.',
+          };
+
+        const dueAt = args.due_at
+          ? new Date(args.due_at).toISOString()
+          : null;
+        if (!dueAt)
+          return {
+            erro: 'data_hora de vencimento e obrigatoria. Formato: 2026-08-12T10:00:00Z',
+          };
+
+        const { error } = await supabase.from('lead_followups').insert({
+          organization_id: organizationId,
+          lead_id: leadId,
+          title: args.titulo,
+          notes: args.notas || '',
+          due_at: dueAt,
+          kind: args.kind || 'follow_up',
+          status: 'pending',
+          metadata: { source: 'ai_agent_tool' },
+        });
+
+        if (error)
+          return { erro: 'Erro ao criar follow-up: ' + error.message };
+
+        return {
+          sucesso: true,
+          mensagem: `Follow-up "${args.titulo}" criado para ${new Date(dueAt).toLocaleDateString('pt-BR')}.`,
+        };
+      }
+
+      if (name === 'criar_tarefa') {
+        if (!leadId)
+          return {
+            erro: 'Lead nao identificado. Nao e possivel criar tarefa sem um lead salvo.',
+          };
+
+        const dueAt = args.due_at
+          ? new Date(args.due_at).toISOString()
+          : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+        const assignee = args.corretor_id || null;
+        if (assignee) {
+          const { data: assigneeData } = await supabase
+            .from('profiles')
+            .select('id, name')
+            .eq('id', assignee)
+            .eq('organization_id', organizationId)
+            .maybeSingle();
+          if (!assigneeData)
+            return {
+              erro: 'Corretor atribuido nao encontrado nesta organizacao.',
+            };
+        }
+
+        const { error } = await supabase.from('lead_activities').insert({
+          organization_id: organizationId,
+          lead_id: leadId,
+          type: 'tarefa',
+          description: args.descricao || args.titulo,
+          created_by: assignee,
+          metadata: {
+            title: args.titulo,
+            assigned_to: assignee,
+            due_at: dueAt,
+            source: 'ai_agent_tool',
+          },
+        });
+
+        if (error)
+          return { erro: 'Erro ao criar tarefa: ' + error.message };
+
+        let msg = `Tarefa "${args.titulo}" criada`;
+        if (assignee) {
+          const { data: brokerData } = await supabase
+            .from('profiles')
+            .select('name')
+            .eq('id', assignee)
+            .single();
+          msg += ` e atribuida a ${brokerData?.name || 'corretor'}`;
+        }
+        msg += `. Vence em ${new Date(dueAt).toLocaleDateString('pt-BR')}.`;
+
+        return {
+          sucesso: true,
+          mensagem: msg,
+        };
+      }
+
       return { erro: `Ferramenta ${name} desconhecida.` };
     } catch (err) {
       console.error('[AgentOrchestrator] Erro na tool', name, err);
@@ -678,8 +957,12 @@ export class AgentOrchestrator {
 DIRETRIZES DE FERRAMENTAS (apenas quando aplicavel ao contexto):
 - Use "buscar_imoveis" para verificar disponibilidade antes de oferecer um imovel.
 - Use "agendar_visita" apenas quando o cliente confirmar o dia e o horario.
+- Use "consultar_agenda_disponibilidade" antes de propor horarios para visita.
 - Use "simular_financiamento" quando o cliente pedir valores, parcelas ou financiamento.
 - Use "atualizar_etapa_crm" e "qualificar_lead" para manter o CRM atualizado.
+- Use "notificar_corretor" quando o lead demonstrar alta intencao, pedir visita, negociar valores ou precisar de atencao humana.
+- Use "criar_follow_up" para marcar retorno comercial com data/ hora definida.
+- Use "criar_tarefa" para delegar atividades ao corretor ou time (ex: verificar documentos, fazer ligação).
 - Sempre resuma o resultado da ferramenta de forma natural e amigavel ao cliente, sem citar termos tecnicos internos.`,
           },
         ],

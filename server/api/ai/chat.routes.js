@@ -3,7 +3,7 @@ import { getSupabaseServer } from '../../lib/supabase-server.js';
 import axios from 'axios';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
-import { getOrgAIConfig } from './helpers.js';
+import { getOrgAIConfig, hydrateAgent } from './helpers.js';
 import { AgentOrchestrator } from '../../services/ai/agentOrchestrator.js';
 import { buildAgentSystemPrompt } from '../../services/ai/agentPrompt.js';
 import { ConversationSimulator } from '../../services/ai/conversationSimulator.js';
@@ -233,6 +233,8 @@ router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
       return res.status(404).json({ error: 'Agente nao encontrado.' });
     }
 
+    const hydratedAgent = hydrateAgent(agent);
+
     const { error: memError } = await supabase
       .from('conversation_memory')
       .insert({
@@ -256,7 +258,7 @@ router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
       .order('created_at', { ascending: true })
       .limit(30);
 
-    const systemInstruction = buildMemorySystemPrompt(agent, recentHistory);
+    const systemInstruction = buildMemorySystemPrompt(hydratedAgent, recentHistory);
 
     const config = await getOrgAIConfig(req.orgId);
     const provider = config?.namoBana?.apiKey
@@ -280,14 +282,14 @@ router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
     // Agentes com ferramentas configuradas usam o orquestrador (ReAct/function
     // calling) no chat de teste, para a conversa se comportar igual ao WhatsApp.
     const hasActiveTools =
-      Array.isArray(agent?.tools) && agent.tools.length > 0;
+      Array.isArray(hydratedAgent?.tools) && hydratedAgent.tools.length > 0;
     if ((provider === 'gemini' || !provider) && hasActiveTools) {
       try {
         const orchestrator = new AgentOrchestrator(apiKey || null);
         const autonomousReply = await orchestrator.processAgentConversation({
           content: message,
           organizationId: req.orgId,
-          agent,
+          agent: hydratedAgent,
           history: recentHistory,
           leadId: null,
         });
@@ -423,16 +425,18 @@ router.post(
         return res.status(404).json({ error: 'Agente nao encontrado.' });
       }
 
+      const hydratedAgent = hydrateAgent(agent);
+
       const simulator = new ConversationSimulator();
       const result = await simulator.run({
-        agent,
+        agent: hydratedAgent,
         organizationId,
         seedMessage: seed_message || 'oi',
         turns: Math.min(Number(turns) || 6, 12),
         sessionId: session_id,
       });
 
-      res.json({ ...result, agent: { name: agent.name, role: agent.role } });
+      res.json({ ...result, agent: { name: hydratedAgent.name, role: hydratedAgent.role } });
     } catch (error) {
       console.error('[AgentSimulate] Erro:', error.message);
       res.status(500).json({ error: error.message });

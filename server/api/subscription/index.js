@@ -6,9 +6,9 @@ import invoicesRoutes from './invoices.js';
 
 const router = Router();
 
-router.use('/checkout', checkoutRoutes);
-router.use('/cancel', cancelRoutes);
-router.use('/status', statusRoutes);
-router.use('/invoices', invoicesRoutes);
+router.use(checkoutRoutes);
+router.use(cancelRoutes);
+router.use(statusRoutes);
+router.use(invoicesRoutes);
 
 export default router;

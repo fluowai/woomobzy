@@ -1,3 +1,4 @@
+import { callApi } from '@/src/lib/api';
 import { logger } from '@/utils/logger';
 
 export interface PaymentDetails {
@@ -19,7 +20,7 @@ export class PaymentService {
     try {
       logger.info('Criando cobranca via Asaas...', data);
 
-      const res = await fetch('/api/subscription/checkout', {
+      const result = await callApi('/api/subscription/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -27,13 +28,6 @@ export class PaymentService {
           billingType: 'UNDEFINED',
         }),
       });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Falha ao criar cobranca');
-      }
-
-      const result = await res.json();
       const payment = result.data?.payment || result.data?.subscription;
       if (!payment) return null;
 
@@ -53,11 +47,9 @@ export class PaymentService {
 
   async getInvoiceStatus(paymentId: string): Promise<string> {
     try {
-      const res = await fetch(
+      const data = await callApi(
         `/api/subscription/invoices?paymentId=${encodeURIComponent(paymentId)}`
       );
-      if (!res.ok) return 'PENDING';
-      const data = await res.json();
       const invoice = data.data?.local?.[0] || data.data?.asaas?.[0];
       if (!invoice) return 'PENDING';
 

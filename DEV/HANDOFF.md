@@ -1,5 +1,26 @@
 # Handoff
 
+## 2026-08-10 — Seleção de plano não persiste / checkout de assinatura 404 — prefixo duplicado corrigido
+
+- **Solicitação (maestro)**: selecionar um plano (qualquer nível) não seta o `plan_id`/assinatura.
+- **Causa raiz**: `server/api/subscription/index.js` montava `checkout/cancel/status/invoices` com prefixo duplicado (`use('/checkout', checkoutRoutes)` + rota `POST /checkout` no sub-router) → paths reais `/api/subscription/checkout/checkout`, `/api/subscription/status/status`, `/api/subscription/invoices/invoices`. O frontend chamava `/api/subscription/checkout` e `/api/subscription/invoices` (fetch cru, sem `Authorization`) → 404 → pagamento nunca concluía → plano ficava em `payment_required`.
+- **Fix (working tree, sem commit)**:
+  - `server/api/subscription/index.js` — sub-routers montados sem prefixo; webhook Asaas passa a ser `/api/subscription/webhook/asaas`.
+  - `services/paymentService.ts` — `callApi` no lugar de `fetch` (injeta `Authorization`/impersonation/`x-tenant-domain`).
+- **Gates**: rotas montadas verificadas por script ✓; `type-check` ✓; eslint ✓ (0 errors); vitest (guard + subscriptionSelection) ✓.
+- **Atenção (maestro)**: se a URL do webhook Asaas estiver cadastrada no painel Asaas apontando para `/api/subscription/checkout/webhook/asaas`, atualizar para `/api/subscription/webhook/asaas`. Verificar também que a revenda/cliente tem `asaas_api_key` própria ou fallback `ASAAS_API_KEY` global para o checkout funcionar.
+- **Próxima ação (maestro)**: subir server + app, selecionar plano em uma org e concluir checkout; validar `plan_id` + `subscription_status='active'` persistidos.
+
+## 2026-08-10 — Rotas de sistema em domínio de site redirecionam para o platform_domain (genérico)
+
+- **Solicitação (maestro)**: o site `inovebrokers.com.br` funciona, mas o sistema (login/painel) acessado no domínio do site ainda não redireciona para `app.inovebrokers.com.br`. Deve valer para tudo (qualquer revenda/cliente com `platform_domain`), inclusive novos clientes.
+- **Diagnóstico**: `DomainRouter.tsx` branch custom `domain_type=site` renderizava `PublicLandingPage` para qualquer path; rotas de sistema no domínio do site não iam para o painel. RPC `get_tenant_by_any_domain` já devolve `platform_domain`.
+- **Fix (working tree, sem commit)**:
+  - `components/DomainRouter.tsx` — `PANEL_REDIRECT_ROUTES` (SYSTEM_ROUTES sem `/lp/`, `/site/`, `/sites/`, `/quiz/`); redirect `https://{platform_domain}{path}` quando path é rota de painel e `platform_domain` ≠ host; `initialSystemPath` agora exige host de plataforma (`initialIsSystemHost`).
+  - Novos clientes: o mega-admin já grava `platform_domain` via `linkDomainToOrganization(purpose:'panel')`, então o redirect vale automaticamente.
+- **Gates**: `npm run type-check` ✓; eslint `components/DomainRouter.tsx` ✓ (0 errors); `npm run build` ✓.
+- **Próxima ação (maestro)**: deploy do frontend; validar `inovebrokers.com.br` → landing e `inovebrokers.com.br/login` → `app.inovebrokers.com.br/login`.
+
 ## 2026-08-10 — inovebrokers.com.br ainda servia "Em breve"/SPA em vez da landing Delazari — landing mapeada
 
 - **Solicitação (maestro)**: `inovebrokers.com.br` não apontava para a landing da revenda Delazari.

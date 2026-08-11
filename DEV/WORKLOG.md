@@ -1,5 +1,24 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-10] Seleção de plano não persistia / checkout de assinatura quebrava — CAUSA RAIZ: prefixo duplicado nas rotas de subscription — CORRIGIDO
+
+- **Solicitação (maestro)**: selecionar um plano em qualquer nível (superadmin/onboarding/guard) não "seta" o plano.
+- **Causa raiz**: `server/api/subscription/index.js` montava os sub-routers com prefixo duplicado (`router.use('/checkout', checkoutRoutes)` etc.), mas cada sub-router já define o próprio path (`checkout.js` → `POST /checkout`, `status.js` → `GET /status`, `invoices.js` → `GET /invoices`, `cancel.js` → `POST /cancel`). Resultado: rotas reais ficavam em `/api/subscription/checkout/checkout`, `/api/subscription/status/status`, `/api/subscription/invoices/invoices` — enquanto o frontend (`services/paymentService.ts`) chamava `/api/subscription/checkout` e `/api/subscription/invoices` → **404** → pagamento nunca completava e o plano ficava `payment_required` sem ativar.
+- **Fix**:
+  - `server/api/subscription/index.js` — `router.use(checkoutRoutes)` (e cancel/status/invoices) sem prefixo; webhook Asaas agora em `/api/subscription/webhook/asaas` (antes `/api/subscription/checkout/webhook/asaas`).
+  - `services/paymentService.ts` — trocar `fetch` cru por `callApi` (injeta `Authorization`, impersonation e `x-tenant-domain`) em `createInvoice` e `getInvoiceStatus`, já que as rotas exigem `verifyAuth`/`verifyAdmin`.
+- **Gates**: repro estático das rotas montadas ✓ (checkout/cancel/status/invoices/webhook em `/api/subscription/*`); `npm run type-check` ✓; eslint nos 2 arquivos ✓ (0 errors); vitest `src/test/subscriptionGuard.test.tsx` ✓; vitest `server/__tests__/subscriptionSelection.test.ts` ✓. Sem commit/push.
+
+## [2026-08-10] Rotas de sistema no domínio do site redirecionam para o platform_domain — IMPLEMENTADO
+
+- **Solicitação (maestro)**: `inovebrokers.com.br` deve servir a landing; mas o sistema em si (`/login`, `/urban`, `/admin`, etc.) acessado no domínio do site deve ir para `app.inovebrokers.com.br`. Vale para toda revenda/cliente com `platform_domain`, não só Delazari.
+- **Causa raiz**: `DomainRouter.tsx` — no branch de domínio custom com `domain_type=site`, qualquer path (inclusive rotas de sistema) renderizava a `PublicLandingPage`; sem redirect para o `platform_domain`. Além disso, `initialSystemPath` era computado sem checar o host → flash/loop do app em rotas de sistema no domínio do site.
+- **Fix**:
+  - `components/DomainRouter.tsx` — lista `PANEL_REDIRECT_ROUTES` (SYSTEM_ROUTES menos acessores públicos `/lp/`, `/site/`, `/sites/`, `/quiz/`).
+  - Branch de tenant `site`: se path é rota de painel E tenant tem `platform_domain` ≠ host atual → `window.location.replace('https://{platform_domain}{path}')`.
+  - `initialIsSystemHost` → `initialSystemPath` agora só é "system" quando o host é de plataforma (localhost/IP/hosts do painel), evitando renderizar o app no domínio do site.
+- **Gates**: type-check ✓; eslint `components/DomainRouter.tsx` ✓ (0 errors); build ✓. Sem commit/push.
+
 ## [2026-08-10] inovebrokers.com.br não apontava para a landing da revenda Delazari — CORRIGIDO
 
 - **Solicitação (maestro)**: site não aponta para `inovebrokers.com.br`; mesmo com o domínio no ar, não renderiza a landing.

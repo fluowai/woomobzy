@@ -1,5 +1,18 @@
 # Verificação
 
+## 2026-08-10 — Plano não setava / checkout 404 — prefixo duplicado em subscription ✓ (código)
+
+- **Causa**: `server/api/subscription/index.js` montava sub-routers com prefixo duplicado → rotas reais `/api/subscription/checkout/checkout`, `/api/subscription/status/status`, `/api/subscription/invoices/invoices`, `/api/subscription/cancel/cancel`; frontend chamava `/api/subscription/checkout` e `/api/subscription/invoices` (sem `Authorization`) → 404.
+- **Fix**: sub-routers montados sem prefixo (`router.use(checkoutRoutes)` etc.) → rotas em `/api/subscription/checkout|cancel|status|invoices|webhook/asaas`. `paymentService.ts` migrado de `fetch` para `callApi`.
+- **Evidência**: script estático de rotas montadas ✓ (paths corretos); `npm run type-check` ✓; eslint `server/api/subscription/index.js` + `services/paymentService.ts` ✓ (0 errors); vitest `src/test/subscriptionGuard.test.tsx` ✓ (1/1); vitest `server/__tests__/subscriptionSelection.test.ts` ✓ (1/1).
+- **Pendente (maestro)**: deploy; registrar/atualizar webhook Asaas para `/api/subscription/webhook/asaas`; teste de ponta a ponta selecionar plano → pagar → `subscription_status='active'`.
+
+## 2026-08-10 — Rotas de sistema no domínio do site → redirect ao platform_domain ✓ (código)
+
+- **Fix**: `DomainRouter.tsx` — rotas de painel (`/login`, `/urban`, `/admin`, ...) em tenant `site` com `platform_domain` → `window.location.replace('https://{platform_domain}{path}')`; `initialSystemPath` agora exige host de plataforma.
+- **Evidência**: `npm run type-check` ✓; eslint `components/DomainRouter.tsx` ✓ (0 errors); `npm run build` ✓. RPC `get_tenant_by_any_domain` já retorna `platform_domain` (org Delazari: `app.inovebrokers.com.br`).
+- **Pendente (maestro)**: deploy do frontend; validar `inovebrokers.com.br` → landing e `inovebrokers.com.br/login` → `app.inovebrokers.com.br/login`.
+
 ## 2026-08-10 — inovebrokers.com.br servindo "Em breve" em vez da landing Delazari — corrigido ✓
 
 - **Causa**: org Delazari (`e2403fc5`, `is_reseller: true`, slug com espaço final) sem `landing_pages`/`site_settings` → `PublicLandingPage` caía em `ComingSoon`. `RevendaDelazari` não estava mapeada no roteamento público.

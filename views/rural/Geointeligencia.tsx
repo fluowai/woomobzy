@@ -220,21 +220,25 @@ const Geointeligencia: React.FC = () => {
       const parser = new DOMParser();
       const kmlDoc = parser.parseFromString(kmlText, 'text/xml');
       const converted = toGeoJSON.kml(kmlDoc);
-      if (converted.features.length > 0) {
-        setGeometries((prev) => [...prev, ...converted.features]);
+      const validFeatures = converted.features.filter(
+        (feature: any) => feature && feature.geometry && feature.geometry.type
+      );
+      if (validFeatures.length > 0) {
+        setGeometries((prev) => [...prev, ...validFeatures]);
         let totalArea = 0;
-        converted.features.forEach((feature: any) => {
-          if (feature.geometry.type === 'Polygon') {
+        validFeatures.forEach((feature: any) => {
+          const coords = feature.geometry.coordinates;
+          if (feature.geometry.type === 'Polygon' && coords?.[0]) {
             totalArea += L.GeometryUtil.geodesicArea(
-              feature.geometry.coordinates[0].map((c: any) =>
-                L.latLng(c[1], c[0])
-              )
+              coords[0].map((c: any) => L.latLng(c[1], c[0]))
             );
           } else if (feature.geometry.type === 'MultiPolygon') {
-            feature.geometry.coordinates.forEach((poly: any) => {
-              totalArea += L.GeometryUtil.geodesicArea(
-                poly[0].map((c: any) => L.latLng(c[1], c[0]))
-              );
+            (coords || []).forEach((poly: any) => {
+              if (poly?.[0]) {
+                totalArea += L.GeometryUtil.geodesicArea(
+                  poly[0].map((c: any) => L.latLng(c[1], c[0]))
+                );
+              }
             });
           }
         });

@@ -14,7 +14,7 @@ export function verifyAuth(req, res, next) {
     req.userId = payload.sub;
     req.orgId = payload.org_id || null;
     next();
-  } catch (err) {
+  } catch {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 }

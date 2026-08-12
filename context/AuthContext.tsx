@@ -4,6 +4,7 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useCallback,
   ReactNode,
 } from 'react';
 import {
@@ -76,63 +77,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   // Keep profileRef in sync with profile state
   useEffect(() => {
     profileRef.current = profile;
-  }, [profile]);
-
-  useEffect(() => {
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      // DEBOUNCE FIX: If SIGNED_IN fires before INITIAL_SESSION, skip it.
-      if (_event === 'SIGNED_IN' && !initialSessionProcessed.current) {
-        if (session?.user) setUser(session.user);
-        return;
-      }
-
-      if (_event === 'INITIAL_SESSION') {
-        initialSessionProcessed.current = true;
-      }
-
-      if (session?.user) {
-        // Skip redundant events (SIGNED_IN or TOKEN_REFRESHED) if profile is already loaded for this user
-        const isRedundant =
-          (_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED') &&
-          profileRef.current?.id === session.user.id;
-
-        if (isRedundant) return;
-
-        logger.info(
-          '🔄 [AuthContext] Auth Event:',
-          _event,
-          'User:',
-          session?.user?.id
-        );
-
-        setUser(session.user);
-
-        // Only reset retryCount on INITIAL_SESSION (not every event)
-        if (_event === 'INITIAL_SESSION') {
-          retryCount.current = 0;
-        }
-
-        scheduleAuthProfileLoad(loadProfile, session.user.id);
-      } else {
-        logger.info('🔄 [AuthContext] Auth Event: User is null');
-        clearImpersonationSession();
-        setUser(null);
-        setProfile(null);
-        setIsImpersonating(false);
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+   }, [profile]);
 
   // Ref to prevent multiple simultaneous profile fetches
   const fetchInProgress = React.useRef<string | null>(null);
 
-  const loadProfile = async (userId: string) => {
+  const loadProfile = useCallback(async (userId: string) => {
     if (fetchInProgress.current === userId) return;
 
     clearStaleOrganizationData(userId);
@@ -292,7 +242,58 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       fetchInProgress.current = null;
       setLoading(false);
     }
-  };
+  }, [profile]);
+
+  useEffect(() => {
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      // DEBOUNCE FIX: If SIGNED_IN fires before INITIAL_SESSION, skip it.
+      if (_event === 'SIGNED_IN' && !initialSessionProcessed.current) {
+        if (session?.user) setUser(session.user);
+        return;
+      }
+
+      if (_event === 'INITIAL_SESSION') {
+        initialSessionProcessed.current = true;
+      }
+
+      if (session?.user) {
+        // Skip redundant events (SIGNED_IN or TOKEN_REFRESHED) if profile is already loaded for this user
+        const isRedundant =
+          (_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED') &&
+          profileRef.current?.id === session.user.id;
+
+        if (isRedundant) return;
+
+        logger.info(
+          '🔄 [AuthContext] Auth Event:',
+          _event,
+          'User:',
+          session?.user?.id
+        );
+
+        setUser(session.user);
+
+        // Only reset retryCount on INITIAL_SESSION (not every event)
+        if (_event === 'INITIAL_SESSION') {
+          retryCount.current = 0;
+        }
+
+        scheduleAuthProfileLoad(loadProfile, session.user.id);
+      } else {
+        logger.info('🔄 [AuthContext] Auth Event: User is null');
+        clearImpersonationSession();
+        setUser(null);
+        setProfile(null);
+        setIsImpersonating(false);
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [loadProfile]);
 
   const signIn = async (email: string, password: string) => {
     clearImpersonationSession();

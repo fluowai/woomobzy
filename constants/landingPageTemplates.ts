@@ -1,4 +1,4 @@
-import { BlockType, LandingPageStatus } from '../types/landingPage';
+import { BlockType } from '../types/landingPage';
 
 export const LANDING_PAGE_MODELS = [
   {

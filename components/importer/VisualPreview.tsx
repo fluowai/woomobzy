@@ -156,7 +156,7 @@ const VisualPreview: React.FC<VisualPreviewProps> = ({
             <p className="text-slate-400 leading-relaxed font-medium">
               Este tema foi selecionado por nossa IA por possuir a melhor
               compatibilidade estrutural com o site{' '}
-              <span className="text-white">"{identity.suggestedTheme}"</span>{' '}
+              <span className="text-white">&quot;{identity.suggestedTheme}&quot;</span>{' '}
               original.
             </p>
           </div>

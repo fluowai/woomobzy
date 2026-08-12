@@ -6,7 +6,6 @@ import {
 } from 'crypto';
 
 const ALGORITHM = 'aes-256-gcm';
-const SALT_LEN = 16;
 const IV_LEN = 12;
 const TAG_LEN = 16;
 const KEY_LEN = 32;

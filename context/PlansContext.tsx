@@ -1,5 +1,5 @@
 import { logger } from '@/utils/logger';
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from './AuthContext';
 
@@ -35,15 +35,7 @@ export const PlansProvider: React.FC<{ children: React.ReactNode }> = ({
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      fetchPlan();
-    } else {
-      setLoading(false);
-    }
-  }, [user, profile?.organization_id]);
-
-  const fetchPlan = async () => {
+  const fetchPlan = useCallback(async () => {
     if (!user) return;
     try {
       const organizationId = profile?.organization_id;
@@ -82,7 +74,15 @@ export const PlansProvider: React.FC<{ children: React.ReactNode }> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, profile?.organization_id]);
+
+  useEffect(() => {
+    if (user) {
+      fetchPlan();
+    } else {
+      setLoading(false);
+    }
+  }, [user, fetchPlan]);
 
   const hasFeature = (feature: Feature): boolean => {
     // Super admin has everything

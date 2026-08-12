@@ -9,8 +9,6 @@ import {
   Block,
   BlockType,
   LayoutConfig,
-  BlockStyles,
-  ResponsiveConfig,
 } from '../types';
 import { useSettings } from './SettingsContext';
 

@@ -88,7 +88,7 @@ app.get('/health', (req, res) =>
 const wss = new WebSocketServer({ server, path: '/api/instagram/ws' });
 const clientsByCompany = new Map();
 
-wss.on('connection', (ws, req) => {
+wss.on('connection', (ws) => {
   let companyId = null;
 
   ws.on('message', (raw) => {

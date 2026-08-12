@@ -250,7 +250,7 @@ router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
         memError.message
       );
 
-    const { data: recentHistory } = await supabase
+    const { data: recentHistory, error: histError } = await supabase
       .from('conversation_memory')
       .select('role, content')
       .eq('organization_id', req.orgId)
@@ -258,7 +258,16 @@ router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
       .order('created_at', { ascending: true })
       .limit(30);
 
-    const systemInstruction = buildMemorySystemPrompt(hydratedAgent, recentHistory);
+    if (histError)
+      console.warn(
+        '[AgentChat] Erro ao buscar historico de conversa:',
+        histError.message
+      );
+
+    const systemInstruction = buildMemorySystemPrompt(
+      hydratedAgent,
+      recentHistory || []
+    );
 
     const config = await getOrgAIConfig(req.orgId);
     const provider = config?.namoBana?.apiKey
@@ -349,28 +358,35 @@ router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
         );
         let groqKey = config?.groq?.apiKey || process.env.GROQ_API_KEY;
         if (groqKey) {
-          const groqResponse = await axios.post(
-            'https://api.groq.com/openai/v1/chat/completions',
-            {
-              model: 'llama-3.3-70b-versatile',
-              messages: [
-                { role: 'system', content: systemInstruction },
-                ...(recentHistory || []).map((m) => ({
-                  role: m.role === 'assistant' ? 'assistant' : 'user',
-                  content: m.content,
-                })),
-                { role: 'user', content: message },
-              ],
-              temperature: 0.7,
-            },
-            {
-              headers: {
-                Authorization: `Bearer ${groqKey}`,
-                'Content-Type': 'application/json',
+          try {
+            const groqResponse = await axios.post(
+              'https://api.groq.com/openai/v1/chat/completions',
+              {
+                model: 'llama-3.3-70b-versatile',
+                messages: [
+                  { role: 'system', content: systemInstruction },
+                  ...(recentHistory || []).map((m) => ({
+                    role: m.role === 'assistant' ? 'assistant' : m.role,
+                    content: m.content,
+                  })),
+                  { role: 'user', content: message },
+                ],
+                temperature: 0.7,
               },
-            }
-          );
-          reply = groqResponse.data.choices?.[0]?.message?.content || '';
+              {
+                headers: {
+                  Authorization: `Bearer ${groqKey}`,
+                  'Content-Type': 'application/json',
+                },
+              }
+            );
+            reply = groqResponse.data.choices?.[0]?.message?.content || '';
+          } catch (groqError) {
+            console.warn(
+              '[AgentChat] Groq fallback also failed:',
+              groqError.response?.data || groqError.message
+            );
+          }
         }
       }
     }

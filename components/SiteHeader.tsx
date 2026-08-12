@@ -22,24 +22,12 @@ const SiteHeader: React.FC = () => {
   const { t } = useTexts();
 
   const navigate = useNavigate();
-  // We need to know if we are on a Tenant Site to determine Login URL
-  // SiteHeader is inside PublicLandingPage which might have a different Router context or just be standard
-  // If we are at /:slug, we want login to be /:slug/site/login
-  // The easiest way is to check the URL
-  const currentPath = window.location.pathname;
-  const isTenantSite =
-    currentPath !== '/' &&
-    !currentPath.startsWith('/admin') &&
-    !currentPath.startsWith('/login');
 
   const handleLoginClick = () => {
     navigate('/login');
   };
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // Helper to strip non-digits for phone links
-  const normalizePhone = (phone: string) => phone.replace(/\D/g, '');
 
   // Smooth scroll to properties section
   const scrollToProperties = () => {

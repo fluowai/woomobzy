@@ -1,5 +1,5 @@
 import { logger } from '@/utils/logger';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useSettings } from '../context/SettingsContext';
 
 /**
@@ -29,8 +29,6 @@ interface PixelConfig {
 
 const TrackingPixels: React.FC = () => {
   const { settings } = useSettings();
-  const [pixelsLoaded, setPixelsLoaded] = useState(false);
-
   useEffect(() => {
     if (!settings?.tracking_pixels) {
       logger.info('⚠️ Tracking pixels não configurados');
@@ -59,8 +57,6 @@ const TrackingPixels: React.FC = () => {
     if (config.google_ads?.enabled && config.google_ads.conversionId) {
       initGoogleAds(config.google_ads.conversionId, config.google_ads.testMode);
     }
-
-    setPixelsLoaded(true);
   }, [settings]);
 
   return null; // Este componente não renderiza nada

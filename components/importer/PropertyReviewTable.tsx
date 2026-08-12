@@ -1,14 +1,9 @@
 import React from 'react';
 import { toast } from 'sonner';
 import {
-  Table,
-  CheckCircle2,
-  AlertCircle,
-  Eye,
   Edit3,
   Trash2,
   ArrowRight,
-  TrendingUp,
   LandPlot,
   Building,
   Layout,

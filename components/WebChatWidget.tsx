@@ -38,7 +38,7 @@ export const WebChatWidget: React.FC = () => {
         ...prev,
         { role: 'agent', content: response.reply || 'Recebido.' },
       ]);
-    } catch (error) {
+    } catch {
       setMessages((prev) => [
         ...prev,
         {

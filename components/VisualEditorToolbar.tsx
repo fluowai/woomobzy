@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTexts } from '../context/TextsContext';
-import { Save, X, Eye, EyeOff, Layout, MousePointer2 } from 'lucide-react';
+import { Save, EyeOff, Layout, MousePointer2 } from 'lucide-react';
 
 const VisualEditorToolbar: React.FC = () => {
   const { isVisualMode, setVisualMode, refresh } = useTexts();

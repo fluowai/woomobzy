@@ -1,5 +1,5 @@
 import { logger } from '@/utils/logger';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -91,19 +91,7 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
   const [sendingMessage, setSendingMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (isOpen && profile) {
-      fetchTickets();
-    }
-  }, [isOpen, profile]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  if (!isOpen) return null;
-
-  const fetchTickets = async () => {
+  const fetchTickets = useCallback(async () => {
     if (!profile) return;
     setTicketsLoading(true);
     try {
@@ -120,7 +108,19 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
     } finally {
       setTicketsLoading(false);
     }
-  };
+  }, [profile]);
+
+  useEffect(() => {
+    if (isOpen && profile) {
+      fetchTickets();
+    }
+  }, [isOpen, profile, fetchTickets]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  if (!isOpen) return null;
 
   const fetchMessages = async (ticketId: string) => {
     const { data } = await supabase
@@ -164,7 +164,7 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
         setTab('tickets');
         fetchTickets();
       }, 2000);
-    } catch (err) {
+    } catch {
       alert('Erro ao enviar chamado. Tente novamente mais tarde.');
     } finally {
       setLoading(false);
@@ -188,7 +188,7 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
       if (error) throw error;
       setNewMessage('');
       fetchMessages(selectedTicket.id);
-    } catch (err) {
+    } catch {
       alert('Erro ao enviar mensagem.');
     } finally {
       setSendingMessage(false);

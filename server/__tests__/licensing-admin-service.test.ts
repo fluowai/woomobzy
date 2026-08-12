@@ -9,6 +9,19 @@ vi.mock('node:dns/promises', () => ({
     ]),
   },
 }));
+
+vi.mock('../../domainService.js', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...(actual as Record<string, unknown>),
+    linkDomainToOrganization: vi.fn(async () => ({
+      domain: 'meucliente.com.br',
+      purpose: 'both',
+      dnsVerified: false,
+      linked: true,
+    })),
+  };
+});
 import {
   createLicense,
   bindDomainToLicenseViaSetupToken,

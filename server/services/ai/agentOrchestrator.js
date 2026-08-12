@@ -312,17 +312,14 @@ export class AgentOrchestrator {
       );
     }
 
-    // Se o agente nao tiver tools de backend mapeadas, retornamos nulo para pular a orquestracao
-    if (activeFunctionDeclarations.length === 0) {
-      return null;
-    }
-
-    const toolPayload = { functionDeclarations: activeFunctionDeclarations };
+    // Se o agente não possuir ferramentas, instanciamos o modelo apenas para conversação (sem tools)
+    const hasTools = activeFunctionDeclarations.length > 0;
+    const toolsConfig = hasTools ? [{ functionDeclarations: activeFunctionDeclarations }] : undefined;
 
     if (this.genAI) {
       return this.genAI.getGenerativeModel({
         model: 'gemini-1.5-flash',
-        tools: [toolPayload],
+        ...(toolsConfig && { tools: toolsConfig }),
       });
     }
 
@@ -339,7 +336,7 @@ export class AgentOrchestrator {
     const genAI = new GoogleGenerativeAI(finalKey);
     return genAI.getGenerativeModel({
       model: 'gemini-1.5-flash',
-      tools: [toolPayload],
+      ...(toolsConfig && { tools: toolsConfig }),
     });
   }
 
@@ -800,7 +797,7 @@ export class AgentOrchestrator {
           organizationId,
           subAgents
         );
-        const specialist = this._detectSpecialist(content, specialists);
+        const specialist = await this._detectSpecialist(content, specialists, history);
         if (specialist) {
           const delegated = await this._delegateToSpecialist({
             content,
@@ -853,7 +850,48 @@ export class AgentOrchestrator {
     return data || [];
   }
 
-  _detectSpecialist(content, specialists) {
+  async _detectSpecialist(content, specialists, history = []) {
+    if (!Array.isArray(specialists) || specialists.length === 0) return null;
+
+    try {
+      const model = await this._ensureModel([]); // Get base model sem tools
+      if (!model) return this._fallbackDetectSpecialist(content, specialists);
+
+      const recentHistory = history.slice(-6).map(m => `[${String(m.role || 'user').toUpperCase()}]: ${m.content}`).join('\n');
+      
+      const prompt = `Você é um Roteador Semântico (Orquestrador) de uma imobiliária. 
+Seu objetivo é analisar a mensagem do usuário e o histórico, e decidir qual especialista da equipe deve assumir o atendimento AGORA.
+
+Especialistas Disponíveis:
+${specialists.map(s => `- ID: ${s.id} | Papel: ${s.role} | Habilidades: ${(s.capabilities||[]).join(', ')}`).join('\n')}
+
+Histórico Recente:
+${recentHistory}
+
+Última Mensagem do Cliente:
+${content}
+
+Instrução:
+Se a intenção da última mensagem for muito clara para um dos especialistas (ex: agendar visita -> agendador, buscar imóveis -> buscador), retorne APENAS o ID dele.
+Se nenhum especialista for ideal para o momento (ex: saudação inicial, conversa genérica, assunto fora do escopo das habilidades), retorne EXATAMENTE "NONE".
+Não use aspas, nem pontuação, nem explique nada. Apenas o ID ou NONE.`;
+
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      });
+      const responseText = result.response.text().trim();
+      
+      if (responseText === 'NONE' || !responseText) return null;
+      
+      const best = specialists.find(s => s.id === responseText);
+      return best || this._fallbackDetectSpecialist(content, specialists);
+    } catch (err) {
+      console.warn('[AgentOrchestrator] Erro no roteador semântico (LLM):', err.message);
+      return this._fallbackDetectSpecialist(content, specialists);
+    }
+  }
+
+  _fallbackDetectSpecialist(content, specialists) {
     if (!Array.isArray(specialists) || specialists.length === 0) return null;
 
     const normalize = (value) =>
@@ -911,6 +949,7 @@ export class AgentOrchestrator {
     const specialistPrompt = buildAgentSystemPrompt(specialist, {
       history,
       channel: 'WhatsApp',
+      isSubAgent: true,
     });
 
     const systemInstruction = [

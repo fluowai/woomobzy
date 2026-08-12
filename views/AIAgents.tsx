@@ -512,6 +512,11 @@ const AIAgents: React.FC = () => {
                 startNew();
                 setDraft({ ...DEFAULTS, agent_type: 'orchestrator' });
               }}
+              onCreateSpecialist={() => {
+                setMainTab('specialists');
+                startNew();
+                setDraft({ ...DEFAULTS, agent_type: 'specialist' });
+              }}
             />
           ) : selectedId === 'new' && !selectedAgent && agents.length === 0 ? (
             <div className="space-y-5">

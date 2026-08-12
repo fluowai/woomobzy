@@ -6,12 +6,14 @@ interface SwarmBuilderProps {
   agents: AIAgent[];
   onSelectAgent: (id: string) => void;
   onCreateNew: () => void;
+  onCreateSpecialist: () => void;
 }
 
 export const SwarmBuilder: React.FC<SwarmBuilderProps> = ({
   agents,
   onSelectAgent,
   onCreateNew,
+  onCreateSpecialist,
 }) => {
   const orchestrators = agents.filter((a) => a.agent_type === 'orchestrator');
   const specialists = agents.filter((a) => a.agent_type === 'specialist');
@@ -34,7 +36,13 @@ export const SwarmBuilder: React.FC<SwarmBuilderProps> = ({
             para a equipe nos bastidores.
           </p>
         </div>
-        <div className="shrink-0">
+        <div className="shrink-0 flex flex-col sm:flex-row items-center gap-3">
+          <button
+            onClick={onCreateSpecialist}
+            className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-slate-800 px-6 py-3 font-bold text-white transition hover:bg-slate-700"
+          >
+            <Plus size={18} /> Novo Especialista
+          </button>
           <button
             onClick={onCreateNew}
             className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 font-bold text-white transition hover:bg-indigo-500 hover:shadow-lg hover:shadow-indigo-500/25"
@@ -116,12 +124,20 @@ export const SwarmBuilder: React.FC<SwarmBuilderProps> = ({
                   ) : (
                     <div className="flex h-24 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-200 bg-white/50 text-slate-400">
                       <p className="text-sm font-medium">Nenhum especialista conectado.</p>
-                      <button
-                        onClick={() => onSelectAgent(orch.id)}
-                        className="text-xs font-bold text-indigo-600 hover:underline"
-                      >
-                        Conectar especialistas
-                      </button>
+                      <div className="flex gap-4">
+                        <button
+                          onClick={() => onSelectAgent(orch.id)}
+                          className="text-xs font-bold text-indigo-600 hover:underline"
+                        >
+                          Conectar especialistas
+                        </button>
+                        <button
+                          onClick={onCreateSpecialist}
+                          className="text-xs font-bold text-slate-600 hover:underline"
+                        >
+                          Criar novo especialista
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

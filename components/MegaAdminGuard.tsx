@@ -5,7 +5,7 @@ import { getPanelHomePath } from './NicheRedirect';
 import FullScreenSpinner from './FullScreenSpinner';
 
 const isMegaAdmin = (profile: any) =>
-  profile?.role === 'superadmin' && !profile?.organization?.is_reseller;
+  ['superadmin', 'super_admin'].includes(profile?.role?.toLowerCase() || '') && !profile?.organization?.is_reseller;
 
 const MegaAdminGuard: React.FC<{ children: React.ReactNode }> = ({
   children,

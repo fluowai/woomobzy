@@ -10,7 +10,7 @@ vi.mock('node:dns/promises', () => ({
   },
 }));
 
-vi.mock('../../domainService.js', async (importOriginal) => {
+vi.mock('../domainService.js', async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...(actual as Record<string, unknown>),

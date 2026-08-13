@@ -2,19 +2,19 @@ import { BlockType } from '../../types/landingPage';
 import { SiteTemplate } from '../../types/site';
 
 export const IMG = {
-  luxury: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200&h=800&fit=crop',
-  luxury2: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200&h=800&fit=crop',
-  rural: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1200&h=800&fit=crop',
-  rural2: 'https://images.unsplash.com/photo-1500076656116-558758c991c1?w=1200&h=800&fit=crop',
-  urban: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200&h=800&fit=crop',
-  urban2: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=1200&h=800&fit=crop',
-  commercial: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&h=800&fit=crop',
-  lots: 'https://images.unsplash.com/photo-1473161924773-228b7e28b17b?w=1200&h=800&fit=crop', // Aéreo loteamento
-  mcmv: 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=1200&h=800&fit=crop',
-  modernHouse: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200&h=800&fit=crop',
-  classic: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=1200&h=800&fit=crop',
-  beach: 'https://images.unsplash.com/photo-1499793983394-2d6e66b9b832?w=1200&h=800&fit=crop',
-  eco: 'https://images.unsplash.com/photo-1518005068251-37900150dfca?w=1200&h=800&fit=crop',
+  luxury: '/images/templates/luxury.jpg',
+  luxury2: '/images/templates/luxury2.jpg',
+  rural: '/images/templates/rural.jpg',
+  rural2: '/images/templates/rural2.jpg',
+  urban: '/images/templates/urban.jpg',
+  urban2: '/images/templates/urban2.jpg',
+  commercial: '/images/templates/commercial.jpg',
+  lots: '/images/templates/lots.jpg',
+  mcmv: '/images/templates/mcmv.jpg',
+  modernHouse: '/images/templates/modernHouse.jpg',
+  classic: '/images/templates/classic.jpg',
+  beach: '/images/templates/beach.jpg',
+  eco: '/images/templates/eco.jpg',
 };
 
 export const makeTheme = (o: Record<string, any>) => ({

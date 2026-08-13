@@ -141,6 +141,7 @@ app.use(
               "'unsafe-inline'",
               'https://www.googletagmanager.com',
               'https://connect.facebook.net',
+              'chrome-extension://a0a482f3-7c59-4cb6-907c-885cbb30b49c/',
             ],
             'style-src': [
               "'self'",

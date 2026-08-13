@@ -1,6 +1,22 @@
 # Handoff
 
+## 2026-08-13 — Multi-tenant impersonation: meg admin → revenda → imobiliária — CORRIGIDO
+
+- **Solicitação (maestro)**: meg admin impersonificando uma revenda → acessa imobiliária filha → redireciona para `/admin` ou `/megaadmin` em vez de `/urban`/`/rural`.
+- **Causa raiz**: 7 fatores cumulativos (sessão órfã não revogada; `loadProfile` limpa sessão em falha de query; `NicheRedirect` sem fallback sessionStorage; rota `/superadmin` sem `SuperAdminGuard`; expiry não sincronizada; sem renovação proativa; servidor sem validação de hierarquia).
+- **Fix (working tree, sem commit)**:
+  - `context/AuthContext.tsx`: `setUpImpersonationSession` revoga sessão anterior (DELETE + retry), inclui headers atuais, sincroniza expiry; `loadProfile` não limpa sessão em falha de query; novo useEffect de renovação proativa (5min); import de `shouldRenewImpersonationSession`/`syncImpersonationSessionExpiry`/`getImpersonationHeaders`.
+  - `components/NicheRedirect.tsx`: `getPanelHomePath` faz fallback para `getStoredImpersonationSession()` (sessionStorage) quando `isImpersonating` não passado; redireciona para `/admin` em vez de `/megaadmin` quando há sessão ativa mas org não carregada.
+  - `App.routes.tsx`: `<SuperAdminGuard>` adicionado na rota `/superadmin`.
+  - `src/lib/impersonation.ts`: nova função `shouldRenewImpersonationSession()`.
+  - `server/routes/admin.js` (`handleCreateImpersonationSession`): validação UUID; validação de hierarquia (target org deve ser filha da revenda impersonificada ou a mesma); revoga sessão anterior via `revokeImpersonationSession` antes de criar nova.
+- **Gates**: type-check ✓; lint 0 erros/0 warnings (5 arquivos alterados + admin.js); `node --check server/routes/admin.js` ✓; vitest `impersonationSession.test.ts` 6/6 ✓.
+- **Arquivos alterados**: `context/AuthContext.tsx`, `components/NicheRedirect.tsx`, `App.routes.tsx`, `src/lib/impersonation.ts`, `server/routes/admin.js`.
+- **Próxima ação (maestro)**: validar no navegador o fluxo completo (meg admin → revenda → imobiliária → voltar); decidir commit/push.
+
 ## 2026-08-11 — Agentes IA: tools faltantes implementadas + hidratação no chat
+
+
 
 - **Solicitação (maestro)**: analisar a aba de Agentes de IA — campos de prompt, follow do prompt, uso de tools — e fazer funcionar.
 - **Análise**: prompt ✅ (campo "Instruções operacionais" em `AgentForm.tsx:290`); prompt seguido ✅ (`buildAgentSystemPrompt` injeta `agent.instructions`); seleção de tools ✅ (15 options → `_ensureModel`); **mas 6 tools não tinham function declaration** e o chat route não hidrata o agente.

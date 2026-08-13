@@ -5,6 +5,7 @@ import FullScreenSpinner from './components/FullScreenSpinner';
 import ProtectedRoute from './components/ProtectedRoute';
 import NicheRedirect from './components/NicheRedirect';
 import MegaAdminGuard from './components/MegaAdminGuard';
+import SuperAdminGuard from './components/SuperAdminGuard';
 import SubscriptionGuard from './components/SubscriptionGuard';
 import PanelGuard from './components/PanelGuard';
 import RuralLayout from './components/RuralLayout';
@@ -410,7 +411,9 @@ const AppRoutes: React.FC = () => {
           path="/superadmin"
           element={
             <ProtectedRoute>
-              <SuperAdminLayout />
+              <SuperAdminGuard>
+                <SuperAdminLayout />
+              </SuperAdminGuard>
             </ProtectedRoute>
           }
         >

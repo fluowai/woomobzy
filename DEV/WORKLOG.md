@@ -1,6 +1,31 @@
 # DEV WORKLOG — Imobzy
 
-## [2026-08-11] Agentes IA — análise, implementação de tools faltantes e hidratação — IMPLEMENTADO
+## [2026-08-13] Multi-tenant impersonation: meg admin → revenda → imobiliária redireciona para /megaadmin — CORRIGIDO
+
+- **Solicitação (maestro)**: quando o mega admin loga em uma revenda e depois acessa uma imobiliária que pertence a ela, o sistema redireciona para `/admin` ou `/megaadmin` em vez de `/urban`/`/rural`.
+- **Causa raiz**: 7 problemas acumulados no fluxo de impersonificação aninhada (2º nível):
+
+  1. **`setUpImpersonationSession` (AuthContext.tsx:562)**: usava `fetch` raw sem incluir os headers de impersonificação atuais → o servidor não sabia que já havia uma sessão ativa da revenda → sessão da revenda ficava órfã (não revogada).
+  2. **`loadProfile` (AuthContext.tsx:180-187)**: em caso de falha na query de organização, chamava `clearImpersonationSession()` + `setIsImpersonating(false)` → o `getPanelHomePath` via para `/megaadmin`.
+  3. **`NicheRedirect.tsx:44`**: usava apenas `opts?.isImpersonating` (React state) sem fallback para `sessionStorage` → após reload, se o state não estava hidratado, redirecionava para `/megaadmin`.
+  4. **App.routes.tsx:409**: rota `/superadmin` não tinha `<SuperAdminGuard>` → sem validação de impersonificação no guard.
+  5. **`setUpImpersonationSession`**: não chamava `syncImpersonationSessionExpiry` após a criação da sessão → expiração local não sincronizada.
+  6. **`src/lib/impersonation.ts`**: sem função de renovação proativa → sessão podia expirar silenciosamente.
+  7. **`server/routes/admin.js`**: `handleCreateImpersonationSession` não validava hierarquia (revenda → imobiliária) nem revogava sessão anterior.
+
+- **Fix aplicado (working tree, sem commit)**:
+  1. `context/AuthContext.tsx` (`setUpImpersonationSession`): agora inclui headers de impersonificação atuais, revoga sessão anterior via `DELETE /api/admin/impersonations/current` com retry em caso de conflito (`IMPERSONATION_SESSION_FORBIDDEN`/`IMPERSONATION_CONFLICT`), e sincroniza expiry via `syncImpersonationSessionExpiry`.
+  2. `context/AuthContext.tsx` (`loadProfile`): em vez de `clearImpersonationSession()` + `setIsImpersonating(false)` em falha da query de org, mantém `setIsImpersonating(true)` e loga o erro sem limpar a sessão — a falha pode ser transitória.
+  3. `context/AuthContext.tsx`: novo `useEffect` de renovação proativa (`setInterval` 5min) — pinga `GET /api/admin/organizations` quando `shouldRenewImpersonationSession()` retorna true, mantendo a sessão viva via server-side auto-renew.
+  4. `components/NicheRedirect.tsx`: `getPanelHomePath` agora faz fallback para `getStoredImpersonationSession()` do `sessionStorage` quando `isImpersonating` não é passado explicitamente; se há sessão ativa mas org não carregada, redireciona para `/admin` (força recarregamento) em vez de `/megaadmin`.
+  5. `App.routes.tsx`: `<SuperAdminGuard>` adicionado na rota `/superadmin` (antes só `<ProtectedRoute>`).
+  6. `src/lib/impersonation.ts`: nova função `shouldRenewImpersonationSession()` — verifica se a sessão expira em ≤ 5 min.
+  7. `server/routes/admin.js` (`handleCreateImpersonationSession`): valida hierarquia — se já está impersonificando uma revenda, a nova org deve ser filha (child) ou a mesma; senão retorna `403 IMPERSONATION_HIERARCHY_MISMATCH`. Revoga a sessão anterior antes de criar a nova (via `revokeImpersonationSession`). Adicionada validação UUID.
+
+- **Gates**: `npm run type-check` ✓ (0 erros); `npm run lint` ✓ (0 erros, 0 warnings nos arquivos alterados); `node --check server/routes/admin.js` ✓; `vitest src/test/impersonationSession.test.ts` ✓ 6/6.
+- **Próximo passo (maestro)**: validar no navegador o fluxo completo (meg admin → revenda → imobiliária → voltar); decidir commit/push.
+
+
 
 - **Solicitação (maestro)**: analisar a aba de Agentes de IA; verificar se há campos para o prompt, se o agente segue o prompt e se consegue usar as ferramentas determinadas; fazer funcionar.
 - **Análise realizada**:

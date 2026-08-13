@@ -14,9 +14,12 @@ import {
 } from '../src/lib/api';
 import {
   clearImpersonationSession,
+  getImpersonationHeaders,
   getStoredImpersonationSession,
   isImpersonationErrorCode,
   persistImpersonationSession,
+  shouldRenewImpersonationSession,
+  syncImpersonationSessionExpiry,
 } from '../src/lib/impersonation';
 import { supabase } from '../services/supabase';
 import { User } from '@supabase/supabase-js';
@@ -179,11 +182,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
             setIsImpersonating(true);
           } else {
             logger.warn(
-              '⚠️ [AuthContext] Impersonation failed or org not found:',
+              '⚠️ [AuthContext] Impersonation org lookup failed — keeping session for retry:',
               orgError
             );
-            clearImpersonationSession();
-            setIsImpersonating(false);
+            // NÃO limpa a sessão: a falha pode ser transitória (timeout,
+            // renew da JWT). Mantém isImpersonating=true e guarda o orgId
+            // para que NicheRedirect redirecione para o painel correto.
+            setIsImpersonating(true);
           }
         } else {
           setIsImpersonating(false);
@@ -294,6 +299,44 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
     return () => subscription.unsubscribe();
   }, [loadProfile]);
+
+   // Renovação proativa: ping leve ao backend para manter a sessão de
+  // impersonificação viva. Roda a cada 5 min quando há impersonificação ativa.
+   const renewalInterval = React.useRef<number | null>(null);
+   useEffect(() => {
+     if (!isImpersonating) {
+       if (renewalInterval.current) {
+         clearInterval(renewalInterval.current);
+         renewalInterval.current = null;
+       }
+       return;
+     }
+
+     renewalInterval.current = window.setInterval(async () => {
+       if (!shouldRenewImpersonationSession()) return;
+       try {
+         const { data: { session } } = await supabase.auth.getSession();
+         if (!session?.access_token) return;
+         const headers = getImpersonationHeaders();
+         if (!headers['x-impersonation-session-id']) return;
+         await fetch(getApiUrl('/api/admin/organizations'), {
+           credentials: 'same-origin',
+           headers: {
+             Authorization: `Bearer ${session.access_token}`,
+             ...headers,
+           },
+         });
+       } catch {
+         // Silencioso: falha de renovação não deve interromper o UX
+       }
+     }, 5 * 60 * 1000);
+
+     return () => {
+       if (renewalInterval.current) {
+         clearInterval(renewalInterval.current);
+       }
+     };
+   }, [isImpersonating]);
 
   const signIn = async (email: string, password: string) => {
     clearImpersonationSession();
@@ -512,7 +555,13 @@ async function setUpImpersonationSession(orgId: string, reason: string) {
     data: { session },
   } = await supabase.auth.getSession();
 
-  const response = await fetch(getApiUrl('/api/admin/impersonations'), {
+  // Se já existe uma sessão de impersonificação ativa, inclua os headers
+  // atuais para que o servidor saiba que há uma impersonificação em andamento.
+  // Isso permite que o servidor revogue a sessão anterior antes de criar a nova,
+  // evitando sessões órfãs (problema do acesso aninhado: revenda → imobiliária).
+  const currentImpersonationHeaders = getImpersonationHeaders();
+
+  let response = await fetch(getApiUrl('/api/admin/impersonations'), {
     method: 'POST',
     credentials: 'same-origin',
     headers: {
@@ -520,6 +569,7 @@ async function setUpImpersonationSession(orgId: string, reason: string) {
       ...(session?.access_token
         ? { Authorization: `Bearer ${session.access_token}` }
         : {}),
+      ...currentImpersonationHeaders,
     },
     body: JSON.stringify({
       organizationId: orgId,
@@ -527,10 +577,63 @@ async function setUpImpersonationSession(orgId: string, reason: string) {
     }),
   });
 
+  // Se o servidor rejeitar por sessão conflitante (já existe uma ativa),
+  // tente revogar a sessão anterior e recriar.
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    if (
+      payload?.code === 'IMPERSONATION_SESSION_FORBIDDEN' ||
+      payload?.code === 'IMPERSONATION_CONFLICT'
+    ) {
+      logger.info(
+        '🔄 Revogando sessão de impersonificação anterior antes de recriar...'
+      );
+      const existingSession = getStoredImpersonationSession();
+      if (existingSession) {
+        try {
+          await fetch(getApiUrl('/api/admin/impersonations/current'), {
+            method: 'DELETE',
+            credentials: 'same-origin',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(session?.access_token
+                ? {
+                    Authorization: `Bearer ${session.access_token}`,
+                  }
+                : {}),
+              ...getImpersonationHeaders(),
+            },
+          });
+        } catch {
+          // ignora erro de revogação — tenta criar mesmo assim
+        }
+      }
+      clearImpersonationSession();
+
+      // Retry: nova requisição sem headers da sessão anterior
+      response = await fetch(getApiUrl('/api/admin/impersonations'), {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : {}),
+        },
+        body: JSON.stringify({
+          organizationId: orgId,
+          reason,
+        }),
+      });
+    }
+  }
+
   const payload = await response.json().catch(() => ({}));
   if (!response.ok || !payload?.session) {
     throw new Error(payload?.error || 'Erro ao iniciar o modo suporte');
   }
+
+  syncImpersonationSessionExpiry(payload?.session?.expiresAt);
 
   return payload.session as {
     id: string;

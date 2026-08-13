@@ -1,6 +1,32 @@
 # Verificação
 
-## 2026-08-11 — OkaPublicSite e MegaTheme com dados reais ✓ (código)
+## 2026-08-13 — Multi-tenant impersonation: meg admin → revenda → imobiliária — CORRIGIDO
+
+- **Sintoma**: meg admin impersonificando uma revenda e depois acessando uma imobiliária filha da revenda → redirecionado para `/admin` ou `/megaadmin` em vez de `/urban`/`/rural`.
+- **Causa raiz (7 fatores cumulativos)**:
+  1. `setUpImpersonationSession` (`AuthContext.tsx:562`) usava `fetch` raw sem incluir os headers de impersonificação atuais → servidor não sabia que havia sessão anterior → não revogava → sessão órfã.
+  2. `loadProfile` (`AuthContext.tsx:180-187`) limpava a sessão e setava `isImpersonating=false` em qualquer falha da query de organização → `getPanelHomePath` via para `/megaadmin`.
+  3. `NicheRedirect.tsx:44` usava apenas `opts?.isImpersonating` (React state) sem fallback `sessionStorage` → após reload, state ainda não hidratado → `/megaadmin`.
+  4. `App.routes.tsx:409` — rota `/superadmin` sem `<SuperAdminGuard>`.
+  5. `setUpImpersonationSession` não sincronizava `expiresAt` via `syncImpersonationSessionExpiry`.
+  6. Sem renovação proativa → sessão podia expirar silenciosamente entre navegações.
+  7. `handleCreateImpersonationSession` (`server/routes/admin.js`) não validava hierarquia nem revogava sessão anterior.
+- **Fix aplicado (working tree)**:
+  1. `AuthContext.tsx` (`setUpImpersonationSession`): inclui headers atuais; revoga sessão anterior (DELETE + retry em conflito); sincroniza expiry.
+  2. `AuthContext.tsx` (`loadProfile`): em falha da query de org, mantém `isImpersonating=true` (não limpa sessão).
+  3. `AuthContext.tsx`: novo `useEffect` de renovação proativa (5 min interval).
+  4. `NicheRedirect.tsx`: `getPanelHomePath` faz fallback para `getStoredImpersonationSession()`; se sessão ativa sem org carregada → `/admin` (força reload) em vez de `/megaadmin`.
+  5. `App.routes.tsx`: `<SuperAdminGuard>` adicionado em `/superadmin`.
+  6. `src/lib/impersonation.ts`: nova `shouldRenewImpersonationSession()`.
+  7. `server/routes/admin.js` (`handleCreateImpersonationSession`): valida hierarquia (filha da revenda); revoga sessão anterior; validação UUID.
+- **Evidência (estática)**:
+  - `npm run type-check` → **0 erros** ✓
+  - `npx eslint context/AuthContext.tsx components/NicheRedirect.tsx App.routes.tsx src/lib/impersonation.ts src/lib/api.ts server/routes/admin.js` → **0 erros, 0 warnings** ✓
+  - `node --check server/routes/admin.js` → **OK** ✓
+  - `npx vitest run src/test/impersonationSession.test.ts` → **6/6 testes aprovados** ✓
+- **Pendente (maestro)**: validar no navegador o fluxo completo (meg admin → revenda → imobiliária → voltar para a revenda). Commit + push a decidir.
+
+
 
 - **Fix**: `views/OkaPublicSite.tsx` e `src/views/sites/megainvestimentos/MegaTheme.tsx` deixam de usar imóveis hardcoded e carregam de `public_available_properties` via `get_tenant_public` (RPC com GRANT anon); `cities`/`propertyTypes` derivados dos dados; fallback de imagem para `HERO_IMAGE`.
 - **Evidência**: `npm run type-check` ✓ (0 erros).

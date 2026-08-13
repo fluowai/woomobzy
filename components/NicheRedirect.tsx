@@ -2,6 +2,7 @@ import { logger } from '@/utils/logger';
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getStoredImpersonationSession } from '../src/lib/impersonation';
 import FullScreenSpinner from './FullScreenSpinner';
 
 export function isRuralOrganization(
@@ -40,12 +41,18 @@ export function getPanelHomePath(
   if (!profile) return '/';
 
   const role = String(profile.role || '').toLowerCase();
-  const isImpersonating = opts?.isImpersonating;
+
+  // Fallback: se isImpersonating nao foi passado explicitamente,
+  // verifique o sessionStorage — evita redirecionamento para /megaadmin
+  // quando a sessao React ainda nao foi hidratada apos reload.
+  const storedSession = getStoredImpersonationSession();
+  const isImpersonating = opts?.isImpersonating ?? !!storedSession;
 
   if (role === 'superadmin' || role === 'super_admin') {
     if (!isImpersonating) {
       return !profile.organization?.is_reseller ? '/megaadmin' : '/superadmin';
     }
+    // Superadmin em modo impersonificacao → acessa o painel da org impersonada
     if (profile.organization) {
       if (profile.organization.is_reseller) {
         return '/superadmin';
@@ -58,7 +65,9 @@ export function getPanelHomePath(
         ? '/rural'
         : '/urban';
     }
-    return !profile.organization?.is_reseller ? '/megaadmin' : '/superadmin';
+    // Sem organization carregada, mas sessao de impersonificacao ativa:
+    // redirecione para /admin para forcar recarregamento do profile
+    return '/admin';
   }
 
   if (!profile.organization_id) return '/onboarding';

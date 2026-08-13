@@ -148,3 +148,12 @@ export function syncImpersonationSessionExpiry(expiresAt?: string | null) {
 export function isImpersonationErrorCode(code?: string | null): boolean {
   return Boolean(code && IMPERSONATION_ERROR_CODES.has(code));
 }
+
+const RENEW_THRESHOLD_MS = 5 * 60 * 1000;
+
+export function shouldRenewImpersonationSession(): boolean {
+  const session = getStoredImpersonationSession({ allowExpired: true });
+  if (!session) return false;
+  const expiresAtMs = new Date(session.expiresAt).getTime();
+  return expiresAtMs - Date.now() <= RENEW_THRESHOLD_MS;
+}

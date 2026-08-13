@@ -648,7 +648,76 @@ async function handleCreateImpersonationSession(
     return res.status(400).json({ error: 'ID da organizacao e obrigatorio' });
   }
 
+  if (!UUID_REGEX.test(organizationId)) {
+    return res.status(400).json({ error: 'ID da organizacao invalido' });
+  }
+
   try {
+    // Se ja esta impersonificando, valide a hierarquia:
+    // se a org alvo NAO pertence a revenda atualmente impersonificada,
+    // rejeice. Caso contrario, revogue a sessao anterior antes de criar a nova.
+    if (req.isImpersonating && req.impersonationSessionId) {
+      const { data: currentOrg, error: currentOrgError } = await supabase
+        .from('organizations')
+        .select('id, name, is_reseller, parent_id')
+        .eq('id', req.orgId)
+        .maybeSingle();
+
+      if (currentOrgError) throw currentOrgError;
+
+      if (currentOrg && currentOrg.is_reseller) {
+        // Revenda atualmente impersonificada: a nova org deve ser sua filha
+        const { data: targetOrg, error: targetOrgError } = await supabase
+          .from('organizations')
+          .select('id, name, is_reseller, parent_id')
+          .eq('id', organizationId)
+          .maybeSingle();
+
+        if (targetOrgError) throw targetOrgError;
+        if (!targetOrg) {
+          return res.status(404).json({ error: 'Organizacao alvo nao encontrada' });
+        }
+
+        const isChild = targetOrg.parent_id === currentOrg.id;
+        const isSameOrg = targetOrg.id === currentOrg.id;
+
+        if (!isChild && !isSameOrg) {
+          return res.status(403).json({
+            error:
+              'Esta imobiliaria nao pertence a esta revenda. Pare a impersonificacao atual antes de acessar outra revenda.',
+            code: 'IMPERSONATION_HIERARCHY_MISMATCH',
+          });
+        }
+
+        // Revoga a sessao anterior (reseller session) antes de criar a nova
+        logger.info(
+          `[Admin] Revogando sessao de impersonificacao anterior (${req.impersonationSessionId}) antes de criar nova para org ${organizationId}`,
+          {
+            actorId: req.authUserId,
+            previousOrgId: req.orgId,
+            previousOrgName: currentOrg.name,
+            targetOrgId: organizationId,
+          }
+        );
+        try {
+          await revokeImpersonationSession(supabase, {
+            actorUserId: req.authUserId,
+            sessionId: req.impersonationSessionId,
+            sessionSecret: readImpersonationSessionHeaders(req.headers).sessionSecret,
+            ipAddress: req.ip,
+          });
+        } catch (revokeError) {
+          logger.warn(
+            '[Admin] Falha ao revogar sessao de impersonificacao anterior (continuando):',
+            revokeError?.message || revokeError
+          );
+        }
+
+        // Limpa o cache de perfil para este usuario
+        clearProfileCache(req.authUserId, req.user?.email);
+      }
+    }
+
     const { data: org, error } = await supabase
       .from('organizations')
       .select('id, name')

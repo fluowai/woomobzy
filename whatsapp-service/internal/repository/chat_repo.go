@@ -367,7 +367,8 @@ func (r *ChatRepo) UpdateNameForTenant(ctx context.Context, chatID, instanceID, 
 }
 
 // MergeJIDs moves messages from alternate one-to-one JIDs into the canonical chat.
-func (r *ChatRepo) MergeJIDs(ctx context.Context, instanceID, canonicalChatID uuid.UUID, alternateJIDs []string) error {
+func (r *ChatRepo) MergeJIDs(ctx context.Context, instanceID, canonicalChatID uuid.UUID, alternateJIDs []string) ([]uuid.UUID, error) {
+	var mergedIDs []uuid.UUID
 	for _, jid := range alternateJIDs {
 		if jid == "" {
 			continue
@@ -391,7 +392,7 @@ func (r *ChatRepo) MergeJIDs(ctx context.Context, instanceID, canonicalChatID uu
 			WHERE instance_id = $2 AND chat_id = $3`,
 			canonicalChatID, instanceID, duplicateID,
 		); err != nil {
-			return fmt.Errorf("failed to merge duplicate chat messages: %w", err)
+			return mergedIDs, fmt.Errorf("failed to merge duplicate chat messages: %w", err)
 		}
 
 		if _, err := r.db.Exec(ctx, `
@@ -399,9 +400,10 @@ func (r *ChatRepo) MergeJIDs(ctx context.Context, instanceID, canonicalChatID uu
 			WHERE id = $1`,
 			duplicateID,
 		); err != nil {
-			return fmt.Errorf("failed to delete duplicate chat: %w", err)
+			return mergedIDs, fmt.Errorf("failed to delete duplicate chat: %w", err)
 		}
+		mergedIDs = append(mergedIDs, duplicateID)
 	}
 
-	return nil
+	return mergedIDs, nil
 }

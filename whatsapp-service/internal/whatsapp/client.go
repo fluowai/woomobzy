@@ -725,7 +725,8 @@ func (c *Client) handleMessage(evt *events.Message) {
 		c.logger.Error("Failed to upsert chat", zap.Error(err))
 		return
 	}
-	if err := c.chatRepo.MergeJIDs(ctx, c.instanceID, chat.ID, alternateJIDs); err != nil {
+	mergedIDs, err := c.chatRepo.MergeJIDs(ctx, c.instanceID, chat.ID, alternateJIDs)
+	if err != nil {
 		c.logger.Warn("Failed to merge duplicate chat JIDs",
 			zap.String("instance", c.instanceID.String()),
 			zap.String("chat_jid", chatJID),
@@ -790,8 +791,9 @@ func (c *Client) handleMessage(evt *events.Message) {
 
 	// Broadcast via WebSocket
 	c.broadcastEvent("new_message", models.NewMessageEvent{
-		Message: *msg,
-		Chat:    *chat,
+		Message:       *msg,
+		Chat:          *chat,
+		MergedChatIDs: mergedIDs,
 		Instance: struct {
 			ID   uuid.UUID `json:"id"`
 			Name string    `json:"name"`

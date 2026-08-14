@@ -206,9 +206,10 @@ type WSEvent struct {
 
 // NewMessageEvent is the data payload for a new message WebSocket event
 type NewMessageEvent struct {
-	Message  Message `json:"message"`
-	Chat     Chat    `json:"chat"`
-	Instance struct {
+	Message       Message          `json:"message"`
+	Chat          Chat             `json:"chat"`
+	MergedChatIDs []uuid.UUID      `json:"merged_chat_ids,omitempty"`
+	Instance      struct {
 		ID   uuid.UUID `json:"id"`
 		Name string    `json:"name"`
 	} `json:"instance"`

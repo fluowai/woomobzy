@@ -227,19 +227,14 @@ export function useWhatsAppInbox(
     } else {
       setMessages([]);
     }
-    if (selectedChat) {
-      loadMessages(selectedChat.id, selectedChat.instance_id);
-    } else {
-      setMessages([]);
-    }
-  }, [selectedChat]);
+  }, [selectedChat, selectedInstance?.id]);
 
   // WebSocket event handlers
   useEffect(() => {
     if (!isConnected || !webSocketEnabled) return;
 
     const unsubMessage = on('new_message', (data: any) => {
-      const { message, chat } = data;
+      const { message, chat, merged_chat_ids } = data;
       // Accept messages from any connected instance in this tenant
       noteInstanceActivity(message?.instance_id || chat?.instance_id);
       if (!isSupportedChat(chat)) return;
@@ -254,14 +249,22 @@ export function useWhatsAppInbox(
         media_status: message.media_id ? 'ready' : undefined,
       };
 
+      const isMerged = merged_chat_ids && selectedChat && merged_chat_ids.includes(selectedChat.id);
+
       // Update chat list
       setChats((prev) => {
-        const existing = prev.find((c) => c.id === chat.id);
+        let currentChats = prev;
+        if (merged_chat_ids && merged_chat_ids.length > 0) {
+          currentChats = currentChats.filter((c) => !merged_chat_ids.includes(c.id));
+        }
+
+        const existing = currentChats.find((c) => c.id === chat.id);
         const unreadCount =
-          selectedChat?.id === chat.id ? 0 : chat.unread_count;
+          (selectedChat?.id === chat.id || isMerged) ? 0 : chat.unread_count;
+
         if (existing) {
           return deduplicateAndSortChats(
-            prev.map((c) =>
+            currentChats.map((c) =>
               c.id === chat.id
                 ? {
                     ...c,
@@ -280,13 +283,16 @@ export function useWhatsAppInbox(
               unread_count: unreadCount,
               last_message: normalizeMessagePreview(chat.last_message),
             },
-            ...prev,
+            ...currentChats,
           ]);
         }
       });
 
-      // Add message to current conversation
-      if (selectedChat && message.chat_id === selectedChat.id) {
+      if (isMerged) {
+        // Chat was merged, swap selected chat to the new canonical chat
+        setSelectedChat(unifiedChat);
+      } else if (selectedChat && message.chat_id === selectedChat.id) {
+        // Add message to current conversation
         setMessages((prev) => {
           // Avoid duplicates
           if (prev.find((m) => m.message_id === message.message_id))

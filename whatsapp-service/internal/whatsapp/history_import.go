@@ -193,7 +193,7 @@ func (c *Client) saveHistoricalMessage(ctx context.Context, evt *events.Message,
 		c.logger.Warn("Failed to upsert imported chat", zap.Error(err))
 		return uuid.Nil, false
 	}
-	if err := c.chatRepo.MergeJIDs(ctx, c.instanceID, chat.ID, alternateJIDs); err != nil {
+	if _, err := c.chatRepo.MergeJIDs(ctx, c.instanceID, chat.ID, alternateJIDs); err != nil {
 		c.logger.Warn("Failed to merge imported duplicate chat JIDs", zap.Error(err))
 	}
 

@@ -45,6 +45,7 @@ import {
   normalizeDomain,
   removeDockerDomain,
 } from '../domainService.js';
+import { logger } from '../utils/logger.js';
 
 const router = express.Router();
 const UUID_REGEX =

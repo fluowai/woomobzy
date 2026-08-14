@@ -1,5 +1,30 @@
 # Verificação
 
+## 2026-08-14 — AI Agents: fix orchestrator creation and sub-agent selection navigation
+
+- **Sintoma**: o orquestrador não permite criar agentes, não abre o formulário (janela) e não deixa selecionar quais agentes fazem parte da orquestração.
+- **Causa raiz (3 bugs de navegação no frontend)**:
+  1. `views/AIAgents.tsx` — botão "Novo agente" no header chamava `startNew()` sem alternar `mainTab` para `'specialists'`. Se o usuário estava na aba "Swarms Autônomos" (default), o `SwarmBuilder` continuava renderizado e o formulário de criação/edição nunca aparecia.
+  2. `views/AIAgents.tsx` — `SwarmBuilder.onSelectAgent` usava `selectAgent()` que via para `view='dashboard'`. Clicar num orquestrador ou no link "Conectar especialistas" abria o **dashboard** em vez do **formulário de edição**, onde está a seção "Equipe de Especialistas (Swarm)" com os checkboxes para selecionar sub-agentes.
+  3. `views/AIAgents.tsx` — `startNew()` não recebia o tipo de agente como parâmetro, exigindo sets manuais de `draft.agent_type` nos callers.
+- **Fix aplicado**:
+  1. `startNew(type)` agora aceita `'orchestrator' | 'specialist'` (default `'orchestrator'`) e sempre chama `setMainTab('specialists')` — o formulário aparece independentemente da aba atual.
+  2. Nova função `editAgent(id)` que vai direto para `view='builder'` (formulário de edição) — usada pelo `SwarmBuilder.onSelectAgent`, que antes via para o dashboard.
+  3. `applyPreset()` também chama `setMainTab('specialists')` para robustez.
+  4. Botão "Novo agente" no header chama `startNew('orchestrator')` explicitamente.
+- **Evidência**:
+  - `npm run type-check` → **0 erros** ✓ (exit 0, sem output)
+  - `npx eslint views/AIAgents.tsx` → **0 erros, 0 warnings** ✓
+  - CI GitHub Actions (#1785 push): frontend build ✅, API build ✅, 256 testes ✅; única falha é `whatsapp-go` (Go build no `Dockerfile.whatsapp`, pré-existente e desrelacionada)
+  - Commit `c92099e` em `codex/main-whatsapp-media-hotfix` — push ✅
+- **Fluxo corrigido (validar no navegador)**:
+  1. Aba "Swarms" → clicar "Novo Orquestrador" → formulário aparece com seção Swarm visível ✅
+  2. Navegar para "Agentes Especialistas" → criar especialistas ✅
+  3. Voltar para aba "Swarms" → clicar no orquestrador ou "Conectar especialistas" → abre o **formulário de edição** com a lista de especialistas para selecionar ✅
+  4. Marcar especialistas → salvar → orquestrador com sub-agentes conectados ✅
+- **Arquivos alterados**: `views/AIAgents.tsx` (apenas frontend)
+- **Próxima ação (maestro)**: validar visualmente no navegador o fluxo completo de criar orquestrador + especialistas + conectar.
+
 ## 2026-08-13 — Multi-tenant impersonation: meg admin → revenda → imobiliária — CORRIGIDO
 
 - **Sintoma**: meg admin impersonificando uma revenda e depois acessando uma imobiliária filha da revenda → redirecionado para `/admin` ou `/megaadmin` em vez de `/urban`/`/rural`.

@@ -1,5 +1,24 @@
 # Handoff
 
+## 2026-08-14 — AI Agents: fix orchestrator creation and sub-agent selection navigation
+
+- **Status**: ✅ COMMITADO e PUSHADO (`c92099e` em `codex/main-whatsapp-media-hotfix`)
+- **Solicitação (maestro)**: o orquestrador não permite criar agentes, não abre windows e não deixa selecionar quais agentes fazem parte da orquestração.
+- **Causa raiz**: 3 bugs de navegação em `views/AIAgents.tsx`:
+  1. Botão "Novo agente" no header não alternava a aba (`mainTab`) — formulário nunca aparecia na aba "Swarms".
+  2. `SwarmBuilder.onSelectAgent` via para o dashboard em vez do formulário de edição — a seção "Equipe de Especialistas (Swarm)" com checkboxes ficava inacessível.
+  3. `startNew()` não parametrizava o tipo de agente.
+- **Fix (1 arquivo)**:
+  - `views/AIAgents.tsx`:
+    - `startNew(type?)` agora aceita `'orchestrator' | 'specialist'` (default `'orchestrator'`) + `setMainTab('specialists')`.
+    - Nova função `editAgent(id)` → `view='builder'` (formulário de edição, não dashboard).
+    - `SwarmBuilder.onSelectAgent` usa `editAgent()` → clicar orquestrador/"Conectar especialistas" abre o formulário de edição com a seleção de especialistas.
+    - `applyPreset()` chama `setMainTab('specialists')` para robustez.
+    - Header "Novo agente" → `startNew('orchestrator')` explicitamente.
+- **Gates**: type-check ✓, eslint 0 erros/0 warnings, CI frontend+API build ✅, 256 testes ✅. Falha CI no `whatsapp-go` é pré-existente (Dockerfile.whatsapp, Go) e desrelacionada.
+- **Pendente (maestro)**: validar no navegador: criar orquestrador → criar especialistas → no SwarmBuilder, clicar "Conectar especialistas" → marcar especialistas no formulário → salvar → ver sub-agentes conectados no SwarmBuilder.
+- **Contexto adicional**: a seção de seleção de especialistas já existia em `AgentForm.tsx` (swarm section, lines 302-407) e o backend já persiste `agent_type`/`sub_agents` em `handoff_rules.__operational360` (`helpers.js`). O problema era só navegação — o usuário nunca chegava ao formulário de edição a partir do SwarmBuilder.
+
 ## 2026-08-13 — Multi-tenant impersonation: meg admin → revenda → imobiliária — CORRIGIDO
 
 - **Solicitação (maestro)**: meg admin impersonificando uma revenda → acessa imobiliária filha → redireciona para `/admin` ou `/megaadmin` em vez de `/urban`/`/rural`.

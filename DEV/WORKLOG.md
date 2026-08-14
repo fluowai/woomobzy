@@ -1259,3 +1259,18 @@ Cinco endpoints estavam falhando no console:
 - **Gates**: type-check 0 erros; eslint 0 erros nos arquivos alterados (2 warnings pre-existentes no LeadDetailsModal); build 1m40s OK; vitest 36 arquivos / 254 testes OK.
 - **Pendente**: aplicar 20260804_create_agendas.sql em dev/prod (exec_sql); validar no navegador /urban/agenda e /rural/agenda (criar agenda -> vincular corretor -> agendar visita a imovel); conferir visual e filtros.
 - Nenhum commit/push/deploy executado.
+
+## [2026-08-14] AI Agents: fix orchestrator creation and sub-agent selection navigation
+
+- **Solicitação (maestro)**: o orquestrador não permite criar agentes, não abre janelas e não deixa selecionar quais agentes fazem parte da orquestração.
+- **Causa raiz**: 3 bugs de navegação em `views/AIAgents.tsx`:
+  1. Botão "Novo agente" no header chamava `startNew()` sem alternar `mainTab` para `'specialists'` — se o usuário estava na aba "Swarms", o formulário de edição nunca aparecia.
+  2. `SwarmBuilder.onSelectAgent` usava `selectAgent()` que via para `view='dashboard'` — ao clicar em um orquestrador, o usuário via o dashboard em vez do formulário onde seleciona sub-agentes.
+  3. O link "Conectar especialistas" no `SwarmBuilder` tinha o mesmo problema — ia para o dashboard em vez do formulário de edição.
+- **Fix aplicado**:
+  1. `startNew()` agora aceita `(type: 'orchestrator' | 'specialist' = 'orchestrator')`, sempre chama `setMainTab('specialists')`, e define `agent_type` via draft.
+  2. Adicionada função `editAgent(id)` que vai direto para `view='builder'` (formulário de edição) sem passar pelo dashboard.
+  3. `SwarmBuilder.onSelectAgent` usa `editAgent(id)` em vez de `selectAgent(id)`.
+  4. `applyPreset()` também chama `setMainTab('specialists')` para robustez.
+- **Gates**: type-check 0 erros; eslint 0 erros nos arquivos alterados; build frontend ✅ e API ✅ no CI; 256 testes ✅. A única falha CI é `whatsapp-go` (Go build, Dockerfile.whatsapp) — pré-existente e desrelacionada.
+- **Commit**: `c92099e` em `codex/main-whatsapp-media-hotfix` — push ✅.

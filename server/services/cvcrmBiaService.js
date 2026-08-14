@@ -106,7 +106,8 @@ export async function syncLeadAndInteractionCvcrm(
   summaryText,
   cvcrmKey,
   cvcrmEmail,
-  cvcrmBaseUrl
+  cvcrmBaseUrl,
+  idSituacao = null
 ) {
   if (!cvcrmKey || !cvcrmEmail) {
     logger.warn(
@@ -118,21 +119,45 @@ export async function syncLeadAndInteractionCvcrm(
   try {
     const endpoint = `${cvcrmBaseUrl.replace(/\/$/, '')}/api/cvio/lead`;
 
+    // Separa o telefone para o padrão do CVcrm (DDI + Número)
+    let rawPhone = biaPayload.phoneNumber || biaPayload.phone || '';
+    let telefone_ddi = '';
+    let telefone = rawPhone;
+    
+    if (rawPhone.startsWith('+')) {
+      const match = rawPhone.match(/^(\+\d{2,3})(\d+)$/);
+      if (match) {
+        telefone_ddi = match[1];
+        telefone = match[2];
+      }
+    }
+
     const payload = {
       nome: biaPayload.name || 'Lead via WhatsApp (BIA)',
-      telefone: biaPayload.phoneNumber || biaPayload.phone || '',
+      telefone: telefone,
       email: biaPayload.email || '',
       origem: 'WhatsApp BIA',
       empreendimento:
         biaPayload.metadata?.empreendimento || 'Bosque dos Pássaros',
       permitir_alteracao: 'true', // CVIO exige string ou boolean 'true' para alterar
-      interacoes: [
+    };
+
+    if (telefone_ddi) {
+      payload.telefone_ddi = telefone_ddi;
+    }
+
+    if (idSituacao) {
+      payload.idsituacao = idSituacao;
+    }
+
+    if (summaryText) {
+      payload.interacoes = [
         {
           tipo: 'A', // Anotação
           descricao: summaryText,
         },
-      ],
-    };
+      ];
+    }
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -176,14 +201,20 @@ export async function handleCvcrmWebhook(tenantId, payload) {
     `[CVCrm Webhook] Received new lead payload for tenant ${tenantId}`
   );
 
-  const { biaKey, biaBaseUrl } = await getTenantIntegrationConfigs(tenantId);
+  const { biaKey, biaBaseUrl, cvcrmKey, cvcrmEmail, cvcrmBaseUrl } = await getTenantIntegrationConfigs(tenantId);
 
-  // Dispara assincronamente
-  return sendLeadToBia(payload, biaKey, biaBaseUrl);
+  // 1. Envia para a BIA para iniciar o atendimento via WhatsApp
+  await sendLeadToBia(payload, biaKey, biaBaseUrl);
+
+  // 2. Atualiza a situação no CVcrm para "Em Atendimento IA" (idsituacao: 2)
+  const mappedBiaPayload = mapCvcrmLeadToBia(payload);
+  await syncLeadAndInteractionCvcrm(mappedBiaPayload, null, cvcrmKey, cvcrmEmail, cvcrmBaseUrl, 2);
+
+  return true;
 }
 
 /**
- * Lida com o webhook recebido da BIA (Resumo de Atendimento Concluído)
+ * Lida com o webhook recebido da BIA (Resumo de Atendimento Concluído ou em Andamento)
  */
 export async function handleBiaWebhook(tenantId, payload) {
   logger.info(`[BIA Webhook] Received chat summary for tenant ${tenantId}`);
@@ -193,14 +224,19 @@ export async function handleBiaWebhook(tenantId, payload) {
 
   const summaryText = payload.summary || payload.message;
 
-  // A nova lógica do CVIO permite enviar tudo em uma única requisição.
-  // Se o lead já existe (por email ou telefone), ele adiciona a interação.
-  // Se não existe, ele cria e já adiciona a interação.
+  // Verifica se a BIA finalizou o atendimento (isso precisa ser configurado lá no fluxo do Xano)
+  const isFinished = payload.status === 'finished' || payload.metadata?.finished === true;
+  
+  // Status 12 = Em Atendimento Corretor / Status 2 = Em Atendimento IA
+  const idSituacao = isFinished ? 12 : 2;
+
+  // Sincroniza lead, adiciona histórico e atualiza a situação
   return syncLeadAndInteractionCvcrm(
     payload,
     summaryText,
     cvcrmKey,
     cvcrmEmail,
-    cvcrmBaseUrl
+    cvcrmBaseUrl,
+    idSituacao
   );
 }

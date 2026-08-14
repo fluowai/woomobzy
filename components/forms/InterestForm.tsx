@@ -35,9 +35,7 @@ const InterestForm: React.FC = () => {
         `Tipo: ${formData.type}`,
         formData.location ? `Região de interesse: ${formData.location}` : null,
         formData.minArea ? `Área mínima: ${formData.minArea} ha` : null,
-        formData.maxBudget
-          ? `Orçamento máximo: ${formData.maxBudget}`
-          : null,
+        formData.maxBudget ? `Orçamento máximo: ${formData.maxBudget}` : null,
         formData.message ? `Detalhes: ${formData.message}` : null,
       ]
         .filter(Boolean)

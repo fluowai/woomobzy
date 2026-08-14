@@ -798,11 +798,12 @@ export const crmContactApi = {
     }) as Promise<CrmContactResponse>,
 
   transfer: (payload: {
-    phone: string;
-    name?: string;
+    phone?: string;
     chat_jid?: string;
+    assigned_to?: string;
+    queue_id?: string;
+    name?: string;
     source?: string;
-    assigned_to: string;
   }) =>
     callApi('/api/crm/whatsapp/transfer', {
       method: 'POST',
@@ -967,7 +968,7 @@ export function formatPhoneFriendly(phone: string): string {
 export function formatPhoneVisual(phone: string): string {
   const normalized = formatPhone(phone).replace(/^55/, '');
   if (!normalized) return phone;
-  
+
   // Format based on length (10 digits vs 11 digits)
   if (normalized.length === 11) {
     // 11 digits: +55 (XX) XXXXX-XXXX
@@ -976,7 +977,7 @@ export function formatPhoneVisual(phone: string): string {
     // 10 digits: +55 (XX) XXXX-XXXX
     return `+55 ${normalized.slice(0, 2)} ${normalized.slice(2, 6)}-${normalized.slice(6)}`;
   }
-  
+
   // Fallback to standard + if it doesn't match expected Brazilian lengths
   return `+${formatPhone(phone)}`;
 }

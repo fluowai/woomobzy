@@ -160,7 +160,9 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
  */
 router.post('/', verifyAuth, requireTenant, async (req, res) => {
   try {
-    const validation = leaseCreateSchema.safeParse(normalizeLeasePayload(req.body));
+    const validation = leaseCreateSchema.safeParse(
+      normalizeLeasePayload(req.body)
+    );
     if (!validation.success) {
       return res
         .status(400)
@@ -242,7 +244,9 @@ router.put('/:id', verifyAuth, requireTenant, async (req, res) => {
     const { id } = req.params;
     if (!isValidUUID(id)) return res.status(400).json({ error: 'ID inválido' });
 
-    const validation = leaseUpdateSchema.safeParse(normalizeLeasePayload(req.body));
+    const validation = leaseUpdateSchema.safeParse(
+      normalizeLeasePayload(req.body)
+    );
     if (!validation.success) {
       return res
         .status(400)
@@ -314,35 +318,41 @@ router.delete('/:id', verifyAuth, requireTenant, async (req, res) => {
  * (ex.: Modelo Padrão do frontend). Sem ele, usa o template do contrato
  * (current_template_id) ou o default da organização.
  */
-router.post('/:id/generate-contract', verifyAuth, requireTenant, async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!isValidUUID(id)) return res.status(400).json({ error: 'ID inválido' });
+router.post(
+  '/:id/generate-contract',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!isValidUUID(id))
+        return res.status(400).json({ error: 'ID inválido' });
 
-    const templateContent = req.body?.template_content;
+      const templateContent = req.body?.template_content;
 
-    let generated;
-    if (templateContent) {
-      generated = await ContractGenerationService.generateFromTemplate(
-        id,
-        templateContent,
-        req.orgId,
-        req.userId
-      );
-    } else {
-      generated = await ContractGenerationService.regenerateContract(
-        id,
-        req.orgId,
-        req.userId
-      );
+      let generated;
+      if (templateContent) {
+        generated = await ContractGenerationService.generateFromTemplate(
+          id,
+          templateContent,
+          req.orgId,
+          req.userId
+        );
+      } else {
+        generated = await ContractGenerationService.regenerateContract(
+          id,
+          req.orgId,
+          req.userId
+        );
+      }
+
+      res.json({ success: true, data: generated });
+    } catch (error) {
+      logger.error('[LeaseRoutes] Generate contract error:', error);
+      res.status(500).json({ error: error.message });
     }
-
-    res.json({ success: true, data: generated });
-  } catch (error) {
-    logger.error('[LeaseRoutes] Generate contract error:', error);
-    res.status(500).json({ error: error.message });
   }
-});
+);
 
 /**
  * PATCH /api/locacao/leases/:id/status

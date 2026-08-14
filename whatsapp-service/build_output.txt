@@ -1,0 +1,8 @@
+WORK=C:\Users\paulo\AppData\Local\Temp\go-build3785490815
+internal\config\config.go:8:2: cannot find package
+internal\whatsapp\voip_bridge.go:15:2: cannot find package
+internal\whatsapp\voip_bridge.go:16:2: cannot find package
+internal\whatsapp\voip_bridge.go:17:2: cannot find package
+internal\whatsapp\voip_bridge.go:18:2: cannot find package
+internal\whatsapp\voip_bridge.go:19:2: cannot find package
+internal\ws\hub.go:10:2: cannot find package

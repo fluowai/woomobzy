@@ -5,7 +5,8 @@ export const RURAL_SITE_TEMPLATES: SiteTemplate[] = [
   buildStandardSiteTemplate({
     id: 'site-rural-hacienda',
     name: 'Hacienda Premium Site',
-    description: 'Site corporativo focado em grandes investidores e fazendas produtivas.',
+    description:
+      'Site corporativo focado em grandes investidores e fazendas produtivas.',
     thumbnail: IMG.rural,
     category: 'Venda de Fazenda',
     heroImage: IMG.rural,
@@ -19,9 +20,21 @@ export const RURAL_SITE_TEMPLATES: SiteTemplate[] = [
       fontFamily: 'Playfair Display, serif',
     },
     features: [
-      { title: 'Due Diligence', description: 'Garantia jurídica e ambiental.', icon: '⚖️' },
-      { title: 'Alta Produtividade', description: 'Terras férteis para soja e milho.', icon: '🌽' },
-      { title: 'Off-Market', description: 'Sigilo absoluto nas negociações.', icon: '🔒' },
+      {
+        title: 'Due Diligence',
+        description: 'Garantia jurídica e ambiental.',
+        icon: '⚖️',
+      },
+      {
+        title: 'Alta Produtividade',
+        description: 'Terras férteis para soja e milho.',
+        icon: '🌽',
+      },
+      {
+        title: 'Off-Market',
+        description: 'Sigilo absoluto nas negociações.',
+        icon: '🔒',
+      },
     ],
     stats: [
       { value: '1.2M+', label: 'Hectares Negociados', icon: '📏' },
@@ -29,9 +42,17 @@ export const RURAL_SITE_TEMPLATES: SiteTemplate[] = [
       { value: '15', label: 'Anos de Mercado', icon: '⭐' },
     ],
     testimonials: [
-      { name: 'Grupo Investidor', text: 'Excelente área adquirida com logística favorável.', rating: 5 },
-      { name: 'Eng. Agrônomo', text: 'Potencial incrível para dupla safra no cerrado.', rating: 5 },
-    ]
+      {
+        name: 'Grupo Investidor',
+        text: 'Excelente área adquirida com logística favorável.',
+        rating: 5,
+      },
+      {
+        name: 'Eng. Agrônomo',
+        text: 'Potencial incrível para dupla safra no cerrado.',
+        rating: 5,
+      },
+    ],
   }),
   buildStandardSiteTemplate({
     id: 'site-rural-refugio',
@@ -41,7 +62,8 @@ export const RURAL_SITE_TEMPLATES: SiteTemplate[] = [
     category: 'Sítios e Chácaras',
     heroImage: IMG.rural2,
     heroTitle: 'Seu Refúgio Longe da Cidade',
-    heroSubtitle: 'Chácaras e sítios perfeitos para lazer ou moradia tranquila.',
+    heroSubtitle:
+      'Chácaras e sítios perfeitos para lazer ou moradia tranquila.',
     themeConfig: {
       primaryColor: '#064e3b',
       secondaryColor: '#854d0e',
@@ -50,15 +72,27 @@ export const RURAL_SITE_TEMPLATES: SiteTemplate[] = [
       fontFamily: 'Inter, sans-serif',
     },
     features: [
-      { title: 'Conexão com a Natureza', description: 'Áreas verdes preservadas.', icon: '🌳' },
-      { title: 'Lazer Completo', description: 'Piscinas, lagos e trilhas.', icon: '🏊' },
-      { title: 'Segurança', description: 'Em condomínios rurais fechados.', icon: '🛡️' },
+      {
+        title: 'Conexão com a Natureza',
+        description: 'Áreas verdes preservadas.',
+        icon: '🌳',
+      },
+      {
+        title: 'Lazer Completo',
+        description: 'Piscinas, lagos e trilhas.',
+        icon: '🏊',
+      },
+      {
+        title: 'Segurança',
+        description: 'Em condomínios rurais fechados.',
+        icon: '🛡️',
+      },
     ],
     stats: [
       { value: '100+', label: 'Sítios Vendidos', icon: '🏡' },
       { value: '100%', label: 'Paz de Espírito', icon: '🧘' },
       { value: '24h', label: 'Suporte', icon: '📞' },
-    ]
+    ],
   }),
   buildStandardSiteTemplate({
     id: 'site-rural-agrotech',
@@ -75,7 +109,7 @@ export const RURAL_SITE_TEMPLATES: SiteTemplate[] = [
       backgroundColor: '#eff6ff',
       textColor: '#1e3a8a',
       fontFamily: 'Inter, sans-serif',
-    }
+    },
   }),
   buildStandardSiteTemplate({
     id: 'site-rural-haras',
@@ -92,7 +126,7 @@ export const RURAL_SITE_TEMPLATES: SiteTemplate[] = [
       backgroundColor: '#fef3c7',
       textColor: '#451a03',
       fontFamily: 'Playfair Display, serif',
-    }
+    },
   }),
   buildStandardSiteTemplate({
     id: 'site-rural-eco',
@@ -109,6 +143,6 @@ export const RURAL_SITE_TEMPLATES: SiteTemplate[] = [
       backgroundColor: '#f0fdfa',
       textColor: '#134e4a',
       fontFamily: 'Inter, sans-serif',
-    }
-  })
+    },
+  }),
 ];

@@ -35,16 +35,12 @@
 
 ## 2026-08-11 — Agentes IA: tools faltantes implementadas + hidratação no chat
 
-
-
 - **Solicitação (maestro)**: analisar a aba de Agentes de IA — campos de prompt, follow do prompt, uso de tools — e fazer funcionar.
 - **Análise**: prompt ✅ (campo "Instruções operacionais" em `AgentForm.tsx:290`); prompt seguido ✅ (`buildAgentSystemPrompt` injeta `agent.instructions`); seleção de tools ✅ (15 options → `_ensureModel`); **mas 6 tools não tinham function declaration** e o chat route não hidrata o agente.
 - **Fix (working tree, sem commit)**: `agentOrchestrator.js` — 3 novas function declarations (`notificar_corretor`, `criar_follow_up`, `criar_tarefa`) + mapeamento + implementação em `executeToolCall` + diretrizes atualizadas; `chat.routes.js` — `hydrateAgent` em POST `/agents/:id/chat` e `/agents/:id/simulate`.
 - **Gates**: `node --check` ✓ (3 arquivos); `npm run type-check` ✓ (0 erros).
 - **Pendente (maestro)**: deploy backend; validar tools (`notificar-corretor` → `lead_activities` + `lead_followups`) e swarm no chat test. Nenhum commit/push.
 - Change set: `server/services/ai/agentOrchestrator.js`, `server/api/ai/chat.routes.js`.
-
-
 
 ## 2026-08-11 — Sites públicos OKA e Mega Investimentos com imóveis reais
 
@@ -54,6 +50,7 @@
   - `src/views/sites/megainvestimentos/MegaTheme.tsx` — removido mock; `get_tenant_public('megainvestimentos')` + `public_available_properties`; `Intl` para preço.
 - **Gates**: `npm run type-check` ✓.
 - **Próxima ação (maestro)**: validar imóveis reais em `/site/okaimoveis` (ou domínio OKA) e `/megainvestimentos`; confirmar que a org OKA tem imóveis públicos com `show_on_site`.
+
 ## 2026-08-10 — Seleção de plano não persiste / checkout de assinatura 404 — prefixo duplicado corrigido
 
 - **Solicitação (maestro)**: selecionar um plano (qualquer nível) não seta o `plan_id`/assinatura.

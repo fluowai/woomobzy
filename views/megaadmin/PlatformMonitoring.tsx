@@ -47,7 +47,9 @@ const PlatformMonitoring: React.FC = () => {
     const results: HealthCheck[] = [];
 
     const [orgRes, profRes, propRes] = await Promise.all([
-      supabase.from('organizations').select('id', { count: 'exact', head: true }),
+      supabase
+        .from('organizations')
+        .select('id', { count: 'exact', head: true }),
       supabase.from('profiles').select('id', { count: 'exact', head: true }),
       supabase.from('properties').select('id', { count: 'exact', head: true }),
     ]);
@@ -372,17 +374,12 @@ const PlatformMonitoring: React.FC = () => {
         </h3>
         <div className="flex gap-1 items-end h-32">
           {checks.length === 0 && (
-            <p className="text-sm text-gray-400">
-              Aguardando verificação...
-            </p>
+            <p className="text-sm text-gray-400">Aguardando verificação...</p>
           )}
           {checks.map((check, i) => {
             const barHeight = Math.min(Math.max(check.latency, 8), 112);
             return (
-              <div
-                key={i}
-                className="flex-1 flex flex-col items-center gap-1"
-              >
+              <div key={i} className="flex-1 flex flex-col items-center gap-1">
                 <span className="text-[9px] font-bold text-gray-400">
                   {check.latency}ms
                 </span>

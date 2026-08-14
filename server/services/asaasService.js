@@ -71,7 +71,9 @@ export class AsaasService {
         }
       });
 
-      const data = await this.request(`${path}?${query.toString()}`, { apiKey });
+      const data = await this.request(`${path}?${query.toString()}`, {
+        apiKey,
+      });
       const items = data.data || [];
       results.push(...items);
 
@@ -86,7 +88,9 @@ export class AsaasService {
    * CUSTOMERS
    */
   static async getCustomer(customerId, apiKey) {
-    return this.request(`/customers/${encodeURIComponent(customerId)}`, { apiKey });
+    return this.request(`/customers/${encodeURIComponent(customerId)}`, {
+      apiKey,
+    });
   }
 
   static async listCustomers(params = {}, apiKey) {
@@ -116,19 +120,25 @@ export class AsaasService {
     });
   }
 
-  static async getOrCreateCustomer({ name, cpfCnpj, email, mobilePhone, ...rest }, apiKey) {
+  static async getOrCreateCustomer(
+    { name, cpfCnpj, email, mobilePhone, ...rest },
+    apiKey
+  ) {
     if (cpfCnpj) {
       const list = await this.listCustomers({ cpfCnpj, limit: 1 }, apiKey);
       if (list.length > 0) return list[0];
     }
 
-    const customer = await this.createCustomer({
-      name,
-      cpfCnpj: cpfCnpj || undefined,
-      email: email || undefined,
-      mobilePhone: mobilePhone || undefined,
-      ...rest,
-    }, apiKey);
+    const customer = await this.createCustomer(
+      {
+        name,
+        cpfCnpj: cpfCnpj || undefined,
+        email: email || undefined,
+        mobilePhone: mobilePhone || undefined,
+        ...rest,
+      },
+      apiKey
+    );
 
     return customer;
   }
@@ -137,7 +147,10 @@ export class AsaasService {
    * SUBSCRIPTIONS
    */
   static async getSubscription(subscriptionId, apiKey) {
-    return this.request(`/subscriptions/${encodeURIComponent(subscriptionId)}`, { apiKey });
+    return this.request(
+      `/subscriptions/${encodeURIComponent(subscriptionId)}`,
+      { apiKey }
+    );
   }
 
   static async listSubscriptions(params = {}, apiKey) {
@@ -184,7 +197,9 @@ export class AsaasService {
    * PAYMENTS
    */
   static async getPayment(paymentId, apiKey) {
-    return this.request(`/payments/${encodeURIComponent(paymentId)}`, { apiKey });
+    return this.request(`/payments/${encodeURIComponent(paymentId)}`, {
+      apiKey,
+    });
   }
 
   static async listPayments(params = {}, apiKey) {
@@ -268,7 +283,9 @@ export class AsaasService {
    * PAYMENT DUNNING
    */
   static async listPaymentDunnings(paymentId, apiKey) {
-    return this.request(`/payments/${encodeURIComponent(paymentId)}/dunnings`, { apiKey });
+    return this.request(`/payments/${encodeURIComponent(paymentId)}/dunnings`, {
+      apiKey,
+    });
   }
 
   static async sendPaymentNotification(paymentId, payload = {}, apiKey) {
@@ -290,7 +307,9 @@ export class AsaasService {
   }
 
   static async getQrcodeImage(encodedImage, apiKey) {
-    return this.request(`/qrCodeImage/${encodeURIComponent(encodedImage)}`, { apiKey });
+    return this.request(`/qrCodeImage/${encodeURIComponent(encodedImage)}`, {
+      apiKey,
+    });
   }
 
   static async getBillingTypesConfiguration(apiKey) {
@@ -314,7 +333,9 @@ export class AsaasService {
   }
 
   static async getTransfer(transferId, apiKey) {
-    return this.request(`/transfers/${encodeURIComponent(transferId)}`, { apiKey });
+    return this.request(`/transfers/${encodeURIComponent(transferId)}`, {
+      apiKey,
+    });
   }
 
   static async listTransfers(params = {}, apiKey) {
@@ -340,7 +361,9 @@ export class AsaasService {
   }
 
   static async getWebhookEvent(eventId, apiKey) {
-    return this.request(`/webhookEvents/${encodeURIComponent(eventId)}`, { apiKey });
+    return this.request(`/webhookEvents/${encodeURIComponent(eventId)}`, {
+      apiKey,
+    });
   }
 
   static async getAccountBalance(apiKey) {
@@ -348,7 +371,9 @@ export class AsaasService {
   }
 
   static async getInvoice(invoiceId, apiKey) {
-    return this.request(`/invoice/${encodeURIComponent(invoiceId)}`, { apiKey });
+    return this.request(`/invoice/${encodeURIComponent(invoiceId)}`, {
+      apiKey,
+    });
   }
 
   static async listInvoices(params = {}, apiKey) {
@@ -364,7 +389,9 @@ export class AsaasService {
   }
 
   static async getPaymentLink(linkId, apiKey) {
-    return this.request(`/paymentLinks/${encodeURIComponent(linkId)}`, { apiKey });
+    return this.request(`/paymentLinks/${encodeURIComponent(linkId)}`, {
+      apiKey,
+    });
   }
 
   static async listPaymentLinks(params = {}, apiKey) {
@@ -379,7 +406,9 @@ export class AsaasService {
   }
 
   static async getDocument(documentId, apiKey) {
-    return this.request(`/documents/${encodeURIComponent(documentId)}`, { apiKey });
+    return this.request(`/documents/${encodeURIComponent(documentId)}`, {
+      apiKey,
+    });
   }
 
   static async listDocuments(params = {}, apiKey) {

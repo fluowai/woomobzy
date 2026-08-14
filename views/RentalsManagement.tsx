@@ -125,7 +125,8 @@ export default function RentalsManagement() {
   );
 
   const repassePendentes = useMemo(
-    () => billings.filter((b) => b.status === 'aberto' || b.status === 'vencido'),
+    () =>
+      billings.filter((b) => b.status === 'aberto' || b.status === 'vencido'),
     [billings]
   );
   const repassePendenteTotal = repassePendentes.reduce(

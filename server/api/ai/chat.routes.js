@@ -452,7 +452,10 @@ router.post(
         sessionId: session_id,
       });
 
-      res.json({ ...result, agent: { name: hydratedAgent.name, role: hydratedAgent.role } });
+      res.json({
+        ...result,
+        agent: { name: hydratedAgent.name, role: hydratedAgent.role },
+      });
     } catch (error) {
       console.error('[AgentSimulate] Erro:', error.message);
       res.status(500).json({ error: error.message });

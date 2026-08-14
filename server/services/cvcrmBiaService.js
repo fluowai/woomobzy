@@ -40,9 +40,27 @@ async function getTenantIntegrationConfigs(tenantId) {
  * para o formato esperado pela API da BIA.
  */
 function mapCvcrmLeadToBia(cvcrmLead) {
+  let phone = cvcrmLead.telefone || cvcrmLead.phone || '';
+  let ddi = cvcrmLead.telefone_ddi || cvcrmLead.ddi || '';
+
+  // Limpa o '+' se existir e junta DDI + Telefone
+  if (ddi) {
+    ddi = ddi.replace('+', '');
+    // Se o telefone já começar com o DDI (ex: 55), não duplica
+    if (!phone.startsWith(ddi)) {
+      phone = ddi + phone;
+    }
+  } else if (!phone.startsWith('55') && phone.length <= 11) {
+    // Fallback para Brasil se não tiver DDI e o número for local
+    phone = '55' + phone;
+  }
+
+  // Limpa caracteres especiais do telefone final
+  phone = phone.replace(/\D/g, '');
+
   return {
     name: cvcrmLead.nome || cvcrmLead.name,
-    phoneNumber: cvcrmLead.telefone || cvcrmLead.phone,
+    phoneNumber: phone,
     email: cvcrmLead.email,
     externalId: cvcrmLead.id_lead || cvcrmLead.id,
     source: 'cvcrm',
@@ -67,6 +85,7 @@ export async function sendLeadToBia(cvcrmLead, biaKey, biaBaseUrl) {
   try {
     const payload = mapCvcrmLeadToBia(cvcrmLead);
 
+    // 1. Cadastra o contato na BIA
     const response = await fetch(`${biaBaseUrl}/api:5ONttZdQ/contatos`, {
       method: 'POST',
       headers: {
@@ -88,6 +107,33 @@ export async function sendLeadToBia(cvcrmLead, biaKey, biaBaseUrl) {
     logger.info(
       `[BIA Integration] Lead sent successfully. BIA response ID: ${data.id}`
     );
+
+    // 2. Dispara a mensagem inicial para "acordar" a IA e iniciar a conversa
+    const firstName = payload.name ? payload.name.split(' ')[0] : 'lá';
+    const origemText = payload.metadata?.origem
+      ? ` no nosso ${payload.metadata.origem}`
+      : '';
+    const initialMessage = `Olá ${firstName}! Tudo bem? Vi que você teve interesse e se cadastrou${origemText}. Eu sou a Lia, assistente virtual da Construtora L'albero. Posso te ajudar a encontrar o imóvel ideal?`;
+
+    await fetch(`${biaBaseUrl}/api:5ONttZdQ/message/send`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${biaKey}`,
+      },
+      body: JSON.stringify({
+        phoneNumber: payload.phoneNumber,
+        contactName: payload.name,
+        type: 'texto',
+        textContent: initialMessage,
+        sendNow: true,
+      }),
+    });
+
+    logger.info(
+      `[BIA Integration] Initial message sent to start conversation with ${payload.phoneNumber}`
+    );
+
     return data;
   } catch (error) {
     logger.error(
@@ -123,7 +169,7 @@ export async function syncLeadAndInteractionCvcrm(
     let rawPhone = biaPayload.phoneNumber || biaPayload.phone || '';
     let telefone_ddi = '';
     let telefone = rawPhone;
-    
+
     if (rawPhone.startsWith('+')) {
       const match = rawPhone.match(/^(\+\d{2,3})(\d+)$/);
       if (match) {
@@ -201,14 +247,22 @@ export async function handleCvcrmWebhook(tenantId, payload) {
     `[CVCrm Webhook] Received new lead payload for tenant ${tenantId}`
   );
 
-  const { biaKey, biaBaseUrl, cvcrmKey, cvcrmEmail, cvcrmBaseUrl } = await getTenantIntegrationConfigs(tenantId);
+  const { biaKey, biaBaseUrl, cvcrmKey, cvcrmEmail, cvcrmBaseUrl } =
+    await getTenantIntegrationConfigs(tenantId);
 
   // 1. Envia para a BIA para iniciar o atendimento via WhatsApp
   await sendLeadToBia(payload, biaKey, biaBaseUrl);
 
   // 2. Atualiza a situação no CVcrm para "Em Atendimento IA" (idsituacao: 2)
   const mappedBiaPayload = mapCvcrmLeadToBia(payload);
-  await syncLeadAndInteractionCvcrm(mappedBiaPayload, null, cvcrmKey, cvcrmEmail, cvcrmBaseUrl, 2);
+  await syncLeadAndInteractionCvcrm(
+    mappedBiaPayload,
+    null,
+    cvcrmKey,
+    cvcrmEmail,
+    cvcrmBaseUrl,
+    2
+  );
 
   return true;
 }
@@ -225,8 +279,9 @@ export async function handleBiaWebhook(tenantId, payload) {
   const summaryText = payload.summary || payload.message;
 
   // Verifica se a BIA finalizou o atendimento (isso precisa ser configurado lá no fluxo do Xano)
-  const isFinished = payload.status === 'finished' || payload.metadata?.finished === true;
-  
+  const isFinished =
+    payload.status === 'finished' || payload.metadata?.finished === true;
+
   // Status 12 = Em Atendimento Corretor / Status 2 = Em Atendimento IA
   const idSituacao = isFinished ? 12 : 2;
 

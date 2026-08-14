@@ -1,12 +1,7 @@
 import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  ArrowRight,
-  TrendingUp,
-  AlertCircle,
-  Sparkles,
-} from 'lucide-react';
+import { ArrowRight, TrendingUp, AlertCircle, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 
@@ -86,7 +81,8 @@ const IADashboardSummary: React.FC = () => {
 
         const recentlyUpdated = props.find((property) => {
           if (!property.updated_at) return false;
-          const days = (Date.now() - new Date(property.updated_at).getTime()) / 86_400_000;
+          const days =
+            (Date.now() - new Date(property.updated_at).getTime()) / 86_400_000;
           return days <= 7 && (property.views_count || 0) > 0;
         });
 
@@ -95,7 +91,9 @@ const IADashboardSummary: React.FC = () => {
           next.push({
             type: 'success',
             text: `"${recentlyUpdated.title}" recebeu ${recentlyUpdated.views_count} ${
-              recentlyUpdated.views_count === 1 ? 'visualização' : 'visualizações'
+              recentlyUpdated.views_count === 1
+                ? 'visualização'
+                : 'visualizações'
             }${growth ? ' esta semana' : ''} após a última atualização.`,
             actionLabel: 'Ver relatório',
             onAction: () => navigate('/reports'),
@@ -104,7 +102,8 @@ const IADashboardSummary: React.FC = () => {
 
         const recentProps = props.filter((property) => {
           if (!property.created_at) return false;
-          const days = (Date.now() - new Date(property.created_at).getTime()) / 86_400_000;
+          const days =
+            (Date.now() - new Date(property.created_at).getTime()) / 86_400_000;
           return days <= 30;
         });
 
@@ -194,10 +193,7 @@ const IADashboardSummary: React.FC = () => {
                       />
                     )}
                     {insight.type === 'info' && (
-                      <Sparkles
-                        className="text-blue-500 shrink-0"
-                        size={18}
-                      />
+                      <Sparkles className="text-blue-500 shrink-0" size={18} />
                     )}
 
                     <div className="flex-1">

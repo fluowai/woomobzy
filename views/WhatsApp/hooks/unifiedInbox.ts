@@ -38,7 +38,7 @@ export function sortUnifiedChats(chats: UnifiedChat[]): UnifiedChat[] {
 
 export function deduplicateAndSortChats(chats: UnifiedChat[]): UnifiedChat[] {
   const seen = new Map<string, UnifiedChat>();
-  
+
   for (const chat of chats) {
     // Para chats do WhatsApp, usar o chat_jid, phone, ou id para unificar.
     // Grupos geralmente tem chat_jid unico que pode se repetir entre instancias
@@ -59,17 +59,24 @@ export function deduplicateAndSortChats(chats: UnifiedChat[]): UnifiedChat[] {
     if (!existing) {
       seen.set(key, chat);
     } else {
-      const existingDate = existing.last_message_at ? new Date(existing.last_message_at).getTime() : 0;
-      const newDate = chat.last_message_at ? new Date(chat.last_message_at).getTime() : 0;
+      const existingDate = existing.last_message_at
+        ? new Date(existing.last_message_at).getTime()
+        : 0;
+      const newDate = chat.last_message_at
+        ? new Date(chat.last_message_at).getTime()
+        : 0;
       // Manter a instancia com a mensagem mais recente, OU que tem contagem de nao lida
       if (newDate > existingDate) {
         seen.set(key, chat);
-      } else if (newDate === existingDate && chat.unread_count > existing.unread_count) {
+      } else if (
+        newDate === existingDate &&
+        chat.unread_count > existing.unread_count
+      ) {
         seen.set(key, chat);
       }
     }
   }
-  
+
   return sortUnifiedChats(Array.from(seen.values()));
 }
 

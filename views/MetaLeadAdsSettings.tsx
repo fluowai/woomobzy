@@ -98,7 +98,9 @@ const MetaLeadAdsSettings: React.FC = () => {
         'Content-Type': 'application/json',
       };
 
-      const res = await fetch('/api/meta/lead-ads/webhooks/events', { headers });
+      const res = await fetch('/api/meta/lead-ads/webhooks/events', {
+        headers,
+      });
       if (!res.ok) throw new Error('Falha ao carregar eventos');
       const data = await res.json();
       setEvents(data.events || []);
@@ -238,7 +240,8 @@ const MetaLeadAdsSettings: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Meta Lead Ads</h1>
           <p className="text-sm text-gray-500">
-            Configure roteamento automático de leads vindos do Facebook/Instagram
+            Configure roteamento automático de leads vindos do
+            Facebook/Instagram
           </p>
         </div>
       </div>
@@ -304,7 +307,9 @@ const MetaLeadAdsSettings: React.FC = () => {
                   <input
                     type="text"
                     value={form.meta_form_id}
-                    onChange={(e) => setForm({ ...form, meta_form_id: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, meta_form_id: e.target.value })
+                    }
                     placeholder="Ex: 1234567890"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
@@ -317,7 +322,9 @@ const MetaLeadAdsSettings: React.FC = () => {
                   <input
                     type="text"
                     value={form.meta_campaign_id}
-                    onChange={(e) => setForm({ ...form, meta_campaign_id: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, meta_campaign_id: e.target.value })
+                    }
                     placeholder="Ex: 9876543210"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
@@ -330,7 +337,9 @@ const MetaLeadAdsSettings: React.FC = () => {
                   <input
                     type="text"
                     value={form.meta_ad_id}
-                    onChange={(e) => setForm({ ...form, meta_ad_id: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, meta_ad_id: e.target.value })
+                    }
                     placeholder="Ex: 5555555555"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
@@ -342,7 +351,9 @@ const MetaLeadAdsSettings: React.FC = () => {
                   </label>
                   <select
                     value={form.assigned_agent_id}
-                    onChange={(e) => setForm({ ...form, assigned_agent_id: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, assigned_agent_id: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   >
                     <option value="">Selecione um agente (opcional)</option>
@@ -361,7 +372,12 @@ const MetaLeadAdsSettings: React.FC = () => {
                   <input
                     type="number"
                     value={form.priority}
-                    onChange={(e) => setForm({ ...form, priority: parseInt(e.target.value || '0', 10) })}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        priority: parseInt(e.target.value || '0', 10),
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
                 </div>
@@ -371,7 +387,9 @@ const MetaLeadAdsSettings: React.FC = () => {
                     type="checkbox"
                     id="active"
                     checked={form.active}
-                    onChange={(e) => setForm({ ...form, active: e.target.checked })}
+                    onChange={(e) =>
+                      setForm({ ...form, active: e.target.checked })
+                    }
                     className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                   />
                   <label htmlFor="active" className="text-sm text-gray-700">
@@ -440,12 +458,24 @@ const MetaLeadAdsSettings: React.FC = () => {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {config.map((row) => {
-                        const agent = agents.find((a) => a.id === row.assigned_agent_id);
-                        const targetType = row.meta_form_id ? 'Form' : row.meta_campaign_id ? 'Campaign' : 'Ad';
-                        const targetId = row.meta_form_id || row.meta_campaign_id || row.meta_ad_id;
+                        const agent = agents.find(
+                          (a) => a.id === row.assigned_agent_id
+                        );
+                        const targetType = row.meta_form_id
+                          ? 'Form'
+                          : row.meta_campaign_id
+                            ? 'Campaign'
+                            : 'Ad';
+                        const targetId =
+                          row.meta_form_id ||
+                          row.meta_campaign_id ||
+                          row.meta_ad_id;
 
                         return (
-                          <tr key={row.id} className={!row.active ? 'opacity-50' : ''}>
+                          <tr
+                            key={row.id}
+                            className={!row.active ? 'opacity-50' : ''}
+                          >
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
                                 {targetType}

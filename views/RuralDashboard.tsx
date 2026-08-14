@@ -142,14 +142,18 @@ const RuralDashboard: React.FC = () => {
 
   const capturedThisQuarter = ruralProperties
     .filter((property) => {
-      const createdAt = property.created_at ? new Date(property.created_at) : null;
+      const createdAt = property.created_at
+        ? new Date(property.created_at)
+        : null;
       return createdAt && createdAt >= currentQuarterStart;
     })
     .reduce((sum, property) => sum + Number(property.price || 0), 0);
 
   const capturedLastQuarter = ruralProperties
     .filter((property) => {
-      const createdAt = property.created_at ? new Date(property.created_at) : null;
+      const createdAt = property.created_at
+        ? new Date(property.created_at)
+        : null;
       return (
         createdAt &&
         createdAt >= previousQuarterStart &&
@@ -158,9 +162,10 @@ const RuralDashboard: React.FC = () => {
     })
     .reduce((sum, property) => sum + Number(property.price || 0), 0);
 
-  const quarterTarget = capturedLastQuarter > 0
-    ? capturedLastQuarter * 1.25
-    : capturedThisQuarter || 1;
+  const quarterTarget =
+    capturedLastQuarter > 0
+      ? capturedLastQuarter * 1.25
+      : capturedThisQuarter || 1;
 
   const goalProgress = Math.min(
     100,
@@ -497,14 +502,14 @@ const RuralDashboard: React.FC = () => {
                     <strong className="text-emerald-400">
                       {formatCurrency(capturedThisQuarter)}
                     </strong>{' '}
-                    no trimestre ({Math.round(
-                      (capturedThisQuarter / quarterTarget) * 100
-                    )}% da meta), meta calculada sobre o trimestre anterior.
+                    no trimestre (
+                    {Math.round((capturedThisQuarter / quarterTarget) * 100)}%
+                    da meta), meta calculada sobre o trimestre anterior.
                   </>
                 ) : (
                   <>
-                    Sem captação no trimestre anterior para referência. Este é
-                    o volume acumulado em grandes ativos no trimestre atual.
+                    Sem captação no trimestre anterior para referência. Este é o
+                    volume acumulado em grandes ativos no trimestre atual.
                   </>
                 )}
               </p>

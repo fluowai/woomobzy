@@ -39,8 +39,8 @@ const Dashboard360: React.FC = () => {
     const fetchStats = async () => {
       try {
         const organizationId = profile.organization_id;
-        const [leadsRes, propsRes, contractsRes, dashboard] =
-          await Promise.all([
+        const [leadsRes, propsRes, contractsRes, dashboard] = await Promise.all(
+          [
             supabase
               .from('leads')
               .select('*', { count: 'exact', head: true })
@@ -55,7 +55,8 @@ const Dashboard360: React.FC = () => {
               .in('status', ['draft', 'signed', 'active'])
               .eq('organization_id', organizationId),
             cobrancaService.getDashboard(),
-          ]);
+          ]
+        );
 
         const leadRows = await supabase
           .from('leads')
@@ -136,7 +137,9 @@ const Dashboard360: React.FC = () => {
             Bem-vindo de volta, {profile?.full_name?.split(' ')[0]}.
             {stats.matches > 0
               ? ` Identificamos ${stats.matches} ${
-                  stats.matches === 1 ? 'oportunidade de match' : 'oportunidades de match'
+                  stats.matches === 1
+                    ? 'oportunidade de match'
+                    : 'oportunidades de match'
                 } para sua carteira hoje.`
               : ' Seu pipeline está pronto para novos matches.'}
           </p>

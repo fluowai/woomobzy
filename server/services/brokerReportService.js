@@ -157,15 +157,19 @@ export async function getBrokerRanking(organizationId, dateRange = {}) {
     stats.total_budget += lead.budget || 0;
     const src = lead.source || 'Desconhecido';
     stats.source_breakdown[src] = (stats.source_breakdown[src] || 0) + 1;
-    stats.status_breakdown[lead.status] = (stats.status_breakdown[lead.status] || 0) + 1;
+    stats.status_breakdown[lead.status] =
+      (stats.status_breakdown[lead.status] || 0) + 1;
     const month = lead.created_at?.slice(0, 7) || 'unknown';
-    if (!stats.monthly_trend[month]) stats.monthly_trend[month] = { total: 0, converted: 0 };
+    if (!stats.monthly_trend[month])
+      stats.monthly_trend[month] = { total: 0, converted: 0 };
     stats.monthly_trend[month].total++;
     if (lead.status === 'Fechado') stats.monthly_trend[month].converted++;
   });
 
   const activityCount = totalActivities || 0;
-  const perBrokerActivities = Math.floor(activityCount / (brokerIds.length || 1));
+  const perBrokerActivities = Math.floor(
+    activityCount / (brokerIds.length || 1)
+  );
   brokerIds.forEach((id) => {
     statsByBroker[id].total_activities = perBrokerActivities;
   });
@@ -182,11 +186,15 @@ export async function getBrokerRanking(organizationId, dateRange = {}) {
       summary: {
         total_leads: stats.total_leads,
         converted_leads: stats.converted_leads,
-        active_leads: stats.total_leads - stats.converted_leads - stats.lost_leads,
+        active_leads:
+          stats.total_leads - stats.converted_leads - stats.lost_leads,
         lost_leads: stats.lost_leads,
         conversion_rate: Number(conversionRate.toFixed(1)),
         total_activities: stats.total_activities,
-        avg_budget: stats.total_leads > 0 ? Math.round(stats.total_budget / stats.total_leads) : 0,
+        avg_budget:
+          stats.total_leads > 0
+            ? Math.round(stats.total_budget / stats.total_leads)
+            : 0,
       },
     };
   });
@@ -250,7 +258,8 @@ export async function getPipelineSummary(organizationId, dateRange = {}) {
         status,
         count: data.count,
         total_budget: data.totalBudget,
-        avg_budget: data.count > 0 ? Math.round(data.totalBudget / data.count) : 0,
+        avg_budget:
+          data.count > 0 ? Math.round(data.totalBudget / data.count) : 0,
       };
     }),
   };

@@ -25,11 +25,13 @@ import {
   Smile,
   Sparkles,
   Tag,
+  Trash2,
   UserRound,
   Users,
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/services/supabase';
 import { logger } from '@/utils/logger';
 
 import MessageBubble from './MessageBubble';
@@ -143,6 +145,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [crmTasks, setCrmTasks] = useState<CrmTask[]>([]);
   const [crmProperty, setCrmProperty] = useState<CrmProperty | null>(null);
   const [assignees, setAssignees] = useState<CrmAssignee[]>([]);
+  const [queues, setQueues] = useState<any[]>([]);
   const [selectedAssignee, setSelectedAssignee] = useState('');
   const [tagDraft, setTagDraft] = useState('');
   const [crmActionLoading, setCrmActionLoading] = useState(false);
@@ -152,10 +155,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const rawPhone = chat.phone || getPhoneFromJid(chat.chat_jid);
   const chatPhone = chat.phone_display || formatPhoneVisual(chat.chat_jid);
-  const chatName =
-    chat.is_group
-      ? chat.name || 'Grupo sem nome'
-      : getChatDisplayName(chat);
+  const chatName = chat.is_group
+    ? chat.name || 'Grupo sem nome'
+    : getChatDisplayName(chat);
   const currentAssignee = assignees.find(
     (item) => item.id === selectedAssignee
   );
@@ -176,14 +178,19 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       return;
     }
     let active = true;
-    Promise.all([crmContactApi.get(rawPhone), crmContactApi.assignees()])
-      .then(([result, assigneeResult]) => {
+    Promise.all([
+      crmContactApi.get(rawPhone),
+      crmContactApi.assignees(),
+      supabase.from('whatsapp_queues').select('id, name').order('name'),
+    ])
+      .then(([result, assigneeResult, queueResult]) => {
         if (!active) return;
         setCrmLead(result.lead);
         setCrmTags(result.tags || []);
         setCrmTasks(result.tasks || []);
         setCrmProperty(result.property || null);
         setAssignees(assigneeResult.users || []);
+        setQueues((queueResult as any)?.data || []);
         setSelectedAssignee(
           result.lead?.assigned_to || result.assignee?.id || ''
         );
@@ -300,7 +307,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       () =>
         crmContactApi.transfer({
           ...crmPayload(),
-          assigned_to: selectedAssignee,
+          assigned_to: selectedAssignee.startsWith('q_')
+            ? undefined
+            : selectedAssignee,
+          queue_id: selectedAssignee.startsWith('q_')
+            ? selectedAssignee.replace('q_', '')
+            : undefined,
         }),
       'Atendimento transferido.',
       syncCrmResult
@@ -395,10 +407,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               onAvatarError={() => setAvatarError(true)}
               size="small"
             />
-              <div>
-                <strong>{chatName}</strong>
-                <span>WhatsApp · {chatPhone}</span>
-              </div>
+            <div>
+              <strong>{chatName}</strong>
+              <span>WhatsApp · {chatPhone}</span>
+            </div>
           </div>
           <div className="wa-lead-header-meta">
             <div>
@@ -414,11 +426,24 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 disabled={!rawPhone || crmActionLoading}
               >
                 <option value="">Sem responsável</option>
-                {assignees.map((assignee) => (
-                  <option key={assignee.id} value={assignee.id}>
-                    {assignee.name}
-                  </option>
-                ))}
+                {queues.length > 0 && (
+                  <optgroup label="Filas">
+                    {queues.map((q) => (
+                      <option key={`q_${q.id}`} value={`q_${q.id}`}>
+                        Fila: {q.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {assignees.length > 0 && (
+                  <optgroup label="Corretores">
+                    {assignees.map((assignee) => (
+                      <option key={assignee.id} value={assignee.id}>
+                        {assignee.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
             </label>
             <button
@@ -509,7 +534,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           ))}
         </div>
 
-        <form className="wa-composer wa-composer-whatsapp" onSubmit={submitMessage}>
+        <form
+          className="wa-composer wa-composer-whatsapp"
+          onSubmit={submitMessage}
+        >
           {pendingFile ? (
             <div className="wa-file-chip">
               <Paperclip size={14} />
@@ -519,7 +547,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               </button>
             </div>
           ) : null}
-          
+
           <div className="wa-composer-inner">
             <div className="wa-composer-left">
               <div className="wa-emoji-wrap">
@@ -565,7 +593,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 }
               />
             </div>
-            
+
             <div className="wa-composer-input-wrap">
               <textarea
                 value={inputText}
@@ -614,7 +642,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       <aside className="wa-contact-panel wa-lead-panel">
         <div className="wa-contact-panel-head flex items-center justify-between">
           <span>Dados do lead</span>
-          <button type="button" onClick={() => setIsLeadPanelOpen(false)} className="text-slate-400 hover:text-slate-700">
+          <button
+            type="button"
+            onClick={() => setIsLeadPanelOpen(false)}
+            className="text-slate-400 hover:text-slate-700"
+          >
             <X size={18} />
           </button>
         </div>
@@ -625,126 +657,130 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </summary>
           <div className="wa-accordion-content wa-lead-identity">
             <div className="wa-lead-profile-row">
-            <Avatar
-              chat={chat}
-              name={chatName}
-              avatarError={avatarError}
-              onAvatarError={() => setAvatarError(true)}
-              size="large"
-            />
-            <div>
-              {editingName ? (
-                <div className="wa-inline-edit">
-                  <input
-                    value={contactNameDraft}
-                    onChange={(event) =>
-                      setContactNameDraft(event.target.value)
-                    }
-                    autoFocus
-                  />
-                  <button type="button" onClick={saveContactName}>
-                    {savingContact ? (
-                      <Loader2 size={14} className="animate-spin" />
-                    ) : (
-                      <Save size={14} />
-                    )}
+              <Avatar
+                chat={chat}
+                name={chatName}
+                avatarError={avatarError}
+                onAvatarError={() => setAvatarError(true)}
+                size="large"
+              />
+              <div>
+                {editingName ? (
+                  <div className="wa-inline-edit">
+                    <input
+                      value={contactNameDraft}
+                      onChange={(event) =>
+                        setContactNameDraft(event.target.value)
+                      }
+                      autoFocus
+                    />
+                    <button type="button" onClick={saveContactName}>
+                      {savingContact ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <Save size={14} />
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="wa-lead-name"
+                    onClick={() => setEditingName(true)}
+                  >
+                    {crmLead?.name || chatName}
                   </button>
-                </div>
-              ) : (
+                )}
+                <span>💬 {chatPhone}</span>
+                {crmLead?.email ? (
+                  <span>
+                    <Mail size={13} /> {crmLead.email}
+                  </span>
+                ) : null}
+                {preferenceLocation ? (
+                  <span>
+                    <MapPin size={13} /> {preferenceLocation}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+            <button
+              type="button"
+              className="wa-outline-button"
+              onClick={() =>
+                crmLead
+                  ? navigate(
+                      `${isRural ? '/rural/crm' : '/urban/crm'}?leadId=${crmLead.id}`
+                    )
+                  : void ensureLead()
+              }
+            >
+              {crmLead ? 'Ver no CRM' : 'Vincular ao CRM'}
+            </button>
+            <div className="wa-lead-metrics">
+              <div>
+                <span>Funil</span>
+                <strong>{crmLead?.status || 'Novo lead'}</strong>
+              </div>
+              <div>
+                <span>Temperatura</span>
+                <strong className="hot">
+                  🔥 {leadTemperature(crmLead?.classification)}
+                </strong>
+              </div>
+              <div>
+                <span>Score</span>
+                <strong className="score">
+                  {crmLead?.lead_score ?? crmLead?.qualification_score ?? 0}{' '}
+                  pontos
+                </strong>
+              </div>
+            </div>
+            <div className="wa-panel-tags">
+              <span>Tags</span>
+              <div>
+                {crmTags.map((tag) => (
+                  <b key={tag}>{tag}</b>
+                ))}
                 <button
                   type="button"
-                  className="wa-lead-name"
-                  onClick={() => setEditingName(true)}
-                >
-                  {crmLead?.name || chatName}
-                </button>
-              )}
-              <span>💬 {chatPhone}</span>
-              {crmLead?.email ? (
-                <span>
-                  <Mail size={13} /> {crmLead.email}
-                </span>
-              ) : null}
-              {preferenceLocation ? (
-                <span>
-                  <MapPin size={13} /> {preferenceLocation}
-                </span>
-              ) : null}
-            </div>
-          </div>
-          <button
-            type="button"
-            className="wa-outline-button"
-            onClick={() =>
-              crmLead
-                ? navigate(
-                    `${isRural ? '/rural/crm' : '/urban/crm'}?leadId=${crmLead.id}`
-                  )
-                : void ensureLead()
-            }
-          >
-            {crmLead ? 'Ver no CRM' : 'Vincular ao CRM'}
-          </button>
-          <div className="wa-lead-metrics">
-            <div>
-              <span>Funil</span>
-              <strong>{crmLead?.status || 'Novo lead'}</strong>
-            </div>
-            <div>
-              <span>Temperatura</span>
-              <strong className="hot">
-                🔥 {leadTemperature(crmLead?.classification)}
-              </strong>
-            </div>
-            <div>
-              <span>Score</span>
-              <strong className="score">
-                {crmLead?.lead_score ?? crmLead?.qualification_score ?? 0}{' '}
-                pontos
-              </strong>
-            </div>
-          </div>
-          <div className="wa-panel-tags">
-            <span>Tags</span>
-            <div>
-              {crmTags.map((tag) => (
-                <b key={tag}>{tag}</b>
-              ))}
-              <button
-                type="button"
-                onClick={() => document.getElementById('wa-tag-input')?.focus()}
-              >
-                <Plus size={13} />
-              </button>
-            </div>
-            <div className="wa-tag-entry">
-              <input
-                id="wa-tag-input"
-                value={tagDraft}
-                onChange={(event) => setTagDraft(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault();
-                    void addTag();
+                  onClick={() =>
+                    document.getElementById('wa-tag-input')?.focus()
                   }
-                }}
-                placeholder="Adicionar tag"
-              />
-              <button
-                type="button"
-                onClick={() => void addTag()}
-                disabled={!tagDraft.trim() || crmActionLoading}
-              >
-                Adicionar
-              </button>
+                >
+                  <Plus size={13} />
+                </button>
+              </div>
+              <div className="wa-tag-entry">
+                <input
+                  id="wa-tag-input"
+                  value={tagDraft}
+                  onChange={(event) => setTagDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      void addTag();
+                    }
+                  }}
+                  placeholder="Adicionar tag"
+                />
+                <button
+                  type="button"
+                  onClick={() => void addTag()}
+                  disabled={!tagDraft.trim() || crmActionLoading}
+                >
+                  Adicionar
+                </button>
+              </div>
             </div>
-          </div>
           </div>
         </details>
 
         <details className="wa-lead-card wa-accordion">
           <summary>
-            <span><CalendarDays size={16} /> Próxima ação</span>
+            <span>
+              <CalendarDays size={16} /> Próxima ação
+            </span>
             <ChevronDown size={16} className="wa-accordion-icon" />
           </summary>
           <div className="wa-accordion-content wa-next-action">
@@ -764,56 +800,62 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
         <details className="wa-lead-card wa-accordion">
           <summary>
-            <span><House size={16} /> Imóvel de interesse</span>
+            <span>
+              <House size={16} /> Imóvel de interesse
+            </span>
             <ChevronDown size={16} className="wa-accordion-icon" />
           </summary>
           <div className="wa-accordion-content">
             {crmProperty ? (
-            <div className="wa-property-summary">
-              {propertyImage ? (
-                <img src={propertyImage} alt="" />
-              ) : (
-                <div className="wa-property-placeholder">
-                  <Building2 size={22} />
+              <div className="wa-property-summary">
+                {propertyImage ? (
+                  <img src={propertyImage} alt="" />
+                ) : (
+                  <div className="wa-property-placeholder">
+                    <Building2 size={22} />
+                  </div>
+                )}
+                <div>
+                  <strong>{crmProperty.title}</strong>
+                  <span>
+                    {[crmProperty.neighborhood, crmProperty.city]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </span>
+                  <b>
+                    {formatMoney(crmProperty.price || crmProperty.rental_value)}
+                  </b>
                 </div>
-              )}
-              <div>
-                <strong>{crmProperty.title}</strong>
-                <span>
-                  {[crmProperty.neighborhood, crmProperty.city]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </span>
-                <b>
-                  {formatMoney(crmProperty.price || crmProperty.rental_value)}
-                </b>
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate(
+                      isRural ? '/rural/properties' : '/urban/properties'
+                    )
+                  }
+                >
+                  Ver imóvel
+                </button>
               </div>
+            ) : (
               <button
                 type="button"
+                className="wa-empty-property"
                 onClick={() =>
                   navigate(isRural ? '/rural/properties' : '/urban/properties')
                 }
               >
-                Ver imóvel
+                <Plus size={15} /> Selecionar imóvel
               </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              className="wa-empty-property"
-              onClick={() =>
-                navigate(isRural ? '/rural/properties' : '/urban/properties')
-              }
-            >
-              <Plus size={15} /> Selecionar imóvel
-            </button>
-          )}
+            )}
           </div>
         </details>
 
         <details className="wa-lead-card wa-accordion">
           <summary>
-            <span><CheckSquare2 size={16} /> Tarefas ({crmTasks.length})</span>
+            <span>
+              <CheckSquare2 size={16} /> Tarefas ({crmTasks.length})
+            </span>
             <ChevronDown size={16} className="wa-accordion-icon" />
           </summary>
           <div className="wa-accordion-content wa-task-list">
@@ -927,7 +969,12 @@ function Avatar({
   return (
     <div className={`wa-smart-avatar ${size}`}>
       {canShowImage ? (
-        <img src={chat.avatar_url} alt="" referrerPolicy="no-referrer" onError={onAvatarError} />
+        <img
+          src={chat.avatar_url}
+          alt=""
+          referrerPolicy="no-referrer"
+          onError={onAvatarError}
+        />
       ) : chat.is_group ? (
         <Users size={size === 'large' ? 28 : 20} />
       ) : (

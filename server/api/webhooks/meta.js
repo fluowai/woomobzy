@@ -32,18 +32,13 @@ function verifySignature(rawBody, signature, secret) {
   const crypto = globalThis.crypto || require('crypto');
   const expected =
     'sha256=' +
-    crypto
-      .createHmac('sha256', secret)
-      .update(rawBody, 'utf8')
-      .digest('hex');
+    crypto.createHmac('sha256', secret).update(rawBody, 'utf8').digest('hex');
   return signature === expected;
 }
 
 function extractLeadEntry(body) {
   if (Array.isArray(body.entry)) {
-    const changesEntry = body.entry.find((e) =>
-      Array.isArray(e.changes)
-    );
+    const changesEntry = body.entry.find((e) => Array.isArray(e.changes));
     if (changesEntry) {
       const leadChange = changesEntry.changes.find((c) => {
         const v = c.value || {};
@@ -70,7 +65,10 @@ router.get('/', (req, res) => {
     return res.status(403).json({ error: 'Invalid verify token' });
   }
   if (req.query.hub_mode === 'subscribe') {
-    return res.json({ hub_mode: req.query.hub_mode, hub_challenge: req.query.hub_challenge });
+    return res.json({
+      hub_mode: req.query.hub_mode,
+      hub_challenge: req.query.hub_challenge,
+    });
   }
   return res.json({ status: 'ok' });
 });
@@ -88,10 +86,7 @@ router.post('/', async (req, res) => {
     const leadEntry = extractLeadEntry(req.body || {});
 
     const leadId = String(
-      leadEntry.lead_id ||
-      leadEntry.lead_gen_id ||
-      req.body.lead_id ||
-      ''
+      leadEntry.lead_id || leadEntry.lead_gen_id || req.body.lead_id || ''
     );
     if (!leadId) {
       return res.status(400).json({ error: 'Missing lead_id' });

@@ -85,8 +85,9 @@ class Logger {
   private log(level: LogLevel, message: string, ...optionalParams: any[]) {
     if (!isDebugMode() && level === 'debug') return;
 
-    const maskedParams =
-      import.meta.env.DEV ? optionalParams : optionalParams.map(maskData);
+    const maskedParams = import.meta.env.DEV
+      ? optionalParams
+      : optionalParams.map(maskData);
 
     switch (level) {
       case 'debug':

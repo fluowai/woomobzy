@@ -137,10 +137,7 @@ const Matchmaking360: React.FC = () => {
     currency: 'BRL',
     notation: 'compact',
   }).format(
-    matches.reduce(
-      (sum, match) => sum + Number(match.property.price || 0),
-      0
-    )
+    matches.reduce((sum, match) => sum + Number(match.property.price || 0), 0)
   );
 
   const regionCounts: Record<string, number> = {};
@@ -379,9 +376,9 @@ const Matchmaking360: React.FC = () => {
               <p className="text-xs text-white/60 leading-relaxed italic">
                 O cruzamento de <strong>{leads.length} leads</strong> e{' '}
                 <strong>{properties.length} imóveis</strong> mostra maior
-                demanda em{' '}
-                <strong>{topRegion || 'regiões diversas'}</strong> para imóveis
-                em <strong>{topState || 'diversas localidades'}</strong>.
+                demanda em <strong>{topRegion || 'regiões diversas'}</strong>{' '}
+                para imóveis em{' '}
+                <strong>{topState || 'diversas localidades'}</strong>.
               </p>
 
               <div className="space-y-4">

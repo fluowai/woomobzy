@@ -11,10 +11,16 @@ interface Props {
   updateFields: (fields: Partial<Lease>) => void;
 }
 
-const inputClass = 'w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-300 transition-all';
-const labelClass = 'text-[10px] font-bold text-slate-500 uppercase tracking-widest';
+const inputClass =
+  'w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-300 transition-all';
+const labelClass =
+  'text-[10px] font-bold text-slate-500 uppercase tracking-widest';
 
-export const StepProperty: React.FC<Props> = ({ lease, updateField, updateFields }) => {
+export const StepProperty: React.FC<Props> = ({
+  lease,
+  updateField,
+  updateFields,
+}) => {
   const [properties, setProperties] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [pullingOwner, setPullingOwner] = useState(false);
@@ -26,7 +32,7 @@ export const StepProperty: React.FC<Props> = ({ lease, updateField, updateFields
   const loadProperties = async () => {
     try {
       const data = await propertyService.list(1, 1000);
-      setProperties(data.filter(p => p.status === 'Disponível') || []);
+      setProperties(data.filter((p) => p.status === 'Disponível') || []);
     } catch (err) {
       console.error('Erro ao buscar imóveis:', err);
     }
@@ -72,7 +78,9 @@ export const StepProperty: React.FC<Props> = ({ lease, updateField, updateFields
           owner_phone: owner.phone || '',
           owner_address_zip: owner.address_zip || '',
         });
-        toast.success(`Dados do proprietário (${owner.name}) carregados automaticamente.`);
+        toast.success(
+          `Dados do proprietário (${owner.name}) carregados automaticamente.`
+        );
       }
     } catch (err) {
       console.error('Erro ao buscar proprietário do imóvel:', err);
@@ -81,25 +89,33 @@ export const StepProperty: React.FC<Props> = ({ lease, updateField, updateFields
     }
   };
 
-  const filtered = properties.filter(p =>
-    p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.neighborhood?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filtered = properties.filter(
+    (p) =>
+      p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.neighborhood?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const selectedProperty = properties.find(p => p.id === lease.property_id);
+  const selectedProperty = properties.find((p) => p.id === lease.property_id);
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Busca */}
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><Building2 size={20} /></div>
-          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Selecionar Imóvel</h4>
+          <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600">
+            <Building2 size={20} />
+          </div>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">
+            Selecionar Imóvel
+          </h4>
         </div>
 
         <div className="relative mb-4">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+          <Search
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"
+            size={18}
+          />
           <input
             placeholder="Buscar por nome, cidade ou bairro..."
             value={searchTerm}
@@ -121,7 +137,8 @@ export const StepProperty: React.FC<Props> = ({ lease, updateField, updateFields
             >
               <p className="font-bold text-sm text-slate-800">{p.title}</p>
               <p className="text-xs text-slate-400 mt-1">
-                {p.neighborhood && `${p.neighborhood} - `}{p.city}/{p.state}
+                {p.neighborhood && `${p.neighborhood} - `}
+                {p.city}/{p.state}
               </p>
               <p className="text-xs font-bold text-blue-600 mt-1">
                 R$ {p.price?.toLocaleString('pt-BR')}
@@ -141,18 +158,26 @@ export const StepProperty: React.FC<Props> = ({ lease, updateField, updateFields
         <>
           <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><MapPin size={20} /></div>
-              <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Detalhes do Imóvel</h4>
+              <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600">
+                <MapPin size={20} />
+              </div>
+              <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">
+                Detalhes do Imóvel
+              </h4>
             </div>
             <div className="p-4 bg-blue-50 rounded-xl">
-              <p className="font-bold text-lg text-slate-800">{selectedProperty.title}</p>
+              <p className="font-bold text-lg text-slate-800">
+                {selectedProperty.title}
+              </p>
               <p className="text-sm text-slate-500">
                 {selectedProperty.address && `${selectedProperty.address}, `}
-                {selectedProperty.neighborhood && `${selectedProperty.neighborhood} - `}
+                {selectedProperty.neighborhood &&
+                  `${selectedProperty.neighborhood} - `}
                 {selectedProperty.city}/{selectedProperty.state}
               </p>
               <p className="text-sm font-bold text-blue-600 mt-2">
-                {selectedProperty.property_type} - R$ {selectedProperty.price?.toLocaleString('pt-BR')}
+                {selectedProperty.property_type} - R${' '}
+                {selectedProperty.price?.toLocaleString('pt-BR')}
               </p>
             </div>
 
@@ -167,7 +192,9 @@ export const StepProperty: React.FC<Props> = ({ lease, updateField, updateFields
                 <UserCheck size={18} className="text-emerald-600" />
                 <div className="text-xs text-emerald-800">
                   <p className="font-bold">
-                    {lease.owner_id ? 'Proprietário vinculado ao CRM' : 'Proprietário informado'}
+                    {lease.owner_id
+                      ? 'Proprietário vinculado ao CRM'
+                      : 'Proprietário informado'}
                   </p>
                   <p>
                     {lease.owner_name}
@@ -181,8 +208,12 @@ export const StepProperty: React.FC<Props> = ({ lease, updateField, updateFields
           {/* Utilidades e Encargos */}
           <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><Home size={20} /></div>
-              <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Utilidades e Encargos</h4>
+              <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600">
+                <Home size={20} />
+              </div>
+              <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">
+                Utilidades e Encargos
+              </h4>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
@@ -190,7 +221,9 @@ export const StepProperty: React.FC<Props> = ({ lease, updateField, updateFields
                 <input
                   type="number"
                   value={lease.condominium_fee || ''}
-                  onChange={(e) => updateField('condominium_fee', Number(e.target.value))}
+                  onChange={(e) =>
+                    updateField('condominium_fee', Number(e.target.value))
+                  }
                   className={inputClass}
                 />
               </div>
@@ -199,7 +232,9 @@ export const StepProperty: React.FC<Props> = ({ lease, updateField, updateFields
                 <input
                   type="number"
                   value={lease.iptu_amount || ''}
-                  onChange={(e) => updateField('iptu_amount', Number(e.target.value))}
+                  onChange={(e) =>
+                    updateField('iptu_amount', Number(e.target.value))
+                  }
                   className={inputClass}
                 />
               </div>
@@ -207,7 +242,9 @@ export const StepProperty: React.FC<Props> = ({ lease, updateField, updateFields
                 <label className={labelClass}>Finalidade</label>
                 <select
                   value={lease.rental_purpose || 'residencial'}
-                  onChange={(e) => updateField('rental_purpose', e.target.value)}
+                  onChange={(e) =>
+                    updateField('rental_purpose', e.target.value)
+                  }
                   className={inputClass}
                 >
                   <option value="residencial">Residencial</option>

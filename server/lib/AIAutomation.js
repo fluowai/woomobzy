@@ -612,6 +612,19 @@ Formato:
       );
     }
 
+    let audio_path = '';
+    if (agent?.handoff_rules?.audio_enabled && reply) {
+      try {
+        const { generateAudioFromText } =
+          await import('../services/ai/ttsService.js');
+        audio_path = await generateAudioFromText(reply, {
+          voice: agent?.handoff_rules?.audio_voice,
+        });
+      } catch (err) {
+        logger.error('[AIAutomation] Erro ao gerar TTS:', err.message);
+      }
+    }
+
     return {
       lead_id: lead.id,
       status: lead.status,
@@ -621,6 +634,7 @@ Formato:
       agent_id: agent?.id || null,
       agent_name: agent?.name || '',
       reply,
+      audio_path,
       opportunities: lead.matched_properties || [],
       match_summary: lead.match_summary || '',
       should_reply: this._canAutoReply(

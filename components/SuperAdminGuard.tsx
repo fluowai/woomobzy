@@ -79,14 +79,12 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
   ) {
     const path = location.pathname;
     const targetPath = getPanelHomePath(profile, { isImpersonating: true });
-    
-    if ((path.startsWith('/megaadmin') || path.startsWith('/superadmin')) && !path.startsWith(targetPath)) {
-      return (
-        <Navigate
-          to={targetPath}
-          replace
-        />
-      );
+
+    if (
+      (path.startsWith('/megaadmin') || path.startsWith('/superadmin')) &&
+      !path.startsWith(targetPath)
+    ) {
+      return <Navigate to={targetPath} replace />;
     }
   }
 

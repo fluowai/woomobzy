@@ -17,162 +17,172 @@ const checkoutSchema = z.object({
   coupon: z.string().optional(),
 });
 
-
-
-
-
-router.post('/checkout', verifyAuth, verifyAdmin, resolveAsaasApiKey, async (req, res) => {
-  try {
-    const parsed = checkoutSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res
-        .status(400)
-        .json({ error: parsed.error.flatten(), code: 'INVALID_CHECKOUT' });
-    }
-
-    const { planId, billingType } = parsed.data;
-    const supabase = getSupabaseServer();
-
-    const { data: organization, error: orgError } = await supabase
-      .from('organizations')
-      .select(
-        'id, name, owner_email, owner_name, plan_id, asaas_customer_id'
-      )
-      .eq('id', req.orgId)
-      .single();
-
-    if (orgError || !organization) {
-      return res
-        .status(404)
-        .json({ error: 'Organizacao nao encontrada', code: 'ORG_NOT_FOUND' });
-    }
-
-    const { data: plan, error: planError } = await supabase
-      .from('plans')
-      .select(
-        'id, name, price_monthly, interval, interval_count, asaas_price_id, slug'
-      )
-      .eq('id', planId)
-      .eq('is_active', true)
-      .maybeSingle();
-
-    if (planError || !plan) {
-      return res
-        .status(404)
-        .json({ error: 'Plano nao encontrado', code: 'PLAN_NOT_FOUND' });
-    }
-
-    if (
-      plan.price_monthly === null ||
-      plan.price_monthly === undefined ||
-      Number(plan.price_monthly) <= 0
-    ) {
-      return res.status(400).json({
-        error: 'Plano sem preco configurado',
-        code: 'PLAN_WITHOUT_PRICE',
-      });
-    }
-
-    let customer = null;
-    let asaasCustomerId = organization.asaas_customer_id;
-
-    if (!asaasCustomerId) {
-      const ownerEmail =
-        organization.owner_email || (req.user && req.user.email);
-      const ownerName =
-        organization.owner_name ||
-        organization.name ||
-        (req.user && req.user.user_metadata?.name);
-
-      customer = await AsaasService.getOrCreateCustomer({
-        name: ownerName || organization.name || 'Cliente',
-        cpfCnpj: undefined,
-        email: ownerEmail,
-        mobilePhone: undefined,
-        externalReference: organization.id,
-      }, req.asaasApiKey || undefined);
-
-      asaasCustomerId = customer.id;
-
-      await supabase
-        .from('organizations')
-        .update({ asaas_customer_id: asaasCustomerId })
-        .eq('id', organization.id);
-    }
-
-    const value = Number(plan.price_monthly);
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 1);
-
-    const description = `Assinatura ${plan.name} - ${organization.name}`;
-
-    const createSubscriptionPayload = {
-      customer: asaasCustomerId,
-      billingType,
-      value,
-      nextDueDate: dueDate.toISOString().split('T')[0],
-      description,
-      cycle: plan.interval === 'YEARLY' ? 'YEARLY' : 'MONTHLY',
-      maxPayments: plan.interval_count || 1,
-      externalReference: organization.id,
-    };
-
-    if (plan.asaas_price_id) {
-      createSubscriptionPayload.priceId = plan.asaas_price_id;
-    }
-
-    let subscription = null;
-    let payment = null;
-
+router.post(
+  '/checkout',
+  verifyAuth,
+  verifyAdmin,
+  resolveAsaasApiKey,
+  async (req, res) => {
     try {
-      subscription = await AsaasService.createSubscription(
-        createSubscriptionPayload,
-        req.asaasApiKey || undefined
-      );
+      const parsed = checkoutSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res
+          .status(400)
+          .json({ error: parsed.error.flatten(), code: 'INVALID_CHECKOUT' });
+      }
 
-      if (subscription?.id) {
+      const { planId, billingType } = parsed.data;
+      const supabase = getSupabaseServer();
+
+      const { data: organization, error: orgError } = await supabase
+        .from('organizations')
+        .select('id, name, owner_email, owner_name, plan_id, asaas_customer_id')
+        .eq('id', req.orgId)
+        .single();
+
+      if (orgError || !organization) {
+        return res
+          .status(404)
+          .json({ error: 'Organizacao nao encontrada', code: 'ORG_NOT_FOUND' });
+      }
+
+      const { data: plan, error: planError } = await supabase
+        .from('plans')
+        .select(
+          'id, name, price_monthly, interval, interval_count, asaas_price_id, slug'
+        )
+        .eq('id', planId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (planError || !plan) {
+        return res
+          .status(404)
+          .json({ error: 'Plano nao encontrado', code: 'PLAN_NOT_FOUND' });
+      }
+
+      if (
+        plan.price_monthly === null ||
+        plan.price_monthly === undefined ||
+        Number(plan.price_monthly) <= 0
+      ) {
+        return res.status(400).json({
+          error: 'Plano sem preco configurado',
+          code: 'PLAN_WITHOUT_PRICE',
+        });
+      }
+
+      let customer = null;
+      let asaasCustomerId = organization.asaas_customer_id;
+
+      if (!asaasCustomerId) {
+        const ownerEmail =
+          organization.owner_email || (req.user && req.user.email);
+        const ownerName =
+          organization.owner_name ||
+          organization.name ||
+          (req.user && req.user.user_metadata?.name);
+
+        customer = await AsaasService.getOrCreateCustomer(
+          {
+            name: ownerName || organization.name || 'Cliente',
+            cpfCnpj: undefined,
+            email: ownerEmail,
+            mobilePhone: undefined,
+            externalReference: organization.id,
+          },
+          req.asaasApiKey || undefined
+        );
+
+        asaasCustomerId = customer.id;
+
         await supabase
           .from('organizations')
-          .update({
-            asaas_subscription_id: subscription.id,
-            subscription_status: 'payment_required',
-            selected_plan_at: new Date().toISOString(),
-            plan_id: plan.id,
-          })
+          .update({ asaas_customer_id: asaasCustomerId })
           .eq('id', organization.id);
       }
-    } catch (error) {
-      logger.warn(
-        '[SubscriptionCheckout] Falha ao criar assinatura Asaas, criando cobranca avulsa:',
-        error.message
-      );
 
-      payment = await AsaasService.createPayment({
+      const value = Number(plan.price_monthly);
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 1);
+
+      const description = `Assinatura ${plan.name} - ${organization.name}`;
+
+      const createSubscriptionPayload = {
         customer: asaasCustomerId,
-        billingType: billingType === 'UNDEFINED' ? 'PIX' : billingType,
+        billingType,
         value,
-        dueDate: dueDate.toISOString().split('T')[0],
+        nextDueDate: dueDate.toISOString().split('T')[0],
         description,
+        cycle: plan.interval === 'YEARLY' ? 'YEARLY' : 'MONTHLY',
+        maxPayments: plan.interval_count || 1,
         externalReference: organization.id,
-      }, req.asaasApiKey || undefined);
+      };
+
+      if (plan.asaas_price_id) {
+        createSubscriptionPayload.priceId = plan.asaas_price_id;
+      }
+
+      let subscription = null;
+      let payment = null;
+
+      try {
+        subscription = await AsaasService.createSubscription(
+          createSubscriptionPayload,
+          req.asaasApiKey || undefined
+        );
+
+        if (subscription?.id) {
+          await supabase
+            .from('organizations')
+            .update({
+              asaas_subscription_id: subscription.id,
+              subscription_status: 'payment_required',
+              selected_plan_at: new Date().toISOString(),
+              plan_id: plan.id,
+            })
+            .eq('id', organization.id);
+        }
+      } catch (error) {
+        logger.warn(
+          '[SubscriptionCheckout] Falha ao criar assinatura Asaas, criando cobranca avulsa:',
+          error.message
+        );
+
+        payment = await AsaasService.createPayment(
+          {
+            customer: asaasCustomerId,
+            billingType: billingType === 'UNDEFINED' ? 'PIX' : billingType,
+            value,
+            dueDate: dueDate.toISOString().split('T')[0],
+            description,
+            externalReference: organization.id,
+          },
+          req.asaasApiKey || undefined
+        );
+      }
+
+      const result = {
+        subscription,
+        payment,
+        customer: asaasCustomerId,
+        plan: {
+          id: plan.id,
+          name: plan.name,
+          price_monthly: plan.price_monthly,
+        },
+        organization: { id: organization.id, name: organization.name },
+      };
+
+      return res.status(201).json({ success: true, data: result });
+    } catch (error) {
+      logger.error('[SubscriptionCheckout] Error:', error);
+      return res
+        .status(500)
+        .json({ error: error.message, code: 'CHECKOUT_ERROR' });
     }
-
-    const result = {
-      subscription,
-      payment,
-      customer: asaasCustomerId,
-      plan: { id: plan.id, name: plan.name, price_monthly: plan.price_monthly },
-      organization: { id: organization.id, name: organization.name },
-    };
-
-    return res.status(201).json({ success: true, data: result });
-  } catch (error) {
-    logger.error('[SubscriptionCheckout] Error:', error);
-    return res
-      .status(500)
-      .json({ error: error.message, code: 'CHECKOUT_ERROR' });
   }
-});
+);
 
 router.post('/webhook/asaas', async (req, res) => {
   try {

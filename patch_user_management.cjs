@@ -4,8 +4,8 @@ let content = fs.readFileSync(file, 'utf8');
 
 // 1. Add lucide imports for tabs
 content = content.replace(
-  'UserCheck,\n} from \'lucide-react\';',
-  'UserCheck,\n  CreditCard,\n  FileText,\n  Wallet,\n} from \'lucide-react\';'
+  "UserCheck,\n} from 'lucide-react';",
+  "UserCheck,\n  CreditCard,\n  FileText,\n  Wallet,\n} from 'lucide-react';"
 );
 
 // 2. Add state variables for the new fields

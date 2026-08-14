@@ -31,7 +31,10 @@ const SIGNERS = [
   { type: 'testemunha_2', label: 'Testemunha 2' },
 ] as const;
 
-export const StepDigitalSignature: React.FC<Props> = ({ lease, updateFields }) => {
+export const StepDigitalSignature: React.FC<Props> = ({
+  lease,
+  updateFields,
+}) => {
   const [signers, setSigners] = useState<Partial<Signature>[]>([
     {
       signer_type: 'locador',
@@ -48,7 +51,9 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease, updateFields }) =
       status: 'pending',
     },
   ]);
-  const [signatureMethod, setSignatureMethod] = useState(lease.signature_method || 'woosign');
+  const [signatureMethod, setSignatureMethod] = useState(
+    lease.signature_method || 'woosign'
+  );
   const [sendMethod, setSendMethod] = useState('ambos');
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
@@ -140,7 +145,7 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease, updateFields }) =
             }),
           });
         } else {
-          const res = await callApi('/api/locacao/signatures', {
+          const res = (await callApi('/api/locacao/signatures', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -152,7 +157,7 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease, updateFields }) =
               signer_cpf: signer.signer_cpf,
               status: 'pending',
             }),
-          }) as any;
+          })) as any;
           if (res.success && res.data) {
             setSigners((prev) =>
               prev.map((s) =>
@@ -166,14 +171,11 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease, updateFields }) =
       }
 
       if (lease.id) {
-        await callApi(
-          `/api/locacao/signatures/invite/bulk/${lease.id}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ method: sendMethod }),
-          }
-        );
+        await callApi(`/api/locacao/signatures/invite/bulk/${lease.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ method: sendMethod }),
+        });
       }
 
       toast.success('Assinaturas salvas e convites enviados!');
@@ -192,12 +194,15 @@ export const StepDigitalSignature: React.FC<Props> = ({ lease, updateFields }) =
 
     setSending(signer.id);
     try {
-      const data = await callApi(`/api/locacao/signatures/invite/${signer.id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ method: sendMethod }),
-      }) as any;
-      
+      const data = (await callApi(
+        `/api/locacao/signatures/invite/${signer.id}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ method: sendMethod }),
+        }
+      )) as any;
+
       if (data.success) {
         toast.success(
           `Convite enviado para ${signer.signer_name || signer.signer_type}`

@@ -676,7 +676,9 @@ async function handleCreateImpersonationSession(
 
         if (targetOrgError) throw targetOrgError;
         if (!targetOrg) {
-          return res.status(404).json({ error: 'Organizacao alvo nao encontrada' });
+          return res
+            .status(404)
+            .json({ error: 'Organizacao alvo nao encontrada' });
         }
 
         const isChild = targetOrg.parent_id === currentOrg.id;
@@ -704,7 +706,8 @@ async function handleCreateImpersonationSession(
           await revokeImpersonationSession(supabase, {
             actorUserId: req.authUserId,
             sessionId: req.impersonationSessionId,
-            sessionSecret: readImpersonationSessionHeaders(req.headers).sessionSecret,
+            sessionSecret: readImpersonationSessionHeaders(req.headers)
+              .sessionSecret,
             ipAddress: req.ip,
           });
         } catch (revokeError) {
@@ -1585,7 +1588,15 @@ router.put(
 // ==========================================
 router.post('/users/invite', verifyAdmin, requireTenant, async (req, res) => {
   try {
-    const { email, name, role = 'broker', phone, creci, commission_rate, payment_info } = req.body;
+    const {
+      email,
+      name,
+      role = 'broker',
+      phone,
+      creci,
+      commission_rate,
+      payment_info,
+    } = req.body;
     const organization_id = req.orgId;
 
     if (!email || !name) {
@@ -1593,9 +1604,10 @@ router.post('/users/invite', verifyAdmin, requireTenant, async (req, res) => {
     }
 
     // Invite the user via Supabase Auth Admin
-    const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(email, {
-      data: { name, organization_id, role }
-    });
+    const { data: authData, error: authError } =
+      await supabase.auth.admin.inviteUserByEmail(email, {
+        data: { name, organization_id, role },
+      });
 
     if (authError) {
       console.error('Error inviting user:', authError);
@@ -1617,13 +1629,15 @@ router.post('/users/invite', verifyAdmin, requireTenant, async (req, res) => {
         phone: phone || null,
         creci: creci || null,
         commission_rate: commission_rate !== undefined ? commission_rate : 0,
-        payment_info: payment_info || {}
+        payment_info: payment_info || {},
       })
       .eq('id', userId);
 
     if (profileError) {
       console.error('Error updating profile:', profileError);
-      return res.status(500).json({ error: 'Usuário convidado, mas erro ao salvar ficha completa.' });
+      return res.status(500).json({
+        error: 'Usuário convidado, mas erro ao salvar ficha completa.',
+      });
     }
 
     res.json({ message: 'Convite enviado com sucesso.', user: authData.user });

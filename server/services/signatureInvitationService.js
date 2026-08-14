@@ -300,7 +300,7 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
 
     if (envelope && envelope.id) {
       await woosignService.sendEnvelope(envelope.id);
-      
+
       const supabase = getSupabaseServer();
       await supabase
         .from('signatures')
@@ -315,7 +315,7 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
         status: 'sent',
       };
     }
-    
+
     throw new Error('Falha ao gerar envelope WooSign');
   }
 

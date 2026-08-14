@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Pencil, Save, X as XIcon, 
+import {
+  Pencil,
+  Save,
+  X as XIcon,
   MessageCircle,
   Phone,
   Mail,
@@ -93,7 +96,7 @@ const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
   const [isEditing, setIsEditing] = useState(false);
 
   // Agendamentos state
-  
+
   const [isEditingSidebar, setIsEditingSidebar] = useState(false);
   const [sidebarForm, setSidebarForm] = useState({
     phone: '',
@@ -122,25 +125,33 @@ const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
     if (!lead?.id) return;
     setSavingSidebar(true);
     try {
-      const budget = sidebarForm.budget ? parseFloat(sidebarForm.budget.replace(/[^0-9.-]+/g, '')) : null;
-      const aptitude_interest = sidebarForm.aptitude_interest.split(',').map(s => s.trim()).filter(Boolean);
+      const budget = sidebarForm.budget
+        ? parseFloat(sidebarForm.budget.replace(/[^0-9.-]+/g, ''))
+        : null;
+      const aptitude_interest = sidebarForm.aptitude_interest
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
       const preferences = {
         ...(lead.preferences || {}),
         type: sidebarForm.type,
-        neighborhood: sidebarForm.neighborhood
+        neighborhood: sidebarForm.neighborhood,
       };
-      
+
       const payload = {
         phone: sidebarForm.phone,
         email: sidebarForm.email,
         budget,
         preferences,
-        aptitude_interest
+        aptitude_interest,
       };
 
-      const { error } = await supabase.from('leads').update(payload).eq('id', lead.id);
+      const { error } = await supabase
+        .from('leads')
+        .update(payload)
+        .eq('id', lead.id);
       if (error) throw error;
-      
+
       toast.success('Informações atualizadas com sucesso');
       setIsEditingSidebar(false);
       if (onUpdateLead) {

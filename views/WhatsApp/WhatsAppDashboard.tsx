@@ -136,8 +136,8 @@ const WhatsAppDashboard: React.FC = () => {
               {connectedCount > 1
                 ? `${connectedCount} WhatsApps conectados`
                 : connectedCount === 1
-                ? 'WhatsApp conectado'
-                : 'Conectar WhatsApp'}
+                  ? 'WhatsApp conectado'
+                  : 'Conectar WhatsApp'}
             </span>
           </button>
 
@@ -203,7 +203,10 @@ const WhatsAppDashboard: React.FC = () => {
             messages={messages}
             onSendMessage={handleSendMessage}
             loading={loadingMessages}
-            instanceName={instances.find(i => i.id === selectedChat.instance_id)?.name || ''}
+            instanceName={
+              instances.find((i) => i.id === selectedChat.instance_id)?.name ||
+              ''
+            }
             instanceId={selectedChat.instance_id}
             onChatUpdated={handleChatUpdated}
             onBack={clearSelectedChat}

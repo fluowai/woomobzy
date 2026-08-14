@@ -2,7 +2,9 @@ import { getSupabaseServer } from '../lib/supabase-server.js';
 
 export async function resolveAsaasApiKey(req, res, next) {
   if (!req.orgId) {
-    return res.status(400).json({ error: 'Organizacao nao encontrada', code: 'ORG_REQUIRED' });
+    return res
+      .status(400)
+      .json({ error: 'Organizacao nao encontrada', code: 'ORG_REQUIRED' });
   }
 
   try {

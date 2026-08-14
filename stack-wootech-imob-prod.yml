@@ -54,12 +54,12 @@ services:
       WHATSAPP_AI_AUTOMATION: 'true'
       RABBITMQ_URL: 'amqp://imobzy:RbIe1a7l2KJ43SHYuXcFQ6U9LB@rabbitmq-server:5672/'
       MEDIA_STORAGE_PROVIDER: 'minio'
-      MINIO_ENDPOINT: 'https://s.wootech.com.br'
-      MINIO_PUBLIC_URL: 'https://s.wootech.com.br'
-      MINIO_ACCESS_KEY: '8aHPnW4JQsRWhbKld9Yw'
-      MINIO_SECRET_KEY: 'YRZMCNfcdIZhUtTXpPCvvSiPB74ZFTEtnZ5B9juc'
+      MINIO_ENDPOINT: 'https://mypanel.wootech.com.br'
+      MINIO_PUBLIC_URL: 'https://mypanel.wootech.com.br'
+      MINIO_ACCESS_KEY: 'U7lWsqJfDo0NaAsxnbQX'
+      MINIO_SECRET_KEY: '8xpjlsOGgcyQWprFHiK0XxKClU8RgI0F0OumYza2'
       MINIO_REGION: 'us-east-1'
-      MINIO_WHATSAPP_BUCKET: 'imobzywhatsapp'
+      MINIO_WHATSAPP_BUCKET: 'imobztwootech'
       TRAEFIK_DYNAMIC_DIR: '/app/traefik/dynamic'
       TRAEFIK_FRONTEND_SERVICE: 'wootech_imob_frontend@docker'
       TRAEFIK_API_SERVICE: 'wootech_imob_api@docker'
@@ -104,18 +104,22 @@ services:
       WHATSAPP_WS_JWT_SECRET: 'f8a2c9e1d4b7f3a6e2d8c5b9a1f4e7d2c6b3a9f1e5d8c2b6a4f7e1d3c9b5a8f2'
       WHATSAPP_AI_AUTOMATION: 'true'
       MEDIA_STORAGE_PROVIDER: 'minio'
-      MINIO_ENDPOINT: 'https://s.wootech.com.br'
-      MINIO_PUBLIC_URL: 'https://s.wootech.com.br'
-      MINIO_ACCESS_KEY: '8aHPnW4JQsRWhbKld9Yw'
-      MINIO_SECRET_KEY: 'YRZMCNfcdIZhUtTXpPCvvSiPB74ZFTEtnZ5B9juc'
+      MINIO_ENDPOINT: 'https://mypanel.wootech.com.br'
+      MINIO_PUBLIC_URL: 'https://mypanel.wootech.com.br'
+      MINIO_ACCESS_KEY: 'U7lWsqJfDo0NaAsxnbQX'
+      MINIO_SECRET_KEY: '8xpjlsOGgcyQWprFHiK0XxKClU8RgI0F0OumYza2'
       MINIO_REGION: 'us-east-1'
-      MINIO_WHATSAPP_BUCKET: 'imobzywhatsapp'
+      MINIO_WHATSAPP_BUCKET: 'imobztwootech'
     volumes:
       - whatsapp_sessions:/app/.sessions
     networks:
       - imobfluow_internal
     healthcheck:
-      test: ['CMD-SHELL', 'curl -fsS http://127.0.0.1:3100/health >/dev/null || exit 1']
+      test:
+        [
+          'CMD-SHELL',
+          'curl -fsS http://127.0.0.1:3100/health >/dev/null || exit 1',
+        ]
       interval: 30s
       timeout: 5s
       retries: 3

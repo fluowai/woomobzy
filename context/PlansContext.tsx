@@ -1,5 +1,11 @@
 import { logger } from '@/utils/logger';
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from './AuthContext';
 

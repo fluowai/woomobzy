@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -585,7 +586,21 @@ func (c *Client) eventHandler(evt interface{}) {
 		if cm := c.callManager; cm != nil {
 			cm.handleCallEventTerminate(v)
 		}
+
+	case *events.JoinedGroup:
+		c.handleJoinedGroup(v)
+
+	case *events.LeftGroup:
+		c.handleLeftGroup(v)
 	}
+}
+
+func (c *Client) handleJoinedGroup(evt *events.JoinedGroup) {
+	c.logger.Info("Joined group", zap.String("group_jid", evt.JID.String()), zap.String("name", evt.GroupName.Name))
+}
+
+func (c *Client) handleLeftGroup(evt *events.LeftGroup) {
+	c.logger.Info("Left group", zap.String("group_jid", evt.JID.String()))
 }
 
 // handleMessage processes an incoming WhatsApp message
@@ -832,18 +847,33 @@ func (c *Client) handleMessage(evt *events.Message) {
 				return
 			}
 
-			if result != nil && result.ShouldReply && strings.TrimSpace(result.Reply) != "" {
+			if result != nil && result.ShouldReply {
 				replyCtx, cancel := context.WithTimeout(c.ctx, 30*time.Second)
 				defer cancel()
 
-				if _, _, err := c.SendTextMessage(replyCtx, savedChat.ChatJID, strings.TrimSpace(result.Reply)); err != nil {
-					c.logger.Warn("AI automatic reply failed",
-						zap.String("instance", c.instanceID.String()),
-						zap.String("message_id", saved.MessageID),
-						zap.String("agent_id", result.AgentID),
-						zap.Error(err),
-					)
-					return
+				if result.AudioPath != "" {
+					audioData, err := os.ReadFile(result.AudioPath)
+					if err == nil {
+						_, _, _, _, _, err = c.SendMediaMessage(replyCtx, savedChat.ChatJID, "audio", audioData, "audio/mpeg", "audio.mp3", "")
+						os.Remove(result.AudioPath)
+					}
+					if err != nil {
+						c.logger.Warn("AI automatic audio reply failed",
+							zap.String("instance", c.instanceID.String()),
+							zap.Error(err),
+						)
+						return
+					}
+				} else if strings.TrimSpace(result.Reply) != "" {
+					if _, _, err := c.SendTextMessage(replyCtx, savedChat.ChatJID, strings.TrimSpace(result.Reply)); err != nil {
+						c.logger.Warn("AI automatic reply failed",
+							zap.String("instance", c.instanceID.String()),
+							zap.String("message_id", saved.MessageID),
+							zap.String("agent_id", result.AgentID),
+							zap.Error(err),
+						)
+						return
+					}
 				}
 
 				c.logger.Info("AI automatic reply sent",

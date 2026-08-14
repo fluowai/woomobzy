@@ -31,9 +31,9 @@ export const SwarmBuilder: React.FC<SwarmBuilderProps> = ({
             </h2>
           </div>
           <p className="text-sm sm:text-base text-slate-400 font-medium">
-            Conecte vários agentes especialistas a um Orquestrador. O Orquestrador
-            fica na linha de frente atendendo o cliente e delega tarefas complexas
-            para a equipe nos bastidores.
+            Conecte vários agentes especialistas a um Orquestrador. O
+            Orquestrador fica na linha de frente atendendo o cliente e delega
+            tarefas complexas para a equipe nos bastidores.
           </p>
         </div>
         <div className="shrink-0 flex flex-col sm:flex-row items-center gap-3">
@@ -84,7 +84,8 @@ export const SwarmBuilder: React.FC<SwarmBuilderProps> = ({
                     </p>
                   </div>
                   <div className="mt-6 flex items-center gap-2 text-xs font-bold text-indigo-600">
-                    <Zap size={14} /> {orch.autonomy_level === 3 ? 'Autônomo' : 'Semiautônomo'}
+                    <Zap size={14} />{' '}
+                    {orch.autonomy_level === 3 ? 'Autônomo' : 'Semiautônomo'}
                   </div>
                 </div>
 
@@ -123,7 +124,9 @@ export const SwarmBuilder: React.FC<SwarmBuilderProps> = ({
                     </div>
                   ) : (
                     <div className="flex h-24 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-200 bg-white/50 text-slate-400">
-                      <p className="text-sm font-medium">Nenhum especialista conectado.</p>
+                      <p className="text-sm font-medium">
+                        Nenhum especialista conectado.
+                      </p>
                       <div className="flex gap-4">
                         <button
                           onClick={() => onSelectAgent(orch.id)}
@@ -148,7 +151,9 @@ export const SwarmBuilder: React.FC<SwarmBuilderProps> = ({
         {orchestrators.length === 0 && (
           <div className="flex h-64 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-white">
             <Workflow size={48} className="mb-4 text-slate-300" />
-            <p className="text-lg font-bold text-slate-900">Nenhum Swarm criado</p>
+            <p className="text-lg font-bold text-slate-900">
+              Nenhum Swarm criado
+            </p>
             <p className="mt-1 text-sm font-medium text-slate-500">
               Crie o seu primeiro Orquestrador para começar a montar uma equipe.
             </p>

@@ -8,9 +8,7 @@ const rewriteInstagramPath = (path) => {
     return path;
   }
 
-  return path.startsWith('/api/instagram')
-    ? path
-    : `/api/instagram${path}`;
+  return path.startsWith('/api/instagram') ? path : `/api/instagram${path}`;
 };
 
 export const setupInstagramProxy = (app, server) => {

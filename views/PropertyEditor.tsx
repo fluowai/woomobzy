@@ -380,8 +380,7 @@ const PropertyEditor: React.FC = () => {
               ? await clientService.list(doc, ['Proprietário'])
               : [];
             const byDoc = (matches || []).find(
-              (c: any) =>
-                c.document_number === doc || c.id === ownerDraft.id
+              (c: any) => c.document_number === doc || c.id === ownerDraft.id
             );
             if (byDoc) {
               ownerId = byDoc.id;
@@ -788,9 +787,11 @@ const PropertyEditor: React.FC = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 bg-indigo-50/60 rounded-2xl border border-indigo-100">
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">
-                  {((ownerLinkedName ||
-                    (formData.ownerInfo as any)?.name ||
-                    'D')[0] || 'D').toUpperCase()}
+                  {(
+                    (ownerLinkedName ||
+                      (formData.ownerInfo as any)?.name ||
+                      'D')[0] || 'D'
+                  ).toUpperCase()}
                 </div>
                 <div>
                   <p className="font-bold text-slate-900">

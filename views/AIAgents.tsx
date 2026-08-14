@@ -42,7 +42,7 @@ type BuilderState = {
   tools: string[];
   autonomy_level: number;
   operation_mode: string;
-  handoff_rules: Record<string, boolean>;
+  handoff_rules: Record<string, any>;
   agent_type: 'orchestrator' | 'specialist';
   sub_agents: string[];
   share_prompt_with_subagents: boolean;
@@ -50,7 +50,7 @@ type BuilderState = {
 
 const STATUS_ACTIVE = ['Ativo', 'Em teste'];
 
-const defaultHandoff: Record<string, boolean> = {
+const defaultHandoff: Record<string, any> = {
   visit_requested: true,
   price_negotiation: true,
   sensitive_document: true,
@@ -58,6 +58,8 @@ const defaultHandoff: Record<string, boolean> = {
   angry_lead: true,
   low_confidence: true,
   property_unavailable: true,
+  audio_enabled: false,
+  audio_voice: 'pt-BR-FranciscaNeural',
 };
 
 const DEFAULTS: BuilderState = {
@@ -326,7 +328,10 @@ const AIAgents: React.FC = () => {
     setDraft((prev) => ({ ...prev, [field]: value }));
   };
 
-  const toggleArray = (field: 'capabilities' | 'tools' | 'sub_agents', value: string) => {
+  const toggleArray = (
+    field: 'capabilities' | 'tools' | 'sub_agents',
+    value: string
+  ) => {
     setDraft((prev) => {
       const current = prev[field] || [];
       return {
@@ -508,15 +513,15 @@ const AIAgents: React.FC = () => {
           </div>
 
           {mainTab === 'swarms' ? (
-             <SwarmBuilder
-               agents={agents}
-               onSelectAgent={(id) => {
-                 setMainTab('specialists');
-                 editAgent(id);
-               }}
-               onCreateNew={() => startNew('orchestrator')}
-               onCreateSpecialist={() => startNew('specialist')}
-             />
+            <SwarmBuilder
+              agents={agents}
+              onSelectAgent={(id) => {
+                setMainTab('specialists');
+                editAgent(id);
+              }}
+              onCreateNew={() => startNew('orchestrator')}
+              onCreateSpecialist={() => startNew('specialist')}
+            />
           ) : selectedId === 'new' && !selectedAgent && agents.length === 0 ? (
             <div className="space-y-5">
               <AgentPresetGrid presets={presets} onSelect={applyPreset} />
@@ -594,7 +599,10 @@ interface BuilderViewProps {
   saving: boolean;
   agents: AIAgent[];
   onChange: (field: string, value: any) => void;
-  onToggleArray: (field: 'capabilities' | 'tools' | 'sub_agents', value: string) => void;
+  onToggleArray: (
+    field: 'capabilities' | 'tools' | 'sub_agents',
+    value: string
+  ) => void;
   onToggleChannel: (value: string) => void;
   onToggleHandoff: (ruleId: string) => void;
   onSave: (status?: string) => void;

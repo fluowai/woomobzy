@@ -39,10 +39,7 @@ import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
 import { logger } from '@/utils/logger';
 import { isUrbanProperty, isRuralProperty } from '../utils/propertyNiche';
-import {
-  LEASE_STATUS_LABELS,
-  PAYMENT_STATUS_LABELS,
-} from '../src/types/lease';
+import { LEASE_STATUS_LABELS, PAYMENT_STATUS_LABELS } from '../src/types/lease';
 
 type Mode = 'urban' | 'rural';
 type TimeRange = '30d' | '90d' | '6m' | '1y' | 'all';
@@ -169,7 +166,15 @@ const THEMES: Record<
   },
 };
 
-const PALETTE = ['#2563eb', '#10b981', '#f59e0b', '#7c3aed', '#0891b2', '#ec4899', '#64748b'];
+const PALETTE = [
+  '#2563eb',
+  '#10b981',
+  '#f59e0b',
+  '#7c3aed',
+  '#0891b2',
+  '#ec4899',
+  '#64748b',
+];
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('pt-BR', {
@@ -629,7 +634,8 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
     > = {};
     leadsAll.forEach((l) => {
       const source = l.source || 'Não informado';
-      if (!rows[source]) rows[source] = { source, total: 0, converted: 0, budget: 0 };
+      if (!rows[source])
+        rows[source] = { source, total: 0, converted: 0, budget: 0 };
       rows[source].total++;
       if (l.status === 'Fechado') rows[source].converted++;
       rows[source].budget += l.budget || 0;
@@ -667,7 +673,9 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
     propsAll.forEach((p) => {
       if (!p.created_at) return;
       const d = new Date(p.created_at);
-      const month = months.find((m) => m.key === `${d.getFullYear()}-${d.getMonth()}`);
+      const month = months.find(
+        (m) => m.key === `${d.getFullYear()}-${d.getMonth()}`
+      );
       if (month) month.captacoes++;
       if (p.status === 'Vendido' && p.updated_at) {
         const ud = new Date(p.updated_at);
@@ -680,7 +688,9 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
     leadsAll.forEach((l) => {
       if (!l.created_at) return;
       const d = new Date(l.created_at);
-      const month = months.find((m) => m.key === `${d.getFullYear()}-${d.getMonth()}`);
+      const month = months.find(
+        (m) => m.key === `${d.getFullYear()}-${d.getMonth()}`
+      );
       if (month) month.leads++;
     });
     return months;
@@ -734,13 +744,14 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
       }))
       .sort(
         (a, b) =>
-          b.converted - a.converted || b.leads - a.leads || b.activities - a.activities
+          b.converted - a.converted ||
+          b.leads - a.leads ||
+          b.activities - a.activities
       );
   }, [brokers, leadsAll, propsAll, activitiesByBroker]);
 
   const totalTeamActivities = useMemo(
-    () =>
-      brokerStats.reduce((sum, s) => sum + s.activities, 0),
+    () => brokerStats.reduce((sum, s) => sum + s.activities, 0),
     [brokerStats]
   );
 
@@ -749,8 +760,7 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
     const mrr = active.reduce((sum, c) => sum + (c.monthly_rent || 0), 0);
     const expiring90 = contracts.filter((c) => {
       if (!c.end_date) return false;
-      const diff =
-        new Date(c.end_date).getTime() - Date.now();
+      const diff = new Date(c.end_date).getTime() - Date.now();
       return diff > 0 && diff <= 90 * 86400000;
     });
     const byPayment: Record<string, { count: number; value: number }> = {};
@@ -801,7 +811,17 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
     switch (activeTab) {
       case 'commercial':
         rows = [
-          ['Imóvel', 'Tipo', 'Cidade', 'UF', 'Status', 'Preço', 'Views', 'Favoritos', 'Criado em'],
+          [
+            'Imóvel',
+            'Tipo',
+            'Cidade',
+            'UF',
+            'Status',
+            'Preço',
+            'Views',
+            'Favoritos',
+            'Criado em',
+          ],
           ...propsAll.map((p) => [
             p.title,
             p.property_type || p.type || '',
@@ -831,7 +851,17 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
         break;
       case 'brokers':
         rows = [
-          ['Corretor', 'CRECI', 'Leads', 'Captações', 'Conversões', 'Perdidos', 'Taxa (%)', 'Budget', 'Atividades'],
+          [
+            'Corretor',
+            'CRECI',
+            'Leads',
+            'Captações',
+            'Conversões',
+            'Perdidos',
+            'Taxa (%)',
+            'Budget',
+            'Atividades',
+          ],
           ...brokerStats.map((s) => [
             s.broker.name || s.broker.email || 'Sem nome',
             s.broker.creci || '',
@@ -847,7 +877,15 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
         break;
       case 'rentals':
         rows = [
-          ['Locatário', 'Status', 'Aluguel Mensal', 'Pagamento', 'Início', 'Término', 'Imóvel'],
+          [
+            'Locatário',
+            'Status',
+            'Aluguel Mensal',
+            'Pagamento',
+            'Início',
+            'Término',
+            'Imóvel',
+          ],
           ...contracts.map((c) => [
             c.tenant_name,
             statusLabel(c.status, 'lease'),
@@ -862,8 +900,18 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
       default:
         rows = [
           ['Categoria', 'Nome', 'Valor', 'Data'],
-          ...propsAll.map((p) => ['Imóvel', p.title, p.price || 0, p.created_at || '']),
-          ...leadsAll.map((l) => ['Lead', l.name, l.budget || 0, l.created_at || '']),
+          ...propsAll.map((p) => [
+            'Imóvel',
+            p.title,
+            p.price || 0,
+            p.created_at || '',
+          ]),
+          ...leadsAll.map((l) => [
+            'Lead',
+            l.name,
+            l.budget || 0,
+            l.created_at || '',
+          ]),
           ...contracts.map((c) => [
             'Contrato',
             c.tenant_name,
@@ -959,7 +1007,9 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
               <Activity className="text-white/90" size={36} />
               {theme.title}
             </h1>
-            <p className={`${theme.lightText} mt-2 text-sm md:text-base max-w-2xl`}>
+            <p
+              className={`${theme.lightText} mt-2 text-sm md:text-base max-w-2xl`}
+            >
               {theme.subtitle}
             </p>
           </div>
@@ -1092,12 +1142,28 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
                   >
                     <defs>
                       <linearGradient id="gCapt" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={theme.chart} stopOpacity={0.2} />
-                        <stop offset="95%" stopColor={theme.chart} stopOpacity={0} />
+                        <stop
+                          offset="5%"
+                          stopColor={theme.chart}
+                          stopOpacity={0.2}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor={theme.chart}
+                          stopOpacity={0}
+                        />
                       </linearGradient>
                       <linearGradient id="gLeads" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.2} />
-                        <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
+                        <stop
+                          offset="5%"
+                          stopColor="#7c3aed"
+                          stopOpacity={0.2}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="#7c3aed"
+                          stopOpacity={0}
+                        />
                       </linearGradient>
                     </defs>
                     <CartesianGrid
@@ -1152,9 +1218,12 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
               </div>
             </SectionCard>
 
-            <SectionCard title="Mix de Estoque" subtitle="Distribuição por tipologia">
+            <SectionCard
+              title="Mix de Estoque"
+              subtitle="Distribuição por tipologia"
+            >
               {typeData.length === 0 ? (
-                <EmptyState message='Nenhum imóvel encontrado.' />
+                <EmptyState message="Nenhum imóvel encontrado." />
               ) : (
                 <>
                   <div className="h-[220px] relative">
@@ -1191,7 +1260,10 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
                   </div>
                   <div className="mt-4 space-y-2">
                     {typeData.slice(0, 5).map((item, idx) => (
-                      <div key={idx} className="flex items-center justify-between">
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between"
+                      >
                         <div className="flex items-center gap-3">
                           <div
                             className="w-3 h-3 rounded-full shadow-sm"
@@ -1220,7 +1292,7 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
               subtitle="Volume de VGV por região"
             >
               {regionData.length === 0 ? (
-                <EmptyState message='Nenhuma região com VGV.' />
+                <EmptyState message="Nenhuma região com VGV." />
               ) : (
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1241,14 +1313,24 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
                         width={120}
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
+                        tick={{
+                          fill: '#64748b',
+                          fontSize: 12,
+                          fontWeight: 500,
+                        }}
                       />
                       <Tooltip
                         contentStyle={tooltipStyle}
                         cursor={{ fill: '#f8fafc' }}
-                        formatter={(value: any) => formatCurrency(Number(value))}
+                        formatter={(value: any) =>
+                          formatCurrency(Number(value))
+                        }
                       />
-                      <Bar dataKey="value" fill={theme.chart} radius={[0, 6, 6, 0]}>
+                      <Bar
+                        dataKey="value"
+                        fill={theme.chart}
+                        radius={[0, 6, 6, 0]}
+                      >
                         {regionData.map((_, index) => (
                           <Cell
                             key={index}
@@ -1262,9 +1344,12 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
               )}
             </SectionCard>
 
-            <SectionCard title="Origem dos Leads" subtitle="Eficácia dos canais de aquisição">
+            <SectionCard
+              title="Origem dos Leads"
+              subtitle="Eficácia dos canais de aquisição"
+            >
               {leadSourceData.length === 0 ? (
-                <EmptyState message='Nenhum lead registrado.' />
+                <EmptyState message="Nenhum lead registrado." />
               ) : (
                 <div className="space-y-4 pt-2">
                   {leadSourceData.slice(0, 8).map((item, index) => (
@@ -1283,13 +1368,18 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
                           {item.value}
                           <span className="text-gray-400 font-medium">
                             {' '}
-                            ({Math.round((item.value / Math.max(1, leadsAll.length)) * 100)}
+                            (
+                            {Math.round(
+                              (item.value / Math.max(1, leadsAll.length)) * 100
+                            )}
                             %)
                           </span>
                         </span>
                       </div>
                       <ProgressBar
-                        value={(item.value / Math.max(1, leadsAll.length)) * 100}
+                        value={
+                          (item.value / Math.max(1, leadsAll.length)) * 100
+                        }
                         color={theme.barSolid}
                       />
                     </div>
@@ -1359,7 +1449,7 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
               subtitle="Distribuição atual da carteira"
             >
               {statusInventory.length === 0 ? (
-                <EmptyState message='Nenhum imóvel encontrado.' />
+                <EmptyState message="Nenhum imóvel encontrado." />
               ) : (
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1373,15 +1463,26 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
                         dataKey="name"
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fill: '#64748b', fontSize: 11, fontWeight: 500 }}
+                        tick={{
+                          fill: '#64748b',
+                          fontSize: 11,
+                          fontWeight: 500,
+                        }}
                       />
                       <YAxis
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
+                        tick={{
+                          fill: '#64748b',
+                          fontSize: 12,
+                          fontWeight: 500,
+                        }}
                         allowDecimals={false}
                       />
-                      <Tooltip contentStyle={tooltipStyle} cursor={{ fill: '#f8fafc' }} />
+                      <Tooltip
+                        contentStyle={tooltipStyle}
+                        cursor={{ fill: '#f8fafc' }}
+                      />
                       <Bar dataKey="count" name="Imóveis" radius={[6, 6, 0, 0]}>
                         {statusInventory.map((_, index) => (
                           <Cell
@@ -1401,7 +1502,7 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
               subtitle="Valor total da carteira em cada situação"
             >
               {statusInventory.length === 0 ? (
-                <EmptyState message='Nenhum imóvel encontrado.' />
+                <EmptyState message="Nenhum imóvel encontrado." />
               ) : (
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1422,14 +1523,25 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
                         width={110}
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
+                        tick={{
+                          fill: '#64748b',
+                          fontSize: 12,
+                          fontWeight: 500,
+                        }}
                       />
                       <Tooltip
                         contentStyle={tooltipStyle}
                         cursor={{ fill: '#f8fafc' }}
-                        formatter={(value: any) => formatCurrency(Number(value))}
+                        formatter={(value: any) =>
+                          formatCurrency(Number(value))
+                        }
                       />
-                      <Bar dataKey="value" name="VGV" fill={theme.chart} radius={[0, 6, 6, 0]}>
+                      <Bar
+                        dataKey="value"
+                        name="VGV"
+                        fill={theme.chart}
+                        radius={[0, 6, 6, 0]}
+                      >
                         {statusInventory.map((_, index) => (
                           <Cell
                             key={index}
@@ -1450,7 +1562,7 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
               subtitle="Ticket médio por tipologia"
             >
               {avgPriceByType.length === 0 ? (
-                <EmptyState message='Nenhum imóvel encontrado.' />
+                <EmptyState message="Nenhum imóvel encontrado." />
               ) : (
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1464,7 +1576,11 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
                         dataKey="name"
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fill: '#64748b', fontSize: 10, fontWeight: 500 }}
+                        tick={{
+                          fill: '#64748b',
+                          fontSize: 10,
+                          fontWeight: 500,
+                        }}
                         interval={0}
                         angle={-25}
                         textAnchor="end"
@@ -1473,15 +1589,26 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
                       <YAxis
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fill: '#64748b', fontSize: 11, fontWeight: 500 }}
+                        tick={{
+                          fill: '#64748b',
+                          fontSize: 11,
+                          fontWeight: 500,
+                        }}
                         tickFormatter={(value: number) => formatCurrency(value)}
                       />
                       <Tooltip
                         contentStyle={tooltipStyle}
                         cursor={{ fill: '#f8fafc' }}
-                        formatter={(value: any) => formatCurrency(Number(value))}
+                        formatter={(value: any) =>
+                          formatCurrency(Number(value))
+                        }
                       />
-                      <Bar dataKey="value" name="Preço médio" fill={theme.chartSoft} radius={[6, 6, 0, 0]} />
+                      <Bar
+                        dataKey="value"
+                        name="Preço médio"
+                        fill={theme.chartSoft}
+                        radius={[6, 6, 0, 0]}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -1493,7 +1620,7 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
               subtitle="Ranking por visualizações e favoritos"
             >
               {topProperties.length === 0 ? (
-                <EmptyState message='Nenhum imóvel encontrado.' />
+                <EmptyState message="Nenhum imóvel encontrado." />
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -1523,7 +1650,8 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
                           <td className="py-2.5 pr-2">
                             <span
                               className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                                p.status === 'Disponível' || p.status === 'Disponivel'
+                                p.status === 'Disponível' ||
+                                p.status === 'Disponivel'
                                   ? 'bg-emerald-50 text-emerald-700'
                                   : p.status === 'Vendido'
                                     ? 'bg-blue-50 text-blue-700'
@@ -1568,7 +1696,9 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
             <KpiCard
               label="Fechados"
               value={formatNumber(convertedLeads.length)}
-              sub={formatCurrency(convertedLeads.reduce((s, l) => s + (l.budget || 0), 0))}
+              sub={formatCurrency(
+                convertedLeads.reduce((s, l) => s + (l.budget || 0), 0)
+              )}
               icon={BadgeCheck}
               color="text-emerald-600"
               bg="bg-emerald-50"
@@ -1608,9 +1738,12 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <SectionCard title="Funil de Leads" subtitle="Distribuição por estágio do funil">
+            <SectionCard
+              title="Funil de Leads"
+              subtitle="Distribuição por estágio do funil"
+            >
               {leadFunnelData.length === 0 ? (
-                <EmptyState message='Nenhum lead registrado.' />
+                <EmptyState message="Nenhum lead registrado." />
               ) : (
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1624,7 +1757,11 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
                         dataKey="name"
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fill: '#64748b', fontSize: 11, fontWeight: 500 }}
+                        tick={{
+                          fill: '#64748b',
+                          fontSize: 11,
+                          fontWeight: 500,
+                        }}
                         interval={0}
                         angle={-20}
                         textAnchor="end"
@@ -1633,10 +1770,17 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
                       <YAxis
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
+                        tick={{
+                          fill: '#64748b',
+                          fontSize: 12,
+                          fontWeight: 500,
+                        }}
                         allowDecimals={false}
                       />
-                      <Tooltip contentStyle={tooltipStyle} cursor={{ fill: '#f8fafc' }} />
+                      <Tooltip
+                        contentStyle={tooltipStyle}
+                        cursor={{ fill: '#f8fafc' }}
+                      />
                       <Bar dataKey="value" name="Leads" radius={[6, 6, 0, 0]}>
                         {leadFunnelData.map((_, index) => (
                           <Cell
@@ -1651,24 +1795,32 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
               )}
             </SectionCard>
 
-            <SectionCard title="Leads por Campanha" subtitle="Ranking de campanhas">
+            <SectionCard
+              title="Leads por Campanha"
+              subtitle="Ranking de campanhas"
+            >
               {leadCampaignData.length === 0 ? (
-                <EmptyState message='Nenhuma campanha com leads.' />
+                <EmptyState message="Nenhuma campanha com leads." />
               ) : (
                 <div className="space-y-4 pt-2">
                   {leadCampaignData.map((item, index) => (
                     <div key={item.name} className="group">
                       <div className="mb-1.5 flex justify-between text-xs font-bold uppercase tracking-widest text-gray-500">
-                        <span className="truncate max-w-[70%]">{item.name}</span>
+                        <span className="truncate max-w-[70%]">
+                          {item.name}
+                        </span>
                         <span className="text-gray-900">{item.value}</span>
                       </div>
                       <ProgressBar
                         value={
-                          (item.value / Math.max(1, leadCampaignData[0].value)) *
+                          (item.value /
+                            Math.max(1, leadCampaignData[0].value)) *
                           100
                         }
                         color={
-                          index === 0 ? theme.barSolid : PALETTE[index % PALETTE.length]
+                          index === 0
+                            ? theme.barSolid
+                            : PALETTE[index % PALETTE.length]
                         }
                       />
                     </div>
@@ -1699,7 +1851,10 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
                   </thead>
                   <tbody>
                     {leadConversionBySource.map((row) => (
-                      <tr key={row.source} className="border-b border-gray-50 last:border-0">
+                      <tr
+                        key={row.source}
+                        className="border-b border-gray-50 last:border-0"
+                      >
                         <td className="py-3 pr-3 font-semibold text-gray-800">
                           {row.source}
                         </td>
@@ -1718,7 +1873,13 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
                         <td className="py-3 w-40">
                           <ProgressBar
                             value={row.rate}
-                            color={row.rate >= 30 ? 'bg-emerald-500' : row.rate >= 15 ? 'bg-amber-500' : 'bg-red-400'}
+                            color={
+                              row.rate >= 30
+                                ? 'bg-emerald-500'
+                                : row.rate >= 15
+                                  ? 'bg-amber-500'
+                                  : 'bg-red-400'
+                            }
                           />
                         </td>
                       </tr>
@@ -1752,7 +1913,9 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
             />
             <KpiCard
               label="Conversões"
-              value={formatNumber(brokerStats.reduce((s, b) => s + b.converted, 0))}
+              value={formatNumber(
+                brokerStats.reduce((s, b) => s + b.converted, 0)
+              )}
               icon={BadgeCheck}
               color="text-emerald-600"
               bg="bg-emerald-50"
@@ -1768,8 +1931,14 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
               label="Conversão Média"
               value={formatPercent(
                 (() => {
-                  const totalLeads = brokerStats.reduce((s, b) => s + b.leads, 0);
-                  const totalConv = brokerStats.reduce((s, b) => s + b.converted, 0);
+                  const totalLeads = brokerStats.reduce(
+                    (s, b) => s + b.leads,
+                    0
+                  );
+                  const totalConv = brokerStats.reduce(
+                    (s, b) => s + b.converted,
+                    0
+                  );
                   return totalLeads ? (totalConv / totalLeads) * 100 : 0;
                 })()
               )}
@@ -1949,7 +2118,7 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
               subtitle="Situação da carteira de locação"
             >
               {Object.keys(leaseStats.byStatus).length === 0 ? (
-                <EmptyState message='Nenhum contrato de locação encontrado.' />
+                <EmptyState message="Nenhum contrato de locação encontrado." />
               ) : (
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1971,7 +2140,11 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
                         dataKey="name"
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fill: '#64748b', fontSize: 11, fontWeight: 500 }}
+                        tick={{
+                          fill: '#64748b',
+                          fontSize: 11,
+                          fontWeight: 500,
+                        }}
                         interval={0}
                         angle={-15}
                         textAnchor="end"
@@ -1980,11 +2153,23 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
                       <YAxis
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
+                        tick={{
+                          fill: '#64748b',
+                          fontSize: 12,
+                          fontWeight: 500,
+                        }}
                         allowDecimals={false}
                       />
-                      <Tooltip contentStyle={tooltipStyle} cursor={{ fill: '#f8fafc' }} />
-                      <Bar dataKey="count" name="Contratos" radius={[6, 6, 0, 0]} fill={theme.chart} />
+                      <Tooltip
+                        contentStyle={tooltipStyle}
+                        cursor={{ fill: '#f8fafc' }}
+                      />
+                      <Bar
+                        dataKey="count"
+                        name="Contratos"
+                        radius={[6, 6, 0, 0]}
+                        fill={theme.chart}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -2043,30 +2228,32 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
               <EmptyState message="Nenhum contrato com status de pagamento informado." />
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {Object.entries(leaseStats.byPayment).map(([key, value], index) => (
-                  <div
-                    key={key}
-                    className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
-                  >
-                    <div className="flex items-center gap-3 mb-3">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{
-                          backgroundColor: PALETTE[index % PALETTE.length],
-                        }}
-                      />
-                      <span className="text-xs font-bold uppercase tracking-widest text-gray-500">
-                        {statusLabel(key, 'payment')}
-                      </span>
+                {Object.entries(leaseStats.byPayment).map(
+                  ([key, value], index) => (
+                    <div
+                      key={key}
+                      className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
+                    >
+                      <div className="flex items-center gap-3 mb-3">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{
+                            backgroundColor: PALETTE[index % PALETTE.length],
+                          }}
+                        />
+                        <span className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                          {statusLabel(key, 'payment')}
+                        </span>
+                      </div>
+                      <p className="text-2xl font-extrabold text-gray-900">
+                        {formatCurrency(value.value)}
+                      </p>
+                      <p className="text-xs font-medium text-gray-400">
+                        {value.count} contratos
+                      </p>
                     </div>
-                    <p className="text-2xl font-extrabold text-gray-900">
-                      {formatCurrency(value.value)}
-                    </p>
-                    <p className="text-xs font-medium text-gray-400">
-                      {value.count} contratos
-                    </p>
-                  </div>
-                ))}
+                  )
+                )}
               </div>
             )}
           </SectionCard>
@@ -2077,8 +2264,7 @@ const ReportsCenter: React.FC<ReportsCenterProps> = ({ mode }) => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-white px-6 py-4 shadow-sm">
         <div className="flex items-center gap-2 text-xs font-medium text-gray-400">
           <Activity size={14} className={theme.primaryText} />
-          Dados reais da organização •{' '}
-          {new Date().toLocaleString('pt-BR')}
+          Dados reais da organização • {new Date().toLocaleString('pt-BR')}
         </div>
         <div className="flex items-center gap-4 text-xs font-bold text-gray-500">
           <span>{propsAll.length} imóveis</span>

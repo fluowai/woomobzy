@@ -29,7 +29,10 @@ import {
 import { toast } from 'sonner';
 import { callApi } from '@/src/lib/api';
 import { supabase } from '@/services/supabase';
-import { useDocumentTemplates, DocumentTemplate } from './hooks/useDocumentTemplates';
+import {
+  useDocumentTemplates,
+  DocumentTemplate,
+} from './hooks/useDocumentTemplates';
 
 interface Props {
   leaseId?: string;
@@ -55,17 +58,41 @@ export default function RentalsContractEditor({ leaseId, onClose }: Props) {
     content = content.replace(/\n/g, '<br/>');
 
     const varMap: Record<string, { value: string; color: string }> = {
-      '{{locador_nome}}': { value: contractData.locador_nome, color: 'emerald' },
+      '{{locador_nome}}': {
+        value: contractData.locador_nome,
+        color: 'emerald',
+      },
       '{{locador_cpf}}': { value: contractData.locador_cpf, color: 'emerald' },
-      '{{locador_telefone}}': { value: contractData.locador_telefone, color: 'emerald' },
-      '{{locador_email}}': { value: contractData.locador_email, color: 'emerald' },
-      '{{locatario_nome}}': { value: contractData.locatario_nome, color: 'blue' },
+      '{{locador_telefone}}': {
+        value: contractData.locador_telefone,
+        color: 'emerald',
+      },
+      '{{locador_email}}': {
+        value: contractData.locador_email,
+        color: 'emerald',
+      },
+      '{{locatario_nome}}': {
+        value: contractData.locatario_nome,
+        color: 'blue',
+      },
       '{{locatario_cpf}}': { value: contractData.locatario_cpf, color: 'blue' },
-      '{{imovel_endereco}}': { value: contractData.imovel_endereco, color: 'amber' },
-      '{{imovel_cidade}}': { value: contractData.imovel_cidade, color: 'amber' },
+      '{{imovel_endereco}}': {
+        value: contractData.imovel_endereco,
+        color: 'amber',
+      },
+      '{{imovel_cidade}}': {
+        value: contractData.imovel_cidade,
+        color: 'amber',
+      },
       '{{imovel_cep}}': { value: contractData.imovel_cep, color: 'amber' },
-      '{{aluguel_valor}}': { value: contractData.aluguel_valor, color: 'purple' },
-      '{{aluguel_vencimento}}': { value: contractData.aluguel_vencimento, color: 'pink' },
+      '{{aluguel_valor}}': {
+        value: contractData.aluguel_valor,
+        color: 'purple',
+      },
+      '{{aluguel_vencimento}}': {
+        value: contractData.aluguel_vencimento,
+        color: 'pink',
+      },
     };
 
     Object.keys(varMap).forEach((key) => {
@@ -78,8 +105,14 @@ export default function RentalsContractEditor({ leaseId, onClose }: Props) {
   };
 
   // Template Management
-  const { templates, loading: templatesLoading, saveTemplate, deleteTemplate } = useDocumentTemplates('lease_contract');
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('default');
+  const {
+    templates,
+    loading: templatesLoading,
+    saveTemplate,
+    deleteTemplate,
+  } = useDocumentTemplates('lease_contract');
+  const [selectedTemplateId, setSelectedTemplateId] =
+    useState<string>('default');
   const [editTemplateMode, setEditTemplateMode] = useState(false);
   const [editingTemplateContent, setEditingTemplateContent] = useState('');
   const [editingTemplateName, setEditingTemplateName] = useState('');
@@ -405,7 +438,9 @@ Pedido do usuário: "${userText}"
                         onChange={(e) => setSelectedTemplateId(e.target.value)}
                         className="w-full text-sm border border-gray-300 rounded-lg p-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                       >
-                        <option value="default">Modelo Padrão do Sistema</option>
+                        <option value="default">
+                          Modelo Padrão do Sistema
+                        </option>
                         {templates.map((tpl) => (
                           <option key={tpl.id} value={tpl.id}>
                             {tpl.name}
@@ -416,14 +451,20 @@ Pedido do usuário: "${userText}"
                       <div className="flex gap-2 mt-3">
                         <button
                           onClick={() => {
-                            const tpl = templates.find((t) => t.id === selectedTemplateId);
-                            setEditingTemplateName(tpl ? tpl.name : 'Novo Modelo');
+                            const tpl = templates.find(
+                              (t) => t.id === selectedTemplateId
+                            );
+                            setEditingTemplateName(
+                              tpl ? tpl.name : 'Novo Modelo'
+                            );
                             setEditingTemplateContent(tpl ? tpl.content : '');
                             setEditTemplateMode(true);
                           }}
                           className="flex-1 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 text-xs py-1.5 rounded-md font-semibold transition-colors"
                         >
-                          {selectedTemplateId !== 'default' ? 'Editar Modelo' : 'Criar Novo'}
+                          {selectedTemplateId !== 'default'
+                            ? 'Editar Modelo'
+                            : 'Criar Novo'}
                         </button>
                       </div>
                     </div>
@@ -539,18 +580,27 @@ Pedido do usuário: "${userText}"
               {editTemplateMode ? (
                 <div className="absolute inset-0 bg-white z-10 p-10 flex flex-col">
                   <div className="flex items-center justify-between mb-6 border-b border-gray-200 pb-4">
-                    <h2 className="text-xl font-bold text-gray-900">Editor de Modelo de Contrato</h2>
+                    <h2 className="text-xl font-bold text-gray-900">
+                      Editor de Modelo de Contrato
+                    </h2>
                     <div className="flex gap-2">
-                      <button 
+                      <button
                         onClick={() => setEditTemplateMode(false)}
                         className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-50"
                       >
                         Cancelar
                       </button>
-                      <button 
+                      <button
                         onClick={async () => {
-                          const id = selectedTemplateId !== 'default' ? selectedTemplateId : undefined;
-                          const success = await saveTemplate(editingTemplateName, editingTemplateContent, id);
+                          const id =
+                            selectedTemplateId !== 'default'
+                              ? selectedTemplateId
+                              : undefined;
+                          const success = await saveTemplate(
+                            editingTemplateName,
+                            editingTemplateContent,
+                            id
+                          );
                           if (success) setEditTemplateMode(false);
                         }}
                         className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700"
@@ -561,40 +611,69 @@ Pedido do usuário: "${userText}"
                   </div>
 
                   <div className="mb-4">
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Nome do Modelo</label>
-                    <input 
-                      type="text" 
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                      Nome do Modelo
+                    </label>
+                    <input
+                      type="text"
                       value={editingTemplateName}
-                      onChange={e => setEditingTemplateName(e.target.value)}
+                      onChange={(e) => setEditingTemplateName(e.target.value)}
                       className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-emerald-500 focus:border-emerald-500"
                       placeholder="Ex: Contrato de Locação Padrão Residencial"
                     />
                   </div>
 
                   <div className="mb-4 bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                    <h3 className="text-xs font-bold text-blue-800 uppercase mb-2">Variáveis Disponíveis</h3>
-                    <p className="text-xs text-blue-700 mb-2">Copie e cole as chaves abaixo no texto do contrato para a IA preencher automaticamente:</p>
+                    <h3 className="text-xs font-bold text-blue-800 uppercase mb-2">
+                      Variáveis Disponíveis
+                    </h3>
+                    <p className="text-xs text-blue-700 mb-2">
+                      Copie e cole as chaves abaixo no texto do contrato para a
+                      IA preencher automaticamente:
+                    </p>
                     <div className="flex flex-wrap gap-2 text-xs font-mono">
-                      {['{{locador_nome}}', '{{locador_cpf}}', '{{locador_telefone}}', '{{locador_email}}', '{{locatario_nome}}', '{{locatario_cpf}}', '{{imovel_endereco}}', '{{imovel_cidade}}', '{{imovel_cep}}', '{{aluguel_valor}}', '{{aluguel_vencimento}}'].map(v => (
-                        <span key={v} className="bg-white border border-blue-200 px-2 py-1 rounded text-blue-800 cursor-pointer" onClick={() => {
-                          setEditingTemplateContent(prev => prev + v);
-                        }}>{v}</span>
+                      {[
+                        '{{locador_nome}}',
+                        '{{locador_cpf}}',
+                        '{{locador_telefone}}',
+                        '{{locador_email}}',
+                        '{{locatario_nome}}',
+                        '{{locatario_cpf}}',
+                        '{{imovel_endereco}}',
+                        '{{imovel_cidade}}',
+                        '{{imovel_cep}}',
+                        '{{aluguel_valor}}',
+                        '{{aluguel_vencimento}}',
+                      ].map((v) => (
+                        <span
+                          key={v}
+                          className="bg-white border border-blue-200 px-2 py-1 rounded text-blue-800 cursor-pointer"
+                          onClick={() => {
+                            setEditingTemplateContent((prev) => prev + v);
+                          }}
+                        >
+                          {v}
+                        </span>
                       ))}
                     </div>
                   </div>
 
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Conteúdo do Contrato</label>
-                  <textarea 
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    Conteúdo do Contrato
+                  </label>
+                  <textarea
                     value={editingTemplateContent}
-                    onChange={e => setEditingTemplateContent(e.target.value)}
+                    onChange={(e) => setEditingTemplateContent(e.target.value)}
                     className="flex-1 w-full border border-gray-300 rounded-lg p-4 text-sm font-serif focus:ring-emerald-500 focus:border-emerald-500 resize-none min-h-[500px]"
                     placeholder="Cole aqui o texto do seu contrato..."
                   />
                 </div>
               ) : selectedTemplateId !== 'default' ? (
-                <div 
+                <div
                   className="prose max-w-none text-justify"
-                  dangerouslySetInnerHTML={{ __html: getRenderedContent() || '' }}
+                  dangerouslySetInnerHTML={{
+                    __html: getRenderedContent() || '',
+                  }}
                 />
               ) : (
                 <>
@@ -605,9 +684,9 @@ Pedido do usuário: "${userText}"
                   </h1>
 
                   <p className="mb-6 text-justify">
-                    Pelo presente instrumento particular de locação de imóvel, as
-                    partes abaixo qualificadas têm entre si justo e contratado o
-                    seguinte:
+                    Pelo presente instrumento particular de locação de imóvel,
+                    as partes abaixo qualificadas têm entre si justo e
+                    contratado o seguinte:
                   </p>
 
                   <h2 className="font-bold mb-4 uppercase text-gray-900">
@@ -619,7 +698,8 @@ Pedido do usuário: "${userText}"
                     <span className="bg-emerald-100/80 text-emerald-900 font-semibold px-1.5 py-0.5 rounded shadow-sm transition-all">
                       {contractData.locador_nome}
                     </span>
-                    , residente e domiciliado no Brasil, inscrito no CPF sob o nº{' '}
+                    , residente e domiciliado no Brasil, inscrito no CPF sob o
+                    nº{' '}
                     <span className="bg-emerald-100/80 text-emerald-900 font-semibold px-1.5 py-0.5 rounded shadow-sm transition-all">
                       {contractData.locador_cpf}
                     </span>
@@ -639,7 +719,8 @@ Pedido do usuário: "${userText}"
                     <span className="bg-blue-100/80 text-blue-900 font-semibold px-1.5 py-0.5 rounded shadow-sm transition-all">
                       {contractData.locatario_nome}
                     </span>
-                    , residente e domiciliado no Brasil, inscrito no CPF sob o nº{' '}
+                    , residente e domiciliado no Brasil, inscrito no CPF sob o
+                    nº{' '}
                     <span className="bg-blue-100/80 text-blue-900 font-semibold px-1.5 py-0.5 rounded shadow-sm transition-all">
                       {contractData.locatario_cpf}
                     </span>
@@ -651,8 +732,8 @@ Pedido do usuário: "${userText}"
                   </h2>
 
                   <p className="mb-8 text-justify">
-                    O LOCADOR dá em locação ao LOCATÁRIO o imóvel assim descrito:
-                    Localizado na{' '}
+                    O LOCADOR dá em locação ao LOCATÁRIO o imóvel assim
+                    descrito: Localizado na{' '}
                     <span className="bg-amber-100/80 text-amber-900 font-semibold px-1.5 py-0.5 rounded shadow-sm transition-all">
                       {contractData.imovel_endereco}
                     </span>
@@ -684,9 +765,9 @@ Pedido do usuário: "${userText}"
                   </p>
 
                   <p className="mb-8 text-justify">
-                    O pagamento será realizado mediante depósito bancário ou PIX na
-                    conta indicada pelo LOCADOR, valendo o comprovante como recibo
-                    para todos os fins.
+                    O pagamento será realizado mediante depósito bancário ou PIX
+                    na conta indicada pelo LOCADOR, valendo o comprovante como
+                    recibo para todos os fins.
                   </p>
                 </>
               )}

@@ -80,174 +80,187 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   // Keep profileRef in sync with profile state
   useEffect(() => {
     profileRef.current = profile;
-   }, [profile]);
+  }, [profile]);
 
   // Ref to prevent multiple simultaneous profile fetches
   const fetchInProgress = React.useRef<string | null>(null);
 
-  const loadProfile = useCallback(async (userId: string) => {
-    if (fetchInProgress.current === userId) return;
+  const loadProfile = useCallback(
+    async (userId: string) => {
+      if (fetchInProgress.current === userId) return;
 
-    clearStaleOrganizationData(userId);
+      clearStaleOrganizationData(userId);
 
-    try {
-      fetchInProgress.current = userId;
-      const isSilentRefresh = profile && profile.id === userId;
-      if (!isSilentRefresh) {
-        setLoading(true);
-      }
-      logger.info('📡 [AuthContext] Querying profile for:', userId);
-
-      const queryPromise = supabase
-        .from('profiles')
-        .select(
-          'id, email, name, role, avatar_url, organization_id, created_at'
-        )
-        .eq('id', userId)
-        .limit(1)
-        .maybeSingle();
-
-      const timeoutPromise = new Promise(
-        (_, reject) =>
-          setTimeout(() => reject(new Error('Profile query timeout')), 30000)
-      );
-
-      const { data: profileData, error: profileError } = (await Promise.race([
-        queryPromise,
-        timeoutPromise,
-      ])) as any;
-
-      logger.info(
-        '📡 [AuthContext] Profile query resolved. Data:',
-        !!profileData,
-        'Error:',
-        profileError?.message
-      );
-
-      if (profileError) {
-        if (profileError.code === '401' || profileError.status === 401) {
-          logger.warn(
-            '[AuthContext] 401 detected, retrying after token refresh...'
-          );
-          await new Promise((r) => setTimeout(r, 1000));
-          fetchInProgress.current = null;
-          return loadProfile(userId);
+      try {
+        fetchInProgress.current = userId;
+        const isSilentRefresh = profile && profile.id === userId;
+        if (!isSilentRefresh) {
+          setLoading(true);
         }
-        logger.error('❌ [AuthContext] Error loading profile:', profileError);
-        syncActiveOrganization(null, userId);
-        setProfile((prev) => (prev && prev.id === userId ? prev : null));
-        if (!profile) setIsImpersonating(false);
-      } else if (profileData) {
-        logger.info(
-          '✅ [AuthContext] Profile core data loaded:',
-          profileData.role
+        logger.info('📡 [AuthContext] Querying profile for:', userId);
+
+        const queryPromise = supabase
+          .from('profiles')
+          .select(
+            'id, email, name, role, avatar_url, organization_id, created_at'
+          )
+          .eq('id', userId)
+          .limit(1)
+          .maybeSingle();
+
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Profile query timeout')), 30000)
         );
-        let finalProfile = {
-          ...profileData,
-          full_name: profileData.full_name || profileData.name || '',
-        };
 
-        const impOrgId =
-          getStoredImpersonationSession()?.organizationId || null;
+        const { data: profileData, error: profileError } = (await Promise.race([
+          queryPromise,
+          timeoutPromise,
+        ])) as any;
 
-        const orgPromise =
-          profileData.role === 'superadmin' && impOrgId && impOrgId !== 'null' && impOrgId !== 'undefined'
-            ? supabase
-                .from('organizations')
-                .select(
-                  'id, name, slug, niche, custom_domain, plan_id, trial_ends_at, subscription_status, is_reseller, parent_id'
-                )
-                .eq('id', impOrgId)
-                .maybeSingle()
-            : profileData.organization_id
+        logger.info(
+          '📡 [AuthContext] Profile query resolved. Data:',
+          !!profileData,
+          'Error:',
+          profileError?.message
+        );
+
+        if (profileError) {
+          if (profileError.code === '401' || profileError.status === 401) {
+            logger.warn(
+              '[AuthContext] 401 detected, retrying after token refresh...'
+            );
+            await new Promise((r) => setTimeout(r, 1000));
+            fetchInProgress.current = null;
+            return loadProfile(userId);
+          }
+          logger.error('❌ [AuthContext] Error loading profile:', profileError);
+          syncActiveOrganization(null, userId);
+          setProfile((prev) => (prev && prev.id === userId ? prev : null));
+          if (!profile) setIsImpersonating(false);
+        } else if (profileData) {
+          logger.info(
+            '✅ [AuthContext] Profile core data loaded:',
+            profileData.role
+          );
+          let finalProfile = {
+            ...profileData,
+            full_name: profileData.full_name || profileData.name || '',
+          };
+
+          const impOrgId =
+            getStoredImpersonationSession()?.organizationId || null;
+
+          const orgPromise =
+            profileData.role === 'superadmin' &&
+            impOrgId &&
+            impOrgId !== 'null' &&
+            impOrgId !== 'undefined'
               ? supabase
                   .from('organizations')
                   .select(
                     'id, name, slug, niche, custom_domain, plan_id, trial_ends_at, subscription_status, is_reseller, parent_id'
                   )
-                  .eq('id', profileData.organization_id)
+                  .eq('id', impOrgId)
                   .maybeSingle()
-              : Promise.resolve({ data: null, error: null });
+              : profileData.organization_id
+                ? supabase
+                    .from('organizations')
+                    .select(
+                      'id, name, slug, niche, custom_domain, plan_id, trial_ends_at, subscription_status, is_reseller, parent_id'
+                    )
+                    .eq('id', profileData.organization_id)
+                    .maybeSingle()
+                : Promise.resolve({ data: null, error: null });
 
-        const { data: orgData, error: orgError } = await orgPromise;
+          const { data: orgData, error: orgError } = await orgPromise;
 
-        if (profileData.role === 'superadmin' && impOrgId && impOrgId !== 'null' && impOrgId !== 'undefined') {
-          if (!orgError && orgData) {
-            logger.info('✅ [AuthContext] Impersonation active:', orgData.name);
-            finalProfile = {
-              ...finalProfile,
-              organization_id: orgData.id,
-              organization: orgData,
-            };
-            setIsImpersonating(true);
-          } else {
-            logger.warn(
-              '⚠️ [AuthContext] Impersonation org lookup failed — keeping session for retry:',
-              orgError
-            );
-            // NÃO limpa a sessão: a falha pode ser transitória (timeout,
-            // renew da JWT). Mantém isImpersonating=true e guarda o orgId
-            // para que NicheRedirect redirecione para o painel correto.
-            setIsImpersonating(true);
-          }
-        } else {
-          setIsImpersonating(false);
-
-          if (finalProfile.organization_id) {
+          if (
+            profileData.role === 'superadmin' &&
+            impOrgId &&
+            impOrgId !== 'null' &&
+            impOrgId !== 'undefined'
+          ) {
             if (!orgError && orgData) {
-              finalProfile.organization = orgData;
-            } else if (orgError) {
-              logger.warn(
-                '[AuthContext] Organization lookup failed:',
-                orgError.message
+              logger.info(
+                '✅ [AuthContext] Impersonation active:',
+                orgData.name
               );
+              finalProfile = {
+                ...finalProfile,
+                organization_id: orgData.id,
+                organization: orgData,
+              };
+              setIsImpersonating(true);
+            } else {
+              logger.warn(
+                '⚠️ [AuthContext] Impersonation org lookup failed — keeping session for retry:',
+                orgError
+              );
+              // NÃO limpa a sessão: a falha pode ser transitória (timeout,
+              // renew da JWT). Mantém isImpersonating=true e guarda o orgId
+              // para que NicheRedirect redirecione para o painel correto.
+              setIsImpersonating(true);
+            }
+          } else {
+            setIsImpersonating(false);
+
+            if (finalProfile.organization_id) {
+              if (!orgError && orgData) {
+                finalProfile.organization = orgData;
+              } else if (orgError) {
+                logger.warn(
+                  '[AuthContext] Organization lookup failed:',
+                  orgError.message
+                );
+              }
             }
           }
+
+          logger.info('✅ [AuthContext] Final profile set.');
+          syncActiveOrganization(
+            finalProfile.organization_id || null,
+            finalProfile.id || userId
+          );
+          setProfile(finalProfile);
+        } else {
+          logger.warn('⚠️ [AuthContext] Profile query returned no data.');
+          syncActiveOrganization(null, userId);
+          setProfile((prev) => (prev && prev.id === userId ? prev : null));
+        }
+      } catch (err: any) {
+        logger.error(
+          '❌ [AuthContext] Critical exception in loadProfile:',
+          err.message
+        );
+
+        if (retryCount.current < 2) {
+          retryCount.current += 1;
+          const delay = retryCount.current * 2000;
+          logger.info(
+            `🔄 [AuthContext] Retrying profile fetch in ${delay}ms (Attempt ${retryCount.current}/2)...`
+          );
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          fetchInProgress.current = null;
+          return loadProfile(userId);
         }
 
-        logger.info('✅ [AuthContext] Final profile set.');
-        syncActiveOrganization(
-          finalProfile.organization_id || null,
-          finalProfile.id || userId
-        );
-        setProfile(finalProfile);
-      } else {
-        logger.warn('⚠️ [AuthContext] Profile query returned no data.');
+        if (profileRef.current?.id === userId) {
+          logger.warn(
+            '[AuthContext] Mantendo perfil atual apos timeout/falha temporaria.'
+          );
+          return;
+        }
+
         syncActiveOrganization(null, userId);
         setProfile((prev) => (prev && prev.id === userId ? prev : null));
-      }
-    } catch (err: any) {
-      logger.error(
-        '❌ [AuthContext] Critical exception in loadProfile:',
-        err.message
-      );
-
-      if (retryCount.current < 2) {
-        retryCount.current += 1;
-        const delay = retryCount.current * 2000;
-        logger.info(
-          `🔄 [AuthContext] Retrying profile fetch in ${delay}ms (Attempt ${retryCount.current}/2)...`
-        );
-        await new Promise((resolve) => setTimeout(resolve, delay));
+      } finally {
+        logger.info('🏁 [AuthContext] loadProfile finished.');
         fetchInProgress.current = null;
-        return loadProfile(userId);
+        setLoading(false);
       }
-
-      if (profileRef.current?.id === userId) {
-        logger.warn(
-          '[AuthContext] Mantendo perfil atual apos timeout/falha temporaria.'
-        );
-        return;
-      }
-
-      syncActiveOrganization(null, userId);
-      setProfile((prev) => (prev && prev.id === userId ? prev : null));
-    } finally {
-      logger.info('🏁 [AuthContext] loadProfile finished.');
-      fetchInProgress.current = null;
-      setLoading(false);
-    }
-  }, [profile]);
+    },
+    [profile]
+  );
 
   useEffect(() => {
     // Listen for auth changes
@@ -300,43 +313,48 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     return () => subscription.unsubscribe();
   }, [loadProfile]);
 
-   // Renovação proativa: ping leve ao backend para manter a sessão de
+  // Renovação proativa: ping leve ao backend para manter a sessão de
   // impersonificação viva. Roda a cada 5 min quando há impersonificação ativa.
-   const renewalInterval = React.useRef<number | null>(null);
-   useEffect(() => {
-     if (!isImpersonating) {
-       if (renewalInterval.current) {
-         clearInterval(renewalInterval.current);
-         renewalInterval.current = null;
-       }
-       return;
-     }
+  const renewalInterval = React.useRef<number | null>(null);
+  useEffect(() => {
+    if (!isImpersonating) {
+      if (renewalInterval.current) {
+        clearInterval(renewalInterval.current);
+        renewalInterval.current = null;
+      }
+      return;
+    }
 
-     renewalInterval.current = window.setInterval(async () => {
-       if (!shouldRenewImpersonationSession()) return;
-       try {
-         const { data: { session } } = await supabase.auth.getSession();
-         if (!session?.access_token) return;
-         const headers = getImpersonationHeaders();
-         if (!headers['x-impersonation-session-id']) return;
-         await fetch(getApiUrl('/api/admin/organizations'), {
-           credentials: 'same-origin',
-           headers: {
-             Authorization: `Bearer ${session.access_token}`,
-             ...headers,
-           },
-         });
-       } catch {
-         // Silencioso: falha de renovação não deve interromper o UX
-       }
-     }, 5 * 60 * 1000);
+    renewalInterval.current = window.setInterval(
+      async () => {
+        if (!shouldRenewImpersonationSession()) return;
+        try {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          if (!session?.access_token) return;
+          const headers = getImpersonationHeaders();
+          if (!headers['x-impersonation-session-id']) return;
+          await fetch(getApiUrl('/api/admin/organizations'), {
+            credentials: 'same-origin',
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              ...headers,
+            },
+          });
+        } catch {
+          // Silencioso: falha de renovação não deve interromper o UX
+        }
+      },
+      5 * 60 * 1000
+    );
 
-     return () => {
-       if (renewalInterval.current) {
-         clearInterval(renewalInterval.current);
-       }
-     };
-   }, [isImpersonating]);
+    return () => {
+      if (renewalInterval.current) {
+        clearInterval(renewalInterval.current);
+      }
+    };
+  }, [isImpersonating]);
 
   const signIn = async (email: string, password: string) => {
     clearImpersonationSession();

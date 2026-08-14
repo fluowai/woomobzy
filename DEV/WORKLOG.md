@@ -4,7 +4,6 @@
 
 - **Solicitação (maestro)**: quando o mega admin loga em uma revenda e depois acessa uma imobiliária que pertence a ela, o sistema redireciona para `/admin` ou `/megaadmin` em vez de `/urban`/`/rural`.
 - **Causa raiz**: 7 problemas acumulados no fluxo de impersonificação aninhada (2º nível):
-
   1. **`setUpImpersonationSession` (AuthContext.tsx:562)**: usava `fetch` raw sem incluir os headers de impersonificação atuais → o servidor não sabia que já havia uma sessão ativa da revenda → sessão da revenda ficava órfã (não revogada).
   2. **`loadProfile` (AuthContext.tsx:180-187)**: em caso de falha na query de organização, chamava `clearImpersonationSession()` + `setIsImpersonating(false)` → o `getPanelHomePath` via para `/megaadmin`.
   3. **`NicheRedirect.tsx:44`**: usava apenas `opts?.isImpersonating` (React state) sem fallback para `sessionStorage` → após reload, se o state não estava hidratado, redirecionava para `/megaadmin`.
@@ -24,8 +23,6 @@
 
 - **Gates**: `npm run type-check` ✓ (0 erros); `npm run lint` ✓ (0 erros, 0 warnings nos arquivos alterados); `node --check server/routes/admin.js` ✓; `vitest src/test/impersonationSession.test.ts` ✓ 6/6.
 - **Próximo passo (maestro)**: validar no navegador o fluxo completo (meg admin → revenda → imobiliária → voltar); decidir commit/push.
-
-
 
 - **Solicitação (maestro)**: analisar a aba de Agentes de IA; verificar se há campos para o prompt, se o agente segue o prompt e se consegue usar as ferramentas determinadas; fazer funcionar.
 - **Análise realizada**:
@@ -47,8 +44,6 @@
 - **Gates**: `node --check` em `agentOrchestrator.js`, `chat.routes.js`, `helpers.js` ✓; `npm run type-check` ✓ (0 erros). ESLint e build pendentes (timeouts de ambiente).
 - **Não implementado** (scope futuro): tools `documentos`, `pdf-reader`, `audio-stt` — dependem de integração com storage/STT que não existe no orchestrator; `node --check` confirma sintaxe válida.
 - **Próxima ação (maestro)**: deploy backend; validar no chat test — salvar agente com tools `notificar-corretor` + `follow-up`, enviar mensagem que dispare a notificação, conferir `lead_activities` + `lead_followups` criados no Supabase; validar swarm com `share_prompt_with_subagents`. Nenhum commit/push.
-
-
 
 ## [2026-08-11] WhatsApp 502 Bad Gateway no envio diário — causa raiz: timeout do proxy Node (5s) < serviço Go — CORRIGIDO
 

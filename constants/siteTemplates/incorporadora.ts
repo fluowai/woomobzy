@@ -5,7 +5,8 @@ export const INCORPORADORA_SITE_TEMPLATES: SiteTemplate[] = [
   buildStandardSiteTemplate({
     id: 'site-incorp-oasis',
     name: 'Oasis Tower Site',
-    description: 'Site oficial de empreendimento vertical premium (Alto Padrão).',
+    description:
+      'Site oficial de empreendimento vertical premium (Alto Padrão).',
     thumbnail: IMG.luxury,
     category: 'Empreendimento Alto Padrão',
     heroImage: IMG.luxury,
@@ -19,9 +20,21 @@ export const INCORPORADORA_SITE_TEMPLATES: SiteTemplate[] = [
       fontFamily: 'Outfit, sans-serif',
     },
     features: [
-      { title: 'Lazer Suspenso', description: 'Piscina de borda infinita no rooftop.', icon: '🏊' },
-      { title: 'Automação', description: 'Apartamentos 100% integrados via app.', icon: '📱' },
-      { title: 'Vagas Box', description: 'Garagem fechada com ponto para carro elétrico.', icon: '🚗' },
+      {
+        title: 'Lazer Suspenso',
+        description: 'Piscina de borda infinita no rooftop.',
+        icon: '🏊',
+      },
+      {
+        title: 'Automação',
+        description: 'Apartamentos 100% integrados via app.',
+        icon: '📱',
+      },
+      {
+        title: 'Vagas Box',
+        description: 'Garagem fechada com ponto para carro elétrico.',
+        icon: '🚗',
+      },
     ],
   }),
   buildStandardSiteTemplate({
@@ -66,7 +79,8 @@ export const INCORPORADORA_SITE_TEMPLATES: SiteTemplate[] = [
     category: 'Investimento em Planta',
     heroImage: IMG.commercial,
     heroTitle: 'Multiplique seu Patrimônio',
-    heroSubtitle: 'Studios projetados para máxima rentabilidade em locação short-stay.',
+    heroSubtitle:
+      'Studios projetados para máxima rentabilidade em locação short-stay.',
     themeConfig: {
       primaryColor: '#0f172a',
       secondaryColor: '#10b981', // Verde financeiro
@@ -91,5 +105,5 @@ export const INCORPORADORA_SITE_TEMPLATES: SiteTemplate[] = [
       textColor: '#0c4a6e',
       fontFamily: 'Outfit, sans-serif',
     },
-  })
+  }),
 ];

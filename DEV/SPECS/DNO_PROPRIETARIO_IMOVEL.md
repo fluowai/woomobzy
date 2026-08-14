@@ -22,15 +22,15 @@ Quando se cadastra um imóvel no CRM (urbano ou rural), **não se cadastram os d
 
 ### 2.1 O modelo de dados JÁ suporta o DNO — falta o caminho de escrita
 
-| Item | Onde | Estado |
-|---|---|---|
-| `properties.owner_id` (FK → `clients.id`) | `migrations/v7_urbano_fase1_cadastros.sql:40`, lido em `views/urban/PortalProprietarioUrbano.tsx:86` | **Existe, mas NUNCA é gravado pelo frontend** |
-| Tabela `clients` (papel `'Proprietário'`/`'Proprietario'`) | `migrations/20260728_fix_backend_errors.sql:114` | Existe com RLS tenant-isolada (`get_my_org_id() OR is_superadmin()`) |
-| `properties.owner_info` (jsonb) | escrito apenas em `components/PropertySubmissionModal.tsx` (submissão pública), **lido em lugar nenhum** | Duplicado/legado; risco de vazamento (ver 2.3) |
-| Fluxo de locação pede dados do locador manualmente | `src/components/lease/steps/StepOwnerData.tsx` (`owner_name`, `owner_cpf_cnpj`, `owner_email`, `owner_phone`, `owner_address_zip`) | Não é pré-preenchido a partir do imóvel |
-| Contrato de locação usa `nome_locador`/`cpf_locador` | `src/components/lease/templates/TemplateEditor.tsx`, `StepContractGeneration.tsx` | Vem do `lease.owner_name` digitado à mão |
-| Portal do proprietário (urbano) | `views/urban/PortalProprietarioUrbano.tsx:64-87` | Busca client com role `['Proprietario']` + `.eq('owner_id', owner.id)` — **depende de `owner_id` estar gravado** |
-| `clients.roles` inconsistente | `'Proprietário'` (com acento, comentário do schema) vs `'Proprietario'` (sem acento, usado no portal) | Precisa normalizar |
+| Item                                                       | Onde                                                                                                                               | Estado                                                                                                           |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `properties.owner_id` (FK → `clients.id`)                  | `migrations/v7_urbano_fase1_cadastros.sql:40`, lido em `views/urban/PortalProprietarioUrbano.tsx:86`                               | **Existe, mas NUNCA é gravado pelo frontend**                                                                    |
+| Tabela `clients` (papel `'Proprietário'`/`'Proprietario'`) | `migrations/20260728_fix_backend_errors.sql:114`                                                                                   | Existe com RLS tenant-isolada (`get_my_org_id() OR is_superadmin()`)                                             |
+| `properties.owner_info` (jsonb)                            | escrito apenas em `components/PropertySubmissionModal.tsx` (submissão pública), **lido em lugar nenhum**                           | Duplicado/legado; risco de vazamento (ver 2.3)                                                                   |
+| Fluxo de locação pede dados do locador manualmente         | `src/components/lease/steps/StepOwnerData.tsx` (`owner_name`, `owner_cpf_cnpj`, `owner_email`, `owner_phone`, `owner_address_zip`) | Não é pré-preenchido a partir do imóvel                                                                          |
+| Contrato de locação usa `nome_locador`/`cpf_locador`       | `src/components/lease/templates/TemplateEditor.tsx`, `StepContractGeneration.tsx`                                                  | Vem do `lease.owner_name` digitado à mão                                                                         |
+| Portal do proprietário (urbano)                            | `views/urban/PortalProprietarioUrbano.tsx:64-87`                                                                                   | Busca client com role `['Proprietario']` + `.eq('owner_id', owner.id)` — **depende de `owner_id` estar gravado** |
+| `clients.roles` inconsistente                              | `'Proprietário'` (com acento, comentário do schema) vs `'Proprietario'` (sem acento, usado no portal)                              | Precisa normalizar                                                                                               |
 
 ### 2.2 O frontend de cadastro de imóvel não expõe o dono
 

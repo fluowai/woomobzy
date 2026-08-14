@@ -173,8 +173,7 @@ const allTools = [
         },
         prioridade: {
           type: 'string',
-          description:
-            'Prioridade da notificacao: "alta", "media" ou "baixa".',
+          description: 'Prioridade da notificacao: "alta", "media" ou "baixa".',
         },
       },
       required: ['motivo'],
@@ -189,7 +188,8 @@ const allTools = [
       properties: {
         titulo: {
           type: 'string',
-          description: 'Titulo curto do follow-up (ex: "Retornar com proposta").',
+          description:
+            'Titulo curto do follow-up (ex: "Retornar com proposta").',
         },
         due_at: {
           type: 'string',
@@ -218,7 +218,8 @@ const allTools = [
       properties: {
         titulo: {
           type: 'string',
-          description: 'Titulo da tarefa (ex: "Verificar disponibilidade do imovel").',
+          description:
+            'Titulo da tarefa (ex: "Verificar disponibilidade do imovel").',
         },
         descricao: {
           type: 'string',
@@ -294,9 +295,7 @@ export class AgentOrchestrator {
         allTools.find((t) => t.name === 'consultar_agenda_disponibilidade')
       );
     }
-    if (
-      agentToolsConfig?.includes('notificar-corretor')
-    ) {
+    if (agentToolsConfig?.includes('notificar-corretor')) {
       activeFunctionDeclarations.push(
         allTools.find((t) => t.name === 'notificar_corretor')
       );
@@ -314,7 +313,9 @@ export class AgentOrchestrator {
 
     // Se o agente não possuir ferramentas, instanciamos o modelo apenas para conversação (sem tools)
     const hasTools = activeFunctionDeclarations.length > 0;
-    const toolsConfig = hasTools ? [{ functionDeclarations: activeFunctionDeclarations }] : undefined;
+    const toolsConfig = hasTools
+      ? [{ functionDeclarations: activeFunctionDeclarations }]
+      : undefined;
 
     if (this.genAI) {
       return this.genAI.getGenerativeModel({
@@ -676,9 +677,7 @@ export class AgentOrchestrator {
             erro: 'Lead nao identificado. Nao e possivel criar follow-up sem um lead salvo.',
           };
 
-        const dueAt = args.due_at
-          ? new Date(args.due_at).toISOString()
-          : null;
+        const dueAt = args.due_at ? new Date(args.due_at).toISOString() : null;
         if (!dueAt)
           return {
             erro: 'data_hora de vencimento e obrigatoria. Formato: 2026-08-12T10:00:00Z',
@@ -695,8 +694,7 @@ export class AgentOrchestrator {
           metadata: { source: 'ai_agent_tool' },
         });
 
-        if (error)
-          return { erro: 'Erro ao criar follow-up: ' + error.message };
+        if (error) return { erro: 'Erro ao criar follow-up: ' + error.message };
 
         return {
           sucesso: true,
@@ -742,8 +740,7 @@ export class AgentOrchestrator {
           },
         });
 
-        if (error)
-          return { erro: 'Erro ao criar tarefa: ' + error.message };
+        if (error) return { erro: 'Erro ao criar tarefa: ' + error.message };
 
         let msg = `Tarefa "${args.titulo}" criada`;
         if (assignee) {
@@ -782,10 +779,9 @@ export class AgentOrchestrator {
       agent?.share_prompt_with_subagents ??
       operational.share_prompt_with_subagents ??
       false;
-    const subAgents =
-      agent?.sub_agents?.length
-        ? agent.sub_agents
-        : operational.sub_agents || [];
+    const subAgents = agent?.sub_agents?.length
+      ? agent.sub_agents
+      : operational.sub_agents || [];
 
     // Swarm dinamico: se o orquestrador compartilha o prompt com sub-agentes,
     // detecta a atividade da mensagem e delega para o especialista que mais
@@ -797,7 +793,11 @@ export class AgentOrchestrator {
           organizationId,
           subAgents
         );
-        const specialist = await this._detectSpecialist(content, specialists, history);
+        const specialist = await this._detectSpecialist(
+          content,
+          specialists,
+          history
+        );
         if (specialist) {
           const delegated = await this._delegateToSpecialist({
             content,
@@ -857,13 +857,16 @@ export class AgentOrchestrator {
       const model = await this._ensureModel([]); // Get base model sem tools
       if (!model) return this._fallbackDetectSpecialist(content, specialists);
 
-      const recentHistory = history.slice(-6).map(m => `[${String(m.role || 'user').toUpperCase()}]: ${m.content}`).join('\n');
-      
+      const recentHistory = history
+        .slice(-6)
+        .map((m) => `[${String(m.role || 'user').toUpperCase()}]: ${m.content}`)
+        .join('\n');
+
       const prompt = `Você é um Roteador Semântico (Orquestrador) de uma imobiliária. 
 Seu objetivo é analisar a mensagem do usuário e o histórico, e decidir qual especialista da equipe deve assumir o atendimento AGORA.
 
 Especialistas Disponíveis:
-${specialists.map(s => `- ID: ${s.id} | Papel: ${s.role} | Habilidades: ${(s.capabilities||[]).join(', ')}`).join('\n')}
+${specialists.map((s) => `- ID: ${s.id} | Papel: ${s.role} | Habilidades: ${(s.capabilities || []).join(', ')}`).join('\n')}
 
 Histórico Recente:
 ${recentHistory}
@@ -880,13 +883,16 @@ Não use aspas, nem pontuação, nem explique nada. Apenas o ID ou NONE.`;
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
       });
       const responseText = result.response.text().trim();
-      
+
       if (responseText === 'NONE' || !responseText) return null;
-      
-      const best = specialists.find(s => s.id === responseText);
+
+      const best = specialists.find((s) => s.id === responseText);
       return best || this._fallbackDetectSpecialist(content, specialists);
     } catch (err) {
-      console.warn('[AgentOrchestrator] Erro no roteador semântico (LLM):', err.message);
+      console.warn(
+        '[AgentOrchestrator] Erro no roteador semântico (LLM):',
+        err.message
+      );
       return this._fallbackDetectSpecialist(content, specialists);
     }
   }

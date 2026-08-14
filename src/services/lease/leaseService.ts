@@ -91,7 +91,9 @@ export async function generateContractPdf(
 ): Promise<{ success: boolean; data: any }> {
   return apiFetch(`${BASE_URL}/leases/${id}/generate-contract`, {
     method: 'POST',
-    body: templateContent ? JSON.stringify({ template_content: templateContent }) : undefined,
+    body: templateContent
+      ? JSON.stringify({ template_content: templateContent })
+      : undefined,
   });
 }
 

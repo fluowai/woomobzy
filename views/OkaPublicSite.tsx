@@ -92,8 +92,9 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
         let orgId = organizationId;
 
         if (!orgId) {
-          const { data: tenant } = await supabase
-            .rpc('get_tenant_public', { slug_input: 'okaimoveis' });
+          const { data: tenant } = await supabase.rpc('get_tenant_public', {
+            slug_input: 'okaimoveis',
+          });
           orgId = tenant?.[0]?.id || undefined;
         }
 
@@ -137,8 +138,7 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
               vagas: features.vagas || features.parking || 0,
               price: Number(property.price || 0),
               yield: '',
-              image:
-                property.thumbnail || images[0] || HERO_IMAGE,
+              image: property.thumbnail || images[0] || HERO_IMAGE,
               imagePosition: 'center',
             } as OkaProperty;
           })
@@ -1427,9 +1427,7 @@ const OkaPublicSite: React.FC<OkaPublicSiteProps> = ({ organizationId }) => {
 
           <div className="oka-property-grid">
             {loading ? (
-              <div className="oka-empty">
-                Carregando imóveis...
-              </div>
+              <div className="oka-empty">Carregando imóveis...</div>
             ) : filteredProperties.length === 0 ? (
               <div className="oka-empty">
                 Nenhum imóvel encontrado com os filtros selecionados.

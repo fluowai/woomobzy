@@ -1,6 +1,14 @@
 import React, { useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Briefcase, DollarSign, Upload, FileCheck, FileText, X, Loader2 } from 'lucide-react';
+import {
+  Briefcase,
+  DollarSign,
+  Upload,
+  FileCheck,
+  FileText,
+  X,
+  Loader2,
+} from 'lucide-react';
 import type { Lease } from '../../../types/lease';
 import { uploadFile } from '../../../../services/storage';
 
@@ -10,8 +18,10 @@ interface Props {
   updateFields: (fields: Partial<Lease>) => void;
 }
 
-const inputClass = 'w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-300 transition-all';
-const labelClass = 'text-[10px] font-bold text-slate-500 uppercase tracking-widest';
+const inputClass =
+  'w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-300 transition-all';
+const labelClass =
+  'text-[10px] font-bold text-slate-500 uppercase tracking-widest';
 
 const DOC_TYPES = [
   { key: 'doc_rg', label: 'RG / Identidade' },
@@ -72,8 +82,12 @@ export const StepIncomeDocs: React.FC<Props> = ({ lease, updateField }) => {
       {/* Dados Profissionais */}
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><Briefcase size={20} /></div>
-          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Dados Profissionais</h4>
+          <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600">
+            <Briefcase size={20} />
+          </div>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">
+            Dados Profissionais
+          </h4>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -96,7 +110,9 @@ export const StepIncomeDocs: React.FC<Props> = ({ lease, updateField }) => {
             <label className={labelClass}>Telefone do Trabalho</label>
             <input
               value={lease.tenant_employer_phone || ''}
-              onChange={(e) => updateField('tenant_employer_phone' as any, e.target.value)}
+              onChange={(e) =>
+                updateField('tenant_employer_phone' as any, e.target.value)
+              }
               className={inputClass}
             />
           </div>
@@ -106,8 +122,12 @@ export const StepIncomeDocs: React.FC<Props> = ({ lease, updateField }) => {
       {/* Renda */}
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 bg-emerald-50 rounded-xl text-emerald-600"><DollarSign size={20} /></div>
-          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Renda</h4>
+          <div className="p-2.5 bg-emerald-50 rounded-xl text-emerald-600">
+            <DollarSign size={20} />
+          </div>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">
+            Renda
+          </h4>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -115,7 +135,9 @@ export const StepIncomeDocs: React.FC<Props> = ({ lease, updateField }) => {
             <input
               type="number"
               value={lease.tenant_monthly_income || ''}
-              onChange={(e) => updateField('tenant_monthly_income', Number(e.target.value))}
+              onChange={(e) =>
+                updateField('tenant_monthly_income', Number(e.target.value))
+              }
               className={inputClass}
             />
           </div>
@@ -123,7 +145,9 @@ export const StepIncomeDocs: React.FC<Props> = ({ lease, updateField }) => {
             <label className={labelClass}>Status do Comprovante</label>
             <select
               value={lease.income_proof_status || 'pendente'}
-              onChange={(e) => updateField('income_proof_status' as any, e.target.value)}
+              onChange={(e) =>
+                updateField('income_proof_status' as any, e.target.value)
+              }
               className={inputClass}
             >
               <option value="pendente">Pendente</option>
@@ -138,8 +162,12 @@ export const StepIncomeDocs: React.FC<Props> = ({ lease, updateField }) => {
       {/* Documentos */}
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 bg-purple-50 rounded-xl text-purple-600"><Upload size={20} /></div>
-          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Documentos Anexados</h4>
+          <div className="p-2.5 bg-purple-50 rounded-xl text-purple-600">
+            <Upload size={20} />
+          </div>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">
+            Documentos Anexados
+          </h4>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {DOC_TYPES.map((doc) => {
@@ -153,12 +181,21 @@ export const StepIncomeDocs: React.FC<Props> = ({ lease, updateField }) => {
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <FileCheck size={18} className={files.length ? 'text-emerald-500' : 'text-slate-400'} />
-                    <span className="text-sm font-bold text-slate-700 truncate">{doc.label}</span>
+                    <FileCheck
+                      size={18}
+                      className={
+                        files.length ? 'text-emerald-500' : 'text-slate-400'
+                      }
+                    />
+                    <span className="text-sm font-bold text-slate-700 truncate">
+                      {doc.label}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <input
-                      ref={(el) => { fileInputs.current[doc.key] = el; }}
+                      ref={(el) => {
+                        fileInputs.current[doc.key] = el;
+                      }}
                       type="file"
                       accept="image/*,application/pdf,.doc,.docx"
                       className="hidden"
@@ -172,8 +209,16 @@ export const StepIncomeDocs: React.FC<Props> = ({ lease, updateField }) => {
                       disabled={isUploading}
                       className="flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all disabled:opacity-50"
                     >
-                      {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                      {isUploading ? 'Enviando...' : files.length ? 'Adicionar' : 'Anexar'}
+                      {isUploading ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <Upload size={14} />
+                      )}
+                      {isUploading
+                        ? 'Enviando...'
+                        : files.length
+                          ? 'Adicionar'
+                          : 'Anexar'}
                     </button>
                   </div>
                 </div>
@@ -186,8 +231,17 @@ export const StepIncomeDocs: React.FC<Props> = ({ lease, updateField }) => {
                         className="relative group flex items-center gap-2 p-1.5 pr-2 bg-white rounded-lg border border-slate-200"
                       >
                         {isImage(url) ? (
-                          <a href={url} target="_blank" rel="noreferrer" className="block w-10 h-10 overflow-hidden rounded">
-                            <img src={url} alt={doc.label} className="w-10 h-10 object-cover" />
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block w-10 h-10 overflow-hidden rounded"
+                          >
+                            <img
+                              src={url}
+                              alt={doc.label}
+                              className="w-10 h-10 object-cover"
+                            />
                           </a>
                         ) : (
                           <a

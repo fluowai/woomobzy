@@ -5,11 +5,7 @@ import React, {
   useCallback,
   ReactNode,
 } from 'react';
-import {
-  Block,
-  BlockType,
-  LayoutConfig,
-} from '../types';
+import { Block, BlockType, LayoutConfig } from '../types';
 import { useSettings } from './SettingsContext';
 
 interface LayoutEditorContextType {

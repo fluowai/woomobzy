@@ -97,7 +97,9 @@ export default function Empreendimentos() {
       try {
         const { data } = await supabase
           .from('developments')
-          .select('id,name,status,vgv_total,percent_sold,total_area,registration_number,created_at')
+          .select(
+            'id,name,status,vgv_total,percent_sold,total_area,registration_number,created_at'
+          )
           .eq('organization_id', profile.organization_id)
           .order('created_at', { ascending: false });
 
@@ -122,7 +124,9 @@ export default function Empreendimentos() {
         const [{ data: lotData }, { data: leadData }] = await Promise.all([
           supabase
             .from('urban_lots')
-            .select('id,block_name,lot_number,area_m2,price,status,created_at,updated_at')
+            .select(
+              'id,block_name,lot_number,area_m2,price,status,created_at,updated_at'
+            )
             .eq('organization_id', profile.organization_id)
             .eq('development_id', selectedDevId)
             .order('block_name', { ascending: true })
@@ -333,7 +337,9 @@ export default function Empreendimentos() {
                 onChange={(e) => setSelectedDevId(e.target.value || null)}
                 className="text-sm font-bold text-slate-700 bg-transparent outline-none cursor-pointer"
               >
-                {developments.length === 0 && <option value="">Sem empreendimentos</option>}
+                {developments.length === 0 && (
+                  <option value="">Sem empreendimentos</option>
+                )}
                 {developments.map((dev) => (
                   <option key={dev.id} value={dev.id}>
                     {dev.name}
@@ -345,7 +351,9 @@ export default function Empreendimentos() {
 
             {selectedDev && (
               <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full border border-emerald-100">
-                {statusLabels[selectedDev.status] || selectedDev.status || 'Em comercialização'}
+                {statusLabels[selectedDev.status] ||
+                  selectedDev.status ||
+                  'Em comercialização'}
               </span>
             )}
           </div>
@@ -455,7 +463,12 @@ export default function Empreendimentos() {
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-md">
                           {blockName}
                         </div>
-                        <div className="grid gap-1.5 mt-2" style={{ gridTemplateColumns: `repeat(${Math.max(3, Math.ceil(Math.sqrt(blockLots.length)))}, 1fr)` }}>
+                        <div
+                          className="grid gap-1.5 mt-2"
+                          style={{
+                            gridTemplateColumns: `repeat(${Math.max(3, Math.ceil(Math.sqrt(blockLots.length)))}, 1fr)`,
+                          }}
+                        >
                           {blockLots.map((lot) => renderLot(lot))}
                         </div>
                       </div>
@@ -769,7 +782,11 @@ export default function Empreendimentos() {
                     <span className="flex items-center gap-2">
                       <Ruler size={16} className="text-slate-500" /> Área total
                     </span>
-                    <span>{selectedDev.total_area ? `${selectedDev.total_area} m²` : '—'}</span>
+                    <span>
+                      {selectedDev.total_area
+                        ? `${selectedDev.total_area} m²`
+                        : '—'}
+                    </span>
                   </div>
                   <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
                     <div
@@ -791,11 +808,14 @@ export default function Empreendimentos() {
                 <div>
                   <div className="flex items-center justify-between text-sm font-bold mb-2 text-slate-700">
                     <span className="flex items-center gap-2">
-                      <Calendar size={16} className="text-slate-500" /> Criado em
+                      <Calendar size={16} className="text-slate-500" /> Criado
+                      em
                     </span>
                     <span>
                       {selectedDev.created_at
-                        ? new Date(selectedDev.created_at).toLocaleDateString('pt-BR')
+                        ? new Date(selectedDev.created_at).toLocaleDateString(
+                            'pt-BR'
+                          )
                         : '—'}
                     </span>
                   </div>

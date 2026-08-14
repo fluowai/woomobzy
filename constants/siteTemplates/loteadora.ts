@@ -5,7 +5,8 @@ export const LOTEADORA_SITE_TEMPLATES: SiteTemplate[] = [
   buildStandardSiteTemplate({
     id: 'site-loteadora-masterplan',
     name: 'Masterplan Vision Site',
-    description: 'Foco no grupo loteador corporativo. Mostra o mapa de loteamentos.',
+    description:
+      'Foco no grupo loteador corporativo. Mostra o mapa de loteamentos.',
     thumbnail: IMG.lots,
     category: 'Loteamentos Abertos',
     heroImage: IMG.lots,
@@ -19,9 +20,21 @@ export const LOTEADORA_SITE_TEMPLATES: SiteTemplate[] = [
       fontFamily: 'Montserrat, sans-serif',
     },
     features: [
-      { title: 'Infraestrutura Completa', description: 'Asfalto, água, luz e esgoto.', icon: '🏗️' },
-      { title: 'Localização Estratégica', description: 'Vetores de crescimento.', icon: '📍' },
-      { title: 'Financiamento Direto', description: 'Sem burocracia bancária.', icon: '💰' },
+      {
+        title: 'Infraestrutura Completa',
+        description: 'Asfalto, água, luz e esgoto.',
+        icon: '🏗️',
+      },
+      {
+        title: 'Localização Estratégica',
+        description: 'Vetores de crescimento.',
+        icon: '📍',
+      },
+      {
+        title: 'Financiamento Direto',
+        description: 'Sem burocracia bancária.',
+        icon: '💰',
+      },
     ],
   }),
   buildStandardSiteTemplate({
@@ -32,7 +45,8 @@ export const LOTEADORA_SITE_TEMPLATES: SiteTemplate[] = [
     category: 'Condomínio Sustentável',
     heroImage: IMG.eco,
     heroTitle: 'O Seu Terreno Junto à Natureza',
-    heroSubtitle: 'Lotes em condomínio fechado cercado por área verde preservada.',
+    heroSubtitle:
+      'Lotes em condomínio fechado cercado por área verde preservada.',
     themeConfig: {
       primaryColor: '#166534',
       secondaryColor: '#854d0e',
@@ -91,5 +105,5 @@ export const LOTEADORA_SITE_TEMPLATES: SiteTemplate[] = [
       textColor: '#1e293b',
       fontFamily: 'Montserrat, sans-serif',
     },
-  })
+  }),
 ];

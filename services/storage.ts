@@ -14,7 +14,11 @@ type StorageBucket =
   | 'imobzymsg'
   | 'whatsapp-media'
   | 'documents';
-type ResolvedStorageBucket = 'imobzyimg' | 'imobzymsg' | 'whatsapp-media' | 'documents';
+type ResolvedStorageBucket =
+  | 'imobzyimg'
+  | 'imobzymsg'
+  | 'whatsapp-media'
+  | 'documents';
 
 export const uploadFile = async (
   file: File,

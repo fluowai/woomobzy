@@ -53,7 +53,9 @@ const UserManagement: React.FC = () => {
 
   // Invite Modal States
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [inviteActiveTab, setInviteActiveTab] = useState<'basic' | 'finance'>('basic');
+  const [inviteActiveTab, setInviteActiveTab] = useState<'basic' | 'finance'>(
+    'basic'
+  );
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteName, setInviteName] = useState('');
   const [invitePhone, setInvitePhone] = useState('');
@@ -83,13 +85,13 @@ const UserManagement: React.FC = () => {
           pix_key: invitePixKey,
           bank: inviteBank,
           agency: inviteAgency,
-          account: inviteAccount
-        }
+          account: inviteAccount,
+        },
       };
 
       const res = await callApi('/api/admin/users/invite', {
         method: 'POST',
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
       if (!res.success) {
@@ -109,7 +111,7 @@ const UserManagement: React.FC = () => {
       setInviteBank('');
       setInviteAgency('');
       setInviteAccount('');
-      
+
       // Refresh list
       fetchUsers();
     } catch (err: any) {
@@ -391,7 +393,10 @@ const UserManagement: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleInvite} className="flex flex-col flex-1 overflow-hidden">
+            <form
+              onSubmit={handleInvite}
+              className="flex flex-col flex-1 overflow-hidden"
+            >
               <div className="p-6 overflow-y-auto flex-1 space-y-6">
                 {inviteActiveTab === 'basic' ? (
                   <div className="space-y-4">
@@ -423,7 +428,7 @@ const UserManagement: React.FC = () => {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-4">
                       <div className="col-span-2 sm:col-span-1">
                         <label className="block text-sm font-bold text-gray-700 mb-1">
@@ -474,9 +479,9 @@ const UserManagement: React.FC = () => {
                         />
                       </div>
                     </div>
-                    
+
                     <hr className="border-gray-100" />
-                    
+
                     <div>
                       <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
                         <Wallet size={16} className="text-indigo-500" />
@@ -563,7 +568,8 @@ const UserManagement: React.FC = () => {
                 <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100 flex gap-3 items-start mt-6">
                   <Info size={20} className="text-indigo-500 shrink-0 mt-0.5" />
                   <p className="text-xs text-indigo-700 leading-relaxed font-medium">
-                    O corretor receberá um e-mail com um link para ativar a conta e configurar sua própria senha.
+                    O corretor receberá um e-mail com um link para ativar a
+                    conta e configurar sua própria senha.
                   </p>
                 </div>
               </div>
@@ -584,7 +590,9 @@ const UserManagement: React.FC = () => {
                   {inviteSubmitting ? (
                     <>Enviando...</>
                   ) : (
-                    <><UserCheck size={20} /> Salvar e Convidar</>
+                    <>
+                      <UserCheck size={20} /> Salvar e Convidar
+                    </>
                   )}
                 </button>
               </div>

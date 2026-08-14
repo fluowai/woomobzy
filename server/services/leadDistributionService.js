@@ -190,7 +190,12 @@ export async function bulkDistributeLeads(
   const supabase = getSupabaseServer();
   const brokers = await getActiveBrokers(organizationId);
   if (!brokers.length) {
-    return leadIds.map((leadId) => ({ leadId, brokerId: null, success: false, error: 'No active brokers' }));
+    return leadIds.map((leadId) => ({
+      leadId,
+      brokerId: null,
+      success: false,
+      error: 'No active brokers',
+    }));
   }
 
   const brokerIds = brokers.map((b) => b.id);
@@ -222,7 +227,12 @@ export async function bulkDistributeLeads(
   }
 
   if (!selectedBroker) {
-    return leadIds.map((leadId) => ({ leadId, brokerId: null, success: false, error: 'No broker selected' }));
+    return leadIds.map((leadId) => ({
+      leadId,
+      brokerId: null,
+      success: false,
+      error: 'No broker selected',
+    }));
   }
 
   const { error } = await supabase
@@ -232,10 +242,19 @@ export async function bulkDistributeLeads(
     .eq('organization_id', organizationId);
 
   if (error) {
-    return leadIds.map((leadId) => ({ leadId, brokerId: null, success: false, error: error.message }));
+    return leadIds.map((leadId) => ({
+      leadId,
+      brokerId: null,
+      success: false,
+      error: error.message,
+    }));
   }
 
-  return leadIds.map((leadId) => ({ leadId, brokerId: selectedBroker.id, success: true }));
+  return leadIds.map((leadId) => ({
+    leadId,
+    brokerId: selectedBroker.id,
+    success: true,
+  }));
 }
 
 export { DISTRIBUTION_STRATEGIES };

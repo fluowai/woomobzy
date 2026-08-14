@@ -1,5 +1,8 @@
 import { supabase } from '@/services/supabase';
-import { getImpersonatedOrganizationId, getImpersonationHeaders } from '@/src/lib/impersonation';
+import {
+  getImpersonatedOrganizationId,
+  getImpersonationHeaders,
+} from '@/src/lib/impersonation';
 
 const INSTAGRAM_API = '/api/instagram';
 

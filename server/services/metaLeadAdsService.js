@@ -56,42 +56,47 @@ export function mapMetaLeadToLeadPayload(payload) {
   ]);
   const phone = normalizePhone(rawPhone);
 
-  const name = mapFieldValue(fieldNames, fieldValues, [
-    'name',
-    'full_name',
-    'nome',
-    'nome_completo',
-  ]) || '';
+  const name =
+    mapFieldValue(fieldNames, fieldValues, [
+      'name',
+      'full_name',
+      'nome',
+      'nome_completo',
+    ]) || '';
 
-  const email = mapFieldValue(fieldNames, fieldValues, [
-    'email',
-    'e-mail',
-    'email_address',
-  ]) || null;
+  const email =
+    mapFieldValue(fieldNames, fieldValues, [
+      'email',
+      'e-mail',
+      'email_address',
+    ]) || null;
 
-  const message = mapFieldValue(fieldNames, fieldValues, [
-    'message',
-    'mensagem',
-    'observacao',
-    'obs',
-    'note',
-  ]) || null;
+  const message =
+    mapFieldValue(fieldNames, fieldValues, [
+      'message',
+      'mensagem',
+      'observacao',
+      'obs',
+      'note',
+    ]) || null;
 
-  const budgetRaw = mapFieldValue(fieldNames, fieldValues, [
-    'budget',
-    'orcamento',
-    'preco',
-    'preço',
-  ]) || null;
+  const budgetRaw =
+    mapFieldValue(fieldNames, fieldValues, [
+      'budget',
+      'orcamento',
+      'preco',
+      'preço',
+    ]) || null;
   const budget = budgetRaw ? Number(budgetRaw) : null;
 
-  const interestRaw = mapFieldValue(fieldNames, fieldValues, [
-    'interest',
-    'interesse',
-    'tipo_imovel',
-    'property_type',
-    'segmento',
-  ]) || null;
+  const interestRaw =
+    mapFieldValue(fieldNames, fieldValues, [
+      'interest',
+      'interesse',
+      'tipo_imovel',
+      'property_type',
+      'segmento',
+    ]) || null;
   const aptitude_interest = interestRaw
     ? String(interestRaw)
         .split(',')
@@ -120,8 +125,10 @@ export function mapMetaLeadToLeadPayload(payload) {
     meta_ad_id: String(payload.ad_id || ''),
     meta_ad_name: String(payload.ad_name || ''),
     meta_payload: payload,
-    utm_source: payload.utm_source || pick(payload, ['utm_source']) || 'facebook',
-    utm_medium: payload.utm_medium || pick(payload, ['utm_medium']) || 'paid_social',
+    utm_source:
+      payload.utm_source || pick(payload, ['utm_source']) || 'facebook',
+    utm_medium:
+      payload.utm_medium || pick(payload, ['utm_medium']) || 'paid_social',
     utm_campaign: payload.utm_campaign || String(payload.campaign_id || ''),
     utm_term: payload.utm_term || null,
     utm_content: payload.utm_content || null,
@@ -218,7 +225,10 @@ export async function insertMetaLead(payload) {
   const organizationId = await resolveMetaOrganization(payload);
 
   if (!organizationId) {
-    return { error: new Error('Organização não mapeada para Meta Lead Ads'), leadPayload };
+    return {
+      error: new Error('Organização não mapeada para Meta Lead Ads'),
+      leadPayload,
+    };
   }
 
   const metaLeadId = String(payload.lead_id || payload.id || '');
@@ -230,7 +240,11 @@ export async function insertMetaLead(payload) {
       .maybeSingle();
 
     if (existing?.id) {
-      return { error: new Error('Lead duplicado'), leadPayload, duplicate: true };
+      return {
+        error: new Error('Lead duplicado'),
+        leadPayload,
+        duplicate: true,
+      };
     }
   }
 
@@ -272,7 +286,8 @@ export async function processMetaLeadWithRouting(payload) {
 
   let matchResult = null;
   try {
-    const { matchLeadProperties } = await import('../services/leadPropertyMatcher.js');
+    const { matchLeadProperties } =
+      await import('../services/leadPropertyMatcher.js');
     matchResult = await matchLeadProperties({
       supabase,
       lead: { ...leadPayload, id: data.id },
@@ -280,13 +295,17 @@ export async function processMetaLeadWithRouting(payload) {
       createdBy: null,
     });
   } catch (matchError) {
-    console.error('[MetaLeadAds] matchLeadProperties error:', matchError.message);
+    console.error(
+      '[MetaLeadAds] matchLeadProperties error:',
+      matchError.message
+    );
   }
 
   let distributionResult = null;
   if (!assignedAgentId) {
     try {
-      const { bulkDistributeLeads } = await import('./leadDistributionService.js');
+      const { bulkDistributeLeads } =
+        await import('./leadDistributionService.js');
       distributionResult = await bulkDistributeLeads(
         leadPayload.organization_id,
         [data.id],
@@ -311,9 +330,16 @@ export async function processMetaLeadWithRouting(payload) {
   };
 }
 
-async function insertMetaWebhookEvent(payload, status, errorMessage, extra = {}) {
+async function insertMetaWebhookEvent(
+  payload,
+  status,
+  errorMessage,
+  extra = {}
+) {
   const supabase = getSupabaseServer();
-  const organizationId = await resolveMetaOrganization(payload).catch(() => null);
+  const organizationId = await resolveMetaOrganization(payload).catch(
+    () => null
+  );
 
   try {
     await supabase.from('meta_webhook_events').insert({
@@ -327,6 +353,9 @@ async function insertMetaWebhookEvent(payload, status, errorMessage, extra = {})
       ...extra,
     });
   } catch (auditError) {
-    console.error('[MetaLeadAds] Failed to insert webhook event:', auditError.message);
+    console.error(
+      '[MetaLeadAds] Failed to insert webhook event:',
+      auditError.message
+    );
   }
 }

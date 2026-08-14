@@ -5,7 +5,8 @@ export const URBANO_SITE_TEMPLATES: SiteTemplate[] = [
   buildStandardSiteTemplate({
     id: 'site-urbano-penthouse',
     name: 'Penthouse Skyline Site',
-    description: 'Site sombrio/luxuoso para coberturas e imóveis de altíssimo padrão.',
+    description:
+      'Site sombrio/luxuoso para coberturas e imóveis de altíssimo padrão.',
     thumbnail: IMG.luxury2,
     category: 'Avulso Alto Padrão',
     heroImage: IMG.luxury2,
@@ -19,15 +20,28 @@ export const URBANO_SITE_TEMPLATES: SiteTemplate[] = [
       fontFamily: 'Outfit, sans-serif',
     },
     features: [
-      { title: 'Vistas Panorâmicas', description: 'O skyline da cidade aos seus pés.', icon: '🌆' },
-      { title: 'Design Assinado', description: 'Acabamentos de grife mundial.', icon: '✨' },
-      { title: 'Privacidade', description: 'Um por andar com elevador biométrico.', icon: '🔒' },
+      {
+        title: 'Vistas Panorâmicas',
+        description: 'O skyline da cidade aos seus pés.',
+        icon: '🌆',
+      },
+      {
+        title: 'Design Assinado',
+        description: 'Acabamentos de grife mundial.',
+        icon: '✨',
+      },
+      {
+        title: 'Privacidade',
+        description: 'Um por andar com elevador biométrico.',
+        icon: '🔒',
+      },
     ],
   }),
   buildStandardSiteTemplate({
     id: 'site-urbano-family',
     name: 'Family Suburb Site',
-    description: 'Cores quentes e amigáveis, foco em casas em condomínio fechado.',
+    description:
+      'Cores quentes e amigáveis, foco em casas em condomínio fechado.',
     thumbnail: IMG.modernHouse,
     category: 'Casas em Condomínio',
     heroImage: IMG.modernHouse,
@@ -44,12 +58,14 @@ export const URBANO_SITE_TEMPLATES: SiteTemplate[] = [
   buildStandardSiteTemplate({
     id: 'site-urbano-smart',
     name: 'Smart Studio Site',
-    description: 'Estética neon/dark para investidores jovens e locação rápida.',
+    description:
+      'Estética neon/dark para investidores jovens e locação rápida.',
     thumbnail: IMG.urban,
     category: 'Lançamentos e Studios',
     heroImage: IMG.urban,
     heroTitle: 'Invista no Centro da Ação',
-    heroSubtitle: 'Studios inteligentes focados em alta rentabilidade (Airbnb).',
+    heroSubtitle:
+      'Studios inteligentes focados em alta rentabilidade (Airbnb).',
     themeConfig: {
       primaryColor: '#7c3aed', // Roxo Neon
       secondaryColor: '#ec4899', // Pink
@@ -91,5 +107,5 @@ export const URBANO_SITE_TEMPLATES: SiteTemplate[] = [
       textColor: '#1e293b',
       fontFamily: 'Playfair Display, serif',
     },
-  })
+  }),
 ];

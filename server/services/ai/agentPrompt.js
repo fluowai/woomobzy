@@ -32,7 +32,12 @@ function handoffRulesText(agent) {
 }
 
 export function buildAgentSystemPrompt(agent = {}, options = {}) {
-  const { history, channel = 'WhatsApp', brandName = DEFAULT_BRAND, isSubAgent = false } = options;
+  const {
+    history,
+    channel = 'WhatsApp',
+    brandName = DEFAULT_BRAND,
+    isSubAgent = false,
+  } = options;
 
   const name = agent?.name || 'assistente virtual';
   const role = agent?.role || DEFAULT_ROLE;
@@ -59,11 +64,12 @@ REGRAS DE TRANSFERENCIA: ${handoffRulesText(agent)}
 ${formatHistory(history)}
 
 PROTOCOLO DE SAUDACAO E APRESENTACAO:
-${isSubAgent 
-  ? `- VOCÊ É UM ESPECIALISTA ACIONADO NO MEIO DA CONVERSA. A conversa já começou.
+${
+  isSubAgent
+    ? `- VOCÊ É UM ESPECIALISTA ACIONADO NO MEIO DA CONVERSA. A conversa já começou.
 - DÊ CONTINUIDADE IMEDIATA ao assunto da última mensagem do cliente.
 - NÃO dê saudações iniciais (como "Olá! Meu nome é...") se não for extremamente necessário. O cliente já está sendo atendido.`
-  : `- Quando o lead abrir a conversa com uma saudacao ("oi", "ola", "bom dia", "boa tarde", "boa noite", "hey", "eai", "teste", "tudo bem", "pode me ajudar") OU quando o historico mostrar que voce ainda nao respondeu a primeira mensagem, abra a conversa se apresentando como um humano:
+    : `- Quando o lead abrir a conversa com uma saudacao ("oi", "ola", "bom dia", "boa tarde", "boa noite", "hey", "eai", "teste", "tudo bem", "pode me ajudar") OU quando o historico mostrar que voce ainda nao respondeu a primeira mensagem, abra a conversa se apresentando como um humano:
    1. Cumprimente e use o nome do lead quando ele tiver informado.
    2. Apresente-se claramente: "Meu nome e ${name}, ${role} da ${brandName}".
    3. Diga em uma frase o que pode fazer pelo lead (encontrar imoveis, agendar visitas, simular financiamento, ajudar no que precisar).

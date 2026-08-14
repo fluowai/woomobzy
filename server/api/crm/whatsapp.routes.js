@@ -343,22 +343,37 @@ router.post(
   async (req, res) => {
     try {
       const assigneeId = String(req.body.assigned_to || '').trim();
-      if (!assigneeId)
+      const queueId = String(req.body.queue_id || '').trim();
+      if (!assigneeId && !queueId)
         return res
           .status(400)
-          .json({ error: 'Informe o responsavel pelo atendimento' });
+          .json({ error: 'Informe o responsavel ou a fila de atendimento' });
 
-      const { data: assignee, error: assigneeError } = await supabase
-        .from('profiles')
-        .select('id, name, email')
-        .eq('id', assigneeId)
-        .eq('organization_id', req.orgId)
-        .maybeSingle();
-      if (assigneeError) throw assigneeError;
-      if (!assignee)
-        return res
-          .status(404)
-          .json({ error: 'Responsavel nao encontrado nesta organizacao' });
+      let assignee = null;
+      let queue = null;
+
+      if (assigneeId) {
+        const { data: u, error: uError } = await supabase
+          .from('profiles')
+          .select('id, name, email')
+          .eq('id', assigneeId)
+          .eq('organization_id', req.orgId)
+          .maybeSingle();
+        if (uError) throw uError;
+        if (!u)
+          return res.status(404).json({ error: 'Responsavel nao encontrado' });
+        assignee = u;
+      } else if (queueId) {
+        const { data: q, error: qError } = await supabase
+          .from('whatsapp_queues')
+          .select('id, name')
+          .eq('id', queueId)
+          .eq('organization_id', req.orgId)
+          .maybeSingle();
+        if (qError) throw qError;
+        if (!q) return res.status(404).json({ error: 'Fila nao encontrada' });
+        queue = q;
+      }
 
       const lead = await findOrCreateWhatsAppLead({
         organizationId: req.orgId,
@@ -368,39 +383,55 @@ router.post(
         source: req.body.source || 'WhatsApp',
       });
 
+      const updatePayload = {
+        status: 'Em Atendimento',
+        last_contacted_at: new Date().toISOString(),
+      };
+      if (assigneeId) {
+        updatePayload.assigned_to = assignee.id;
+        updatePayload.queue_id = null;
+      } else if (queueId) {
+        updatePayload.assigned_to = null;
+        updatePayload.queue_id = queue.id;
+      }
+
       const { data, error } = await supabase
         .from('leads')
-        .update({
-          assigned_to: assignee.id,
-          status: 'Em Atendimento',
-          last_contacted_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq('id', lead.id)
         .eq('organization_id', req.orgId)
         .select()
         .single();
       if (error) throw error;
 
+      const targetDesc = assigneeId
+        ? `para ${assignee.name || assignee.email}`
+        : `para a fila ${queue.name}`;
+
       await supabase.from('lead_activities').insert({
         lead_id: lead.id,
         organization_id: req.orgId,
         created_by: req.user.id,
         type: 'Transferencia',
-        description: `Atendimento transferido para ${assignee.name || assignee.email}`,
+        description: `Atendimento transferido ${targetDesc}`,
         metadata: {
           chat_jid: req.body.chat_jid || lead.chat_jid || null,
-          assigned_to: assignee.id,
+          assigned_to: assignee?.id || null,
+          queue_id: queue?.id || null,
         },
       });
 
       res.json({
         success: true,
         lead: data,
-        assignee: {
-          id: assignee.id,
-          name: assignee.name || assignee.email?.split('@')[0] || 'Usuario',
-          email: assignee.email || '',
-        },
+        assignee: assignee
+          ? {
+              id: assignee.id,
+              name: assignee.name || assignee.email?.split('@')[0] || 'Usuario',
+              email: assignee.email || '',
+            }
+          : null,
+        queue: queue || null,
         tags: await getLeadTags(req.orgId, data.id),
       });
     } catch (err) {

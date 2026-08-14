@@ -146,12 +146,19 @@ export function useWhatsAppInbox(
 
   // Load chats when connected instances change
   const connectedInstanceIds = useMemo(
-    () => instances.filter(i => i.status === 'connected').map(i => i.id).sort().join(','),
+    () =>
+      instances
+        .filter((i) => i.status === 'connected')
+        .map((i) => i.id)
+        .sort()
+        .join(','),
     [instances]
   );
 
   useEffect(() => {
-    const connectedInstances = instances.filter(i => i.status === 'connected');
+    const connectedInstances = instances.filter(
+      (i) => i.status === 'connected'
+    );
     if (connectedInstances.length > 0) {
       setSelectedChat(null);
       setMessages([]);
@@ -249,18 +256,23 @@ export function useWhatsAppInbox(
         media_status: message.media_id ? 'ready' : undefined,
       };
 
-      const isMerged = merged_chat_ids && selectedChat && merged_chat_ids.includes(selectedChat.id);
+      const isMerged =
+        merged_chat_ids &&
+        selectedChat &&
+        merged_chat_ids.includes(selectedChat.id);
 
       // Update chat list
       setChats((prev) => {
         let currentChats = prev;
         if (merged_chat_ids && merged_chat_ids.length > 0) {
-          currentChats = currentChats.filter((c) => !merged_chat_ids.includes(c.id));
+          currentChats = currentChats.filter(
+            (c) => !merged_chat_ids.includes(c.id)
+          );
         }
 
         const existing = currentChats.find((c) => c.id === chat.id);
         const unreadCount =
-          (selectedChat?.id === chat.id || isMerged) ? 0 : chat.unread_count;
+          selectedChat?.id === chat.id || isMerged ? 0 : chat.unread_count;
 
         if (existing) {
           return deduplicateAndSortChats(
@@ -301,7 +313,9 @@ export function useWhatsAppInbox(
         });
 
         // Mark as read since chat is open
-        chatApi.markRead(selectedChat.id, selectedChat.instance_id).catch(() => {});
+        chatApi
+          .markRead(selectedChat.id, selectedChat.instance_id)
+          .catch(() => {});
       }
     });
 
@@ -348,7 +362,7 @@ export function useWhatsAppInbox(
       toast.success(
         `Histórico importado: ${data.messages || 0} mensagens em ${data.chats || 0} conversas.`
       );
-      loadChats(instances.filter(i => i.status === 'connected'));
+      loadChats(instances.filter((i) => i.status === 'connected'));
       if (selectedChat?.instance_id === data.instance_id) {
         loadMessages(selectedChat.id, selectedChat.instance_id);
       }
@@ -423,7 +437,7 @@ export function useWhatsAppInbox(
     selectedInstance,
     isConnected,
     webSocketEnabled,
-    instances
+    instances,
   ]);
 
   const handleRecoverOrg = async () => {
@@ -496,7 +510,9 @@ export function useWhatsAppInbox(
 
   const loadChats = async (connectedInstances: Instance[]) => {
     try {
-      const promises = connectedInstances.map(inst => chatApi.list(inst.id).catch(() => []));
+      const promises = connectedInstances.map((inst) =>
+        chatApi.list(inst.id).catch(() => [])
+      );
       const results = await Promise.all(promises);
       const allChats = results.flat();
 
@@ -507,7 +523,7 @@ export function useWhatsAppInbox(
         })
       );
       setChats(deduplicateAndSortChats(normalizedChats));
-      
+
       const linkedChat = normalizedChats.find(
         (chat) =>
           (deepLinkChatId && chat.id === deepLinkChatId) ||
@@ -619,7 +635,9 @@ export function useWhatsAppInbox(
   };
 
   const handleCreateConversation = async (phone: string, name?: string) => {
-    const connectedInstances = instances.filter(i => i.status === 'connected');
+    const connectedInstances = instances.filter(
+      (i) => i.status === 'connected'
+    );
     if (connectedInstances.length === 0) {
       throw new Error('Conecte ao menos uma instância do WhatsApp.');
     }
@@ -740,10 +758,10 @@ export function useWhatsAppInbox(
           (c.phone_display || '')
             .toLowerCase()
             .includes(searchQuery.toLowerCase()) ||
-           normalizeMessagePreview(c.last_message)
-             .toLowerCase()
-             .includes(searchQuery.toLowerCase())
-       )
+          normalizeMessagePreview(c.last_message)
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase())
+      )
     : chats;
 
   const appendSentMessage = (message?: UnifiedMessage) => {

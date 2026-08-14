@@ -51,8 +51,6 @@
   - `npx vitest run src/test/impersonationSession.test.ts` → **6/6 testes aprovados** ✓
 - **Pendente (maestro)**: validar no navegador o fluxo completo (meg admin → revenda → imobiliária → voltar para a revenda). Commit + push a decidir.
 
-
-
 - **Fix**: `views/OkaPublicSite.tsx` e `src/views/sites/megainvestimentos/MegaTheme.tsx` deixam de usar imóveis hardcoded e carregam de `public_available_properties` via `get_tenant_public` (RPC com GRANT anon); `cities`/`propertyTypes` derivados dos dados; fallback de imagem para `HERO_IMAGE`.
 - **Evidência**: `npm run type-check` ✓ (0 erros).
 - **Pendente (maestro)**: validar no navegador `/site/okaimoveis` (ou domínio OKA) e `/megainvestimentos` que os imóveis reais aparecem com preço/cidade/imagem corretos; conferir se a org OKA (`okaimoveis`) tem imóveis com `status` público e `show_on_site`.

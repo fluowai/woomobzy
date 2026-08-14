@@ -153,7 +153,8 @@ router.patch('/:id', verifyAuth, requireTenant, async (req, res) => {
       .single();
 
     if (error) throw error;
-    if (!data) return res.status(404).json({ error: 'Signatário não encontrado' });
+    if (!data)
+      return res.status(404).json({ error: 'Signatário não encontrado' });
 
     res.json({ success: true, data });
   } catch (error) {

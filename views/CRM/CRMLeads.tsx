@@ -76,10 +76,7 @@ export default function CRMLeads() {
         now.getTime() - lastContact.getTime() > 7 * 24 * 60 * 60 * 1000;
       if (deadline.getTime() < now.getTime())
         return { text: 'SLA Atrasado', color: 'text-red-500' };
-      if (
-        deadline.getTime() - now.getTime() < 24 * 60 * 60 * 1000 ||
-        stale
-      )
+      if (deadline.getTime() - now.getTime() < 24 * 60 * 60 * 1000 || stale)
         return { text: 'SLA Urgente', color: 'text-amber-500' };
       return { text: 'SLA OK', color: 'text-emerald-500' };
     },

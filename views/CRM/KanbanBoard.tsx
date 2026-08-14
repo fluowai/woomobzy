@@ -14,7 +14,17 @@ import {
   Flame,
   Clock3,
   UploadCloud,
+  BarChart2,
+  X,
 } from 'lucide-react';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 import {
@@ -67,6 +77,7 @@ const KanbanBoard: React.FC = () => {
   const [customStages, setCustomStages] = useState<PipelineStage[]>(() =>
     loadCustomStages(matchProfile)
   );
+  const [showAnalytics, setShowAnalytics] = useState(false);
   const pipelineStages = useMemo(
     () => [...PIPELINE_STAGES, ...customStages],
     [customStages]
@@ -403,6 +414,12 @@ const KanbanBoard: React.FC = () => {
           </div>
           <div className="wootech-action-row">
             <button
+              className={`wootech-secondary-action ${showAnalytics ? 'bg-blue-50 text-blue-600 border-blue-200' : ''}`}
+              onClick={() => setShowAnalytics(!showAnalytics)}
+            >
+              <BarChart2 size={16} /> Analytics
+            </button>
+            <button
               className="wootech-secondary-action"
               onClick={() => toast.info('Importação de leads em breve.')}
             >
@@ -517,63 +534,58 @@ const KanbanBoard: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="flex flex-1 overflow-x-auto p-4 md:p-6">
-          {/* Mobile: select de coluna + leads filtrados */}
-          <div className="flex w-full flex-col gap-3 md:hidden">
-            <select
-              value={mobileStageId}
-              onChange={(e) => setMobileStageId(e.target.value)}
-              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800"
-            >
-              {pipelineStages.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.label} ({stageLeadMap.get(s.id)?.length || 0})
-                </option>
-              ))}
-            </select>
-            <div className="space-y-2">
-              {(stageLeadMap.get(mobileStageId) || []).map((lead) => (
-                <LeadCard
-                  key={lead.id}
-                  lead={lead}
-                  stages={pipelineStages}
-                  selected={selectedIdsSet.has(lead.id)}
-                  onOpen={(l) => {
-                    setSelectedLead(l);
-                    setIsDetailsOpen(true);
-                  }}
-                  onToggle={(id) =>
-                    setSelectedLeadIds((prev) =>
-                      prev.includes(id)
-                        ? prev.filter((x) => x !== id)
-                        : [...prev, id]
-                    )
-                  }
-                  onDelete={handleDelete}
-                  onMove={handleStatusChange}
-                  navigate={navigate}
-                />
-              ))}
+        <div className="flex flex-1 flex-col overflow-hidden px-4 pb-4 pt-5 md:px-6">
+          {showAnalytics && (
+            <div className="mb-6 bg-white border border-slate-200 rounded-xl p-5 shadow-sm animate-in fade-in slide-in-from-top-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-slate-800">
+                  Métricas do Funil
+                </h3>
+                <button
+                  onClick={() => setShowAnalytics(false)}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="h-[200px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={pipelineStages.map(s => ({
+                  name: s.label,
+                  Leads: leads.filter(l => l.status === s.id).length,
+                    }))}
+                  >
+                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                    <YAxis tick={{ fontSize: 12 }} />
+                    <Tooltip cursor={{ fill: '#f1f5f9' }} />
+                    <Bar dataKey="Leads" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Desktop: Kanban columns */}
-          <div className="hidden md:flex md:gap-4">
-            <DragDropContext onDragEnd={handleDragEnd}>
-              {pipelineStages.map((stage) => {
-                const columnLeads = stageLeadMap.get(stage.id) || [];
-                const state = stageState[stage.id];
-                return (
-                  <KanbanColumn
-                    key={stage.id}
-                    stage={stage}
+          <div className="flex flex-1 overflow-x-auto">
+            {/* Mobile: select de coluna + leads filtrados */}
+            <div className="flex w-full flex-col gap-3 md:hidden">
+              <select
+                value={mobileStageId}
+                onChange={(e) => setMobileStageId(e.target.value)}
+                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800"
+              >
+                {pipelineStages.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label} ({stageLeadMap.get(s.id)?.length || 0})
+                  </option>
+                ))}
+              </select>
+              <div className="space-y-2">
+                {(stageLeadMap.get(mobileStageId) || []).map((lead) => (
+                  <LeadCard
+                    key={lead.id}
+                    lead={lead}
                     stages={pipelineStages}
-                    leads={columnLeads}
-                    total={state?.total ?? columnLeads.length}
-                    selectedIds={selectedIdsSet}
-                    hasMore={state?.hasMore ?? false}
-                    loadingMore={state?.loadingMore ?? false}
-                    onLoadMore={loadMoreStage}
+                    selected={selectedIdsSet.has(lead.id)}
                     onOpen={(l) => {
                       setSelectedLead(l);
                       setIsDetailsOpen(true);
@@ -589,9 +601,46 @@ const KanbanBoard: React.FC = () => {
                     onMove={handleStatusChange}
                     navigate={navigate}
                   />
-                );
-              })}
-            </DragDropContext>
+                ))}
+              </div>
+            </div>
+
+            {/* Desktop: Kanban columns */}
+            <div className="hidden md:flex md:gap-4">
+              <DragDropContext onDragEnd={handleDragEnd}>
+                {pipelineStages.map((stage) => {
+                  const columnLeads = stageLeadMap.get(stage.id) || [];
+                  const state = stageState[stage.id];
+                  return (
+                    <KanbanColumn
+                      key={stage.id}
+                      stage={stage}
+                      stages={pipelineStages}
+                      leads={columnLeads}
+                      total={state?.total ?? columnLeads.length}
+                      selectedIds={selectedIdsSet}
+                      hasMore={state?.hasMore ?? false}
+                      loadingMore={state?.loadingMore ?? false}
+                      onLoadMore={loadMoreStage}
+                      onOpen={(l) => {
+                        setSelectedLead(l);
+                        setIsDetailsOpen(true);
+                      }}
+                      onToggle={(id) =>
+                        setSelectedLeadIds((prev) =>
+                          prev.includes(id)
+                            ? prev.filter((x) => x !== id)
+                            : [...prev, id]
+                        )
+                      }
+                      onDelete={handleDelete}
+                      onMove={handleStatusChange}
+                      navigate={navigate}
+                    />
+                  );
+                })}
+              </DragDropContext>
+            </div>
           </div>
         </div>
       )}

@@ -14,7 +14,11 @@ import {
   Users,
 } from 'lucide-react';
 
-import { formatPhoneVisual, formatPhoneDisplay, getChatDisplayName } from './hooks/api';
+import {
+  formatPhoneVisual,
+  formatPhoneDisplay,
+  getChatDisplayName,
+} from './hooks/api';
 import type { UnifiedChat } from './hooks/unifiedInbox';
 import {
   filterInboxChats,
@@ -123,7 +127,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         </button>
       </div>
 
-
       <div className="wa-inbox-toolbar">
         <button type="button" onClick={() => setNewestFirst((value) => !value)}>
           Ordenar: {newestFirst ? 'Mais recentes' : 'Mais antigas'}{' '}
@@ -166,8 +169,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   className="wa-avatar"
                   style={{ backgroundColor: avatarColor(name) }}
                 >
-                  {chat.avatar_url &&
-                  !erroredAvatars.has(chat.id) ? (
+                  {chat.avatar_url && !erroredAvatars.has(chat.id) ? (
                     <img
                       src={chat.avatar_url}
                       alt=""
@@ -189,9 +191,14 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   <span className="wa-chat-top">
                     <strong className="wa-chat-name">
                       {name}
-                      <PlatformIcon platform={chat.platform} isGroup={chat.is_group} />
+                      <PlatformIcon
+                        platform={chat.platform}
+                        isGroup={chat.is_group}
+                      />
                     </strong>
-                    <time className="wa-chat-time">{formatTime(chat.last_message_at)}</time>
+                    <time className="wa-chat-time">
+                      {formatTime(chat.last_message_at)}
+                    </time>
                   </span>
                   <span className="wa-chat-bottom">
                     <span className="wa-chat-preview">
@@ -241,10 +248,28 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   );
 };
 
-
-function PlatformIcon({ platform, isGroup }: { platform: UnifiedChat['platform']; isGroup?: boolean }) {
-  if (isGroup) return <Users size={14} className="wa-platform-group-icon text-slate-500" style={{ marginLeft: '4px' }} />;
-  return <MessageCircle size={14} className="wa-platform-whatsapp-icon" style={{ marginLeft: '4px' }} />;
+function PlatformIcon({
+  platform,
+  isGroup,
+}: {
+  platform: UnifiedChat['platform'];
+  isGroup?: boolean;
+}) {
+  if (isGroup)
+    return (
+      <Users
+        size={14}
+        className="wa-platform-group-icon text-slate-500"
+        style={{ marginLeft: '4px' }}
+      />
+    );
+  return (
+    <MessageCircle
+      size={14}
+      className="wa-platform-whatsapp-icon"
+      style={{ marginLeft: '4px' }}
+    />
+  );
 }
 
 function isWhatsAppCdnUrl(url?: string) {
@@ -255,7 +280,11 @@ function isWhatsAppCdnUrl(url?: string) {
 }
 
 function getChatName(chat: UnifiedChat) {
-  return getChatDisplayName(chat) || formatPhoneVisual(chat.chat_jid) || 'Contato sem telefone';
+  return (
+    getChatDisplayName(chat) ||
+    formatPhoneVisual(chat.chat_jid) ||
+    'Contato sem telefone'
+  );
 }
 
 function initials(name: string) {

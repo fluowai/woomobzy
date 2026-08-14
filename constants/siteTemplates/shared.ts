@@ -54,8 +54,23 @@ export interface BuildSiteConfig {
  * Helper para gerar os 20 sites de forma padronizada.
  * Gera automaticamente as páginas Início, Imóveis, Sobre e Contato.
  */
-export const buildStandardSiteTemplate = (config: BuildSiteConfig): SiteTemplate => {
-  const { id, name, description, thumbnail, category, themeConfig, heroImage, heroTitle, heroSubtitle, stats, features, testimonials } = config;
+export const buildStandardSiteTemplate = (
+  config: BuildSiteConfig
+): SiteTemplate => {
+  const {
+    id,
+    name,
+    description,
+    thumbnail,
+    category,
+    themeConfig,
+    heroImage,
+    heroTitle,
+    heroSubtitle,
+    stats,
+    features,
+    testimonials,
+  } = config;
 
   return {
     id,
@@ -65,10 +80,34 @@ export const buildStandardSiteTemplate = (config: BuildSiteConfig): SiteTemplate
     category,
     globalTheme: makeTheme(themeConfig),
     menuConfig: [
-      { id: `${id}-m1`, label: 'Início', type: 'page', pageId: 'home', order: 0 },
-      { id: `${id}-m2`, label: 'Imóveis', type: 'page', pageId: 'imoveis', order: 1 },
-      { id: `${id}-m3`, label: 'Sobre', type: 'page', pageId: 'sobre', order: 2 },
-      { id: `${id}-m4`, label: 'Contato', type: 'page', pageId: 'contato', order: 3 },
+      {
+        id: `${id}-m1`,
+        label: 'Início',
+        type: 'page',
+        pageId: 'home',
+        order: 0,
+      },
+      {
+        id: `${id}-m2`,
+        label: 'Imóveis',
+        type: 'page',
+        pageId: 'imoveis',
+        order: 1,
+      },
+      {
+        id: `${id}-m3`,
+        label: 'Sobre',
+        type: 'page',
+        pageId: 'sobre',
+        order: 2,
+      },
+      {
+        id: `${id}-m4`,
+        label: 'Contato',
+        type: 'page',
+        pageId: 'contato',
+        order: 3,
+      },
     ],
     pages: [
       {
@@ -94,38 +133,69 @@ export const buildStandardSiteTemplate = (config: BuildSiteConfig): SiteTemplate
             },
             styles: { padding: '0px' },
           },
-          ...(features ? [{
-            id: `${id}-features`,
-            type: BlockType.FEATURES,
-            order: 1,
-            visible: true,
-            config: { features, columns: 3 },
-            styles: { padding: '80px 20px', backgroundColor: themeConfig.backgroundColor },
-          }] : []),
-          ...(stats ? [{
-            id: `${id}-stats`,
-            type: BlockType.STATS,
-            order: 2,
-            visible: true,
-            config: { stats, columns: 3, animated: true },
-            styles: { padding: '60px 20px', backgroundColor: themeConfig.primaryColor },
-          }] : []),
+          ...(features
+            ? [
+                {
+                  id: `${id}-features`,
+                  type: BlockType.FEATURES,
+                  order: 1,
+                  visible: true,
+                  config: { features, columns: 3 },
+                  styles: {
+                    padding: '80px 20px',
+                    backgroundColor: themeConfig.backgroundColor,
+                  },
+                },
+              ]
+            : []),
+          ...(stats
+            ? [
+                {
+                  id: `${id}-stats`,
+                  type: BlockType.STATS,
+                  order: 2,
+                  visible: true,
+                  config: { stats, columns: 3, animated: true },
+                  styles: {
+                    padding: '60px 20px',
+                    backgroundColor: themeConfig.primaryColor,
+                  },
+                },
+              ]
+            : []),
           {
             id: `${id}-grid`,
             type: BlockType.PROPERTY_GRID,
             order: 3,
             visible: true,
-            config: { columns: 3, gap: 24, showFilters: false, maxItems: 6, sortBy: 'price', cardStyle: 'modern' },
-            styles: { padding: '80px 20px', backgroundColor: themeConfig.backgroundColor },
+            config: {
+              columns: 3,
+              gap: 24,
+              showFilters: false,
+              maxItems: 6,
+              sortBy: 'price',
+              cardStyle: 'modern',
+            },
+            styles: {
+              padding: '80px 20px',
+              backgroundColor: themeConfig.backgroundColor,
+            },
           },
-          ...(testimonials ? [{
-            id: `${id}-testim`,
-            type: BlockType.TESTIMONIALS,
-            order: 4,
-            visible: true,
-            config: { testimonials, layout: 'grid', showRating: true },
-            styles: { padding: '80px 20px', backgroundColor: themeConfig.backgroundColor },
-          }] : []),
+          ...(testimonials
+            ? [
+                {
+                  id: `${id}-testim`,
+                  type: BlockType.TESTIMONIALS,
+                  order: 4,
+                  visible: true,
+                  config: { testimonials, layout: 'grid', showRating: true },
+                  styles: {
+                    padding: '80px 20px',
+                    backgroundColor: themeConfig.backgroundColor,
+                  },
+                },
+              ]
+            : []),
           {
             id: `${id}-footer`,
             type: BlockType.FOOTER,
@@ -133,7 +203,7 @@ export const buildStandardSiteTemplate = (config: BuildSiteConfig): SiteTemplate
             visible: true,
             config: {},
             styles: { padding: '40px 20px', backgroundColor: '#111827' }, // Dark footer base
-          }
+          },
         ],
       },
       {
@@ -162,8 +232,18 @@ export const buildStandardSiteTemplate = (config: BuildSiteConfig): SiteTemplate
             type: BlockType.PROPERTY_GRID,
             order: 1,
             visible: true,
-            config: { columns: 3, gap: 24, showFilters: true, maxItems: 30, sortBy: 'price', cardStyle: 'modern' },
-            styles: { padding: '80px 20px', backgroundColor: themeConfig.backgroundColor },
+            config: {
+              columns: 3,
+              gap: 24,
+              showFilters: true,
+              maxItems: 30,
+              sortBy: 'price',
+              cardStyle: 'modern',
+            },
+            styles: {
+              padding: '80px 20px',
+              backgroundColor: themeConfig.backgroundColor,
+            },
           },
           {
             id: `${id}-imp-footer`,
@@ -172,7 +252,7 @@ export const buildStandardSiteTemplate = (config: BuildSiteConfig): SiteTemplate
             visible: true,
             config: {},
             styles: { padding: '40px 20px', backgroundColor: '#111827' },
-          }
+          },
         ],
       },
       {
@@ -207,7 +287,10 @@ export const buildStandardSiteTemplate = (config: BuildSiteConfig): SiteTemplate
               color: themeConfig.textColor,
               alignment: 'left',
             },
-            styles: { padding: '80px 20px', backgroundColor: themeConfig.backgroundColor },
+            styles: {
+              padding: '80px 20px',
+              backgroundColor: themeConfig.backgroundColor,
+            },
           },
           {
             id: `${id}-sob-timeline`,
@@ -217,12 +300,27 @@ export const buildStandardSiteTemplate = (config: BuildSiteConfig): SiteTemplate
             config: {
               title: 'Trajetória',
               items: [
-                { title: 'Fundação', description: 'Início das atividades', time: '2010' },
-                { title: 'Expansão', description: 'Atendimento regionalizado', time: '2015' },
-                { title: 'Consolidação', description: 'Milhares de clientes satisfeitos', time: 'Atualidade' },
+                {
+                  title: 'Fundação',
+                  description: 'Início das atividades',
+                  time: '2010',
+                },
+                {
+                  title: 'Expansão',
+                  description: 'Atendimento regionalizado',
+                  time: '2015',
+                },
+                {
+                  title: 'Consolidação',
+                  description: 'Milhares de clientes satisfeitos',
+                  time: 'Atualidade',
+                },
               ],
             },
-            styles: { padding: '60px 20px', backgroundColor: themeConfig.backgroundColor },
+            styles: {
+              padding: '60px 20px',
+              backgroundColor: themeConfig.backgroundColor,
+            },
           },
           {
             id: `${id}-sob-footer`,
@@ -231,7 +329,7 @@ export const buildStandardSiteTemplate = (config: BuildSiteConfig): SiteTemplate
             visible: true,
             config: {},
             styles: { padding: '40px 20px', backgroundColor: '#111827' },
-          }
+          },
         ],
       },
       {
@@ -253,8 +351,18 @@ export const buildStandardSiteTemplate = (config: BuildSiteConfig): SiteTemplate
               submitText: 'Enviar Mensagem',
               fields: [
                 { name: 'name', type: 'text', label: 'Nome', required: true },
-                { name: 'phone', type: 'tel', label: 'WhatsApp', required: true },
-                { name: 'message', type: 'text', label: 'Como podemos ajudar?', required: true },
+                {
+                  name: 'phone',
+                  type: 'tel',
+                  label: 'WhatsApp',
+                  required: true,
+                },
+                {
+                  name: 'message',
+                  type: 'text',
+                  label: 'Como podemos ajudar?',
+                  required: true,
+                },
               ],
               height: 600,
               textColor: '#FFFFFF',
@@ -276,9 +384,9 @@ export const buildStandardSiteTemplate = (config: BuildSiteConfig): SiteTemplate
             visible: true,
             config: {},
             styles: { padding: '40px 20px', backgroundColor: '#111827' },
-          }
-        ]
-      }
-    ]
+          },
+        ],
+      },
+    ],
   };
 };

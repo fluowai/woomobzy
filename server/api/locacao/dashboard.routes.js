@@ -28,27 +28,46 @@ router.get('/resumo', verifyAuth, requireTenant, async (req, res) => {
     const leases = statusAgg || [];
     const ativos = leases.filter((l) => l.status === 'active');
     const em_andamento = leases.filter((l) =>
-      ['draft', 'cadastral_analysis', 'income_analysis', 'pending_signatures'].includes(l.status)
+      [
+        'draft',
+        'cadastral_analysis',
+        'income_analysis',
+        'pending_signatures',
+      ].includes(l.status)
     );
     const encerrados = leases.filter((l) =>
       ['terminated', 'expired', 'archived'].includes(l.status)
     );
-    const inadimplentes = leases.filter((l) => l.payment_status === 'inadimplente');
+    const inadimplentes = leases.filter(
+      (l) => l.payment_status === 'inadimplente'
+    );
     const atrasados = leases.filter((l) => l.payment_status === 'atrasado');
     const emDia = leases.filter((l) => l.payment_status === 'em_dia');
 
-    const receitaMensal = ativos.reduce((sum, l) => sum + (l.monthly_rent || 0), 0);
-    const valorInadimplencia = inadimplentes.reduce((sum, l) => sum + (l.monthly_rent || 0), 0);
+    const receitaMensal = ativos.reduce(
+      (sum, l) => sum + (l.monthly_rent || 0),
+      0
+    );
+    const valorInadimplencia = inadimplentes.reduce(
+      (sum, l) => sum + (l.monthly_rent || 0),
+      0
+    );
 
     const now = new Date();
     const em30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
     const em90Days = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
 
     const vencendo30 = ativos.filter(
-      (l) => l.end_date && new Date(l.end_date) >= now && new Date(l.end_date) <= em30Days
+      (l) =>
+        l.end_date &&
+        new Date(l.end_date) >= now &&
+        new Date(l.end_date) <= em30Days
     );
     const vencendo90 = ativos.filter(
-      (l) => l.end_date && new Date(l.end_date) > em30Days && new Date(l.end_date) <= em90Days
+      (l) =>
+        l.end_date &&
+        new Date(l.end_date) > em30Days &&
+        new Date(l.end_date) <= em90Days
     );
 
     res.json({

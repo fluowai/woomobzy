@@ -1,8 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { FileText, Eye, Download, RefreshCw, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import {
+  FileText,
+  Eye,
+  Download,
+  RefreshCw,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+} from 'lucide-react';
 import type { Lease, ContractTemplate } from '../../../types/lease';
-import { listTemplates, generateContractPdf, updateLease } from '../../../services/lease/leaseService';
+import {
+  listTemplates,
+  generateContractPdf,
+  updateLease,
+} from '../../../services/lease/leaseService';
 
 interface Props {
   lease: Partial<Lease>;
@@ -70,7 +82,9 @@ const REQUIRED_VARS: Record<string, (l: Partial<Lease>) => boolean> = {
     (l.guarantee_value != null && Number(l.guarantee_value) > 0),
   data_inicio: (l) => !!l.start_date,
   data_fim: (l) => !!l.end_date,
-  prazo_meses: (l) => l.contract_duration_months != null && Number(l.contract_duration_months) > 0,
+  prazo_meses: (l) =>
+    l.contract_duration_months != null &&
+    Number(l.contract_duration_months) > 0,
   dia_vencimento: (l) => l.due_day != null,
   indice_reajuste: (l) => !!(l.adjustment_index || '').trim(),
   tipo_garantia: (l) => !!(l.guarantee_type || '').trim(),
@@ -81,7 +95,10 @@ const REQUIRED_VARS: Record<string, (l: Partial<Lease>) => boolean> = {
 
 const REQUIRED_VAR_ORDER = Object.keys(REQUIRED_VARS);
 
-export const StepContractGeneration: React.FC<Props> = ({ lease, updateFields }) => {
+export const StepContractGeneration: React.FC<Props> = ({
+  lease,
+  updateFields,
+}) => {
   const [templates, setTemplates] = useState<ContractTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState('default');
   const [previewContent, setPreviewContent] = useState('');
@@ -112,10 +129,13 @@ export const StepContractGeneration: React.FC<Props> = ({ lease, updateFields })
   const getTemplateContent = () =>
     selectedTemplateId === 'default'
       ? CONTRACT_TEMPLATE
-      : templates.find((t) => t.id === selectedTemplateId)?.content || CONTRACT_TEMPLATE;
+      : templates.find((t) => t.id === selectedTemplateId)?.content ||
+        CONTRACT_TEMPLATE;
 
   const computeMissingVars = () => {
-    const missing = REQUIRED_VAR_ORDER.filter((name) => !REQUIRED_VARS[name](lease));
+    const missing = REQUIRED_VAR_ORDER.filter(
+      (name) => !REQUIRED_VARS[name](lease)
+    );
     setValidationResult({
       is_valid: missing.length === 0,
       missing,
@@ -132,12 +152,26 @@ export const StepContractGeneration: React.FC<Props> = ({ lease, updateFields })
       nome_locador: lease.owner_name || '[Nome do Locador]',
       cpf_locador: lease.owner_cpf_cnpj || '[CPF do Locador]',
       nome_locatario: lease.tenant_name || '[Nome do Locatário]',
-      cpf_locatario: lease.tenant_cpf || lease.tenant_rg || '[CPF do Locatário]',
-      endereco_imovel: lease.property_title ? `${lease.property_title} ${lease.property_address || ''}` : '[Endereço do Imóvel]',
-      valor_aluguel: (lease.monthly_rent || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
-      valor_caucao: (lease.guarantee_value || lease.caution_amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
-      data_inicio: lease.start_date ? new Date(lease.start_date).toLocaleDateString('pt-BR') : '[Data de Início]',
-      data_fim: lease.end_date ? new Date(lease.end_date).toLocaleDateString('pt-BR') : '[Data de Término]',
+      cpf_locatario:
+        lease.tenant_cpf || lease.tenant_rg || '[CPF do Locatário]',
+      endereco_imovel: lease.property_title
+        ? `${lease.property_title} ${lease.property_address || ''}`
+        : '[Endereço do Imóvel]',
+      valor_aluguel: (lease.monthly_rent || 0).toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      }),
+      valor_caucao: (
+        lease.guarantee_value ||
+        lease.caution_amount ||
+        0
+      ).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+      data_inicio: lease.start_date
+        ? new Date(lease.start_date).toLocaleDateString('pt-BR')
+        : '[Data de Início]',
+      data_fim: lease.end_date
+        ? new Date(lease.end_date).toLocaleDateString('pt-BR')
+        : '[Data de Término]',
       prazo_meses: String(lease.contract_duration_months || 12),
       dia_vencimento: String(lease.due_day || '[Dia]'),
       indice_reajuste: lease.adjustment_index || '[Índice]',
@@ -168,7 +202,9 @@ export const StepContractGeneration: React.FC<Props> = ({ lease, updateFields })
       // para o backend usar os valores mais recentes.
       const payload: Partial<Lease> = {
         ...lease,
-        ...(selectedTemplateId !== 'default' ? { current_template_id: selectedTemplateId } : {}),
+        ...(selectedTemplateId !== 'default'
+          ? { current_template_id: selectedTemplateId }
+          : {}),
       };
       const { data: saved } = await updateLease(lease.id, payload);
       if (saved) updateFields(saved);
@@ -190,36 +226,50 @@ export const StepContractGeneration: React.FC<Props> = ({ lease, updateFields })
     <div className="max-w-4xl mx-auto space-y-8">
       <section className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600"><FileText size={20} /></div>
-          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">Modelo de Contrato</h4>
+          <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600">
+            <FileText size={20} />
+          </div>
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-800">
+            Modelo de Contrato
+          </h4>
         </div>
 
         <div className="flex flex-wrap gap-3 mb-6">
           <button
             onClick={() => setSelectedTemplateId('default')}
             className={`flex-1 min-w-[160px] py-3 rounded-xl text-sm font-bold transition-all ${
-              selectedTemplateId === 'default' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+              selectedTemplateId === 'default'
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
             }`}
           >
             Modelo Padrão
           </button>
-          {templates.filter(t => t.is_active).map(t => (
-            <button
-              key={t.id}
-              onClick={() => setSelectedTemplateId(t.id)}
-              className={`flex-1 min-w-[160px] py-3 rounded-xl text-sm font-bold transition-all ${
-                selectedTemplateId === t.id ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              {t.name}
-            </button>
-          ))}
+          {templates
+            .filter((t) => t.is_active)
+            .map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setSelectedTemplateId(t.id)}
+                className={`flex-1 min-w-[160px] py-3 rounded-xl text-sm font-bold transition-all ${
+                  selectedTemplateId === t.id
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                {t.name}
+              </button>
+            ))}
         </div>
 
         {/* Validação */}
-        <div className={`p-4 rounded-xl mb-4 flex items-start gap-3 ${
-          validationResult.is_valid ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-        }`}>
+        <div
+          className={`p-4 rounded-xl mb-4 flex items-start gap-3 ${
+            validationResult.is_valid
+              ? 'bg-emerald-50 text-emerald-700'
+              : 'bg-amber-50 text-amber-700'
+          }`}
+        >
           {validationResult.is_valid ? (
             <CheckCircle size={20} className="shrink-0 mt-0.5" />
           ) : (
@@ -229,11 +279,12 @@ export const StepContractGeneration: React.FC<Props> = ({ lease, updateFields })
             {validationResult.is_valid
               ? 'Contrato válido - todas as variáveis preenchidas'
               : `${validationResult.missing_count} variáveis obrigatórias não preenchidas`}
-            {!validationResult.is_valid && validationResult.missing.length > 0 && (
-              <p className="text-xs font-medium mt-1 text-amber-600">
-                Faltam: {validationResult.missing.join(', ')}
-              </p>
-            )}
+            {!validationResult.is_valid &&
+              validationResult.missing.length > 0 && (
+                <p className="text-xs font-medium mt-1 text-amber-600">
+                  Faltam: {validationResult.missing.join(', ')}
+                </p>
+              )}
           </div>
         </div>
       </section>
@@ -243,7 +294,9 @@ export const StepContractGeneration: React.FC<Props> = ({ lease, updateFields })
         <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50">
           <div className="flex items-center gap-2">
             <Eye size={16} className="text-slate-500" />
-            <h4 className="text-sm font-bold text-slate-700">Pré-visualização</h4>
+            <h4 className="text-sm font-bold text-slate-700">
+              Pré-visualização
+            </h4>
           </div>
           <button
             onClick={() => setShowPreview(!showPreview)}
@@ -270,12 +323,16 @@ export const StepContractGeneration: React.FC<Props> = ({ lease, updateFields })
         >
           <RefreshCw size={16} /> Atualizar Preview
         </button>
-        <button 
+        <button
           onClick={handleGeneratePdf}
           disabled={isGenerating}
           className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-500 shadow-lg transition-all disabled:opacity-50"
         >
-          {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />} 
+          {isGenerating ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <Download size={16} />
+          )}
           Gerar PDF
         </button>
       </div>

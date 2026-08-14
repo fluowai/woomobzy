@@ -86,9 +86,13 @@ router.post('/accounts/test', async (req, res) => {
       `[Email] POST /api/email/accounts/test falhou (org ${req.orgId}, ${req.body?.email || '?'}):`,
       error.message
     );
-    const errorMessage = error instanceof z.ZodError
-      ? 'Preencha todos os campos corretamente: ' + error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
-      : error.message;
+    const errorMessage =
+      error instanceof z.ZodError
+        ? 'Preencha todos os campos corretamente: ' +
+          error.errors
+            .map((e) => `${e.path.join('.')}: ${e.message}`)
+            .join(', ')
+        : error.message;
     res.status(error.statusCode || 400).json({ error: errorMessage });
   }
 });
@@ -150,9 +154,13 @@ router.post('/accounts', async (req, res) => {
       `[Email] POST /api/email/accounts falhou (org ${req.orgId}, ${req.body?.email || '?'}):`,
       error.message
     );
-    const errorMessage = error instanceof z.ZodError
-      ? 'Preencha todos os campos corretamente: ' + error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
-      : error.message;
+    const errorMessage =
+      error instanceof z.ZodError
+        ? 'Preencha todos os campos corretamente: ' +
+          error.errors
+            .map((e) => `${e.path.join('.')}: ${e.message}`)
+            .join(', ')
+        : error.message;
     res.status(error.statusCode || 400).json({ error: errorMessage });
   }
 });

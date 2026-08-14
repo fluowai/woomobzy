@@ -17,193 +17,208 @@ const router = Router();
 /**
  * GET /api/locacao/invoices/:lease_id
  */
-router.get('/:lease_id', verifyAuth, requireTenant, resolveAsaasApiKey, async (req, res) => {
-  try {
-    const { lease_id } = req.params;
-    const { status, year, month } = req.query;
+router.get(
+  '/:lease_id',
+  verifyAuth,
+  requireTenant,
+  resolveAsaasApiKey,
+  async (req, res) => {
+    try {
+      const { lease_id } = req.params;
+      const { status, year, month } = req.query;
 
-    if (!isValidUUID(lease_id))
-      return res.status(400).json({ error: 'ID inválido' });
+      if (!isValidUUID(lease_id))
+        return res.status(400).json({ error: 'ID inválido' });
 
-    const supabase = getSupabaseServer();
-    let query = supabase
-      .from('invoices')
-      .select('*')
-      .eq('lease_id', lease_id)
-      .eq('organization_id', req.orgId)
-      .order('due_date', { ascending: false });
+      const supabase = getSupabaseServer();
+      let query = supabase
+        .from('invoices')
+        .select('*')
+        .eq('lease_id', lease_id)
+        .eq('organization_id', req.orgId)
+        .order('due_date', { ascending: false });
 
-    if (status) query = query.eq('status', status);
-    if (year)
-      query = query
-        .gte('due_date', `${year}-01-01`)
-        .lte('due_date', `${year}-12-31`);
+      if (status) query = query.eq('status', status);
+      if (year)
+        query = query
+          .gte('due_date', `${year}-01-01`)
+          .lte('due_date', `${year}-12-31`);
 
-    const { data, error } = await query;
-    if (error) throw error;
+      const { data, error } = await query;
+      if (error) throw error;
 
-    res.json({ success: true, data: data || [] });
-  } catch (error) {
-    logger.error('[InvoiceRoutes] List error:', error);
-    res.status(500).json({ error: error.message });
+      res.json({ success: true, data: data || [] });
+    } catch (error) {
+      logger.error('[InvoiceRoutes] List error:', error);
+      res.status(500).json({ error: error.message });
+    }
   }
-});
+);
 
 /**
  * POST /api/locacao/invoices/generate
  * Gera boletos para uma locação e cria no Asaas com Split
  */
-router.post('/generate', verifyAuth, requireTenant, resolveAsaasApiKey, async (req, res) => {
-  try {
-    const { lease_id, start_month, months = 12 } = req.body;
+router.post(
+  '/generate',
+  verifyAuth,
+  requireTenant,
+  resolveAsaasApiKey,
+  async (req, res) => {
+    try {
+      const { lease_id, start_month, months = 12 } = req.body;
 
-    if (!isValidUUID(lease_id))
-      return res.status(400).json({ error: 'ID inválido' });
+      if (!isValidUUID(lease_id))
+        return res.status(400).json({ error: 'ID inválido' });
 
-    const supabase = getSupabaseServer();
+      const supabase = getSupabaseServer();
 
-    // Busca o Lease e os dados do proprietário
-    const { data: lease } = await supabase
-      .from('rental_contracts')
-      .select(
-        `
+      // Busca o Lease e os dados do proprietário
+      const { data: lease } = await supabase
+        .from('rental_contracts')
+        .select(
+          `
         *,
         property:property_id (
           title,
           owner_id
         )
       `
-      )
-      .eq('id', lease_id)
-      .eq('organization_id', req.orgId)
-      .single();
-
-    if (!lease)
-      return res.status(404).json({ error: 'Locação não encontrada' });
-    if (!lease.due_day)
-      return res
-        .status(400)
-        .json({ error: 'Dia de vencimento não configurado' });
-
-    // Busca o Owner Wallet (para o split de pagamentos)
-    let ownerWalletId = null;
-    let imobzyFeePercentage = lease.administration_fee_percentage || 10;
-
-    if (lease.property?.owner_id) {
-      const { data: owner } = await supabase
-        .from('contacts') // Assumindo que proprietários ficam em contacts
-        .select('asaas_wallet_id')
-        .eq('id', lease.property.owner_id)
+        )
+        .eq('id', lease_id)
+        .eq('organization_id', req.orgId)
         .single();
 
-      if (owner?.asaas_wallet_id) {
-        ownerWalletId = owner.asaas_wallet_id;
-      }
-    }
+      if (!lease)
+        return res.status(404).json({ error: 'Locação não encontrada' });
+      if (!lease.due_day)
+        return res
+          .status(400)
+          .json({ error: 'Dia de vencimento não configurado' });
 
-    // Cria/Busca o Locatário no Asaas
-    let asaasCustomerId = lease.asaas_customer_id;
-    if (!asaasCustomerId) {
-      try {
-        asaasCustomerId = await AsaasService.getOrCreateCustomer({
-          tenant_name: lease.tenant_name,
-          tenant_cpf: lease.tenant_cpf,
-          tenant_email: lease.tenant_email,
-          tenant_phone: lease.tenant_phone,
-        }, req.asaasApiKey || undefined);
+      // Busca o Owner Wallet (para o split de pagamentos)
+      let ownerWalletId = null;
+      let imobzyFeePercentage = lease.administration_fee_percentage || 10;
 
-        // Salva o Customer ID no contrato para não criar duplicado
-        if (asaasCustomerId) {
-          await supabase
-            .from('rental_contracts')
-            .update({ asaas_customer_id: asaasCustomerId })
-            .eq('id', lease.id);
+      if (lease.property?.owner_id) {
+        const { data: owner } = await supabase
+          .from('contacts') // Assumindo que proprietários ficam em contacts
+          .select('asaas_wallet_id')
+          .eq('id', lease.property.owner_id)
+          .single();
+
+        if (owner?.asaas_wallet_id) {
+          ownerWalletId = owner.asaas_wallet_id;
         }
-      } catch (err) {
-        logger.warn(
-          '[InvoiceRoutes] Falha ao criar cliente Asaas, faturas serão locais:',
-          err.message
-        );
       }
-    }
 
-    const startDate = start_month ? new Date(start_month) : new Date();
-    const generated = [];
-
-    for (let i = 0; i < months; i++) {
-      const dueDate = new Date(
-        startDate.getFullYear(),
-        startDate.getMonth() + i,
-        lease.due_day
-      );
-      const refMonth = new Date(
-        startDate.getFullYear(),
-        startDate.getMonth() + i,
-        1
-      );
-
-      const total =
-        (lease.monthly_rent || 0) +
-        (lease.condominium_fee || 0) +
-        (lease.iptu_amount || 0);
-
-      const invoiceNumber = `${lease.contract_number || lease_id.substring(0, 8)}-${String(i + 1).padStart(3, '0')}`;
-      const description = `Aluguel Ref: ${String(refMonth.getMonth() + 1).padStart(2, '0')}/${refMonth.getFullYear()} - Imóvel: ${lease.property?.title || 'Não informado'}`;
-
-      let asaasCharge = null;
-      if (asaasCustomerId && req.asaasApiKey) {
+      // Cria/Busca o Locatário no Asaas
+      let asaasCustomerId = lease.asaas_customer_id;
+      if (!asaasCustomerId) {
         try {
-          asaasCharge = await AsaasService.createChargeWithSplit({
-            customer: asaasCustomerId,
-            value: total,
-            dueDate: dueDate.toISOString().split('T')[0],
-            description,
-            ownerWalletId,
-            imobzyFeePercentage,
-            apiKey: req.asaasApiKey,
-          });
+          asaasCustomerId = await AsaasService.getOrCreateCustomer(
+            {
+              tenant_name: lease.tenant_name,
+              tenant_cpf: lease.tenant_cpf,
+              tenant_email: lease.tenant_email,
+              tenant_phone: lease.tenant_phone,
+            },
+            req.asaasApiKey || undefined
+          );
+
+          // Salva o Customer ID no contrato para não criar duplicado
+          if (asaasCustomerId) {
+            await supabase
+              .from('rental_contracts')
+              .update({ asaas_customer_id: asaasCustomerId })
+              .eq('id', lease.id);
+          }
         } catch (err) {
-          logger.error(
-            '[InvoiceRoutes] Erro ao criar fatura no Asaas:',
+          logger.warn(
+            '[InvoiceRoutes] Falha ao criar cliente Asaas, faturas serão locais:',
             err.message
           );
         }
       }
 
-      const { data: invoice } = await supabase
-        .from('invoices')
-        .insert({
-          lease_id,
-          organization_id: req.orgId,
-          invoice_number: invoiceNumber,
-          due_date: dueDate.toISOString().split('T')[0],
-          reference_month: refMonth.toISOString().split('T')[0],
-          amount: total,
-          rent_amount: lease.monthly_rent || 0,
-          condominium_amount: lease.condominium_fee || 0,
-          iptu_amount: lease.iptu_amount || 0,
-          total,
-          status: 'pendente',
-          // Campos do Asaas
-          gateway_id: asaasCharge?.id || null,
-          invoice_url: asaasCharge?.invoiceUrl || null,
-          bank_slip_url: asaasCharge?.bankSlipUrl || null,
-          pix_copy_paste: asaasCharge?.pixCopyPaste || null,
-        })
-        .select()
-        .single();
+      const startDate = start_month ? new Date(start_month) : new Date();
+      const generated = [];
 
-      if (invoice) generated.push(invoice);
+      for (let i = 0; i < months; i++) {
+        const dueDate = new Date(
+          startDate.getFullYear(),
+          startDate.getMonth() + i,
+          lease.due_day
+        );
+        const refMonth = new Date(
+          startDate.getFullYear(),
+          startDate.getMonth() + i,
+          1
+        );
+
+        const total =
+          (lease.monthly_rent || 0) +
+          (lease.condominium_fee || 0) +
+          (lease.iptu_amount || 0);
+
+        const invoiceNumber = `${lease.contract_number || lease_id.substring(0, 8)}-${String(i + 1).padStart(3, '0')}`;
+        const description = `Aluguel Ref: ${String(refMonth.getMonth() + 1).padStart(2, '0')}/${refMonth.getFullYear()} - Imóvel: ${lease.property?.title || 'Não informado'}`;
+
+        let asaasCharge = null;
+        if (asaasCustomerId && req.asaasApiKey) {
+          try {
+            asaasCharge = await AsaasService.createChargeWithSplit({
+              customer: asaasCustomerId,
+              value: total,
+              dueDate: dueDate.toISOString().split('T')[0],
+              description,
+              ownerWalletId,
+              imobzyFeePercentage,
+              apiKey: req.asaasApiKey,
+            });
+          } catch (err) {
+            logger.error(
+              '[InvoiceRoutes] Erro ao criar fatura no Asaas:',
+              err.message
+            );
+          }
+        }
+
+        const { data: invoice } = await supabase
+          .from('invoices')
+          .insert({
+            lease_id,
+            organization_id: req.orgId,
+            invoice_number: invoiceNumber,
+            due_date: dueDate.toISOString().split('T')[0],
+            reference_month: refMonth.toISOString().split('T')[0],
+            amount: total,
+            rent_amount: lease.monthly_rent || 0,
+            condominium_amount: lease.condominium_fee || 0,
+            iptu_amount: lease.iptu_amount || 0,
+            total,
+            status: 'pendente',
+            // Campos do Asaas
+            gateway_id: asaasCharge?.id || null,
+            invoice_url: asaasCharge?.invoiceUrl || null,
+            bank_slip_url: asaasCharge?.bankSlipUrl || null,
+            pix_copy_paste: asaasCharge?.pixCopyPaste || null,
+          })
+          .select()
+          .single();
+
+        if (invoice) generated.push(invoice);
+      }
+
+      res
+        .status(201)
+        .json({ success: true, data: generated, count: generated.length });
+    } catch (error) {
+      logger.error('[InvoiceRoutes] Generate error:', error);
+      res.status(500).json({ error: error.message });
     }
-
-    res
-      .status(201)
-      .json({ success: true, data: generated, count: generated.length });
-  } catch (error) {
-    logger.error('[InvoiceRoutes] Generate error:', error);
-    res.status(500).json({ error: error.message });
   }
-});
+);
 
 /**
  * PUT /api/locacao/invoices/:id/pay

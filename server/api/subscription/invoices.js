@@ -118,58 +118,63 @@ router.get('/invoices', verifyAuth, resolveAsaasApiKey, async (req, res) => {
   }
 });
 
-router.get('/invoices/:id', verifyAuth, resolveAsaasApiKey, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const supabase = getSupabaseServer();
+router.get(
+  '/invoices/:id',
+  verifyAuth,
+  resolveAsaasApiKey,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const supabase = getSupabaseServer();
 
-    const { data: invoice, error } = await supabase
-      .from('subscription_invoices')
-      .select('*')
-      .eq('id', id)
-      .eq('organization_id', req.orgId)
-      .single();
+      const { data: invoice, error } = await supabase
+        .from('subscription_invoices')
+        .select('*')
+        .eq('id', id)
+        .eq('organization_id', req.orgId)
+        .single();
 
-    if (error || !invoice) {
-      return res
-        .status(404)
-        .json({ error: 'Fatura nao encontrada', code: 'INVOICE_NOT_FOUND' });
-    }
-
-    let asaasPayment = null;
-    if (invoice.gateway_payment_id) {
-      try {
-        const { data: org } = await supabase
-          .from('organizations')
-          .select('gateway_api_key')
-          .eq('id', req.orgId)
-          .maybeSingle();
-
-        asaasPayment = await AsaasService.getPayment(
-          invoice.gateway_payment_id,
-          req.asaasApiKey || org?.gateway_api_key || undefined
-        );
-      } catch (error) {
-        logger.warn(
-          '[SubscriptionInvoice] Falha ao consultar Asaas:',
-          error.message
-        );
+      if (error || !invoice) {
+        return res
+          .status(404)
+          .json({ error: 'Fatura nao encontrada', code: 'INVOICE_NOT_FOUND' });
       }
-    }
 
-    return res.json({
-      success: true,
-      data: {
-        ...invoice,
-        asaas: asaasPayment,
-      },
-    });
-  } catch (error) {
-    logger.error('[SubscriptionInvoice] Error:', error);
-    return res
-      .status(500)
-      .json({ error: error.message, code: 'INVOICE_ERROR' });
+      let asaasPayment = null;
+      if (invoice.gateway_payment_id) {
+        try {
+          const { data: org } = await supabase
+            .from('organizations')
+            .select('gateway_api_key')
+            .eq('id', req.orgId)
+            .maybeSingle();
+
+          asaasPayment = await AsaasService.getPayment(
+            invoice.gateway_payment_id,
+            req.asaasApiKey || org?.gateway_api_key || undefined
+          );
+        } catch (error) {
+          logger.warn(
+            '[SubscriptionInvoice] Falha ao consultar Asaas:',
+            error.message
+          );
+        }
+      }
+
+      return res.json({
+        success: true,
+        data: {
+          ...invoice,
+          asaas: asaasPayment,
+        },
+      });
+    } catch (error) {
+      logger.error('[SubscriptionInvoice] Error:', error);
+      return res
+        .status(500)
+        .json({ error: error.message, code: 'INVOICE_ERROR' });
+    }
   }
-});
+);
 
 export default router;

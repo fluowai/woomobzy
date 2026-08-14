@@ -84,9 +84,12 @@ interface AgentFormProps {
   capabilities: string[];
   tools: string[];
   autonomyLevel: number;
-  handoffRules: Record<string, boolean>;
+  handoffRules: Record<string, any>;
   onChange: (field: string, value: any) => void;
-  onToggleArray: (field: 'capabilities' | 'tools' | 'sub_agents', value: string) => void;
+  onToggleArray: (
+    field: 'capabilities' | 'tools' | 'sub_agents',
+    value: string
+  ) => void;
   onToggleChannel: (value: string) => void;
   onToggleHandoff: (ruleId: string) => void;
 }
@@ -274,8 +277,12 @@ export const AgentForm: React.FC<AgentFormProps> = ({
               onChange={(e) => onChange('agentType', e.target.value)}
               className="w-full rounded-lg border border-slate-200 bg-[#F8FAFD] p-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
             >
-              <option value="orchestrator">Orquestrador (Líder / Atendimento)</option>
-              <option value="specialist">Especialista (Bastidores / Skill)</option>
+              <option value="orchestrator">
+                Orquestrador (Líder / Atendimento)
+              </option>
+              <option value="specialist">
+                Especialista (Bastidores / Skill)
+              </option>
             </select>
           </Field>
           <Field label="Personalidade">
@@ -311,10 +318,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({
             <button
               type="button"
               onClick={() =>
-                onChange(
-                  'sharePromptWithSubAgents',
-                  !sharePromptWithSubAgents
-                )
+                onChange('sharePromptWithSubAgents', !sharePromptWithSubAgents)
               }
               className={`flex w-full items-center justify-between rounded-lg border p-4 text-left transition ${
                 sharePromptWithSubAgents
@@ -339,9 +343,8 @@ export const AgentForm: React.FC<AgentFormProps> = ({
                     Compartilhar este prompt com sub-agentes
                   </div>
                   <div className="text-xs font-medium text-slate-500">
-                    O prompt acima é injetado no especialista acionado, que
-                    atua dentro da mesma conversa para ajudar o agente
-                    principal.
+                    O prompt acima é injetado no especialista acionado, que atua
+                    dentro da mesma conversa para ajudar o agente principal.
                   </div>
                 </div>
               </div>
@@ -396,10 +399,11 @@ export const AgentForm: React.FC<AgentFormProps> = ({
                   </button>
                 );
               })}
-            {allAgents.filter((a) => a.agent_type === 'specialist').length === 0 && (
+            {allAgents.filter((a) => a.agent_type === 'specialist').length ===
+              0 && (
               <div className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm font-medium text-slate-500">
-                Nenhum agente especialista encontrado.
-                Crie um especialista primeiro para conectá-lo aqui.
+                Nenhum agente especialista encontrado. Crie um especialista
+                primeiro para conectá-lo aqui.
               </div>
             )}
           </div>
@@ -494,6 +498,64 @@ export const AgentForm: React.FC<AgentFormProps> = ({
                 <p className="mb-0 mt-1 text-xs text-slate-500">{level.desc}</p>
               </button>
             ))}
+          </div>
+        </div>
+
+        <div>
+          <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
+            Voz & Áudio (TTS)
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-4 cursor-pointer hover:bg-slate-50">
+              <input
+                type="checkbox"
+                checked={!!handoffRules?.audio_enabled}
+                onChange={() =>
+                  onChange('handoff_rules', {
+                    ...handoffRules,
+                    audio_enabled: !handoffRules?.audio_enabled,
+                  })
+                }
+                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-600"
+              />
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-slate-900">
+                  Habilitar Respostas em Áudio
+                </span>
+                <span className="text-xs text-slate-500">
+                  O agente enviará voice notes.
+                </span>
+              </div>
+            </label>
+            {handoffRules?.audio_enabled && (
+              <div className="flex flex-col justify-center">
+                <span className="mb-1 text-xs font-bold text-slate-600">
+                  Voz do Agente
+                </span>
+                <select
+                  value={
+                    (handoffRules?.audio_voice) ||
+                    'pt-BR-FranciscaNeural'
+                  }
+                  onChange={(e) =>
+                    onChange('handoff_rules', {
+                      ...handoffRules,
+                      audio_voice: e.target.value,
+                    })
+                  }
+                  className="h-10 w-full rounded-lg border border-slate-200 bg-[#F8FAFD] px-3 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                >
+                  <option value="pt-BR-FranciscaNeural">
+                    Francisca (Feminina)
+                  </option>
+                  <option value="pt-BR-AntonioNeural">
+                    Antonio (Masculina)
+                  </option>
+                  <option value="pt-BR-BrendaNeural">Brenda (Feminina)</option>
+                  <option value="pt-BR-DonatoNeural">Donato (Masculino)</option>
+                </select>
+              </div>
+            )}
           </div>
         </div>
       </Section>

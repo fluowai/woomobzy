@@ -42,7 +42,9 @@ export default function PropertyManagement() {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    const currentNiche = window.location.pathname.startsWith('/rural') ? 'rural' : 'urbano';
+    const currentNiche = window.location.pathname.startsWith('/rural')
+      ? 'rural'
+      : 'urbano';
 
     const fetchProperties = async () => {
       setLoading(true);

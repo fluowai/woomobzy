@@ -41,6 +41,7 @@ type AutomationResult struct {
 	AgentID     string `json:"agent_id,omitempty"`
 	AgentName   string `json:"agent_name,omitempty"`
 	Reply       string `json:"reply,omitempty"`
+	AudioPath   string `json:"audio_path,omitempty"`
 	ShouldReply bool   `json:"should_reply"`
 }
 

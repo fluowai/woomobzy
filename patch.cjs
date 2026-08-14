@@ -3,10 +3,7 @@ const file = 'views/CRM/KanbanBoard/LeadDetailsModal.tsx';
 let content = fs.readFileSync(file, 'utf8');
 
 // 1. Add imports
-content = content.replace(
-  'import {',
-  'import { Pencil, Save, X as XIcon, '
-);
+content = content.replace('import {', 'import { Pencil, Save, X as XIcon, ');
 
 // 2. Add state
 const stateInsert = `
@@ -71,12 +68,20 @@ const stateInsert = `
     }
   };
 `;
-content = content.replace('const [appointments, setAppointments] = useState<any[]>([]);', stateInsert + '\n  const [appointments, setAppointments] = useState<any[]>([]);');
+content = content.replace(
+  'const [appointments, setAppointments] = useState<any[]>([]);',
+  stateInsert +
+    '\n  const [appointments, setAppointments] = useState<any[]>([]);'
+);
 
 // 3. Replace the sidebar rendering
 const sidebarStart = '{/* Sidebar Esquerda (Informações do Lead) */}';
 const sidebarEnd = '{/* Área Principal (Conteúdo das Abas) */}';
-const sidebarRegex = new RegExp(sidebarStart.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&') + '[\\s\\S]*?' + sidebarEnd.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&'));
+const sidebarRegex = new RegExp(
+  sidebarStart.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&') +
+    '[\\s\\S]*?' +
+    sidebarEnd.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')
+);
 
 const newSidebar = `{/* Sidebar Esquerda (Informações do Lead) */}
           <div className="w-full md:w-80 bg-white border-r border-slate-200 overflow-y-auto custom-scrollbar p-6 shrink-0 flex flex-col gap-6">

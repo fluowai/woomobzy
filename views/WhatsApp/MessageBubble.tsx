@@ -42,7 +42,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   const [mediaLoadError, setMediaLoadError] = useState('');
   const autoRefreshMedia = useRef(false);
   const isSent = message.is_from_me;
-  const [userRequestedMedia, setUserRequestedMedia] = useState(isSent || Boolean(message.media_url));
+  const [userRequestedMedia, setUserRequestedMedia] = useState(
+    isSent || Boolean(message.media_url)
+  );
   const content = (message.content || '').trim();
   const hasMedia = Boolean(
     message.media_url ||
@@ -63,7 +65,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     if (!message.media_id || message.type === 'audio') return;
 
     if (currentUrl) return;
-    
+
     if (!userRequestedMedia) return;
 
     setMediaLoading(true);
@@ -120,7 +122,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   ) => {
     if (event) event.stopPropagation();
     if (!message.media_id || mediaLoading) return;
-    
+
     setUserRequestedMedia(true);
     setMediaLoading(true);
     setMediaLoadError('');
@@ -319,8 +321,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     <div className={`wa-bubble-wrapper ${isSent ? 'sent' : 'received'}`}>
       {!isSent && (
         <div className="wa-message-avatar">
-          {message.sender_avatar_url &&
-          !avatarError ? (
+          {message.sender_avatar_url && !avatarError ? (
             <img
               src={message.sender_avatar_url}
               alt=""
@@ -372,8 +373,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       </div>
       {isSent && (
         <div className="wa-message-avatar wa-message-avatar-sent">
-          {message.sender_avatar_url &&
-          !avatarError ? (
+          {message.sender_avatar_url && !avatarError ? (
             <img
               src={message.sender_avatar_url}
               alt=""
@@ -408,7 +408,13 @@ const MediaPlaceholder: React.FC<MediaPlaceholderProps> = ({
     className={`wa-bubble-media-placeholder ${needsDownload ? 'wa-needs-download' : ''}`}
     onClick={onRetry}
     disabled={!onRetry}
-    title={onRetry ? (needsDownload ? 'Baixar mídia' : 'Tentar carregar midia novamente') : undefined}
+    title={
+      onRetry
+        ? needsDownload
+          ? 'Baixar mídia'
+          : 'Tentar carregar midia novamente'
+        : undefined
+    }
   >
     {icon}
     <span>{needsDownload ? 'Baixar arquivo' : label}</span>

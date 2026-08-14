@@ -302,13 +302,20 @@ const AIAgents: React.FC = () => {
     }
   };
 
-  const startNew = () => {
+  const editAgent = (id: string) => {
+    setSelectedId(id);
+    setView('builder');
+  };
+
+  const startNew = (type: 'orchestrator' | 'specialist' = 'orchestrator') => {
+    setMainTab('specialists');
     setSelectedId('new');
-    setDraft(DEFAULTS);
+    setDraft({ ...DEFAULTS, agent_type: type });
     setView('builder');
   };
 
   const applyPreset = (preset: PresetAgent) => {
+    setMainTab('specialists');
     setSelectedId('new');
     setDraft(presetToBuilder(preset));
     setView('builder');
@@ -474,7 +481,7 @@ const AIAgents: React.FC = () => {
               <Plus size={17} /> Novo imóvel
             </Link>
             <button
-              onClick={startNew}
+              onClick={() => startNew('orchestrator')}
               className="flex h-10 items-center gap-2 rounded-lg bg-slate-950 px-4 text-sm font-bold text-white hover:bg-slate-800"
             >
               <Bot size={17} /> Novo agente
@@ -501,23 +508,15 @@ const AIAgents: React.FC = () => {
           </div>
 
           {mainTab === 'swarms' ? (
-            <SwarmBuilder
-              agents={agents}
-              onSelectAgent={(id) => {
-                setMainTab('specialists');
-                selectAgent(id);
-              }}
-              onCreateNew={() => {
-                setMainTab('specialists');
-                startNew();
-                setDraft({ ...DEFAULTS, agent_type: 'orchestrator' });
-              }}
-              onCreateSpecialist={() => {
-                setMainTab('specialists');
-                startNew();
-                setDraft({ ...DEFAULTS, agent_type: 'specialist' });
-              }}
-            />
+             <SwarmBuilder
+               agents={agents}
+               onSelectAgent={(id) => {
+                 setMainTab('specialists');
+                 editAgent(id);
+               }}
+               onCreateNew={() => startNew('orchestrator')}
+               onCreateSpecialist={() => startNew('specialist')}
+             />
           ) : selectedId === 'new' && !selectedAgent && agents.length === 0 ? (
             <div className="space-y-5">
               <AgentPresetGrid presets={presets} onSelect={applyPreset} />

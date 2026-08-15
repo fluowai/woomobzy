@@ -590,8 +590,8 @@ func (c *Client) eventHandler(evt interface{}) {
 	case *events.JoinedGroup:
 		c.handleJoinedGroup(v)
 
-	case *events.LeftGroup:
-		c.handleLeftGroup(v)
+	case *events.GroupInfo:
+		c.handleGroupInfo(v)
 	}
 }
 
@@ -599,8 +599,16 @@ func (c *Client) handleJoinedGroup(evt *events.JoinedGroup) {
 	c.logger.Info("Joined group", zap.String("group_jid", evt.JID.String()), zap.String("name", evt.GroupName.Name))
 }
 
-func (c *Client) handleLeftGroup(evt *events.LeftGroup) {
-	c.logger.Info("Left group", zap.String("group_jid", evt.JID.String()))
+func (c *Client) handleGroupInfo(evt *events.GroupInfo) {
+	if evt.JID.Server != types.GroupServer {
+		return
+	}
+	for _, jid := range evt.Leave {
+		if c.waClient != nil && c.waClient.Store.ID != nil && jid.ToNonAD() == c.waClient.Store.ID.ToNonAD() {
+			c.logger.Info("Left group", zap.String("group_jid", evt.JID.String()))
+			break
+		}
+	}
 }
 
 // handleMessage processes an incoming WhatsApp message

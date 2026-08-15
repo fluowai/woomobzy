@@ -481,6 +481,23 @@ CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at DESC);
 -- PARTE 11: ROW LEVEL SECURITY (RLS)
 -- ========================================================================================
 
+-- FUNÇÕES AUXILIARES (criadas antes das policies RLS que as referenciam)
+CREATE OR REPLACE FUNCTION public.get_my_org_id()
+RETURNS uuid AS $$
+  SELECT NULLIF(auth.jwt() -> 'app_metadata' ->> 'organization_id', '')::uuid;
+$$ LANGUAGE sql STABLE;
+
+CREATE OR REPLACE FUNCTION public.is_superadmin()
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.profiles p
+    WHERE p.id = auth.uid()
+      AND p.role = 'superadmin'
+  );
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
+ALTER FUNCTION public.is_superadmin() SET search_path = public;
+
 -- 11.1 Profiles
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public profiles are visible" ON profiles;
@@ -819,7 +836,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 INSERT INTO plans (name, price_monthly, features, limits, is_active) VALUES
 ('Starter', 0, '{"maxUsers": 1, "maxProperties": 15, "landingPage": true, "crm": "basic", "support": "email"}'::jsonb, '{"users": 1, "properties": 15}'::jsonb, true),
 ('Professional', 97, '{"maxUsers": 5, "maxProperties": 100, "landingPage": true, "crm": "full", "whatsapp": true, "editor": true, "support": "priority"}'::jsonb, '{"users": 5, "properties": 100}'::jsonb, true),
-('Enterprise', 197, '{"maxUsers": -1, "maxProperties": -1, "landingPage": true, "crm": "full", "whatsapp": true, "editor": true, "ai": true, "gis": true, "customDomain": true, "support": "dedicated"}'::jsonb, '{"users": -1, "properties": -1}'::jsonb, true),
 ('Unlimited', 497, '{"maxUsers": -1, "maxProperties": -1, "landingPage": true, "crm": "full", "whatsapp": true, "editor": true, "ai": true, "gis": true, "customDomain": true, "api": true, "support": "dedicated"}'::jsonb, '{"users": -1, "properties": -1}'::jsonb, true)
 ON CONFLICT (name) DO NOTHING;
 
@@ -995,6 +1011,7 @@ BEGIN
 END $$;
 
 ALTER TABLE whatsapp_instances
+  ADD COLUMN IF NOT EXISTS tenant_id UUID,
   ADD CONSTRAINT whatsapp_instances_tenant_id_fkey
   FOREIGN KEY (tenant_id) REFERENCES organizations(id) ON DELETE CASCADE;
 
@@ -1258,10 +1275,10 @@ NOTIFY pgrst, 'reload schema';
 
 DO $$
 BEGIN
-  IF NOT EXISTS (
+  IF to_regclass('public.support_tickets') IS NOT NULL AND NOT EXISTS (
     SELECT 1
     FROM pg_constraint
-    WHERE conrelid = 'public.support_tickets'::regclass
+    WHERE conrelid = to_regclass('public.support_tickets')
       AND conname = 'support_tickets_organization_id_fkey'
   ) THEN
     ALTER TABLE public.support_tickets
@@ -1272,10 +1289,10 @@ BEGIN
       NOT VALID;
   END IF;
 
-  IF NOT EXISTS (
+  IF to_regclass('public.support_tickets') IS NOT NULL AND NOT EXISTS (
     SELECT 1
     FROM pg_constraint
-    WHERE conrelid = 'public.support_tickets'::regclass
+    WHERE conrelid = to_regclass('public.support_tickets')
       AND conname = 'support_tickets_user_id_fkey'
   ) THEN
     ALTER TABLE public.support_tickets
@@ -1286,10 +1303,10 @@ BEGIN
       NOT VALID;
   END IF;
 
-  IF NOT EXISTS (
+  IF to_regclass('public.support_messages') IS NOT NULL AND NOT EXISTS (
     SELECT 1
     FROM pg_constraint
-    WHERE conrelid = 'public.support_messages'::regclass
+    WHERE conrelid = to_regclass('public.support_messages')
       AND conname = 'support_messages_ticket_id_fkey'
   ) THEN
     ALTER TABLE public.support_messages
@@ -1300,10 +1317,10 @@ BEGIN
       NOT VALID;
   END IF;
 
-  IF NOT EXISTS (
+  IF to_regclass('public.support_messages') IS NOT NULL AND NOT EXISTS (
     SELECT 1
     FROM pg_constraint
-    WHERE conrelid = 'public.support_messages'::regclass
+    WHERE conrelid = to_regclass('public.support_messages')
       AND conname = 'support_messages_user_id_fkey'
   ) THEN
     ALTER TABLE public.support_messages
@@ -1337,6 +1354,8 @@ BEGIN
     EXCEPTION
       WHEN foreign_key_violation THEN
         RAISE NOTICE 'Constraint % contains existing orphaned rows and remains NOT VALID.', constraint_name;
+      WHEN undefined_table OR undefined_object THEN
+        RAISE NOTICE 'Table or constraint % not found, skipping.', constraint_name;
     END;
   END LOOP;
 END $$;
@@ -3574,6 +3593,16 @@ $$;
 ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.properties ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lead_tags ENABLE ROW LEVEL SECURITY;
+CREATE TABLE IF NOT EXISTS public.lead_activities (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  lead_id UUID REFERENCES public.leads(id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+  created_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  type TEXT NOT NULL,
+  description TEXT NOT NULL,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 ALTER TABLE public.lead_activities ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Brokers can manage leads in organization" ON public.leads;
@@ -3656,23 +3685,59 @@ ANALYZE public.lead_activities;
 -- Performance indexes for Kanban cursor pagination and CRM detail.
 -- This file must be executed without wrapping it in an explicit transaction.
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_leads_kanban_stage_cursor
+CREATE INDEX IF NOT EXISTS idx_leads_kanban_stage_cursor
   ON public.leads (organization_id, status, created_at DESC, id DESC);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_leads_org_created_cursor
+CREATE INDEX IF NOT EXISTS idx_leads_org_created_cursor
   ON public.leads (organization_id, created_at DESC, id DESC);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_lead_activities_org_lead_created
+CREATE INDEX IF NOT EXISTS idx_lead_activities_org_lead_created
   ON public.lead_activities (organization_id, lead_id, created_at DESC);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_leads_org_phone
+CREATE INDEX IF NOT EXISTS idx_leads_org_phone
   ON public.leads (organization_id, phone);
 
 -- Validated on 2026-06-18 using pg_stat_user_indexes:
 -- idx_leads_organization and idx_properties_organization had zero scans,
 -- while their equivalent indexes were actively used.
-DROP INDEX CONCURRENTLY IF EXISTS public.idx_leads_organization;
-DROP INDEX CONCURRENTLY IF EXISTS public.idx_properties_organization;
+DROP INDEX IF EXISTS public.idx_leads_organization;
+DROP INDEX IF EXISTS public.idx_properties_organization;
+
+-- ------------------------------------------
+-- v7_urbano_fase1_cadastros.sql (clients table)
+-- ------------------------------------------
+-- Tabela unificada de clientes (CRM avançado), criada antes do módulo de locação
+-- porque leases/rental_contracts a referenciam via FK.
+CREATE TABLE IF NOT EXISTS clients (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  document_type TEXT CHECK (document_type IN ('CPF', 'CNPJ', 'Passaporte')),
+  document_number TEXT,
+  email TEXT,
+  phone TEXT,
+  -- 'Comprador', 'Inquilino', 'Proprietário', 'Fiador', 'Investidor'
+  roles TEXT[] DEFAULT '{}', 
+
+  -- Dados Pessoais / Profissionais
+  birth_date DATE,
+  marital_status TEXT,
+  profession TEXT,
+  monthly_income NUMERIC(12,2),
+
+  -- Endereço com base no CEP
+  address_zip TEXT,
+  address_street TEXT,
+  address_number TEXT,
+  address_complement TEXT,
+  address_neighborhood TEXT,
+  address_city TEXT,
+  address_state TEXT,
+
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
 
 -- ------------------------------------------
 -- 20260619_lease_management_complete.sql
@@ -4309,6 +4374,22 @@ CREATE POLICY "Profile rural visits" ON public.rural_property_visits
 -- ------------------------------------------
 -- Urban operations modules: lots, keys, condominiums, documents and portal sync.
 
+CREATE TABLE IF NOT EXISTS developments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  address TEXT,
+  city TEXT,
+  state TEXT,
+  total_units INT DEFAULT 0,
+  available_units INT DEFAULT 0,
+  status TEXT DEFAULT 'em_obras' CHECK (status IN ('em_obras', 'lancamento', 'pronto', 'esgotado')),
+  progress_pct INT DEFAULT 0,
+  price_table JSONB DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS public.urban_lots (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
@@ -4911,22 +4992,8 @@ CREATE TABLE IF NOT EXISTS audit_log (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 5. Create developments table (Urban Empreendimentos)
-CREATE TABLE IF NOT EXISTS developments (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  address TEXT,
-  city TEXT,
-  state TEXT,
-  total_units INT DEFAULT 0,
-  available_units INT DEFAULT 0,
-  status TEXT DEFAULT 'em_obras' CHECK (status IN ('em_obras', 'lancamento', 'pronto', 'esgotado')),
-  progress_pct INT DEFAULT 0,
-  price_table JSONB DEFAULT '[]'::jsonb,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
+-- 5. Create developments table (Urban Empreendimentos) - MOVED to 20260620 section
+-- (defined before urban_lots/availability_maps which reference it)
 
 -- 6. Create rental_contracts table (Urban Locação)
 CREATE TABLE IF NOT EXISTS rental_contracts (
@@ -5296,70 +5363,6 @@ CREATE INDEX IF NOT EXISTS idx_rural_search_user ON rural_location_search_logs(u
 CREATE INDEX IF NOT EXISTS idx_rural_search_created ON rural_location_search_logs(created_at);
 
 -- ------------------------------------------
--- v7_urbano_fase1_cadastros.sql
--- ------------------------------------------
--- Migration v7: Imobzy Urbano Fase 1 - Cadastros Gerais e Modalidades
--- Criação da tabela unificada de clientes (CRM avançado) e adaptação de campos
-
--- 1. Criação da Tabela de Clientes
-CREATE TABLE IF NOT EXISTS clients (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  document_type TEXT CHECK (document_type IN ('CPF', 'CNPJ', 'Passaporte')),
-  document_number TEXT,
-  email TEXT,
-  phone TEXT,
-  -- 'Comprador', 'Inquilino', 'Proprietário', 'Fiador', 'Investidor'
-  roles TEXT[] DEFAULT '{}', 
-  
-  -- Dados Pessoais / Profissionais
-  birth_date DATE,
-  marital_status TEXT,
-  profession TEXT,
-  monthly_income NUMERIC(12,2),
-  
-  -- Endereço com base no CEP
-  address_zip TEXT,
-  address_street TEXT,
-  address_number TEXT,
-  address_complement TEXT,
-  address_neighborhood TEXT,
-  address_city TEXT,
-  address_state TEXT,
-  
-  notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- 2. Atualizar tabela de properties para associar a um proprietário
-DO $$ 
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'properties' AND column_name = 'owner_id') THEN
-    ALTER TABLE properties ADD COLUMN owner_id UUID REFERENCES clients(id) ON DELETE SET NULL;
-  END IF;
-END $$;
-
--- 3. Atualizar tabela de leads para poder linkar com um cliente existente (caso já exista)
-DO $$ 
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'leads' AND column_name = 'client_id') THEN
-    ALTER TABLE leads ADD COLUMN client_id UUID REFERENCES clients(id) ON DELETE SET NULL;
-  END IF;
-END $$;
-
--- 4. Enable RLS e Policies para Clientes
-ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Tenant isolation clients" ON clients;
-CREATE POLICY "Tenant isolation clients" ON clients
-  USING (organization_id IN (SELECT organization_id FROM profiles WHERE id = auth.uid()));
-
--- Done!
-SELECT 'Migration v7 (Urbano Fase 1 - Cadastros) completed successfully!' AS result;
-
--- ------------------------------------------
 -- v8_fix_bi_rpcs_and_views.sql
 -- ------------------------------------------
 -- ============================================================
@@ -5424,6 +5427,8 @@ CREATE OR REPLACE VIEW billings AS
 
 -- 4. View "contracts" como alias de "rental_contracts" com campos esperados
 --    O frontend chama /rest/v1/contracts?status=eq.Active
+--    A tabela legacy "contracts" (Parte 7) é substituída pela view.
+DROP TABLE IF EXISTS contracts CASCADE;
 CREATE OR REPLACE VIEW contracts AS
     SELECT
         id,
@@ -5635,7 +5640,7 @@ CREATE POLICY "Reseller view sub-organizations" ON public.organizations
   FOR SELECT
   USING (
     parent_id = (
-      SELECT organization_id FROM public.users WHERE id = auth.uid() LIMIT 1
+      SELECT organization_id FROM public.profiles WHERE id = auth.uid() LIMIT 1
     )
   );
 
@@ -5645,7 +5650,7 @@ CREATE POLICY "Reseller update sub-organizations" ON public.organizations
   FOR UPDATE
   USING (
     parent_id = (
-      SELECT organization_id FROM public.users WHERE id = auth.uid() LIMIT 1
+      SELECT organization_id FROM public.profiles WHERE id = auth.uid() LIMIT 1
     )
   );
 
@@ -5655,19 +5660,19 @@ CREATE POLICY "Reseller insert sub-organizations" ON public.organizations
   FOR INSERT
   WITH CHECK (
     parent_id = (
-      SELECT organization_id FROM public.users WHERE id = auth.uid() LIMIT 1
+      SELECT organization_id FROM public.profiles WHERE id = auth.uid() LIMIT 1
     )
   );
 
 -- Enable Reseller to view users belonging to their sub-organizations
-DROP POLICY IF EXISTS "Reseller view sub-organization users" ON public.users;
-CREATE POLICY "Reseller view sub-organization users" ON public.users
+DROP POLICY IF EXISTS "Reseller view sub-organization users" ON public.profiles;
+CREATE POLICY "Reseller view sub-organization users" ON public.profiles
   FOR SELECT
   USING (
     organization_id IN (
       SELECT id FROM public.organizations 
       WHERE parent_id = (
-        SELECT organization_id FROM public.users WHERE id = auth.uid() LIMIT 1
+        SELECT organization_id FROM public.profiles WHERE id = auth.uid() LIMIT 1
       )
     )
   );
@@ -5680,7 +5685,7 @@ CREATE POLICY "Reseller view sub-organization settings" ON public.site_settings
     organization_id IN (
       SELECT id FROM public.organizations 
       WHERE parent_id = (
-        SELECT organization_id FROM public.users WHERE id = auth.uid() LIMIT 1
+        SELECT organization_id FROM public.profiles WHERE id = auth.uid() LIMIT 1
       )
     )
   );

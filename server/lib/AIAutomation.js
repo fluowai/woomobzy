@@ -6,6 +6,8 @@ import { AGENT_BRAND_NAME } from '../services/ai/agentPrompt.js';
 import { guardrails } from '../services/ai/agentGuardrails.js';
 import logger from '../utils/logger.js';
 
+const GEMINI_AGENT_MODEL = process.env.GEMINI_AGENT_MODEL || 'gemini-3.6-flash';
+
 const ENHANCED_LEAD_COLUMNS = [
   'lead_score',
   'ai_profile',
@@ -35,7 +37,7 @@ export class AIAutomationEngine {
     this.defaultApiKey = validKey ? apiKey : null;
     if (validKey) {
       this.genAI = new GoogleGenerativeAI(apiKey);
-      this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      this.model = this.genAI.getGenerativeModel({ model: GEMINI_AGENT_MODEL });
     } else {
       this.genAI = null;
       this.model = null;
@@ -73,7 +75,7 @@ export class AIAutomationEngine {
       );
 
     const genAI = new GoogleGenerativeAI(finalKey);
-    return genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    return genAI.getGenerativeModel({ model: GEMINI_AGENT_MODEL });
   }
 
   async _getConversationMemory(organizationId, phone, limit = 10) {
@@ -93,6 +95,130 @@ export class AIAutomationEngine {
     } catch (err) {
       logger.warn('[Memory] Erro ao carregar memoria:', err.message);
       return [];
+    }
+  }
+
+  async _getConversationState(organizationId, phone) {
+    try {
+      const supabase = getSupabaseServer();
+      const sessionId = `whatsapp_${phone}`;
+      const { data, error } = await supabase
+        .from('ai_conversation_states')
+        .select(
+          'facts, answered_fields, asked_questions, active_intents, conversation_summary'
+        )
+        .eq('organization_id', organizationId)
+        .eq('session_id', sessionId)
+        .maybeSingle();
+
+      if (error) return null;
+      return data || null;
+    } catch (err) {
+      logger.warn('[Memory] Estado estruturado indisponível:', err.message);
+      return null;
+    }
+  }
+
+  async _upsertConversationState({
+    organizationId,
+    agentId,
+    phone,
+    lead,
+    actionPlan,
+    reply,
+  }) {
+    try {
+      const supabase = getSupabaseServer();
+      const sessionId = `whatsapp_${phone}`;
+      const { data: current, error: loadError } = await supabase
+        .from('ai_conversation_states')
+        .select(
+          'facts, answered_fields, asked_questions, active_intents, presented_property_ids, version'
+        )
+        .eq('organization_id', organizationId)
+        .eq('session_id', sessionId)
+        .maybeSingle();
+
+      if (loadError) return;
+
+      const profile = actionPlan?.interestProfile || {};
+      const candidateFacts = {
+        lead_name: actionPlan?.leadName || lead?.name || '',
+        operation: profile.operation,
+        property_type: profile.propertyType,
+        city: profile.city,
+        region: profile.region,
+        payment: profile.payment,
+        timeline: profile.timeline,
+        budget: actionPlan?.budget,
+        lead_temperature: actionPlan?.temperature,
+        visit_requested: actionPlan?.visit?.requested || undefined,
+        visit_scheduled_at: actionPlan?.visit?.scheduledAt || '',
+        property_hint: actionPlan?.visit?.propertyHint || '',
+      };
+      const meaningfulFacts = Object.fromEntries(
+        Object.entries(candidateFacts).filter(([, value]) => {
+          if (value === null || value === undefined || value === '')
+            return false;
+          if (value === 0 || value === 'indefinido') return false;
+          return true;
+        })
+      );
+      const facts = { ...(current?.facts || {}), ...meaningfulFacts };
+      const answeredFields = Array.from(
+        new Set([
+          ...(current?.answered_fields || []),
+          ...Object.keys(meaningfulFacts),
+        ])
+      ).slice(-40);
+      const activeIntents = Array.from(
+        new Set(
+          [...(current?.active_intents || []), actionPlan?.intent]
+            .filter(Boolean)
+            .map((item) => String(item).slice(0, 180))
+        )
+      ).slice(-8);
+      const askedQuestions = [...(current?.asked_questions || [])];
+      const normalizedReply = String(reply || '').trim();
+      if (normalizedReply.includes('?'))
+        askedQuestions.push(normalizedReply.slice(0, 500));
+
+      const uuidPattern =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      const propertyIds = (lead?.matched_properties || [])
+        .map((property) => property?.id)
+        .filter((id) => uuidPattern.test(String(id || '')));
+
+      const { error } = await supabase.from('ai_conversation_states').upsert(
+        {
+          organization_id: organizationId,
+          session_id: sessionId,
+          primary_agent_id: agentId || null,
+          lead_id: lead?.id || null,
+          facts,
+          answered_fields: answeredFields,
+          asked_questions: Array.from(new Set(askedQuestions)).slice(-20),
+          presented_property_ids: Array.from(
+            new Set([
+              ...(current?.presented_property_ids || []),
+              ...propertyIds,
+            ])
+          ).slice(-30),
+          active_intents: activeIntents,
+          conversation_summary: String(actionPlan?.intent || '').slice(0, 1000),
+          version: Number(current?.version || 0) + 1,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'organization_id,session_id' }
+      );
+
+      if (error)
+        logger.warn('[Memory] Erro ao atualizar estado:', error.message);
+    } catch (err) {
+      logger.warn(
+        '[Memory] Erro ao atualizar estado estruturado:',
+        err.message
+      );
     }
   }
 
@@ -278,7 +404,7 @@ Formato:
     }
 
     const mediaHint = this._buildMediaHint(message);
-    const content = [message.content, mediaHint].filter(Boolean).join('\n');
+    let content = [message.content, mediaHint].filter(Boolean).join('\n');
     const agent = await this._loadActiveAgent(
       supabase,
       organizationId,
@@ -291,15 +417,12 @@ Formato:
     const audioData =
       message.type === 'audio' ? await this._downloadMediaForAI(message) : null;
 
-    const _guardrailConfig = guardrails._getGuardrailsConfig(
-      supabase,
-      organizationId,
-      agent?.id
-    );
+    let preliminaryAiResult = null;
 
     const rateLimitResult = await guardrails.checkRateLimit(
       normalizedPhone,
-      organizationId
+      organizationId,
+      agent?.id || null
     );
     if (rateLimitResult.exceeded) {
       if (!agent) {
@@ -327,6 +450,25 @@ Formato:
       };
     }
 
+    // Transcreve áudio depois dos gates baratos e antes dos guardrails
+    // semânticos/roteamento. Assim o swarm recebe a intenção real sem gastar
+    // tokens com mensagens já bloqueadas por rate limit ou spam.
+    if (audioData) {
+      preliminaryAiResult = await this.processIntent({
+        content,
+        audioData,
+        organizationId,
+        mimeType: message.media_mimetype,
+        agent,
+        phone: normalizedPhone,
+      });
+      if (preliminaryAiResult?.transcricao) {
+        content = [preliminaryAiResult.transcricao, mediaHint]
+          .filter(Boolean)
+          .join('\n');
+      }
+    }
+
     let existingLead = await this._findLeadByNormalizedPhone(
       supabase,
       organizationId,
@@ -337,6 +479,36 @@ Formato:
       normalizedPhone,
       8
     );
+    const inboundPolicy = await guardrails.evaluateInboundPolicy({
+      organizationId,
+      agentId: agent?.id || null,
+      content,
+      history,
+      workingHours: agent?.working_hours || null,
+    });
+    if (!inboundPolicy.allowed) {
+      const policyReply =
+        inboundPolicy.reason === 'off_hours'
+          ? guardrails.buildOffHoursRedirect(inboundPolicy.config)
+          : inboundPolicy.reason === 'max_turns'
+            ? guardrails.buildMaxTurnsRedirect()
+            : guardrails.buildSensitiveTopicRedirect();
+      if (agent) {
+        await this._saveConversationMemory(
+          organizationId,
+          agent.id,
+          normalizedPhone,
+          'assistant',
+          policyReply
+        );
+      }
+      return {
+        skipped: true,
+        reason: inboundPolicy.reason,
+        reply: agent ? policyReply : '',
+        should_reply: Boolean(agent),
+      };
+    }
     const topicDrift = guardrails.detectTopicDrift(history, content);
 
     if (guardrails.hasSensitiveContent(content)) {
@@ -408,6 +580,10 @@ Formato:
           normalizedPhone,
           8
         );
+        const conversationState = await this._getConversationState(
+          organizationId,
+          normalizedPhone
+        );
 
         // Determina o lead id (se ja existe na base)
         const existingLeadForTools = await this._findLeadByNormalizedPhone(
@@ -419,10 +595,14 @@ Formato:
         autonomousReply = await orchestrator.processAgentConversation({
           content,
           organizationId,
-          agent,
+          agent: { ...agent, conversation_state: conversationState },
           history,
           leadId: existingLeadForTools?.id || null,
+          sessionId: `whatsapp_${normalizedPhone}`,
         });
+        if (autonomousReply && typeof autonomousReply !== 'string') {
+          autonomousReply = autonomousReply.reply || null;
+        }
       } catch (err) {
         logger.error(
           '[AIAutomation] Erro ao executar orquestrador de ferramentas:',
@@ -432,16 +612,18 @@ Formato:
     }
 
     // Step 2: Extrair JSON estruturado para o CRM
-    const aiResult = await this.processIntent({
-      content: autonomousReply
-        ? `${content}\n\n[RESPOSTA AUTONOMA GERADA: ${autonomousReply}]`
-        : content,
-      audioData,
-      organizationId,
-      mimeType: message.media_mimetype,
-      agent,
-      phone: normalizedPhone,
-    });
+    const aiResult =
+      preliminaryAiResult ||
+      (await this.processIntent({
+        content: autonomousReply
+          ? `${content}\n\n[RESPOSTA AUTONOMA GERADA: ${autonomousReply}]`
+          : content,
+        audioData,
+        organizationId,
+        mimeType: message.media_mimetype,
+        agent,
+        phone: normalizedPhone,
+      }));
 
     // Se a IA autonoma gerou resposta, forcar o CRM a utiliza-la
     if (aiResult && autonomousReply) {
@@ -601,7 +783,14 @@ Formato:
       logger.warn('[AIAutomation] Matchmaking indisponivel:', error.message);
     }
 
-    const reply = this._buildWhatsAppReply({ lead, actionPlan, content });
+    const rawReply = this._buildWhatsAppReply({ lead, actionPlan, content });
+    const voiceMatch = String(rawReply || '').match(
+      /\[VOICE_AI\]([\s\S]*?)\[\/VOICE_AI\]/i
+    );
+    const voiceText = String(voiceMatch?.[1] || '').trim();
+    const reply = String(rawReply || '')
+      .replace(/\[VOICE_AI\]([\s\S]*?)\[\/VOICE_AI\]/gi, '$1')
+      .trim();
     if (reply) {
       await this._saveConversationMemory(
         organizationId,
@@ -612,12 +801,21 @@ Formato:
       );
     }
 
+    await this._upsertConversationState({
+      organizationId,
+      agentId: agent?.id,
+      phone: normalizedPhone,
+      lead,
+      actionPlan,
+      reply,
+    });
+
     let audio_path = '';
-    if (agent?.handoff_rules?.audio_enabled && reply) {
+    if ((agent?.handoff_rules?.audio_enabled || voiceText) && reply) {
       try {
         const { generateAudioFromText } =
           await import('../services/ai/ttsService.js');
-        audio_path = await generateAudioFromText(reply, {
+        audio_path = await generateAudioFromText(voiceText || reply, {
           voice: agent?.handoff_rules?.audio_voice,
         });
       } catch (err) {
@@ -1079,16 +1277,10 @@ Formato:
       nextAction,
       visit,
       followUpAt,
-      handoffRequired: Boolean(
-        aiResult?.handoffRequired || score >= 80 || visit.requested
-      ),
-      handoffReason:
-        aiResult?.handoffReason ||
-        (visit.requested
-          ? 'Lead pediu visita'
-          : score >= 80
-            ? 'Lead com alta intencao'
-            : ''),
+      // Alta intenção e pedido de visita são casos normais do agente autônomo.
+      // Handoff só ocorre quando o plano explicitamente identifica uma exceção.
+      handoffRequired: Boolean(aiResult?.handoffRequired),
+      handoffReason: aiResult?.handoffReason || '',
       reply: String(aiResult?.reply || nextAction.reason || '').slice(0, 1200),
     };
   }
@@ -1427,7 +1619,16 @@ Formato:
       return null;
     }
 
-    const candidates = data || [];
+    const allCandidates = data || [];
+    const orchestrators = allCandidates.filter((candidate) => {
+      const operational = candidate?.handoff_rules?.__operational360 || {};
+      return (
+        (candidate.agent_type || operational.agent_type) === 'orchestrator'
+      );
+    });
+    // Quando há um orquestrador explícito, especialistas nunca assumem a linha
+    // de frente. Mantém compatibilidade com agentes legados sem tipo configurado.
+    const candidates = orchestrators.length ? orchestrators : allCandidates;
     const toolCandidates = candidates.filter((agent) =>
       (agent.tools || []).includes(preferredTool)
     );

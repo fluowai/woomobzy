@@ -1,5 +1,20 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-15] Agentes de IA autônomos: swarm real, memória, ferramentas e segurança — IMPLEMENTADO
+
+- **Solicitação (maestro)**: transformar a aba Agentes IA em uma operação autônoma, com conversa fluida, sem perguntas repetidas, apresentação de imóveis, agenda de visitas e especialistas internos coordenados por um agente principal.
+- **Frontend**: builder e dashboard passaram a mostrar prontidão, bloqueios de publicação, ferramentas conectadas/disponíveis, especialistas conectados/disponíveis e onboarding guiado. Corrigido o mapeamento de campos camelCase que impedia persistir estilo, tipo, autonomia e compartilhamento de contexto.
+- **Orquestração**: roteamento semântico para 0..N especialistas, fan-out limitado, retorno interno estruturado e síntese final pelo agente principal, sem expor o swarm ao cliente. A delegação não depende mais do compartilhamento integral do prompt.
+- **Memória**: estado estruturado por sessão (`facts`, campos respondidos, perguntas já feitas, intenções e resumo), histórico ordenado sem duplicar a mensagem atual e regra explícita para não repetir perguntas respondidas.
+- **Ferramentas**: catálogo executável com busca de imóveis, agenda, financiamento, CRM, qualificação, documentos, follow-up, tarefas, notificação e voz. Allowlist, status do agente, autonomia e isolamento do simulador são impostos no servidor.
+- **Provedores**: chat e simulador agora respeitam as chaves Gemini/OpenAI/Groq do tenant, fazem fallback ordenado e não tratam mais a integração visual Namo Bana como provedor de conversa executável.
+- **Confiabilidade e segurança**: RBAC administrativo nas rotas de configuração/teste; correção das policies RLS legadas; ledger com reserva idempotente antes de ferramentas de escrita; traces sanitizados; TTL de memória; trava concorrente de agenda; compensação precisa em falha de follow-up.
+- **Arquivos centrais**: `views/AIAgents.tsx`, `components/agents/*`, `server/services/ai/agentOrchestrator.js`, `server/services/ai/agentOrchestrationRuntime.js`, `server/services/ai/agentGuardrails.js`, `server/lib/AIAutomation.js`, `server/api/ai/*`, `migrations/20260815_ai_agent_swarm_runtime.sql`.
+- **Gates**: `node --check` ✓; ESLint focado ✓; Vitest completo **39 arquivos / 271 testes** ✓; build Vite **4.104 módulos** ✓. `type-check` chegou somente a erros preexistentes de `src/components/lease/LeaseDetail.tsx` (`pdf_url`/`invitation_url`), sem erro nos arquivos desta entrega.
+- **Migração aplicada**: em 2026-08-15, no Supabase `db.agklraytctednncsncbd.supabase.co`, foram aplicadas em transação as dependências `20260729_create_lead_appointments.sql`, `20260804_create_agendas.sql` e `20260815_ai_agent_swarm_runtime.sql`.
+- **Validação pós-migração**: pós-flight confirmou RLS nas três tabelas do runtime, ACL do `service_role`, trigger de agenda, constraints de idempotência e TTL. Teste integrado transacional confirmou bloqueio de conflito de agenda, replay de ferramenta, negação para `authenticated` e acesso por `service_role`, com rollback dos dados temporários.
+- **Pendente operacional**: reiniciar API/worker WhatsApp e executar smoke test autenticado com dados reais. Nenhum commit/push até este registro.
+
 ## [2026-08-13] Multi-tenant impersonation: meg admin → revenda → imobiliária redireciona para /megaadmin — CORRIGIDO
 
 - **Solicitação (maestro)**: quando o mega admin loga em uma revenda e depois acessa uma imobiliária que pertence a ela, o sistema redireciona para `/admin` ou `/megaadmin` em vez de `/urban`/`/rural`.
@@ -1269,3 +1284,25 @@ Cinco endpoints estavam falhando no console:
   4. `applyPreset()` também chama `setMainTab('specialists')` para robustez.
 - **Gates**: type-check 0 erros; eslint 0 erros nos arquivos alterados; build frontend ✅ e API ✅ no CI; 256 testes ✅. A única falha CI é `whatsapp-go` (Go build, Dockerfile.whatsapp) — pré-existente e desrelacionada.
 - **Commit**: `c92099e` em `codex/main-whatsapp-media-hotfix` — push ✅.
+
+## [2026-08-15] Auditoria completa da integração WhatsApp/Whatsmeow
+
+- **Escopo**: frontend, API Node, bridge Go, Whatsmeow, sessão PostgreSQL/sqlstore, mídia MinIO, WebSocket, Docker, filas, segurança e multi-tenancy.
+- **Resultado**: `SIM, MAS EXIGE CORREÇÕES`; manter Whatsmeow e refatorar o bridge antes de avaliar migração de provider.
+- **Relatório**: `documentation/RELATORIO_AUDITORIA_COMPLETA_WHATSMEOW_2026-08-15.md`.
+- **Principais causas**: concorrência de Connect, reconnect duplicado, ausência de `StreamReplaced`, logout sem apagar sessão, vínculo de device não atômico, estado conectado inferido, mídia sem limite e jobs sem reclaim.
+- **Segurança**: confirmado que Compose/Portainer rastreados contêm credenciais de produção; rotação permanece obrigatória e não foi executada nesta auditoria.
+- **Verificação**: Vitest WhatsApp 4/4; Go test/build aprovados em workspace ASCII temporário; Docker indisponível no host; race não executado sem CGO.
+- Nenhum código de produto, commit, push ou deploy executado.
+
+## [2026-08-15] WhatsApp/Whatsmeow — hardening crítico executado
+
+- **Conexão/sessão**: single-flight corrigido; autenticação real antes de `connected`; reconnect duplicado removido; eventos permanentes tratados; disconnect e logout separados.
+- **Multi-réplica**: lease PostgreSQL renovável por instância; vínculo instância/JID persistente e único.
+- **Banco**: `migrations/20260815_whatsapp_bridge_hardening.sql` aplicada em produção após diagnóstico de zero JIDs duplicados; verificação confirmou constraint, sessions, leases e índice.
+- **Mensagens/mídia**: limite de 64 MB; reclaim de jobs presos; concorrência limitada; callback de mensagem assíncrono; falhas de persistência expostas como `202`.
+- **Frontend/API**: removida inferência visual falsa de conexão e centralizada listagem no bridge Go.
+- **Infra/segurança**: readiness com DB, restart/healthcheck, Go 1.25, Whatsmeow atualizado; credenciais removidas dos stacks e scripts temporários.
+- **Gates WhatsApp**: Go tests/build aprovados; Vitest WhatsApp 4/4; ESLint do arquivo TS alterado aprovado; build Vite de produção aprovado; YAML válido. A única asserção marcada na suíte completa durante contenção de workers passou isoladamente (15/15).
+- **Interferência externa**: type-check geral bloqueado por alterações paralelas nos testes de agentes de IA e nos tipos de locação (`agentGuardrails`, `agentOrchestrator` e `LeaseDetail`), fora deste escopo e preservadas.
+- **Pendente operacional**: rotacionar credenciais expostas no histórico Git e publicar novas imagens/stacks. Nenhum commit/push foi executado.

@@ -1,5 +1,24 @@
 # Handoff
 
+## 2026-08-15 — Agentes de IA autônomos e multiagente
+
+- **Status**: implementação concluída no working tree; migration aplicada e validada no Supabase; build e 271 testes aprovados.
+- **Entregue**: agente principal visível ao cliente, 0..N especialistas internos, memória estruturada sem repetição, catálogo de ferramentas governado, apresentação de imóveis, agenda protegida contra concorrência, documentos tenant-safe, follow-ups/tarefas/notificações, voz, guardrails efetivos e resolução de provedores Gemini/OpenAI/Groq por tenant.
+- **Segurança**: RBAC administrativo, policies RLS corrigidas, ledger idempotente, traces sanitizados, retenção e simulador sem efeitos colaterais.
+- **Migração**: aplicada em transação no Supabase `db.agklraytctednncsncbd.supabase.co`, incluindo dependências de agenda. Pós-flight e teste integrado transacional aprovados.
+- **Próximo passo obrigatório**: reiniciar API e automação WhatsApp e validar um fluxo real: qualificação → imóveis → disponibilidade → visita → follow-up.
+- **Atenção**: o type-check global ainda é bloqueado por tipos de locação fora desta entrega em `LeaseDetail.tsx`; o build Vite permanece verde.
+
+## 2026-08-15 — Auditoria completa WhatsApp/Whatsmeow
+
+- **Status**: diagnóstico concluído; nenhum código de produto alterado, conforme a trava do prompt mestre.
+- **Relatório**: `documentation/RELATORIO_AUDITORIA_COMPLETA_WHATSMEOW_2026-08-15.md`.
+- **Veredito**: manter Whatsmeow e refatorar o bridge. Não há evidência de bug impeditivo da biblioteca; os riscos predominantes estão na implementação e infraestrutura do IMOBZY.
+- **Críticos**: segredos de produção rastreados; conexão sem single-flight/lease; sessão órfã na janela de pareamento; JID duplicável; logout apenas desconecta; mídia ilimitada em RAM.
+- **Altos**: reconnect duplicado com o nativo; `StreamReplaced` ausente; estado conectado falso no Go/frontend; jobs de mídia presos após crash; handler bloqueante; send sem persistência garantida; WebSocket white-label; health/restart insuficientes.
+- **Gates**: Vitest WhatsApp 4/4; `go test ./...` e `go build ./cmd/server` aprovados em cópia ASCII temporária. Race não executado sem CGO; Docker indisponível no host.
+- **Próxima decisão do maestro**: autorizar a Fase 0 do plano de correção. Rotação de credenciais deve ser coordenada antes de modificar Compose/histórico.
+
 ## 2026-08-14 — AI Agents: fix orchestrator creation and sub-agent selection navigation
 
 - **Status**: ✅ COMMITADO e PUSHADO (`c92099e` em `codex/main-whatsapp-media-hotfix`)

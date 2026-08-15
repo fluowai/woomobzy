@@ -1,6 +1,6 @@
 # Planejamento: Imobzy AI Squad
 
-**Status**: EM IMPLEMENTACAO
+**Status**: IMPLEMENTADO E MIGRADO — RESTART/SMOKE REAL PENDENTES
 **Data**: 2026-08-04
 **Autor**: Orquestrador + Maestro
 
@@ -110,3 +110,26 @@ Eles poderão customizar os nomes, os prompts e os comportamentos dos agentes pa
    - Modelar no banco de dados a ativação de _Features/Agents_ por _Tenant_ (permitindo cobrar add-ons por agente).
    - Criar interface de contratação no Painel Urban/Rural: Uma "loja de funcionários digitais".
 3. **Landing Pages**: Integrar esse discurso no Construtor de Landing Pages que está sendo desenhado.
+
+---
+
+## 7. Runtime Autônomo Multiagente — 2026-08-15
+
+O atendimento opera com um único agente principal visível ao cliente. O roteador seleciona de zero a três especialistas por turno, executa-os nos bastidores e devolve resultados estruturados para o agente principal sintetizar uma resposta única e natural.
+
+### Contratos implementados
+
+- memória estruturada por organização e sessão, com fatos, perguntas já feitas, campos respondidos, intenções e resumo;
+- delegação independente de `share_prompt_with_subagents`; esse campo controla apenas quanto contexto o especialista recebe;
+- allowlist de ferramentas, nível mínimo de autonomia, status operacional e bloqueio total de efeitos colaterais em simulações;
+- ledger idempotente reservado antes de ações de escrita, traces sanitizados e retenção configurada no banco;
+- conflito de agenda validado por slot, agenda e corretor, com lock transacional contra duas reservas simultâneas;
+- RLS das tabelas AI restrita corretamente ao `service_role` e rotas administrativas protegidas por RBAC;
+- onboarding e checklist de prontidão impedem publicar agentes sem identidade, prompt, canal, ferramenta, autonomia ou especialistas obrigatórios.
+
+### Ativação
+
+1. Migração aplicada no Supabase `db.agklraytctednncsncbd.supabase.co` em 2026-08-15, junto das dependências de agenda.
+2. Pós-flight confirmou RLS, ACL `service_role`, constraints, trigger de agenda e retenção.
+3. Teste integrado transacional confirmou conflito de agenda, replay idempotente, bloqueio para `authenticated` e acesso por `service_role`.
+4. Próximo passo operacional: reiniciar API e worker de automação WhatsApp, criar especialistas por domínio e validar o fluxo real de qualificação, apresentação de imóveis, disponibilidade, visita e follow-up.

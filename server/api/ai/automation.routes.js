@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
-import { verifyAuth } from '../../middleware/auth.js';
+import { requireRole, verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
 
 const router = Router();
@@ -9,6 +9,7 @@ router.post(
   '/agents/:id/qualify',
   verifyAuth,
   requireTenant,
+  requireRole('admin', 'superadmin'),
   async (req, res) => {
     try {
       const supabase = getSupabaseServer();
@@ -45,6 +46,7 @@ router.get(
   '/agents/:id/metrics',
   verifyAuth,
   requireTenant,
+  requireRole('admin', 'superadmin'),
   async (req, res) => {
     try {
       const supabase = getSupabaseServer();
@@ -96,6 +98,7 @@ router.post(
   '/agents/:id/learn',
   verifyAuth,
   requireTenant,
+  requireRole('admin', 'superadmin'),
   async (req, res) => {
     try {
       const supabase = getSupabaseServer();

@@ -4,6 +4,9 @@ import { AgentOrchestrator } from './agentOrchestrator.js';
 import { buildAgentSystemPrompt } from './agentPrompt.js';
 import logger from '../../utils/logger.js';
 
+const DEFAULT_AGENT_MODEL =
+  process.env.GEMINI_AGENT_MODEL || 'gemini-3.6-flash';
+
 const LEAD_SIMULATION_PROMPT = `
 Voce e um cliente brasileiro real interessado em imoveis, conversando com um corretor ou atendente de uma imobiliaria.
 Regras:
@@ -15,12 +18,6 @@ Regras:
 - NUNCA mencione que e uma simulacao, teste, IA ou robo.
 - Responda APENAS como o cliente, sem explicacoes adicionais.`;
 
-function formatHistory(history = []) {
-  return history
-    .map((m) => `[${String(m.role || 'user').toUpperCase()}]: ${m.content}`)
-    .join('\n');
-}
-
 export class ConversationSimulator {
   constructor(defaultApiKey = null) {
     this.defaultApiKey = defaultApiKey;
@@ -29,26 +26,35 @@ export class ConversationSimulator {
   async _resolveProvider(organizationId) {
     const { getOrgAIConfig } = await import('../api/ai/helpers.js');
     const config = await getOrgAIConfig(organizationId);
-    const provider = config?.namoBana?.apiKey
-      ? 'namobana'
-      : config?.openai?.apiKey
-        ? 'openai'
-        : 'gemini';
-    const apiKey =
-      config?.namoBana?.apiKey ||
-      config?.openai?.apiKey ||
+    const geminiKey =
+      config?.gemini?.apiKey ||
       this.defaultApiKey ||
       process.env.GEMINI_API_KEY ||
       '';
-    return { provider, apiKey: String(apiKey || ''), config };
+    const openaiKey = config?.openai?.apiKey || '';
+    const groqKey = config?.groq?.apiKey || process.env.GROQ_API_KEY || '';
+    const provider = geminiKey
+      ? 'gemini'
+      : openaiKey
+        ? 'openai'
+        : groqKey
+          ? 'groq'
+          : null;
+    const apiKey = geminiKey || openaiKey || groqKey;
+    return {
+      provider,
+      apiKey: String(apiKey || ''),
+      groqApiKey: String(groqKey || ''),
+      config,
+    };
   }
 
-  async _ensureGemini(apiKey, organizationId) {
+  async _ensureGemini(apiKey, _organizationId) {
     const validKey = apiKey && !apiKey.includes('YOUR_') && apiKey.length > 20;
     if (validKey) {
       const { GoogleGenerativeAI } = await import('@google/generative-ai');
       const genAI = new GoogleGenerativeAI(apiKey);
-      return genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      return genAI.getGenerativeModel({ model: DEFAULT_AGENT_MODEL });
     }
 
     const supabase = getSupabaseServer();
@@ -63,7 +69,7 @@ export class ConversationSimulator {
       throw new Error('Nenhuma chave Gemini disponivel para simulacao.');
     const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(finalKey);
-    return genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    return genAI.getGenerativeModel({ model: DEFAULT_AGENT_MODEL });
   }
 
   async _callGemini(model, systemInstruction, history, message) {
@@ -160,6 +166,8 @@ export class ConversationSimulator {
     organizationId,
     provider,
     apiKey,
+    groqApiKey,
+    sessionId,
   }) {
     const systemInstruction = buildAgentSystemPrompt(agent, {
       history,
@@ -177,6 +185,8 @@ export class ConversationSimulator {
           agent,
           history,
           leadId: null,
+          sessionId,
+          allowSideEffects: false,
         });
         if (reply) return reply;
       } catch (err) {
@@ -214,7 +224,7 @@ export class ConversationSimulator {
       }
     }
 
-    const groqKey = process.env.GROQ_API_KEY;
+    const groqKey = provider === 'groq' ? apiKey : groqApiKey;
     if (groqKey) {
       try {
         return await this._callGroq(
@@ -231,7 +241,7 @@ export class ConversationSimulator {
     return '';
   }
 
-  async _generateLeadReply(provider, apiKey, history) {
+  async _generateLeadReply(provider, apiKey, history, groqApiKey) {
     const lastAgentMessage = [...history]
       .reverse()
       .find((m) => m.role === 'assistant');
@@ -252,7 +262,7 @@ export class ConversationSimulator {
       }
     }
 
-    const groqKey = process.env.GROQ_API_KEY;
+    const groqKey = provider === 'groq' ? apiKey : groqApiKey;
     if (groqKey) {
       try {
         const text = await this._callGroq(
@@ -299,21 +309,18 @@ export class ConversationSimulator {
     }
   }
 
-  async run({
-    agent,
-    organizationId,
-    seedMessage = 'oi',
-    turns = 6,
-    sessionId: providedSessionId,
-  }) {
+  async run({ agent, organizationId, seedMessage = 'oi', turns = 6 }) {
     if (!agent) throw new Error('Agente nao fornecido para simulacao.');
 
-    const { provider, apiKey } = await this._resolveProvider(organizationId);
+    const { provider, apiKey, groqApiKey } =
+      await this._resolveProvider(organizationId);
     if (!apiKey) {
       throw new Error('Nenhuma chave de IA configurada para simulacao.');
     }
 
-    const sessionId = providedSessionId || `sim-${agent.id}-${Date.now()}`;
+    const sessionId = `sim-${agent.id}-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 10)}`;
     const history = [];
     const transcript = [];
 
@@ -338,6 +345,8 @@ export class ConversationSimulator {
         organizationId,
         provider,
         apiKey,
+        groqApiKey,
+        sessionId,
       });
 
       if (!agentReply) break;
@@ -359,7 +368,8 @@ export class ConversationSimulator {
       const leadReply = await this._generateLeadReply(
         provider,
         apiKey,
-        history
+        history,
+        groqApiKey
       );
       if (!leadReply) break;
 

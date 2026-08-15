@@ -11,6 +11,7 @@ const gradients: Record<string, string> = {
   O: 'from-emerald-500 to-teal-500',
   N: 'from-violet-600 to-purple-700',
   M: 'from-amber-500 to-orange-500',
+  I: 'from-pink-500 to-rose-500',
   Í: 'from-pink-500 to-rose-500',
   E: 'from-slate-700 to-slate-950',
 };
@@ -28,6 +29,7 @@ export const AgentAvatar: React.FC<AgentAvatarProps> = ({
 }) => {
   const g = gradient || gradients[label] || 'from-slate-600 to-slate-800';
   const s = sizes[size];
+
   return (
     <div
       className={`${s} shrink-0 rounded-lg bg-gradient-to-br ${g} p-[2px] shadow-sm`}

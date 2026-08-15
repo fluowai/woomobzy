@@ -1,5 +1,19 @@
 # Verificação
 
+## 2026-08-15 — Agentes de IA autônomos e swarm operacional
+
+- `node --check` nos 8 arquivos JS alterados do runtime/API: **aprovado**.
+- ESLint focado em frontend, API, runtime e testes: **0 erros / 0 warnings**.
+- Testes focados de orquestração, guardrails e hardening: **15 aprovados**.
+- Suíte completa: **39 arquivos / 271 testes aprovados**, exit 0.
+- Build de produção: **aprovado**, 4.104 módulos transformados.
+- Smoke local em `http://localhost:3105/urban/ai-agents`: rota protegida redirecionou corretamente ao login e o console não registrou erro/warning. O fluxo autenticado não foi executado porque não havia sessão disponível e nenhum dado real foi criado.
+- `npm run type-check`: os erros introduzidos nos novos testes foram corrigidos; restaram apenas erros fora do escopo em `src/components/lease/LeaseDetail.tsx` para campos `pdf_url` e `invitation_url` de alterações paralelas já presentes no working tree.
+- Revisão de segurança final: sem P0/P1 bloqueador restante no escopo AI. Simulação isolada em sessão `sim-*` e com `allowSideEffects: false`; tools de escrita reservam a idempotência antes do efeito; agenda possui lock transacional no banco.
+- Migração aplicada no Supabase `db.agklraytctednncsncbd.supabase.co`: dry-run transacional aprovado, apply transacional aprovado e pós-flight aprovado.
+- Integração de banco: `appointment_conflict_blocked=true`, `tool_replay_blocked=true`, `cross_tenant_runtime_denied=true`, `service_role_runtime_access=true`, `rolled_back=true`.
+- Verificação operacional ainda necessária após reiniciar os serviços: atendimento real via WhatsApp/agenda com usuário autenticado.
+
 ## 2026-08-14 — AI Agents: fix orchestrator creation and sub-agent selection navigation
 
 - **Sintoma**: o orquestrador não permite criar agentes, não abre o formulário (janela) e não deixa selecionar quais agentes fazem parte da orquestração.
@@ -563,3 +577,14 @@
 - `npm run type-check`: inconclusivo; o processo `tsc` foi encerrado pelo Windows sem emitir diagnóstico TypeScript. O build Vite de produção passou.
 - Produção antes do deploy: health do Node/WhatsMeow em HTTP 200; instância `22222` presa em `connecting`, com QR vazio.
 - Recuperação imediata aplicada em produção: atualização condicional da instância `22222` para `disconnected`; permaneceu aguardando uma requisição autenticada do modal durante a janela de observação.
+
+## 2026-08-15 — Auditoria completa WhatsApp/Whatsmeow
+
+- `npm.cmd run test -- --run tests/whatsapp-qr-timeout.test.ts tests/whatsapp-inbox-presentation.test.ts`: 2 arquivos, 4 testes, aprovados.
+- `scripts/test-whatsapp-go.ps1` em diretório temporário ASCII com Go 1.25.0: `go test ./...` e `go build ./cmd/server` aprovados.
+- `go list -m -u -json go.mau.fi/whatsmeow`: versão fixada `2026-07-30`; upstream detectado `2026-08-14`, 14 commits à frente.
+- `go vet ./...` direto: inconclusivo devido à resolução de packages no caminho Windows com acento, limitação conhecida do projeto.
+- `go test -race ./...` direto: não executado porque CGO não está habilitado no host.
+- Docker build e `docker compose config`: não executados porque o executável Docker não está disponível neste host.
+- Revisão estática confirmou deduplicação `(instance_id, message_id)` e isolamento dos handlers/WebSocket por tenant.
+- Nenhuma instância real foi pareada durante a auditoria; cenários de restart, `StreamReplaced`, `LoggedOut`, concorrência e mídia grande exigem testes de regressão na fase de correção.

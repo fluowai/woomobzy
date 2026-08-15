@@ -5,7 +5,12 @@ const REAL_ESTATE_SIGNALS =
   /\b(imovel|casa|apartamento|terreno|fazenda|sitio|chacara|area|hectare|ha\b|alqueire|comprar|vender|alugar|locacao|arrendar|visita|proposta|financiamento|entrada|parcela|car\b|matricula|ccir|incra|geo|itr|contrato|aluguel|locar|imobiliaria|corretor|crm|lead|cliente)\b/i;
 
 const SENSITIVE_TOPICS =
-  /\b(politica|eleicao|partido|presidente|religiao|deus|igreja|macumba|candomble|evangelico|catolico|muçulmano|judeu|atleta|time|futebol|flamengo|palmeiras|saude|doenca|medicamento|remédio|doutor|medico|advogado|processo|judicial|sentenca|dinheiro|emprestimo|investimento|bitcoin|cripto|bolsa|acoes|aposta|cassino|jogo|sexo|pornografia|drogas|maconha|cocaina|arma|disparo|assalto|roubo|hack|invasao|senha|cpf|rg|documento)\b/i;
+  /\b(politica|eleicao|partido|presidente|religiao|deus|igreja|macumba|candomble|evangelico|catolico|musulmano|judeu|atleta|time|futebol|flamengo|palmeiras|saude|doenca|medicamento|remedio|doutor|medico|aposta|cassino|jogo|sexo|pornografia|drogas|maconha|cocaina|arma|disparo|assalto|roubo|hack|invasao|senha)\b/i;
+
+const SENSITIVE_DATA_PATTERNS = [
+  /\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/,
+  /\b\d{1,2}\.?\d{3}\.?\d{3}-?[0-9xX]\b/,
+];
 
 const OFF_TOPIC_DRIFT_SIGNALS =
   /\b(piada|meme|musica|filme|serie|jogo|noticia|clima|tempo|chuva|sol|futebol|esporte|aniversario|festas|viagem|passagem|hotel)\b/i;
@@ -19,6 +24,20 @@ const SPAM_PATTERNS = [
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const DEFAULT_RATE_LIMIT = 10;
 const DEFAULT_MAX_TURNS = 50;
+
+function normalizeText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function parseHour(value, fallback) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 23) return fallback;
+  return parsed;
+}
 
 export class AgentGuardrails {
   constructor() {
@@ -37,10 +56,10 @@ export class AgentGuardrails {
       rate_limit_per_minute: DEFAULT_RATE_LIMIT,
       off_hours_auto_reply: true,
       off_hours_message:
-        'Estamos em horario de atendimento. Deixe sua mensagem que retornamos em breve.',
+        'Estamos fora do horario de atendimento. Deixe sua mensagem que retornamos em breve.',
     };
 
-    if (!organizationId) return defaultConfig;
+    if (!organizationId || !supabase) return defaultConfig;
 
     try {
       let query = supabase
@@ -76,35 +95,36 @@ export class AgentGuardrails {
         off_hours_message:
           data.off_hours_message || defaultConfig.off_hours_message,
       };
-    } catch (err) {
-      logger.warn('[Guardrails] Erro ao carregar config:', err.message);
+    } catch (error) {
+      logger.warn('[Guardrails] Erro ao carregar config:', error.message);
       return defaultConfig;
     }
   }
 
   isRealEstateContext(text) {
-    const normalized = String(text || '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
-    return REAL_ESTATE_SIGNALS.test(normalized);
+    return REAL_ESTATE_SIGNALS.test(normalizeText(text));
   }
 
   hasSensitiveContent(text) {
-    const normalized = String(text || '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
-    return SENSITIVE_TOPICS.test(normalized);
+    const normalized = normalizeText(text);
+    return (
+      SENSITIVE_TOPICS.test(normalized) ||
+      SENSITIVE_DATA_PATTERNS.some((pattern) =>
+        pattern.test(String(text || ''))
+      )
+    );
   }
 
   detectTopicDrift(history, currentMessage) {
-    if (!Array.isArray(history) || history.length < 2)
+    if (!Array.isArray(history) || history.length < 2) {
       return { drifted: false, attempts: 0 };
+    }
 
-    const recentMessages = history.slice(-6).map((m) => m.content || '');
-    const offTopicCount = recentMessages.filter((msg) =>
-      this._isOffTopicMessage(msg)
+    const recentMessages = history
+      .slice(-6)
+      .map((message) => message.content || '');
+    const offTopicCount = recentMessages.filter((message) =>
+      this._isOffTopicMessage(message)
     ).length;
 
     const currentIsOffTopic = this._isOffTopicMessage(currentMessage);
@@ -118,31 +138,31 @@ export class AgentGuardrails {
   }
 
   _isOffTopicMessage(text) {
-    const normalized = String(text || '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
-
+    const normalized = normalizeText(text);
     if (!this.isRealEstateContext(normalized)) return true;
     if (
       OFF_TOPIC_DRIFT_SIGNALS.test(normalized) &&
       !REAL_ESTATE_SIGNALS.test(normalized)
-    )
+    ) {
       return true;
+    }
     return false;
   }
 
-  async checkRateLimit(phone, organizationId) {
+  async checkRateLimit(phone, organizationId, agentId = null) {
     const supabase = getSupabaseServer();
-    const config = this._getGuardrailsConfig(supabase, organizationId);
+    const config = await this._getGuardrailsConfig(
+      supabase,
+      organizationId,
+      agentId
+    );
     const limit = config.rate_limit_per_minute || DEFAULT_RATE_LIMIT;
 
     const now = Date.now();
     const key = `${organizationId}:${phone}`;
     const timestamps = this._rateLimitCache.get(key) || [];
-
     const recentTimestamps = timestamps.filter(
-      (ts) => now - ts < RATE_LIMIT_WINDOW_MS
+      (timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS
     );
     recentTimestamps.push(now);
     this._rateLimitCache.set(key, recentTimestamps);
@@ -174,11 +194,101 @@ export class AgentGuardrails {
     return false;
   }
 
-  isConversationTooLong(history) {
+  async isConversationTooLong(history, organizationId = null, agentId = null) {
     if (!Array.isArray(history)) return false;
-    const config = this._getGuardrailsConfig(null, null);
+    const supabase = organizationId ? getSupabaseServer() : null;
+    const config = await this._getGuardrailsConfig(
+      supabase,
+      organizationId,
+      agentId
+    );
     const maxTurns = config.max_conversation_turns || DEFAULT_MAX_TURNS;
     return history.length >= maxTurns;
+  }
+
+  isWithinWorkingHours(workingHours = {}, now = new Date()) {
+    const startHour = parseHour(
+      workingHours.start_hour ?? workingHours.startHour,
+      8
+    );
+    const endHour = parseHour(
+      workingHours.end_hour ?? workingHours.endHour,
+      18
+    );
+    const allowedWeekdays = Array.isArray(
+      workingHours.weekdays || workingHours.days
+    )
+      ? (workingHours.weekdays || workingHours.days)
+          .map((value) => Number(value))
+          .filter(
+            (value) => Number.isInteger(value) && value >= 0 && value <= 6
+          )
+      : null;
+    const currentDay = now.getDay();
+    const currentHour = now.getHours();
+
+    if (
+      allowedWeekdays &&
+      allowedWeekdays.length &&
+      !allowedWeekdays.includes(currentDay)
+    ) {
+      return false;
+    }
+
+    if (startHour <= endHour) {
+      return currentHour >= startHour && currentHour < endHour;
+    }
+
+    return currentHour >= startHour || currentHour < endHour;
+  }
+
+  async evaluateInboundPolicy({
+    organizationId,
+    agentId = null,
+    content = '',
+    history = [],
+    workingHours = null,
+    now = new Date(),
+  }) {
+    const supabase = organizationId ? getSupabaseServer() : null;
+    const config = await this._getGuardrailsConfig(
+      supabase,
+      organizationId,
+      agentId
+    );
+    const normalized = normalizeText(content);
+    const blockedTopics = (config.blocked_topics || []).map(normalizeText);
+    const allowedTopics = (config.allowed_topics || []).map(normalizeText);
+
+    if (blockedTopics.some((topic) => topic && normalized.includes(topic))) {
+      return { allowed: false, reason: 'blocked_topic', config };
+    }
+
+    if (
+      allowedTopics.length &&
+      !allowedTopics.some((topic) => topic && normalized.includes(topic))
+    ) {
+      return { allowed: false, reason: 'outside_allowed_topics', config };
+    }
+
+    if (
+      config.off_hours_auto_reply &&
+      workingHours &&
+      !this.isWithinWorkingHours(workingHours, now)
+    ) {
+      return { allowed: false, reason: 'off_hours', config };
+    }
+
+    const tooLong = await this.isConversationTooLong(
+      history,
+      organizationId,
+      agentId
+    );
+    if (tooLong) {
+      return { allowed: false, reason: 'max_turns', config };
+    }
+
+    return { allowed: true, reason: 'ok', config };
   }
 
   async shouldHandoffToHuman(actionPlan, history) {
@@ -192,13 +302,12 @@ export class AgentGuardrails {
     if (confidence < 0.3 && actionPlan.leadType === 'outro') return true;
 
     const personalCount = (history || []).filter(
-      (m) =>
-        m.role === 'user' &&
-        /familia|amigo|pessoal|fornecedor|interno/i.test(m.content || '')
+      (message) =>
+        message.role === 'user' &&
+        /familia|amigo|pessoal|fornecedor|interno/i.test(message.content || '')
     ).length;
-    if (personalCount >= 3) return true;
 
-    return false;
+    return personalCount >= 3;
   }
 
   buildOffTopicRedirect(_agentName) {
@@ -216,7 +325,7 @@ export class AgentGuardrails {
   buildOffHoursRedirect(config) {
     return (
       config?.off_hours_message ||
-      'Estamos em horario de atendimento. Deixe sua mensagem que retornamos em breve.'
+      'Estamos fora do horario de atendimento. Deixe sua mensagem que retornamos em breve.'
     );
   }
 

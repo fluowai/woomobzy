@@ -1,8 +1,9 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { Bot, Send, Loader2, MessageCircle, Repeat2 } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Bot, Loader2, MessageCircle, Repeat2, Send } from 'lucide-react';
 import type { AIAgent } from '../../services/aiAgents';
 import { aiAgentService } from '../../services/aiAgents';
 import { callApi } from '../../src/lib/api';
+import { COMMERCIAL_PRODUCT_NAME } from '../../utils/branding';
 
 type TestMessage = {
   id: string;
@@ -112,28 +113,28 @@ function fallbackAgentReply(
       text
     )
   ) {
-    return `Entendi, você está buscando comprar um imóvel! Sou ${fallbackName}, ${role || 'atendimento'} da WooTech Imob. Posso anotar seu orçamento e a região que procura para filtrar as melhores opções?`;
+    return `Entendi, você está buscando comprar um imóvel. Sou ${fallbackName}, ${role || 'atendimento'} da ${COMMERCIAL_PRODUCT_NAME}. Posso anotar seu orçamento e a região que procura para filtrar as melhores opções?`;
   }
   if (/alugar|aluguel|locacao|locar/.test(text)) {
-    return `Entendi, você está buscando alugar! Sou ${fallbackName}, ${role || 'atendimento'} da WooTech Imob. Qual o seu orçamento mensal e a região desejada?`;
+    return `Entendi, você está buscando aluguel. Sou ${fallbackName}, ${role || 'atendimento'} da ${COMMERCIAL_PRODUCT_NAME}. Qual é o seu orçamento mensal e a região desejada?`;
   }
   if (/tanto faz|qualquer|nao sei|não sei|nao importa|tanto/.test(text)) {
-    return `Sem problema, vamos encontrar a melhor opção pra você! Sou ${fallbackName}, ${role || 'atendimento'} da WooTech Imob. Qual a região e o orçamento que você tem em mente?`;
+    return `Sem problema, vamos encontrar a melhor opção para você. Sou ${fallbackName}, ${role || 'atendimento'} da ${COMMERCIAL_PRODUCT_NAME}. Qual região e orçamento você tem em mente?`;
   }
   if (/sao paulo|sp|rio|capital|centro|zona/.test(text)) {
-    return `Ótimo! Me confirma: qual o seu orçamento aproximado e quantos quartos você precisa, pra eu já separar os melhores imóveis pra você?`;
+    return 'Ótimo. Me confirma qual é o seu orçamento aproximado e quantos quartos você precisa para eu separar as melhores opções.';
   }
   if (/quarto|quartos|suite|suites|garagem|vaga/.test(text)) {
-    return `Perfeito! E qual a faixa de orçamento que você tem em mente pra essa busca? Assim eu filtro as opções que cabem no seu perfil.`;
+    return 'Perfeito. E qual faixa de orçamento você tem em mente para essa busca? Assim eu filtro as opções que cabem no seu perfil.';
   }
   if (/mil|milhao|milhão|r\$|orcamento|orçamento|valor/.test(text)) {
-    return `Ótimo, anotado! E pra qual região da cidade você prefere buscar? Assim já alinho os imóveis dentro do seu orçamento.`;
+    return 'Ótimo, anotado. Em qual região da cidade você prefere buscar? Assim eu alinho os imóveis dentro do seu orçamento.';
   }
   if (/visita|visitar|agendar|conhecer o imovel/.test(text)) {
-    return `Claro! Vamos agendar uma visita. Qual o melhor dia e horário pra você? Já separo um corretor pra te acompanhar.`;
+    return 'Claro. Vamos agendar uma visita. Qual é o melhor dia e horário para você? Já separo um corretor para acompanhar.';
   }
 
-  return `Entendi! Sou ${fallbackName}, ${role || 'atendimento'} da WooTech Imob. Me conta um pouco mais do que você procura (tipo, região e orçamento) pra eu te ajudar melhor?`;
+  return `Entendi. Sou ${fallbackName}, ${role || 'atendimento'} da ${COMMERCIAL_PRODUCT_NAME}. Me conta um pouco mais do que você procura, como região e orçamento, para eu te ajudar melhor.`;
 }
 
 async function simulateAgentReply(
@@ -144,7 +145,7 @@ async function simulateAgentReply(
   const agentName = draft.name || 'Agente';
   const role = draft.role || 'Atendimento';
   const systemInstruction = [
-    `Voce e ${agentName}, um agente imobiliario da WooTech Imob.`,
+    `Voce e ${agentName}, um agente imobiliario da ${COMMERCIAL_PRODUCT_NAME}.`,
     `Sua funcao: ${role}.`,
     `Estilo: ${draft.response_style || 'consultivo'}.`,
     draft.instructions ? `Instrucoes adicionais: ${draft.instructions}` : '',
@@ -171,7 +172,6 @@ async function simulateAgentReply(
       task: 'Continue a conversa respondendo apenas como o agente imobiliario, conduzindo o lead.',
     });
 
-  // Retry para falhas transientes (rate limit, rede, 5xx).
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const data = await callApi('/api/ai/chat', {
@@ -184,14 +184,18 @@ async function simulateAgentReply(
         hideError: true,
       });
       const text = String(data?.text || '').trim();
-      if (text) return text;
+      if (text) {
+        return text;
+      }
     } catch {
-      // continua para a proxima tentativa
+      // continua para a próxima tentativa
     }
+
     if (attempt < 2) {
       await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
     }
   }
+
   return '';
 }
 
@@ -213,7 +217,9 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
 
   const runTest = async (override?: string) => {
     const msg = (override || input).trim();
-    if (!msg) return;
+    if (!msg) {
+      return;
+    }
 
     const outgoing: TestMessage = {
       id: `${testMode === 'lead-simulator' ? 'agent' : 'lead'}-${Date.now()}`,
@@ -244,13 +250,13 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
           const agentName = draft.name || agent?.name || '';
           const lastLeadMsg = [...nextHistory]
             .reverse()
-            .find((m) => m.side === 'lead')?.content;
+            .find((item) => item.side === 'lead')?.content;
           reply = fallbackAgentReply(agentName, draft.role, lastLeadMsg);
         }
       }
 
-      setMessages((prev) => [
-        ...prev,
+      setMessages((current) => [
+        ...current,
         {
           id: `${replySide}-${Date.now()}`,
           side: replySide,
@@ -258,8 +264,8 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
         },
       ]);
     } catch {
-      setMessages((prev) => [
-        ...prev,
+      setMessages((current) => [
+        ...current,
         {
           id: `agent-error-${Date.now()}`,
           side: 'agent',
@@ -280,8 +286,8 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
     const seed = input.trim() || 'oi bom dia';
     setInput('');
     setIsSimulating(true);
-    setMessages((prev) => [
-      ...prev,
+    setMessages((current) => [
+      ...current,
       { id: `lead-seed-${Date.now()}`, side: 'lead', content: seed },
     ]);
 
@@ -295,8 +301,8 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
 
         for (const turn of result.transcript) {
           await new Promise((resolve) => setTimeout(resolve, 650));
-          setMessages((prev) => [
-            ...prev,
+          setMessages((current) => [
+            ...current,
             {
               id: `${turn.role}-${Date.now()}`,
               side: turn.role as 'lead' | 'agent',
@@ -314,12 +320,16 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
         let currentMessages: TestMessage[] = [...messages, seedMessage];
         setMessages(currentMessages);
 
-        for (let i = 0; i < maxTurns; i++) {
-          const history: TestMessage[] = currentMessages.map((m) => ({ ...m }));
+        for (let index = 0; index < maxTurns; index++) {
+          const history: TestMessage[] = currentMessages.map((item) => ({
+            ...item,
+          }));
           const lastLead = [...history]
             .reverse()
-            .find((m) => m.side === 'lead');
-          if (!lastLead) break;
+            .find((item) => item.side === 'lead');
+          if (!lastLead) {
+            break;
+          }
 
           await new Promise((resolve) => setTimeout(resolve, 500));
           const agentReply = await simulateAgentReply(
@@ -328,7 +338,7 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
             history
           );
           const agentMessage: TestMessage = {
-            id: `agent-${Date.now()}-${i}`,
+            id: `agent-${Date.now()}-${index}`,
             side: 'agent',
             content: agentReply || '...',
           };
@@ -339,7 +349,7 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
           const leadHistory: TestMessage[] = [...history, agentMessage];
           const leadReply = await simulateLeadReply(draft, '', leadHistory);
           const leadMessage: TestMessage = {
-            id: `lead-${Date.now()}-${i}`,
+            id: `lead-${Date.now()}-${index}`,
             side: 'lead',
             content: leadReply || '...',
           };
@@ -348,12 +358,12 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
         }
       }
     } catch {
-      setMessages((prev) => [
-        ...prev,
+      setMessages((current) => [
+        ...current,
         {
           id: `agent-error-${Date.now()}`,
           side: 'agent',
-          content: 'Erro na simulacao. Tente novamente.',
+          content: 'Erro na simulação. Tente novamente.',
         },
       ]);
     } finally {
@@ -362,7 +372,7 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
   };
 
   const lastMessage =
-    [...messages].reverse().find((m) => m.side === 'lead')?.content || '';
+    [...messages].reverse().find((item) => item.side === 'lead')?.content || '';
   const diagnostics = buildDiagnostics(lastMessage);
 
   return (
@@ -391,6 +401,7 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
               </div>
             </div>
           </div>
+
           <div className="flex items-center gap-2 lg:ml-auto">
             <div className="grid grid-cols-3 rounded-lg border border-slate-200 bg-slate-50 p-1">
               <button
@@ -455,30 +466,34 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
                   </p>
                   <p className="mb-0 mt-1 text-xs font-semibold leading-relaxed text-slate-500">
                     {testMode === 'lead-simulator'
-                      ? 'Você manda como corretor e o lead responde.'
+                      ? 'Você envia como corretor e o lead responde.'
                       : testMode === 'auto-simulation'
                         ? 'A IA simula o corretor e o lead automaticamente.'
-                        : 'Você manda como lead e valida a resposta.'}
+                        : 'Você envia como lead e valida a resposta.'}
                   </p>
                 </div>
               </div>
             )}
-            {messages.map((msg) => (
+
+            {messages.map((message) => (
               <div
-                key={msg.id}
-                className={`flex ${msg.side === 'agent' ? 'justify-end' : 'justify-start'}`}
+                key={message.id}
+                className={`flex ${
+                  message.side === 'agent' ? 'justify-end' : 'justify-start'
+                }`}
               >
                 <div
                   className={`max-w-[86%] rounded-lg px-3 py-2 text-xs font-semibold leading-relaxed shadow-sm ${
-                    msg.side === 'agent'
+                    message.side === 'agent'
                       ? 'bg-[#D9FDD3] text-slate-800'
                       : 'bg-white text-slate-800'
                   }`}
                 >
-                  {msg.content}
+                  {message.content}
                 </div>
               </div>
             ))}
+
             {loading && (
               <div className="w-fit rounded-lg bg-white px-3 py-2 text-slate-400 shadow-sm">
                 <span className="inline-flex gap-1">
@@ -494,8 +509,8 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
 
         <form
           className="border-t border-slate-200 bg-white p-3"
-          onSubmit={(e) => {
-            e.preventDefault();
+          onSubmit={(event) => {
+            event.preventDefault();
             if (testMode === 'auto-simulation') {
               runAutoSimulation();
             } else {
@@ -505,24 +520,24 @@ export const AgentChatTest: React.FC<AgentChatTestProps> = ({
         >
           {!agent && testMode === 'agent-reply' && (
             <div className="mb-2 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-800">
-              Salve o agente para testar resposta real da IA.
+              Salve o agente para testar a resposta real da IA.
             </div>
           )}
           {testMode === 'auto-simulation' && (
             <div className="mb-2 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-800">
               {isSimulating
-                ? 'Simulacao em andamento...'
-                : 'Clique em enviar para iniciar a simulacao automatica da conversa.'}
+                ? 'Simulação em andamento...'
+                : 'Clique em enviar para iniciar a simulação automática da conversa.'}
             </div>
           )}
           <div className="flex items-end gap-2">
             <textarea
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(event) => setInput(event.target.value)}
               className="min-h-11 flex-1 resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
               placeholder={
                 testMode === 'auto-simulation'
-                  ? 'Mensagem inicial (ex: oi bom dia)...'
+                  ? 'Mensagem inicial (ex.: oi, bom dia)...'
                   : testMode === 'lead-simulator'
                     ? 'Digite sua mensagem para o lead...'
                     : 'Digite como se fosse o lead...'

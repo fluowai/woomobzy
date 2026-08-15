@@ -1,13 +1,13 @@
 import React from 'react';
 import {
-  PhoneCall,
+  ArrowRight,
   Bot,
+  CalendarClock,
   ClipboardCheck,
   Home,
-  CalendarClock,
-  UserPlus,
+  PhoneCall,
   Repeat2,
-  ArrowRight,
+  UserPlus,
 } from 'lucide-react';
 
 const steps = [
@@ -15,7 +15,7 @@ const steps = [
   { title: 'IA atende', subtitle: 'Resposta instantânea', icon: Bot },
   {
     title: 'IA qualifica',
-    subtitle: 'Entende necessidade',
+    subtitle: 'Entende a necessidade',
     icon: ClipboardCheck,
   },
   { title: 'Sugere imóvel', subtitle: 'Opções personalizadas', icon: Home },
@@ -31,7 +31,7 @@ const steps = [
 export const AgentFlowSteps: React.FC = () => (
   <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
     <div className="grid grid-cols-1 gap-2 lg:grid-cols-7">
-      {steps.map((step, i) => (
+      {steps.map((step, index) => (
         <div
           key={step.title}
           className="relative rounded-lg border border-slate-100 bg-slate-50 px-3 py-3"
@@ -49,7 +49,7 @@ export const AgentFlowSteps: React.FC = () => (
               </p>
             </div>
           </div>
-          {i < steps.length - 1 && (
+          {index < steps.length - 1 && (
             <ArrowRight
               className="absolute -right-3 top-1/2 hidden -translate-y-1/2 rounded-full bg-white text-slate-300 lg:block"
               size={18}

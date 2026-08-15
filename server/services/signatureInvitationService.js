@@ -302,11 +302,12 @@ ${PLATFORM_COMMERCIAL_NAME} - Gestão de Locação
       await woosignService.sendEnvelope(envelope.id);
 
       const supabase = getSupabaseServer();
+      const woosignDomain = process.env.WOOSIGN_URL || 'https://woosign.wootech.com.br';
       await supabase
         .from('signatures')
         .update({
           external_id: envelope.id,
-          invitation_url: `http://localhost:3000/sign/${envelope.id}`, // Placeholder or fetch actual link if API returns it
+          invitation_url: `${woosignDomain}/sign/${envelope.id}`,
         })
         .eq('id', sig.id);
 

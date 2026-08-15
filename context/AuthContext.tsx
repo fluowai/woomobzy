@@ -93,7 +93,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
       try {
         fetchInProgress.current = userId;
-        const isSilentRefresh = profile && profile.id === userId;
+        const isSilentRefresh = profileRef.current && profileRef.current.id === userId;
         if (!isSilentRefresh) {
           setLoading(true);
         }
@@ -136,7 +136,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           logger.error('❌ [AuthContext] Error loading profile:', profileError);
           syncActiveOrganization(null, userId);
           setProfile((prev) => (prev && prev.id === userId ? prev : null));
-          if (!profile) setIsImpersonating(false);
+          if (!profileRef.current) setIsImpersonating(false);
         } else if (profileData) {
           logger.info(
             '✅ [AuthContext] Profile core data loaded:',
@@ -259,7 +259,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         setLoading(false);
       }
     },
-    [profile]
+    []
   );
 
   useEffect(() => {

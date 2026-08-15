@@ -124,6 +124,8 @@ export default function RentalsContractEditor({ leaseId, onClose }: Props) {
     locador_email: 'joao.silva@email.com',
     locatario_nome: 'Maria Oliveira Santos',
     locatario_cpf: '987.654.321-00',
+    locatario_telefone: '(11) 98888-8888',
+    locatario_email: 'maria.santos@email.com',
     imovel_endereco: 'Rua das Acácias, 500',
     imovel_cidade: 'São Paulo/SP',
     imovel_cep: '01000-000',
@@ -276,11 +278,18 @@ Pedido do usuário: "${userText}"
       const leasePayload = {
         tenant_name: contractData.locatario_nome,
         tenant_cpf: contractData.locatario_cpf,
+        tenant_phone: contractData.locatario_telefone || undefined,
+        tenant_email: contractData.locatario_email || undefined,
+        owner_name: contractData.locador_nome,
+        owner_cpf_cnpj: contractData.locador_cpf,
+        owner_phone: contractData.locador_telefone,
+        owner_email: contractData.locador_email,
         monthly_rent: parseFloat(
           contractData.aluguel_valor.replace(/\./g, '').replace(',', '.')
         ),
         due_day: parseInt(contractData.aluguel_vencimento, 10) || undefined,
         observation: `Endereço: ${contractData.imovel_endereco} - ${contractData.imovel_cidade}`,
+        current_template_id: selectedTemplateId !== 'default' ? selectedTemplateId : null,
       };
 
       let saved;
@@ -298,9 +307,16 @@ Pedido do usuário: "${userText}"
         saved = result.data;
       }
 
+      if (saved && saved.id) {
+        await callApi(`/api/locacao/leases/${saved.id}/generate-contract`, {
+          method: 'POST',
+          body: JSON.stringify({}),
+        });
+      }
+
       toast.success(
         saved
-          ? 'Contrato salvo com sucesso!'
+          ? 'Contrato e PDF gerados com sucesso!'
           : 'Contrato gerado com sucesso e anexado ao fluxo!'
       );
       if (onClose) onClose();

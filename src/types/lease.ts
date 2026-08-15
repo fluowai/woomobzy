@@ -122,6 +122,7 @@ export interface Lease {
   signature_method?: string;
   signature_status?: SignatureStatus;
   signed_document_url?: string;
+  pdf_url?: string;
 
   evaluation_score?: number;
   evaluation_status?: EvaluationStatus;
@@ -245,6 +246,7 @@ export interface Signature {
   document_hash?: string;
   signature_provider?: string;
   provider_signature_id?: string;
+  invitation_url?: string;
   invitation_sent_at?: string;
   invitation_method?: 'whatsapp' | 'email' | 'ambos';
   created_at: string;

@@ -170,13 +170,14 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
     }
 
     const supabase = getSupabaseServer();
+    const cleanData = sanitizeLeasePayload(validation.data);
     const { data, error } = await supabase
       .from('rental_contracts')
       .insert({
         organization_id: req.orgId,
         created_by: req.userId,
         status: 'draft',
-        ...sanitizeLeasePayload(validation.data),
+        ...cleanData,
       })
       .select()
       .single();
@@ -190,6 +191,35 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
       description: 'Contrato de locação criado',
       user_id: req.userId,
     });
+
+    // Auto-create initial signatures based on provided data
+    const signaturesToInsert = [];
+    if (cleanData.owner_name) {
+      signaturesToInsert.push({
+        lease_id: data.id,
+        organization_id: req.orgId,
+        signer_type: 'locador',
+        signer_name: cleanData.owner_name,
+        signer_cpf: cleanData.owner_cpf_cnpj,
+        signer_email: cleanData.owner_email,
+        signer_phone: cleanData.owner_phone,
+      });
+    }
+    if (cleanData.tenant_name) {
+      signaturesToInsert.push({
+        lease_id: data.id,
+        organization_id: req.orgId,
+        signer_type: 'locatario',
+        signer_name: cleanData.tenant_name,
+        signer_cpf: cleanData.tenant_cpf,
+        signer_email: cleanData.tenant_email,
+        signer_phone: cleanData.tenant_phone,
+      });
+    }
+
+    if (signaturesToInsert.length > 0) {
+      await supabase.from('signatures').insert(signaturesToInsert);
+    }
 
     res.status(201).json({ success: true, data });
   } catch (error) {

@@ -153,23 +153,30 @@ export const LeaseDetail: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => toast.success('Gerando PDF do contrato...')}
+            onClick={() => {
+              if (lease?.signed_document_url || lease?.pdf_url) {
+                window.open(lease.signed_document_url || lease.pdf_url, '_blank');
+              } else {
+                toast.error('PDF não disponível. Edite o contrato e gere novamente.');
+              }
+            }}
             className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-500 transition-all shadow-lg"
           >
             <Download size={14} /> PDF
           </button>
+          {lease.tenant_phone && (
+            <button
+              onClick={() => {
+                const phone = lease.tenant_phone.replace(/\D/g, '');
+                window.open(`https://wa.me/55${phone}`, '_blank');
+              }}
+              className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 text-white rounded-xl text-xs font-bold hover:bg-emerald-400 transition-all"
+            >
+              <MessageSquare size={14} /> WhatsApp
+            </button>
+          )}
           <button
-            onClick={() =>
-              toast.success('Abrindo chat do WhatsApp com o cliente...')
-            }
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 text-white rounded-xl text-xs font-bold hover:bg-emerald-400 transition-all"
-          >
-            <MessageSquare size={14} /> WhatsApp
-          </button>
-          <button
-            onClick={() =>
-              toast.info('Edição de contrato estará disponível em breve')
-            }
+            onClick={() => navigate(`/urban/locacao/${lease.id}/editar`)}
             className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200 transition-all"
           >
             <Edit size={14} /> Editar
@@ -367,7 +374,28 @@ export const LeaseDetail: React.FC = () => {
 
           {/* Assinaturas Tab */}
           {activeTab === 'assinaturas' && (
-            <div className="space-y-3">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-sm font-bold text-slate-800">Assinaturas do Contrato</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      if (!lease) return;
+                      try {
+                        const { callApi } = await import('@/src/lib/api');
+                        await callApi(`/api/locacao/signatures/invite/bulk/${lease.id}`, { method: 'POST' });
+                        toast.success('Convites de assinatura enviados com sucesso!');
+                        loadData();
+                      } catch (e) {
+                        toast.error('Erro ao enviar assinaturas');
+                      }
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700"
+                  >
+                    Enviar para Assinatura
+                  </button>
+                </div>
+              </div>
               {signatures.length === 0 && (
                 <div className="text-center py-8 text-slate-400">
                   <PenTool className="mx-auto mb-3 text-slate-300" size={40} />
@@ -377,38 +405,56 @@ export const LeaseDetail: React.FC = () => {
               {signatures.map((sig) => (
                 <div
                   key={sig.id}
-                  className="flex items-center justify-between p-4 bg-slate-50 rounded-xl"
+                  className="flex flex-col gap-2 p-4 bg-slate-50 rounded-xl"
                 >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`p-2 rounded-xl ${
-                        sig.status === 'signed'
-                          ? 'bg-emerald-50 text-emerald-600'
-                          : sig.status === 'sent'
-                            ? 'bg-blue-50 text-blue-600'
-                            : 'bg-slate-100 text-slate-400'
-                      }`}
-                    >
-                      {sig.status === 'signed' ? (
-                        <CheckCircle size={18} />
-                      ) : (
-                        <Clock size={18} />
-                      )}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`p-2 rounded-xl ${
+                          sig.status === 'signed'
+                            ? 'bg-emerald-50 text-emerald-600'
+                            : sig.status === 'sent'
+                              ? 'bg-blue-50 text-blue-600'
+                              : 'bg-slate-100 text-slate-400'
+                        }`}
+                      >
+                        {sig.status === 'signed' ? (
+                          <CheckCircle size={18} />
+                        ) : (
+                          <Clock size={18} />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-700">
+                          {sig.signer_name}
+                        </p>
+                        <p className="text-[10px] text-slate-400 uppercase">
+                          {sig.signer_type} ·{' '}
+                          {SIGNATURE_STATUS_LABELS[sig.status]}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-700">
-                        {sig.signer_name}
-                      </p>
-                      <p className="text-[10px] text-slate-400 uppercase">
-                        {sig.signer_type} ·{' '}
-                        {SIGNATURE_STATUS_LABELS[sig.status]}
-                      </p>
-                    </div>
+                    {sig.signed_at && (
+                      <span className="text-[10px] text-slate-400">
+                        {new Date(sig.signed_at).toLocaleString('pt-BR')}
+                      </span>
+                    )}
                   </div>
-                  {sig.signed_at && (
-                    <span className="text-[10px] text-slate-400">
-                      {new Date(sig.signed_at).toLocaleString('pt-BR')}
-                    </span>
+                  {sig.invitation_url && sig.status !== 'signed' && (
+                    <div className="mt-2 flex items-center justify-between bg-white border border-slate-200 rounded-lg p-2">
+                      <span className="text-xs text-slate-500 truncate mr-4">
+                        {sig.invitation_url}
+                      </span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(sig.invitation_url!);
+                          toast.success('Link copiado!');
+                        }}
+                        className="text-[10px] font-bold text-blue-600 uppercase px-2 py-1 bg-blue-50 rounded hover:bg-blue-100"
+                      >
+                        Copiar Link
+                      </button>
+                    </div>
                   )}
                 </div>
               ))}

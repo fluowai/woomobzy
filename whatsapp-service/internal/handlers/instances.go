@@ -294,7 +294,7 @@ func (h *InstanceHandler) LogoutInstance(c *gin.Context) {
 		return
 	}
 
-	if err := h.manager.DisconnectInstance(c.Request.Context(), id); err != nil {
+	if err := h.manager.LogoutInstance(c.Request.Context(), id); err != nil {
 		h.logger.Error("Failed to logout instance", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

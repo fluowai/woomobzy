@@ -57,9 +57,6 @@ type Client struct {
 	minioSecretKey     string
 	minioRegion        string
 	automation         *AutomationClient
-	reconnectMu        sync.Mutex
-	reconnectTry       int
-	manualStop         bool
 	pairClientType     whatsmeow.PairClientType
 	pairClientName     string
 	pairMu             sync.Mutex
@@ -68,6 +65,7 @@ type Client struct {
 	pairErr            error
 	pairReady          chan struct{}
 	pairDone           bool
+	eventSlots         chan struct{}
 
 	callManager *CallManager
 }
@@ -131,6 +129,7 @@ func NewClient(
 		automation:     automation,
 		pairClientType: pairClientType,
 		pairClientName: pairClientName,
+		eventSlots:     make(chan struct{}, 32),
 	}
 }
 
@@ -163,7 +162,7 @@ func (c *Client) Connect(ctx context.Context) error {
 		}
 		c.qrChan = qrChan
 
-		if err := c.waClient.Connect(); err != nil {
+		if err := c.waClient.ConnectContext(ctx); err != nil {
 			return fmt.Errorf("failed to connect: %w", err)
 		}
 
@@ -210,11 +209,8 @@ func (c *Client) Connect(ctx context.Context) error {
 
 			case whatsmeow.QRChannelSuccess.Event:
 				c.mu.Lock()
-				c.connected = true
 				c.qrCode = ""
 				c.mu.Unlock()
-
-				c.markConnected(ctx)
 
 			default:
 				if message, recoverable := pairingFailureMessage(evt.Event); message != "" {
@@ -223,30 +219,15 @@ func (c *Client) Connect(ctx context.Context) error {
 			}
 		}
 	} else {
-		// Existing session — reconnect
-		if err := c.waClient.Connect(); err != nil {
+		// Existing session: socket connection alone is not enough. Wait until
+		// WhatsApp confirms that the device is authenticated.
+		if err := c.waClient.ConnectContext(ctx); err != nil {
 			return fmt.Errorf("failed to reconnect: %w", err)
 		}
-
-		c.mu.Lock()
-		c.connected = true
-		c.mu.Unlock()
-
-		jid := c.waClient.Store.ID.String()
-		phoneNum := phone.ExtractFromJID(jid)
-
-		c.instanceRepo.UpdateConnected(ctx, c.instanceID, phoneNum, jid)
-
-		c.logger.Info("Instance reconnected",
-			zap.String("instance", c.instanceID.String()),
-			zap.String("phone", phoneNum),
-		)
-
-		c.broadcastEvent("instance_status", models.InstanceStatusEvent{
-			InstanceID: c.instanceID,
-			Status:     models.StatusConnected,
-			Phone:      phoneNum,
-		})
+		if err := c.waitUntilLoggedIn(ctx); err != nil {
+			c.waClient.Disconnect()
+			return err
+		}
 	}
 
 	return nil
@@ -401,52 +382,27 @@ func (c *Client) finishPairingWithError(ctx context.Context, message string, rec
 // Disconnect cleanly disconnects the WhatsApp client
 func (c *Client) Disconnect() {
 	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.manualStop = true
 	c.cancel()
-
+	c.connected = false
+	c.mu.Unlock()
 	if c.waClient != nil {
 		c.waClient.Disconnect()
 	}
-	c.connected = false
 }
 
-func (c *Client) scheduleReconnect() {
-	c.reconnectMu.Lock()
-	if c.manualStop || c.ctx.Err() != nil || c.reconnectTry >= 10 {
-		c.reconnectMu.Unlock()
-		return
-	}
-	c.reconnectTry++
-	attempt := c.reconnectTry
-	c.reconnectMu.Unlock()
-
-	delay := time.Second * time.Duration(1<<min(attempt-1, 8))
-	if delay > 5*time.Minute {
-		delay = 5 * time.Minute
-	}
-	go func() {
-		timer := time.NewTimer(delay)
-		defer timer.Stop()
+func (c *Client) waitUntilLoggedIn(ctx context.Context) error {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		if c.waClient.IsLoggedIn() {
+			return nil
+		}
 		select {
-		case <-c.ctx.Done():
-			return
-		case <-timer.C:
+		case <-ctx.Done():
+			return fmt.Errorf("WhatsApp authentication timed out: %w", ctx.Err())
+		case <-ticker.C:
 		}
-		connectCtx, cancel := context.WithTimeout(c.ctx, 90*time.Second)
-		defer cancel()
-		c.logger.Info("Attempting auto-reconnect", zap.String("instance", c.instanceID.String()), zap.Int("attempt", attempt), zap.Duration("delay", delay))
-		if err := c.Connect(connectCtx); err != nil {
-			c.logger.Error("Auto-reconnect failed", zap.String("instance", c.instanceID.String()), zap.Int("attempt", attempt), zap.Error(err))
-			c.scheduleReconnect()
-		}
-	}()
-}
-
-func (c *Client) resetReconnect() {
-	c.reconnectMu.Lock()
-	c.reconnectTry = 0
-	c.reconnectMu.Unlock()
+	}
 }
 
 // IsConnected returns whether the client is currently connected
@@ -454,6 +410,12 @@ func (c *Client) IsConnected() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.connected
+}
+
+// IsRunning reports whether this wrapper still owns an active lifecycle. A
+// transient Disconnected event remains running because whatsmeow reconnects it.
+func (c *Client) IsRunning() bool {
+	return c.ctx.Err() == nil
 }
 
 // CurrentQRCode returns the current in-memory QR code without a data race.
@@ -523,14 +485,13 @@ func (c *Client) broadcastEvent(event string, data interface{}) {
 func (c *Client) eventHandler(evt interface{}) {
 	switch v := evt.(type) {
 	case *events.Message:
-		c.handleMessage(v)
+		c.runEventTask(func() { c.handleMessage(v) })
 
 	case *events.Connected:
 		c.mu.Lock()
 		c.connected = true
 		c.mu.Unlock()
 		c.logger.Info("WhatsApp connected event", zap.String("instance", c.instanceID.String()))
-		c.resetReconnect()
 		c.markConnected(c.ctx)
 
 	case *events.Disconnected:
@@ -539,30 +500,70 @@ func (c *Client) eventHandler(evt interface{}) {
 		c.mu.Unlock()
 		c.logger.Warn("WhatsApp disconnected event", zap.String("instance", c.instanceID.String()))
 
-		c.instanceRepo.UpdateStatus(c.ctx, c.instanceID, models.StatusDisconnected)
+		c.instanceRepo.UpdateStatus(c.ctx, c.instanceID, models.StatusReconnecting)
 		c.broadcastEvent("instance_status", models.InstanceStatusEvent{
 			InstanceID: c.instanceID,
-			Status:     models.StatusDisconnected,
+			Status:     models.StatusReconnecting,
 		})
 
-		c.scheduleReconnect()
+	case *events.PairSuccess:
+		jid := v.ID.String()
+		if err := c.instanceRepo.BindSession(c.ctx, c.instanceID, phone.ExtractFromJID(jid), jid); err != nil {
+			c.logger.Error("Failed to persist paired WhatsApp session", zap.String("instance", c.instanceID.String()), zap.Error(err))
+		}
 
 	case *events.LoggedOut:
 		c.mu.Lock()
 		c.connected = false
 		c.mu.Unlock()
 		c.logger.Warn("WhatsApp logged out", zap.String("instance", c.instanceID.String()))
-		c.reconnectMu.Lock()
-		c.manualStop = true
-		c.reconnectMu.Unlock()
-		c.instanceRepo.UpdateStatus(c.ctx, c.instanceID, models.StatusDisconnected)
+		_ = c.instanceRepo.ClearSession(c.ctx, c.instanceID, models.StatusLoggedOut)
 		c.broadcastEvent("instance_status", models.InstanceStatusEvent{
 			InstanceID: c.instanceID,
-			Status:     models.StatusDisconnected,
+			Status:     models.StatusLoggedOut,
 		})
+		c.cancel()
+
+	case *events.StreamReplaced:
+		c.mu.Lock()
+		c.connected = false
+		c.mu.Unlock()
+		_ = c.instanceRepo.UpdateStatus(c.ctx, c.instanceID, models.StatusStreamReplaced)
+		c.broadcastEvent("instance_status", models.InstanceStatusEvent{
+			InstanceID: c.instanceID,
+			Status:     models.StatusStreamReplaced,
+			Error:      "A sessão foi assumida por outra conexão.",
+		})
+		c.cancel()
+
+	case *events.TemporaryBan:
+		message := fmt.Sprintf("A conta recebeu um bloqueio temporário do WhatsApp (%s).", v.Code)
+		if v.Expire > 0 {
+			message = fmt.Sprintf("A conta recebeu um bloqueio temporário do WhatsApp por %s.", v.Expire.Round(time.Minute))
+		}
+		c.markConnectionError(message)
+
+	case *events.ClientOutdated:
+		c.markConnectionError("O conector WhatsApp está desatualizado e precisa ser atualizado.")
+
+	case *events.ConnectFailure:
+		if v.Reason.IsLoggedOut() {
+			c.mu.Lock()
+			c.connected = false
+			c.mu.Unlock()
+			_ = c.instanceRepo.ClearSession(c.ctx, c.instanceID, models.StatusLoggedOut)
+			c.broadcastEvent("instance_status", models.InstanceStatusEvent{
+				InstanceID: c.instanceID,
+				Status:     models.StatusLoggedOut,
+				Error:      "A sessão foi encerrada pelo WhatsApp.",
+			})
+			c.cancel()
+		} else {
+			c.markConnectionError(fmt.Sprintf("Falha de conexão do WhatsApp (%s): %s", v.Reason, v.Message))
+		}
 
 	case *events.HistorySync:
-		c.handleHistorySync(v)
+		c.runEventTask(func() { c.handleHistorySync(v) })
 
 	case *events.Receipt:
 		c.handleReceipt(v)
@@ -593,6 +594,32 @@ func (c *Client) eventHandler(evt interface{}) {
 	case *events.GroupInfo:
 		c.handleGroupInfo(v)
 	}
+}
+
+func (c *Client) runEventTask(task func()) {
+	select {
+	case c.eventSlots <- struct{}{}:
+		go func() {
+			defer func() { <-c.eventSlots }()
+			task()
+		}()
+	case <-c.ctx.Done():
+	}
+}
+
+func (c *Client) markConnectionError(message string) {
+	c.mu.Lock()
+	c.connected = false
+	c.mu.Unlock()
+	if err := c.instanceRepo.UpdateStatus(c.ctx, c.instanceID, models.StatusError); err != nil {
+		c.logger.Error("Failed to persist WhatsApp connection error", zap.String("instance", c.instanceID.String()), zap.Error(err))
+	}
+	c.broadcastEvent("instance_status", models.InstanceStatusEvent{
+		InstanceID: c.instanceID,
+		Status:     models.StatusError,
+		Error:      message,
+	})
+	c.cancel()
 }
 
 func (c *Client) handleJoinedGroup(evt *events.JoinedGroup) {

@@ -10,10 +10,14 @@ import (
 type InstanceStatus string
 
 const (
-	StatusConnected    InstanceStatus = "connected"
-	StatusDisconnected InstanceStatus = "disconnected"
-	StatusConnecting   InstanceStatus = "connecting"
-	StatusQRPending    InstanceStatus = "qr_pending"
+	StatusConnected      InstanceStatus = "connected"
+	StatusDisconnected   InstanceStatus = "disconnected"
+	StatusConnecting     InstanceStatus = "connecting"
+	StatusQRPending      InstanceStatus = "qr_pending"
+	StatusReconnecting   InstanceStatus = "reconnecting"
+	StatusLoggedOut      InstanceStatus = "logged_out"
+	StatusStreamReplaced InstanceStatus = "stream_replaced"
+	StatusError          InstanceStatus = "error"
 )
 
 // Instance represents a WhatsApp connection instance

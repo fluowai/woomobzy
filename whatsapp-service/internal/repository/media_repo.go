@@ -180,7 +180,10 @@ func (r *MediaRepo) ClaimPending(ctx context.Context, limit int) ([]models.Media
 		WITH claimed AS (
 			SELECT id
 			FROM whatsapp_media
-			WHERE status IN ('pending', 'failed')
+			WHERE (
+				status IN ('pending', 'failed')
+				OR (status = 'downloading' AND claimed_at < now() - interval '5 minutes')
+			)
 			  AND retry_count < 8
 			  AND COALESCE(next_retry_at, now()) <= now()
 			  AND whatsapp_payload IS NOT NULL

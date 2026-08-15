@@ -282,38 +282,6 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     retryWhatsAppMedia
   );
 
-  app.get(
-    '/api/whatsapp/instances',
-    verifyAuth,
-    requireTenant,
-    async (req, res) => {
-      applyCorsHeaders(req, res);
-
-      try {
-        const supabase = getSupabaseServer();
-        const { data, error } = await supabase
-          .from('whatsapp_instances')
-          .select(
-            'id, tenant_id, name, status, phone, jid, provider, created_at, updated_at'
-          )
-          .eq('tenant_id', req.orgId)
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          throw error;
-        }
-
-        res.json((data || []).map(normalizeInstanceRow));
-      } catch (err) {
-        console.error('[WhatsApp Instances Fallback Error]', err.message);
-        res.status(500).json({
-          error: 'Falha ao listar instancias do WhatsApp',
-          message: err.message,
-        });
-      }
-    }
-  );
-
   app.use('/api/whatsapp/ws', validateWsTokenMiddleware, proxy);
   app.use('/api/whatsapp', verifyAuth, requireTenant, proxy);
 
@@ -641,20 +609,6 @@ async function checkWhatsAppService(target) {
       error: err.message,
     };
   }
-}
-
-function normalizeInstanceRow(row) {
-  return {
-    id: row.id,
-    tenant_id: row.tenant_id || undefined,
-    name: row.name || 'WhatsApp',
-    status: row.status || 'disconnected',
-    phone: row.phone || undefined,
-    jid: row.jid || undefined,
-    provider: row.provider || 'whatsmeow',
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-  };
 }
 
 function normalizeStoragePublicUrl(value) {

@@ -53,10 +53,9 @@ export function withVisualInstanceStatus(
   instance: Instance,
   hasActivity = false
 ): Instance {
-  if (instance.status === 'connected') return instance;
-  if (hasActivity) {
-    return { ...instance, status: 'connected' };
-  }
+  // Recent messages prove activity, not the current authenticated transport
+  // state. Never promote a disconnected instance to connected in the UI.
+  if (hasActivity) return { ...instance, has_recent_activity: true } as Instance;
   return instance;
 }
 

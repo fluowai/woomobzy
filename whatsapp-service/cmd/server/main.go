@@ -68,7 +68,7 @@ func main() {
 
 	// Verify connection
 	if err := pool.Ping(ctx); err != nil {
-		log.Error(fmt.Sprintf("⚠️ Database ping failed: %v. Server will continue to start.", err))
+		log.Fatal(fmt.Sprintf("Database ping failed: %v", err))
 	} else {
 		log.Info("✅ Connected to database")
 	}
@@ -125,15 +125,36 @@ func main() {
 		SkipPaths: []string{"/health", "/ws"},
 	}))
 
-	// Health check
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status":            "ok",
+	// Liveness only reports that the process can answer HTTP. Readiness also
+	// verifies the database dependency required by every useful operation.
+	healthPayload := func() gin.H {
+		return gin.H{
 			"service":           "whatsapp-service",
 			"whatsmeow_version": dependencyVersion(whatsmeowModulePath),
 			"ws_clients":        hub.ClientCount(),
-		})
+		}
+	}
+	router.GET("/health/live", func(c *gin.Context) {
+		payload := healthPayload()
+		payload["status"] = "ok"
+		c.JSON(http.StatusOK, payload)
 	})
+	readiness := func(c *gin.Context) {
+		pingCtx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+		defer cancel()
+		payload := healthPayload()
+		if err := pool.Ping(pingCtx); err != nil {
+			payload["status"] = "unavailable"
+			payload["database"] = "unavailable"
+			c.JSON(http.StatusServiceUnavailable, payload)
+			return
+		}
+		payload["status"] = "ok"
+		payload["database"] = "ok"
+		c.JSON(http.StatusOK, payload)
+	}
+	router.GET("/health", readiness)
+	router.GET("/health/ready", readiness)
 
 	// WebSocket endpoint
 	internalAuth := requireInternalAuth(cfg.ServiceToken)
@@ -262,7 +283,8 @@ func proxyLegacyWsToken(c *gin.Context, nodeURL string) {
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{Timeout: 15 * time.Second}
+	resp, err := client.Do(req)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"error": "failed to reach api token endpoint"})
 		return

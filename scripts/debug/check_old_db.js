@@ -1,8 +1,12 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const OLD_SUPABASE_URL = 'https://wgpkazpkuatreindaeuz.supabase.co';
-const OLD_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndncGthenBrdWF0cmVpbmRhZXV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxNTg0NTksImV4cCI6MjA4MjczNDQ1OX0.fKzLSFBUALg9ZcgqrhLPcm6x5QFUVG18VXNHjrxupZg';
+const OLD_SUPABASE_URL = process.env.OLD_SUPABASE_URL;
+const OLD_SUPABASE_KEY = process.env.OLD_SUPABASE_KEY;
+
+if (!OLD_SUPABASE_URL || !OLD_SUPABASE_KEY) {
+  throw new Error('Configure OLD_SUPABASE_URL and OLD_SUPABASE_KEY');
+}
 
 const oldSupabase = createClient(OLD_SUPABASE_URL, OLD_SUPABASE_KEY);
 

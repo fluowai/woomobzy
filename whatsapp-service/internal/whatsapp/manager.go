@@ -31,6 +31,8 @@ import (
 type Manager struct {
 	clients           map[uuid.UUID]*Client
 	connecting        map[uuid.UUID]bool
+	leaseCancels      map[uuid.UUID]context.CancelFunc
+	leaseOwners       map[uuid.UUID]string
 	pairingErrors     map[uuid.UUID]string
 	mu                sync.RWMutex
 	instanceRepo      *repository.InstanceRepo
@@ -59,9 +61,13 @@ type Manager struct {
 	cancel            context.CancelFunc
 	sessionStore      *sqlstore.Container
 	protocolLogger    waLog.Logger
+	ownerID           string
 }
 
-const qrStartupTimeout = 30 * time.Second
+const (
+	qrStartupTimeout = 30 * time.Second
+	instanceLeaseTTL = 45 * time.Second
+)
 
 // NewManager creates a new WhatsApp instance manager
 func NewManager(
@@ -94,6 +100,8 @@ func NewManager(
 	return &Manager{
 		clients:           make(map[uuid.UUID]*Client),
 		connecting:        make(map[uuid.UUID]bool),
+		leaseCancels:      make(map[uuid.UUID]context.CancelFunc),
+		leaseOwners:       make(map[uuid.UUID]string),
 		pairingErrors:     make(map[uuid.UUID]string),
 		instanceRepo:      instanceRepo,
 		chatRepo:          chatRepo,
@@ -120,6 +128,7 @@ func NewManager(
 		ctx:               managerCtx,
 		cancel:            cancel,
 		protocolLogger:    waLog.Stdout("WhatsMeow", normalizeProtocolLogLevel(protocolLogLevel), false),
+		ownerID:           uuid.NewString(),
 	}
 }
 
@@ -221,6 +230,10 @@ func (m *Manager) connectInstance(ctx context.Context, instanceID uuid.UUID, pai
 			m.mu.Unlock()
 			return nil
 		}
+		if client.IsRunning() {
+			m.mu.Unlock()
+			return nil
+		}
 	}
 	if m.connecting[instanceID] {
 		m.mu.Unlock()
@@ -228,16 +241,33 @@ func (m *Manager) connectInstance(ctx context.Context, instanceID uuid.UUID, pai
 	}
 	m.connecting[instanceID] = true
 	m.mu.Unlock()
+	backgroundStarted := false
 	defer func() {
-		m.mu.Lock()
-		delete(m.connecting, instanceID)
-		m.mu.Unlock()
+		if !backgroundStarted {
+			m.finishConnecting(instanceID)
+		}
 	}()
+	m.releaseLocalLease(context.Background(), instanceID)
 
 	inst, err := m.instanceRepo.GetByID(ctx, instanceID)
 	if err != nil {
 		return fmt.Errorf("instance not found: %w", err)
 	}
+
+	leaseOwnerID := m.ownerID + ":" + uuid.NewString()
+	acquired, err := m.instanceRepo.AcquireLease(ctx, instanceID, leaseOwnerID, instanceLeaseTTL)
+	if err != nil {
+		return m.failConnect(ctx, instanceID, inst.TenantID, fmt.Errorf("failed to acquire instance lease: %w", err))
+	}
+	if !acquired {
+		return fmt.Errorf("instance is active on another WhatsApp service replica")
+	}
+	releaseLease := true
+	defer func() {
+		if releaseLease {
+			_ = m.instanceRepo.ReleaseLease(context.Background(), instanceID, leaseOwnerID)
+		}
+	}()
 
 	if err := m.instanceRepo.UpdateStatus(ctx, instanceID, models.StatusConnecting); err != nil {
 		m.logger.Error("Failed to update connecting status",
@@ -288,11 +318,14 @@ func (m *Manager) connectInstance(ctx context.Context, instanceID uuid.UUID, pai
 	}
 
 	m.mu.Lock()
-	if old := m.clients[instanceID]; old != nil {
-		old.Disconnect()
-	}
+	old := m.clients[instanceID]
 	m.clients[instanceID] = client
 	m.mu.Unlock()
+	if old != nil {
+		old.Disconnect()
+	}
+	m.startLeaseHeartbeat(instanceID, client, leaseOwnerID)
+	releaseLease = false
 
 	// Initialize call manager
 	if m.callRepo != nil {
@@ -300,8 +333,16 @@ func (m *Manager) connectInstance(ctx context.Context, instanceID uuid.UUID, pai
 	}
 
 	// Start connection in background
+	backgroundStarted = true
 	go func() {
-		if err := client.Connect(client.ctx); err != nil {
+		defer m.finishConnecting(instanceID)
+		connectCtx := client.ctx
+		cancelConnect := func() {}
+		if client.GetWAClient().Store.ID != nil {
+			connectCtx, cancelConnect = context.WithTimeout(client.ctx, 90*time.Second)
+		}
+		defer cancelConnect()
+		if err := client.Connect(connectCtx); err != nil {
 			message := "Não foi possível conectar ao WhatsApp. Verifique o acesso à internet do serviço e tente novamente."
 			m.setPairingError(instanceID, message)
 			m.logger.Error("Failed to connect instance",
@@ -324,6 +365,61 @@ func (m *Manager) connectInstance(ctx context.Context, instanceID uuid.UUID, pai
 	go m.watchQRStartup(instanceID, client, inst.TenantID)
 
 	return nil
+}
+
+func (m *Manager) finishConnecting(instanceID uuid.UUID) {
+	m.mu.Lock()
+	delete(m.connecting, instanceID)
+	m.mu.Unlock()
+}
+
+func (m *Manager) startLeaseHeartbeat(instanceID uuid.UUID, client *Client, leaseOwnerID string) {
+	leaseCtx, cancel := context.WithCancel(m.ctx)
+	m.mu.Lock()
+	if previous := m.leaseCancels[instanceID]; previous != nil {
+		previous()
+	}
+	m.leaseCancels[instanceID] = cancel
+	m.leaseOwners[instanceID] = leaseOwnerID
+	m.mu.Unlock()
+
+	go func() {
+		ticker := time.NewTicker(instanceLeaseTTL / 3)
+		defer ticker.Stop()
+		defer func() {
+			_ = m.instanceRepo.ReleaseLease(context.Background(), instanceID, leaseOwnerID)
+		}()
+		for {
+			select {
+			case <-leaseCtx.Done():
+				return
+			case <-client.ctx.Done():
+				return
+			case <-ticker.C:
+				renewed, err := m.instanceRepo.RenewLease(leaseCtx, instanceID, leaseOwnerID, instanceLeaseTTL)
+				if err != nil || !renewed {
+					m.logger.Error("Lost WhatsApp instance lease", zap.String("instance", instanceID.String()), zap.Error(err))
+					client.Disconnect()
+					return
+				}
+			}
+		}
+	}()
+}
+
+func (m *Manager) releaseLocalLease(ctx context.Context, instanceID uuid.UUID) {
+	m.mu.Lock()
+	cancel := m.leaseCancels[instanceID]
+	ownerID := m.leaseOwners[instanceID]
+	delete(m.leaseCancels, instanceID)
+	delete(m.leaseOwners, instanceID)
+	m.mu.Unlock()
+	if cancel != nil {
+		cancel()
+	}
+	if ownerID != "" {
+		_ = m.instanceRepo.ReleaseLease(ctx, instanceID, ownerID)
+	}
 }
 
 // watchQRStartup prevents a pre-login session from remaining in qr_pending
@@ -462,7 +558,7 @@ func (m *Manager) RequestPairCode(ctx context.Context, instanceID uuid.UUID, pho
 	client, exists := m.clients[instanceID]
 	m.mu.RUnlock()
 	if exists && client.IsConnected() {
-		return nil, fmt.Errorf("instancia ja conectada")
+		return nil, fmt.Errorf("instância já conectada")
 	}
 
 	if exists {
@@ -478,7 +574,7 @@ func (m *Manager) RequestPairCode(ctx context.Context, instanceID uuid.UUID, pho
 	client, exists = m.clients[instanceID]
 	m.mu.RUnlock()
 	if !exists {
-		return nil, fmt.Errorf("cliente WhatsApp nao inicializado")
+		return nil, fmt.Errorf("cliente WhatsApp não inicializado")
 	}
 
 	waitCtx, cancel := context.WithTimeout(ctx, 25*time.Second)
@@ -488,14 +584,14 @@ func (m *Manager) RequestPairCode(ctx context.Context, instanceID uuid.UUID, pho
 		return nil, err
 	}
 	if code == "" {
-		return nil, fmt.Errorf("codigo de pareamento nao foi gerado")
+		return nil, fmt.Errorf("código de pareamento não foi gerado")
 	}
 
 	return &models.PairCodeResponse{
 		PairingCode: code,
 		Phone:       pairedPhone,
 		ExpiresIn:   160,
-		Message:     "Digite este codigo no WhatsApp em Aparelhos conectados > Conectar com numero de telefone.",
+		Message:     "Digite este código no WhatsApp em Aparelhos conectados > Conectar com número de telefone.",
 	}, nil
 }
 
@@ -547,39 +643,106 @@ func (m *Manager) migrateLegacySQLiteSession(ctx context.Context, instanceID uui
 // DisconnectInstance disconnects a WhatsApp instance
 func (m *Manager) DisconnectInstance(ctx context.Context, instanceID uuid.UUID) error {
 	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	client, exists := m.clients[instanceID]
-	if !exists {
-		return fmt.Errorf("instance not connected: %s", instanceID)
-	}
-
-	client.Disconnect()
 	delete(m.clients, instanceID)
+	delete(m.connecting, instanceID)
 	delete(m.pairingErrors, instanceID)
+	m.mu.Unlock()
+	m.releaseLocalLease(ctx, instanceID)
+
+	if exists {
+		client.Disconnect()
+	}
 
 	if err := m.instanceRepo.UpdateStatus(ctx, instanceID, models.StatusDisconnected); err != nil {
 		m.logger.Error("Failed to update instance status", zap.Error(err))
 	}
 
-	m.hub.BroadcastEventToTenant(uuidToString(client.tenantID), "instance_status", models.InstanceStatusEvent{
-		InstanceID: instanceID,
-		Status:     models.StatusDisconnected,
-	})
+	inst, err := m.instanceRepo.GetByID(ctx, instanceID)
+	if err == nil {
+		m.hub.BroadcastEventToTenant(uuidToString(inst.TenantID), "instance_status", models.InstanceStatusEvent{
+			InstanceID: instanceID,
+			Status:     models.StatusDisconnected,
+		})
+	}
 
+	return nil
+}
+
+// LogoutInstance revokes the linked WhatsApp device and clears the app-side
+// session reference. DisconnectInstance intentionally preserves that link.
+func (m *Manager) LogoutInstance(ctx context.Context, instanceID uuid.UUID) error {
+	inst, err := m.instanceRepo.GetByID(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+	m.mu.RLock()
+	client := m.clients[instanceID]
+	m.mu.RUnlock()
+	if inst.JID != "" && (client == nil || !client.IsConnected()) {
+		if err := m.ConnectInstance(ctx, instanceID); err != nil {
+			return fmt.Errorf("failed to reconnect WhatsApp device for logout: %w", err)
+		}
+		timer := time.NewTimer(15 * time.Second)
+		ticker := time.NewTicker(200 * time.Millisecond)
+		defer timer.Stop()
+		defer ticker.Stop()
+		for client == nil || !client.IsConnected() {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-timer.C:
+				return fmt.Errorf("WhatsApp device did not reconnect in time for logout")
+			case <-ticker.C:
+				m.mu.RLock()
+				client = m.clients[instanceID]
+				m.mu.RUnlock()
+			}
+		}
+	}
+	if inst.JID != "" {
+		if client == nil || client.GetWAClient() == nil || client.GetWAClient().Store.ID == nil {
+			return fmt.Errorf("WhatsApp device is unavailable for logout")
+		}
+		if err := client.GetWAClient().Logout(ctx); err != nil {
+			return fmt.Errorf("failed to logout WhatsApp device: %w", err)
+		}
+	}
+	if err := m.DisconnectInstance(ctx, instanceID); err != nil {
+		return err
+	}
+	if err := m.instanceRepo.ClearSession(ctx, instanceID, models.StatusLoggedOut); err != nil {
+		return err
+	}
+	m.hub.BroadcastEventToTenant(uuidToString(inst.TenantID), "instance_status", models.InstanceStatusEvent{
+		InstanceID: instanceID,
+		Status:     models.StatusLoggedOut,
+	})
 	return nil
 }
 
 // DeleteInstance deletes an instance and its session
 func (m *Manager) DeleteInstance(ctx context.Context, instanceID uuid.UUID) error {
-	// Disconnect first
-	m.DisconnectInstance(ctx, instanceID)
+	inst, err := m.instanceRepo.GetByID(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+	if inst.JID != "" {
+		if err := m.initializeSessionStore(ctx); err != nil {
+			return err
+		}
+	}
+	// Disconnect first. This is idempotent even when another process already
+	// lost or stopped the in-memory client.
+	if err := m.DisconnectInstance(ctx, instanceID); err != nil {
+		return err
+	}
 
-	if m.sessionStore != nil {
-		if inst, err := m.instanceRepo.GetByID(ctx, instanceID); err == nil && inst.JID != "" {
-			if jid, parseErr := types.ParseJID(inst.JID); parseErr == nil {
-				if device, getErr := m.sessionStore.GetDevice(ctx, jid); getErr == nil && device != nil {
-					_ = m.sessionStore.DeleteDevice(ctx, device)
+	if m.sessionStore != nil && inst.JID != "" {
+		if jid, parseErr := types.ParseJID(inst.JID); parseErr == nil {
+			if device, getErr := m.sessionStore.GetDevice(ctx, jid); getErr == nil && device != nil {
+				if err := m.sessionStore.DeleteDevice(ctx, device); err != nil {
+					return fmt.Errorf("failed to delete WhatsApp device session: %w", err)
 				}
 			}
 		}
@@ -632,7 +795,7 @@ func (m *Manager) ImportHistory(ctx context.Context, instanceID, tenantID uuid.U
 			case <-ctx.Done():
 				return nil, ctx.Err()
 			case <-deadline:
-				return nil, fmt.Errorf("instancia WhatsApp reconectando, tente novamente em alguns segundos")
+				return nil, fmt.Errorf("instância WhatsApp reconectando, tente novamente em alguns segundos")
 			case <-ticker.C:
 				client, exists = m.GetClient(instanceID)
 				if exists && client.IsConnected() {
@@ -695,7 +858,7 @@ connected:
 				zap.String("instance", instanceID.String()),
 				zap.Error(err),
 			)
-			message = "Nao havia mensagens ancora para solicitar historico por conversa, e o pedido completo do WhatsApp falhou. Reconecte a instancia e tente novamente."
+			message = "Não havia mensagens âncora para solicitar histórico por conversa, e o pedido completo do WhatsApp falhou. Reconecte a instância e tente novamente."
 		} else {
 			fullHistoryRequested = true
 			requested = 1
@@ -761,6 +924,11 @@ func (m *Manager) ReconnectAll(ctx context.Context) {
 					zap.Error(err),
 				)
 			}
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(250 * time.Millisecond):
+			}
 		}
 	}
 }
@@ -792,9 +960,19 @@ func (m *Manager) processMediaBatch() {
 		m.logger.Warn("Failed to claim media jobs", zap.Error(err))
 		return
 	}
+	semaphore := make(chan struct{}, 4)
+	var workers sync.WaitGroup
 	for _, job := range jobs {
-		m.processMediaJob(job)
+		job := job
+		workers.Add(1)
+		go func() {
+			defer workers.Done()
+			semaphore <- struct{}{}
+			defer func() { <-semaphore }()
+			m.processMediaJob(job)
+		}()
 	}
+	workers.Wait()
 }
 
 func (m *Manager) processMediaJob(job models.Media) {

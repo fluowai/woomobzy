@@ -55,9 +55,9 @@ services:
       WHATSMEOW_URL: 'http://whatsapp-service:3100'
       NODE_URL: 'http://api:3002'
       AGRO_INTEL_URL: 'http://agro-intelligence:8000'
-      OPENAI_API_KEY: ''
-      GEMINI_API_KEY: 'sua-api-key-do-gemini'
-      GROQ_API_KEY: 'sua-api-key-do-groq'
+      OPENAI_API_KEY: '${OPENAI_API_KEY}'
+      GEMINI_API_KEY: '${GEMINI_API_KEY}'
+      GROQ_API_KEY: '${GROQ_API_KEY}'
       WHATSAPP_SERVICE_TOKEN: '${WHATSAPP_SERVICE_TOKEN}'
       WHATSAPP_INTERNAL_TOKEN: '${WHATSAPP_INTERNAL_TOKEN}'
       WHATSAPP_WS_JWT_SECRET: '${WHATSAPP_WS_JWT_SECRET}'
@@ -66,8 +66,8 @@ services:
       MEDIA_STORAGE_PROVIDER: 'minio'
       MINIO_ENDPOINT: 'https://mypanel.wootech.com.br'
       MINIO_PUBLIC_URL: 'https://mypanel.wootech.com.br'
-      MINIO_ACCESS_KEY: 'U7lWsqJfDo0NaAsxnbQX'
-      MINIO_SECRET_KEY: '8xpjlsOGgcyQWprFHiK0XxKClU8RgI0F0OumYza2'
+      MINIO_ACCESS_KEY: '${MINIO_ACCESS_KEY}'
+      MINIO_SECRET_KEY: '${MINIO_SECRET_KEY}'
       MINIO_REGION: 'us-east-1'
       MINIO_WHATSAPP_BUCKET: 'imobztwootech'
       TRAEFIK_DYNAMIC_DIR: '/app/traefik/dynamic'
@@ -125,9 +125,9 @@ services:
       NODE_URL: 'http://api:3002'
       WHATSMEOW_URL: 'http://whatsapp-service:3100'
       WHATSAPP_API_URL: 'http://whatsapp-service:3100'
-      OPENAI_API_KEY: ''
-      GEMINI_API_KEY: 'sua-api-key-do-gemini'
-      GROQ_API_KEY: 'sua-api-key-do-groq'
+      OPENAI_API_KEY: '${OPENAI_API_KEY}'
+      GEMINI_API_KEY: '${GEMINI_API_KEY}'
+      GROQ_API_KEY: '${GROQ_API_KEY}'
       WHATSAPP_SERVICE_TOKEN: '${WHATSAPP_SERVICE_TOKEN}'
       WHATSAPP_INTERNAL_TOKEN: '${WHATSAPP_INTERNAL_TOKEN}'
       WHATSAPP_WS_JWT_SECRET: '${WHATSAPP_WS_JWT_SECRET}'
@@ -136,8 +136,8 @@ services:
       MEDIA_STORAGE_PROVIDER: 'minio'
       MINIO_ENDPOINT: 'https://mypanel.wootech.com.br'
       MINIO_PUBLIC_URL: 'https://mypanel.wootech.com.br'
-      MINIO_ACCESS_KEY: 'U7lWsqJfDo0NaAsxnbQX'
-      MINIO_SECRET_KEY: '8xpjlsOGgcyQWprFHiK0XxKClU8RgI0F0OumYza2'
+      MINIO_ACCESS_KEY: '${MINIO_ACCESS_KEY}'
+      MINIO_SECRET_KEY: '${MINIO_SECRET_KEY}'
       MINIO_REGION: 'us-east-1'
       MINIO_WHATSAPP_BUCKET: 'imobztwootech'
     volumes:
@@ -151,7 +151,7 @@ services:
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     environment:
-      RABBITMQ_DEFAULT_USER: 'imobzy'
+      RABBITMQ_DEFAULT_USER: '${RABBITMQ_DEFAULT_USER}'
       RABBITMQ_DEFAULT_PASS: '${RABBITMQ_DEFAULT_PASS}'
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq

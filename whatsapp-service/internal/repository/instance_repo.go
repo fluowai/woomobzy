@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -164,6 +165,61 @@ func (r *InstanceRepo) UpdateQRCode(ctx context.Context, id uuid.UUID, qrCode st
 func (r *InstanceRepo) UpdateConnected(ctx context.Context, id uuid.UUID, phone, jid string) error {
 	query := `UPDATE whatsapp_instances SET status = 'connected', phone = $1, jid = $2, qr_code = '' WHERE id = $3`
 	_, err := r.db.Exec(ctx, query, phone, jid, id)
+	return err
+}
+
+// BindSession persists the device identity during pairing without claiming the
+// transport is authenticated. The Connected event performs that final state change.
+func (r *InstanceRepo) BindSession(ctx context.Context, id uuid.UUID, phone, jid string) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE whatsapp_instances
+		SET phone = $1, jid = $2, qr_code = '', status = 'connecting'
+		WHERE id = $3
+	`, phone, jid, id)
+	return err
+}
+
+// ClearSession removes the application-side link after a real WhatsApp logout.
+func (r *InstanceRepo) ClearSession(ctx context.Context, id uuid.UUID, status models.InstanceStatus) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE whatsapp_instances
+		SET status = $2, phone = '', jid = '', qr_code = ''
+		WHERE id = $1
+	`, id, status)
+	return err
+}
+
+// AcquireLease grants short-lived ownership to one service replica.
+func (r *InstanceRepo) AcquireLease(ctx context.Context, id uuid.UUID, ownerID string, ttl time.Duration) (bool, error) {
+	var acquired bool
+	err := r.db.QueryRow(ctx, `
+		INSERT INTO whatsapp_instance_leases (instance_id, owner_id, expires_at)
+		VALUES ($1, $2, now() + $3::interval)
+		ON CONFLICT (instance_id) DO UPDATE SET
+			owner_id = EXCLUDED.owner_id,
+			expires_at = EXCLUDED.expires_at,
+			updated_at = now()
+		WHERE whatsapp_instance_leases.owner_id = EXCLUDED.owner_id
+		   OR whatsapp_instance_leases.expires_at <= now()
+		RETURNING true
+	`, id, ownerID, ttl.String()).Scan(&acquired)
+	if err == pgx.ErrNoRows {
+		return false, nil
+	}
+	return acquired, err
+}
+
+func (r *InstanceRepo) RenewLease(ctx context.Context, id uuid.UUID, ownerID string, ttl time.Duration) (bool, error) {
+	tag, err := r.db.Exec(ctx, `
+		UPDATE whatsapp_instance_leases
+		SET expires_at = now() + $3::interval, updated_at = now()
+		WHERE instance_id = $1 AND owner_id = $2 AND expires_at > now()
+	`, id, ownerID, ttl.String())
+	return err == nil && tag.RowsAffected() == 1, err
+}
+
+func (r *InstanceRepo) ReleaseLease(ctx context.Context, id uuid.UUID, ownerID string) error {
+	_, err := r.db.Exec(ctx, `DELETE FROM whatsapp_instance_leases WHERE instance_id = $1 AND owner_id = $2`, id, ownerID)
 	return err
 }
 

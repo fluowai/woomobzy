@@ -9,24 +9,27 @@ import 'dotenv/config';
 import fetch from 'node-fetch';
 
 // Configuração do banco ANTIGO
-const OLD_SUPABASE_URL = 'https://wgpkazpkuatreindaeuz.supabase.co';
-const OLD_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndncGthenBrdWF0cmVpbmRhZXV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxNTg0NTksImV4cCI6MjA4MjczNDQ1OX0.fKzLSFBUALg9ZcgqrhLPcm6x5QFUVG18VXNHjrxupZg';
+const OLD_SUPABASE_URL = process.env.OLD_SUPABASE_URL;
+const OLD_SUPABASE_KEY = process.env.OLD_SUPABASE_KEY;
 
 // Configuração do banco NOVO (do .env)
 const NEW_SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const NEW_SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY;
 const NEW_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!NEW_SUPABASE_URL || !NEW_SUPABASE_KEY) {
-  console.error('❌ Configure as variáveis de ambiente do NOVO banco no .env');
+if (!OLD_SUPABASE_URL || !OLD_SUPABASE_KEY) {
+  console.error('❌ Configure OLD_SUPABASE_URL e OLD_SUPABASE_KEY');
+  process.exit(1);
+}
+
+if (!NEW_SUPABASE_URL || !NEW_SUPABASE_KEY || !NEW_SERVICE_KEY) {
+  console.error('❌ Configure as variáveis de ambiente do NOVO banco no .env, incluindo a service role');
   process.exit(1);
 }
 
 const oldSupabase = createClient(OLD_SUPABASE_URL, OLD_SUPABASE_KEY);
 const newSupabase = createClient(NEW_SUPABASE_URL, NEW_SUPABASE_KEY);
-const newSupabaseAdmin = NEW_SERVICE_KEY 
-  ? createClient(NEW_SUPABASE_URL, NEW_SERVICE_KEY)
-  : newSupabase;
+const newSupabaseAdmin = createClient(NEW_SUPABASE_URL, NEW_SERVICE_KEY);
 
 console.log('🔄 ImobiSaaS - Migração de Dados\n');
 console.log('📤 Banco ANTIGO:', OLD_SUPABASE_URL);

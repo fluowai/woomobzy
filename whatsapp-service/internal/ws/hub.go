@@ -54,7 +54,7 @@ func NewHub(logger *zap.Logger, origins []string) *Hub {
 	}
 	return &Hub{
 		clients:        make(map[*Client]bool),
-		broadcast:      make(chan outboundMessage, 256),
+		broadcast:      make(chan outboundMessage, 1024),
 		register:       make(chan *Client),
 		unregister:     make(chan *Client),
 		logger:         logger,
@@ -117,7 +117,11 @@ func (h *Hub) BroadcastEventToTenant(tenantID string, event string, data interfa
 		return
 	}
 
-	h.broadcast <- outboundMessage{tenantID: tenantID, payload: jsonData}
+	select {
+	case h.broadcast <- outboundMessage{tenantID: tenantID, payload: jsonData}:
+	default:
+		h.logger.Error("WebSocket broadcast queue is full", zap.String("event", event), zap.String("tenant_id", tenantID))
+	}
 	h.logger.Debug("Broadcast event", zap.String("event", event), zap.Int("clients", len(h.clients)))
 }
 

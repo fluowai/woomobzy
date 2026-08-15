@@ -28,6 +28,8 @@ type MessageHandler struct {
 	logger      *zap.Logger
 }
 
+const maxOutboundMediaBytes int64 = 64 << 20
+
 // NewMessageHandler creates a new MessageHandler
 func NewMessageHandler(
 	messageRepo *repository.MessageRepo,
@@ -169,8 +171,12 @@ func (h *MessageHandler) SendMessage(c *gin.Context) {
 		Timestamp:   sentAt,
 	}
 
+	persisted := true
+	persistenceWarning := ""
 	if _, err := h.messageRepo.Create(ctx, msg); err != nil {
-		h.logger.Error("Failed to save sent message", zap.Error(err))
+		persisted = false
+		persistenceWarning = "A mensagem foi enviada ao WhatsApp, mas o histórico local não pôde ser salvo."
+		h.logger.Error("Failed to save sent message", zap.String("whatsapp_message_id", messageID), zap.Error(err))
 	}
 
 	// Update chat last message
@@ -181,9 +187,15 @@ func (h *MessageHandler) SendMessage(c *gin.Context) {
 		h.logger.Warn("Failed to update sent chat preview", zap.Error(err))
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Message sent",
-		"data":    msg,
+	statusCode := http.StatusOK
+	if !persisted {
+		statusCode = http.StatusAccepted
+	}
+	c.JSON(statusCode, gin.H{
+		"message":             "Message sent",
+		"data":                msg,
+		"persisted":           persisted,
+		"persistence_warning": persistenceWarning,
 	})
 }
 
@@ -205,14 +217,15 @@ func (h *MessageHandler) SendMediaMessage(c *gin.Context) {
 		return
 	}
 
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxOutboundMediaBytes)
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "file is required"})
+		c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "file is required and must not exceed 64 MB"})
 		return
 	}
 	defer file.Close()
 
-	data, err := io.ReadAll(file)
+	data, err := io.ReadAll(io.LimitReader(file, maxOutboundMediaBytes+1))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read file"})
 		return
@@ -220,6 +233,10 @@ func (h *MessageHandler) SendMediaMessage(c *gin.Context) {
 
 	if len(data) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "file is empty"})
+		return
+	}
+	if int64(len(data)) > maxOutboundMediaBytes {
+		c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "file must not exceed 64 MB"})
 		return
 	}
 
@@ -278,10 +295,16 @@ func (h *MessageHandler) SendMediaMessage(c *gin.Context) {
 		Timestamp:     time.Now(),
 	}
 
+	persisted := true
+	persistenceWarning := ""
 	if _, err := h.messageRepo.Create(ctx, msg); err != nil {
-		h.logger.Error("Failed to save sent media message", zap.Error(err))
+		persisted = false
+		persistenceWarning = "A mídia foi enviada ao WhatsApp, mas o histórico local não pôde ser salvo."
+		h.logger.Error("Failed to save sent media message", zap.String("whatsapp_message_id", messageID), zap.Error(err))
 	} else if h.mediaRepo != nil {
 		if err := h.mediaRepo.UpsertFromMessage(ctx, msg, tenantID, client.StorageBucket()); err != nil {
+			persisted = false
+			persistenceWarning = "A mídia foi enviada, mas seus metadados locais não puderam ser salvos."
 			h.logger.Warn("Failed to persist sent media metadata", zap.Error(err))
 		}
 	}
@@ -296,9 +319,15 @@ func (h *MessageHandler) SendMediaMessage(c *gin.Context) {
 		h.logger.Warn("Failed to update sent media chat preview", zap.Error(err))
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Media sent",
-		"data":    msg,
+	statusCode := http.StatusOK
+	if !persisted {
+		statusCode = http.StatusAccepted
+	}
+	c.JSON(statusCode, gin.H{
+		"message":             "Media sent",
+		"data":                msg,
+		"persisted":           persisted,
+		"persistence_warning": persistenceWarning,
 	})
 }
 
@@ -318,7 +347,7 @@ func messageTypeFromMime(mimeType string) string {
 func friendlySendError(err error) string {
 	msg := err.Error()
 	if strings.Contains(msg, "no LID found") || strings.Contains(msg, "failed to get LID") {
-		return "O WhatsApp nao autorizou o envio para este numero neste momento (conta sem identificador LID valido). Confirme se o numero esta ativo no WhatsApp e tente novamente."
+		return "O WhatsApp não autorizou o envio para este número neste momento (conta sem identificador LID válido). Confirme se o número está ativo no WhatsApp e tente novamente."
 	}
 	return msg
 }
@@ -344,7 +373,7 @@ func (h *MessageHandler) getConnectedClient(ctx context.Context, instanceID uuid
 	}
 
 	if err := h.manager.ConnectInstance(ctx, instanceID); err != nil {
-		return nil, fmt.Errorf("instancia WhatsApp nao conectada: %w", err)
+		return nil, fmt.Errorf("instância WhatsApp não conectada: %w", err)
 	}
 
 	deadline := time.After(8 * time.Second)
@@ -354,9 +383,9 @@ func (h *MessageHandler) getConnectedClient(ctx context.Context, instanceID uuid
 	for {
 		select {
 		case <-ctx.Done():
-			return nil, fmt.Errorf("instancia WhatsApp nao conectada")
+			return nil, fmt.Errorf("instância WhatsApp não conectada")
 		case <-deadline:
-			return nil, fmt.Errorf("instancia WhatsApp reconectando, tente novamente em alguns segundos")
+			return nil, fmt.Errorf("instância WhatsApp reconectando, tente novamente em alguns segundos")
 		case <-ticker.C:
 			client, exists = h.manager.GetClient(instanceID)
 			if exists && client.IsConnected() {

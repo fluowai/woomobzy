@@ -1,0 +1,885 @@
+import { logger } from '@/utils/logger';
+import React, { useEffect, useState } from 'react';
+import { callApi } from '@/src/lib/api';
+import { supabase } from '../../services/supabase';
+import {
+  Building2,
+  Search,
+  Edit2,
+  Ban,
+  CheckCircle,
+  Plus,
+  X,
+  Save,
+  Key,
+  Trash2,
+} from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import {
+  getTenantBaseUrl,
+  getTenantSiteUrl,
+  PLATFORM_IP,
+} from '../../utils/platform';
+
+interface Organization {
+  id: string;
+  name: string;
+  slug?: string;
+  status: string;
+  owner_name?: string;
+  owner_email?: string;
+  plan_id?: string;
+  created_at: string;
+  custom_domain?: string;
+  niche?: string;
+  plans?: {
+    name: string;
+  };
+}
+
+interface Plan {
+  id: string;
+  name: string;
+  price_monthly: number;
+}
+
+const TenantManager: React.FC = () => {
+  const { impersonateOrganization } = useAuth();
+  const [tenants, setTenants] = useState<Organization[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [selectedTenantIds, setSelectedTenantIds] = useState<string[]>([]);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  // Modal & Form State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    slug: '',
+    owner_name: '',
+    owner_email: '',
+    plan_id: '',
+    status: 'active',
+    custom_domain: '',
+    password: '',
+    niche: '',
+  });
+
+  useEffect(() => {
+    fetchTenants();
+    fetchPlans();
+  }, []);
+
+  const fetchPlans = async () => {
+    const { data } = await supabase
+      .from('plans')
+      .select('id, name, price_monthly')
+      .eq('is_active', true);
+    if (data) setPlans(data);
+  };
+
+  const fetchTenants = async () => {
+    try {
+      setLoading(true);
+      const data = await callApi('/api/admin/organizations');
+      setTenants(data.organizations || []);
+      setErrorMsg(null);
+    } catch (error: any) {
+      logger.error('Error fetching tenants:', error);
+      setErrorMsg(error.message || 'Erro desconhecido');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenModal = (tenant?: Organization) => {
+    if (tenant) {
+      setEditingId(tenant.id);
+      setFormData({
+        name: tenant.name,
+        slug: tenant.slug || '',
+        owner_name: tenant.owner_name || '',
+        owner_email: tenant.owner_email || '',
+        plan_id: tenant.plan_id || '',
+        status: tenant.status,
+        custom_domain: tenant.custom_domain || '',
+        password: '',
+        niche: tenant.niche === 'rural' ? 'rural' : 'traditional',
+      });
+    } else {
+      setEditingId(null);
+      setFormData({
+        name: '',
+        slug: '',
+        owner_name: '',
+        owner_email: '',
+        plan_id: plans.length > 0 ? plans[0].id : '',
+        status: 'active',
+        custom_domain: '',
+        password: '',
+        niche: '',
+      });
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormLoading(true);
+
+    try {
+      const payload = {
+        name: formData.name,
+        slug: formData.slug,
+        status: formData.status,
+        plan_id: formData.plan_id || undefined,
+        custom_domain: formData.custom_domain || null,
+        owner_name: formData.owner_name || null,
+        owner_email: formData.owner_email || null,
+        password: formData.password || undefined,
+        niche: formData.niche,
+      };
+
+      let data: any;
+      if (editingId) {
+        data = await callApi(`/api/admin/organizations/${editingId}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        });
+      } else {
+        data = await callApi('/api/admin/organizations', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+      }
+
+      if (formData.plan_id && data.organization?.plan_id !== formData.plan_id) {
+        throw new Error(
+          'O servidor não confirmou a atribuição do plano selecionado'
+        );
+      }
+
+      setIsModalOpen(false);
+      await fetchTenants();
+    } catch (error: any) {
+      logger.error('Error saving:', error);
+      alert(
+        `Erro ao salvar imobiliária: ${error.message || 'Erro desconhecido'}`
+      );
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const toggleStatus = async (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
+    if (!confirm(`Deseja alterar o status para ${newStatus}?`)) return;
+
+    try {
+      await callApi(`/api/admin/organizations/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: newStatus }),
+      });
+      fetchTenants();
+    } catch (error: any) {
+      alert(`Erro ao atualizar status: ${error.message}`);
+    }
+  };
+
+  const deleteTenant = async (id: string, name: string) => {
+    if (
+      !confirm(
+        `⚠️ Tem certeza que deseja EXCLUIR a imobiliária "${name}"?\n\nEssa ação é IRREVERSÍVEL e vai remover todos os dados associados.`
+      )
+    )
+      return;
+    if (!confirm(`Última confirmação: Excluir "${name}" permanentemente?`))
+      return;
+
+    try {
+      await callApi(`/api/admin/organizations/${id}`, {
+        method: 'DELETE',
+      });
+      setSelectedTenantIds((prev) => prev.filter((item) => item !== id));
+      fetchTenants();
+    } catch (error: any) {
+      alert(`Erro ao excluir: ${error.message}`);
+    }
+  };
+
+  const filtered = tenants.filter((t) =>
+    t.name.toLowerCase().includes(search.toLowerCase())
+  );
+  const selectedTenants = tenants.filter((tenant) =>
+    selectedTenantIds.includes(tenant.id)
+  );
+  const filteredIds = filtered.map((tenant) => tenant.id);
+  const allFilteredSelected =
+    filteredIds.length > 0 &&
+    filteredIds.every((id) => selectedTenantIds.includes(id));
+
+  const toggleTenantSelection = (id: string) => {
+    setSelectedTenantIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const toggleAllFiltered = () => {
+    if (allFilteredSelected) {
+      setSelectedTenantIds((prev) =>
+        prev.filter((id) => !filteredIds.includes(id))
+      );
+      return;
+    }
+
+    setSelectedTenantIds((prev) => [...new Set([...prev, ...filteredIds])]);
+  };
+
+  const deleteSelectedTenants = async () => {
+    if (selectedTenantIds.length === 0) return;
+
+    const previewNames = selectedTenants
+      .slice(0, 5)
+      .map((tenant) => tenant.name)
+      .join(', ');
+    const suffix = selectedTenants.length > 5 ? '...' : '';
+    if (
+      !confirm(
+        `Tem certeza que deseja EXCLUIR ${selectedTenantIds.length} imobiliaria(s)?\n\n${previewNames}${suffix}\n\nEssa acao e IRREVERSIVEL e vai remover os dados associados.`
+      )
+    )
+      return;
+    if (
+      !confirm(
+        `Ultima confirmacao: excluir permanentemente ${selectedTenantIds.length} imobiliaria(s)?`
+      )
+    )
+      return;
+
+    setBulkDeleting(true);
+    try {
+      await callApi('/api/admin/organizations/bulk-delete', {
+        method: 'POST',
+        body: JSON.stringify({ ids: selectedTenantIds }),
+      });
+      setSelectedTenantIds([]);
+      await fetchTenants();
+    } catch (error: any) {
+      alert(`Erro ao excluir imobiliarias: ${error.message}`);
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
+  return (
+    <div>
+      {errorMsg && (
+        <div className="bg-red-50 text-red-700 p-4 rounded-lg mb-4 border border-red-200">
+          <strong>Erro ao carregar:</strong> {errorMsg}
+        </div>
+      )}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Gerenciar Imobiliárias
+          </h1>
+          <p className="text-gray-500">Crie e edite empresas manualmente.</p>
+        </div>
+        <div className="flex gap-4">
+          {selectedTenantIds.length > 0 && (
+            <button
+              type="button"
+              onClick={deleteSelectedTenants}
+              disabled={bulkDeleting}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium disabled:opacity-60"
+            >
+              <Trash2 size={18} />
+              {bulkDeleting
+                ? 'Excluindo...'
+                : `Excluir ${selectedTenantIds.length} selecionada(s)`}
+            </button>
+          )}
+          <div className="relative">
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              size={18}
+            />
+            <input
+              type="text"
+              placeholder="Buscar empresa..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none w-64"
+            />
+          </div>
+          <button
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+          >
+            <Plus size={20} /> Nova Imobiliária
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        {/* Select All - Mobile Only */}
+        <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={allFilteredSelected}
+              onChange={toggleAllFiltered}
+              disabled={loading || filtered.length === 0}
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            Selecionar Todas
+          </label>
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="px-6 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={allFilteredSelected}
+                    onChange={toggleAllFiltered}
+                    disabled={loading || filtered.length === 0}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    aria-label="Selecionar imobiliarias filtradas"
+                  />
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Empresa
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  URL (Slug)
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Plano
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Responsável
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Nicho
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Ações
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {loading ? (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className="px-6 py-8 text-center text-gray-500"
+                  >
+                    Carregando...
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className="px-6 py-8 text-center text-gray-500"
+                  >
+                    Nenhuma empresa encontrada.
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((tenant) => (
+                  <tr
+                    key={tenant.id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedTenantIds.includes(tenant.id)}
+                        onChange={() => toggleTenantSelection(tenant.id)}
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        aria-label={`Selecionar ${tenant.name}`}
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-gray-100 rounded-lg text-gray-600">
+                          <Building2 size={20} />
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {tenant.name}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            ID: {tenant.id.slice(0, 8)}...
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      <code className="bg-gray-100 px-2 py-1 rounded text-xs text-blue-600">
+                        {tenant.slug || '-'}
+                      </code>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded text-xs font-bold uppercase">
+                        {tenant.plans?.name || 'Sem plano'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-slate-800">
+                          {tenant.owner_name ||
+                            (tenant.owner_email
+                              ? tenant.owner_email.split('@')[0]
+                              : '—')}
+                        </span>
+                        {tenant.owner_name && (
+                          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-tight">
+                            {tenant.owner_email}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      <span
+                        className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                          tenant.niche === 'rural'
+                            ? 'bg-green-100 text-green-700'
+                            : tenant.niche === 'traditional'
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-purple-100 text-purple-700'
+                        }`}
+                      >
+                        {tenant.niche === 'rural' ? 'rural' : 'traditional'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          tenant.status === 'active'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {tenant.status === 'active' ? 'Ativo' : 'Suspenso'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <button
+                        onClick={() => toggleStatus(tenant.id, tenant.status)}
+                        className={`p-1.5 rounded hover:bg-gray-100 mr-2 ${tenant.status === 'active' ? 'text-red-500' : 'text-green-500'}`}
+                        title={
+                          tenant.status === 'active' ? 'Suspender' : 'Ativar'
+                        }
+                      >
+                        {tenant.status === 'active' ? (
+                          <Ban size={18} />
+                        ) : (
+                          <CheckCircle size={18} />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleOpenModal(tenant)}
+                        className="p-1.5 text-blue-500 rounded hover:bg-gray-100"
+                        title="Editar"
+                      >
+                        <Edit2 size={18} />
+                      </button>
+                      <button
+                        onClick={async () => {
+                          const reason = prompt(
+                            `Motivo do acesso à conta de "${tenant.name}"?`,
+                            'Suporte Técnico'
+                          );
+                          if (!reason) return;
+
+                          try {
+                            await impersonateOrganization(tenant.id, reason);
+                            window.location.href = '/admin';
+                          } catch (err: any) {
+                            logger.error(err);
+                            alert(`Erro: ${err.message}`);
+                          }
+                        }}
+                        className="p-1.5 text-purple-600 bg-purple-50 hover:bg-purple-100 rounded mr-2"
+                        title="Acessar Como (Modo Suporte)"
+                      >
+                        <Key size={18} />
+                      </button>
+                      <button
+                        onClick={() => deleteTenant(tenant.id, tenant.name)}
+                        className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"
+                        title="Excluir Imobiliária"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile Cards View */}
+        <div className="md:hidden flex flex-col p-4 bg-gray-50 space-y-4">
+          {loading ? (
+            <div className="p-8 text-center text-gray-500">Carregando...</div>
+          ) : filtered.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">
+              Nenhuma empresa encontrada.
+            </div>
+          ) : (
+            filtered.map((tenant) => (
+              <div
+                key={tenant.id}
+                className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col"
+              >
+                <div className="p-4 border-b border-gray-100 flex items-start gap-3">
+                  <div className="pt-1">
+                    <input
+                      type="checkbox"
+                      checked={selectedTenantIds.includes(tenant.id)}
+                      onChange={() => toggleTenantSelection(tenant.id)}
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="p-2 bg-gray-100 rounded-lg text-gray-600 shrink-0">
+                    <Building2 size={20} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1 gap-2">
+                      <h4 className="font-bold text-gray-900 truncate">
+                        {tenant.name}
+                      </h4>
+                      <span
+                        className={`shrink-0 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${tenant.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+                      >
+                        {tenant.status === 'active' ? 'Ativo' : 'Suspenso'}
+                      </span>
+                    </div>
+                    <code className="text-[11px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded break-all">
+                      {tenant.slug || '-'}
+                    </code>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-gray-50/50 grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">
+                      Responsável
+                    </span>
+                    <span className="font-semibold text-gray-700 truncate block">
+                      {tenant.owner_name ||
+                        (tenant.owner_email
+                          ? tenant.owner_email.split('@')[0]
+                          : '—')}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">
+                      Plano
+                    </span>
+                    <span className="font-semibold text-indigo-600 truncate block">
+                      {tenant.plans?.name || 'Sem plano'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">
+                      Nicho
+                    </span>
+                    <span className="font-semibold text-gray-600 capitalize">
+                      {tenant.niche === 'rural' ? 'Rural' : 'Urbano'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-3 border-t border-gray-100 flex items-center justify-between bg-white">
+                  <button
+                    onClick={async () => {
+                      const reason = prompt(
+                        `Motivo do acesso à conta de "${tenant.name}"?`,
+                        'Suporte Técnico'
+                      );
+                      if (!reason) return;
+                      try {
+                        await impersonateOrganization(tenant.id, reason);
+                        window.location.href = '/admin';
+                      } catch (err: any) {
+                        logger.error(err);
+                        alert(`Erro: ${err.message}`);
+                      }
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+                  >
+                    <Key size={14} /> Acessar
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => toggleStatus(tenant.id, tenant.status)}
+                      className={`p-2 rounded-lg transition-colors ${tenant.status === 'active' ? 'text-red-500 hover:bg-red-50' : 'text-green-500 hover:bg-green-50'}`}
+                      title={
+                        tenant.status === 'active' ? 'Suspender' : 'Ativar'
+                      }
+                    >
+                      {tenant.status === 'active' ? (
+                        <Ban size={16} />
+                      ) : (
+                        <CheckCircle size={16} />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleOpenModal(tenant)}
+                      className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    <button
+                      onClick={() => deleteTenant(tenant.id, tenant.name)}
+                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="flex justify-between items-center p-4 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-gray-800">
+                {editingId ? 'Editar Imobiliária' : 'Nova Imobiliária'}
+              </h3>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSave} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nome da Empresa
+                </label>
+                <input
+                  type="text"
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  URL Personalizada (Slug)
+                </label>
+                <div className="flex items-center">
+                  <span className="bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg px-3 py-2 text-gray-500 text-sm">
+                    /
+                  </span>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 outline-none lowercase"
+                    placeholder="ex: fazendas-brasil"
+                    value={formData.slug}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        slug: e.target.value.toLowerCase().replace(/\s+/g, '-'),
+                      })
+                    }
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Endereco de acesso: {getTenantBaseUrl(formData.slug || '...')}{' '}
+                  | Site: {getTenantSiteUrl(formData.slug || '...')}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Domínio Customizado (Opcional)
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="ex: imobiliaria.com.br"
+                  value={formData.custom_domain}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      custom_domain: e.target.value.toLowerCase().trim(),
+                    })
+                  }
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Aponte o registro A do dominio para o IP da plataforma:{' '}
+                  {PLATFORM_IP}.
+                </p>
+              </div>
+
+              <div className="bg-blue-50/50 p-4 rounded-xl space-y-4 border border-blue-100">
+                <h4 className="text-sm font-bold text-blue-800 flex items-center gap-2">
+                  <Plus size={16} /> Dados do Responsável
+                </h4>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
+                    Nome do Dono / Responsável
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Nome completo"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                    value={formData.owner_name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, owner_name: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
+                    E-mail de Acesso
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                    placeholder="dono@imobiliaria.com"
+                    value={formData.owner_email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, owner_email: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
+                    {editingId ? 'Nova Senha (opcional)' : 'Senha de Acesso'}
+                  </label>
+                  <input
+                    type="password"
+                    required={!editingId}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                    placeholder="Min. 6 caracteres"
+                    value={formData.password}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Plano de Assinatura
+                </label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                  value={formData.plan_id}
+                  onChange={(e) =>
+                    setFormData({ ...formData, plan_id: e.target.value })
+                  }
+                >
+                  <option value="">Selecione um plano...</option>
+                  {plans.map((plan) => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.name} - R$ {plan.price_monthly}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                    value={formData.status}
+                    onChange={(e) =>
+                      setFormData({ ...formData, status: e.target.value })
+                    }
+                  >
+                    <option value="active">Ativo</option>
+                    <option value="suspended">Suspenso</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nicho de Atuação
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                    value={formData.niche}
+                    onChange={(e) =>
+                      setFormData({ ...formData, niche: e.target.value })
+                    }
+                  >
+                    <option value="">Selecione o nicho correto</option>
+                    <option value="rural">Rural</option>
+                    <option value="traditional">Urbano</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={formLoading}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                >
+                  {formLoading ? (
+                    'Salvando...'
+                  ) : (
+                    <>
+                      <Save size={18} /> Salvar
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default TenantManager;

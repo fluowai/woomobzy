@@ -1,0 +1,297 @@
+import fetch from 'node-fetch';
+import logger from '../utils/logger.js';
+import { getSupabaseServer } from '../lib/supabase-server.js';
+
+const DEFAULT_BIA_API_BASE_URL = 'https://xltw-api6-8lww.b2.xano.io';
+const DEFAULT_CVCRM_API_BASE_URL = 'https://api.cvcrm.com.br';
+
+/**
+ * Busca as configurações de integração (chaves da API) do banco de dados para o Tenant específico.
+ */
+async function getTenantIntegrationConfigs(tenantId) {
+  if (!tenantId) throw new Error('Tenant ID is required to fetch credentials');
+
+  const supabase = getSupabaseServer();
+  const { data, error } = await supabase
+    .from('site_settings')
+    .select('integrations')
+    .eq('organization_id', tenantId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(
+      `Failed to fetch settings for tenant ${tenantId}: ${error.message}`
+    );
+  }
+
+  const cvcrmKey = data?.integrations?.cvcrm?.apiKey;
+  const cvcrmEmail = data?.integrations?.cvcrm?.email;
+  const cvcrmBaseUrl =
+    data?.integrations?.cvcrm?.baseUrl || DEFAULT_CVCRM_API_BASE_URL;
+  const biaKey = data?.integrations?.bia?.apiKey;
+  const biaBaseUrl =
+    data?.integrations?.bia?.baseUrl || DEFAULT_BIA_API_BASE_URL;
+
+  return { cvcrmKey, cvcrmEmail, cvcrmBaseUrl, biaKey, biaBaseUrl };
+}
+
+/**
+ * Normaliza os dados do lead oriundos do webhook do CVcrm
+ * para o formato esperado pela API da BIA.
+ */
+function mapCvcrmLeadToBia(cvcrmLead) {
+  let phone = cvcrmLead.telefone || cvcrmLead.phone || '';
+  let ddi = cvcrmLead.telefone_ddi || cvcrmLead.ddi || '';
+
+  // Limpa o '+' se existir e junta DDI + Telefone
+  if (ddi) {
+    ddi = ddi.replace('+', '');
+    // Se o telefone já começar com o DDI (ex: 55), não duplica
+    if (!phone.startsWith(ddi)) {
+      phone = ddi + phone;
+    }
+  } else if (!phone.startsWith('55') && phone.length <= 11) {
+    // Fallback para Brasil se não tiver DDI e o número for local
+    phone = '55' + phone;
+  }
+
+  // Limpa caracteres especiais do telefone final
+  phone = phone.replace(/\D/g, '');
+
+  return {
+    name: cvcrmLead.nome || cvcrmLead.name,
+    phoneNumber: phone,
+    email: cvcrmLead.email,
+    externalId: cvcrmLead.id_lead || cvcrmLead.id,
+    source: 'cvcrm',
+    metadata: {
+      empreendimento: cvcrmLead.empreendimento,
+      origem: cvcrmLead.origem,
+    },
+  };
+}
+
+/**
+ * Envia um lead novo para a BIA para iniciar o atendimento.
+ */
+export async function sendLeadToBia(cvcrmLead, biaKey, biaBaseUrl) {
+  if (!biaKey) {
+    logger.warn(
+      '[BIA Integration] BIA API Key is missing. Aborting sendLeadToBia.'
+    );
+    return null;
+  }
+
+  try {
+    const payload = mapCvcrmLeadToBia(cvcrmLead);
+
+    // 1. Cadastra o contato na BIA
+    const response = await fetch(`${biaBaseUrl}/api:5ONttZdQ/contatos`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${biaKey}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error(
+        `[BIA Integration] Error sending lead to BIA. Status: ${response.status} - ${errorText}`
+      );
+      throw new Error(`BIA API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    logger.info(
+      `[BIA Integration] Lead sent successfully. BIA response ID: ${data.id}`
+    );
+
+    // 2. Dispara a mensagem inicial para "acordar" a IA e iniciar a conversa
+    const firstName = payload.name ? payload.name.split(' ')[0] : 'lá';
+    const origemText = payload.metadata?.origem
+      ? ` no nosso ${payload.metadata.origem}`
+      : '';
+    const initialMessage = `Olá ${firstName}! Tudo bem? Vi que você teve interesse e se cadastrou${origemText}. Eu sou a Lia, assistente virtual da Construtora L'albero. Posso te ajudar a encontrar o imóvel ideal?`;
+
+    await fetch(`${biaBaseUrl}/api:5ONttZdQ/message/send`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${biaKey}`,
+      },
+      body: JSON.stringify({
+        phoneNumber: payload.phoneNumber,
+        contactName: payload.name,
+        type: 'texto',
+        textContent: initialMessage,
+        sendNow: true,
+      }),
+    });
+
+    logger.info(
+      `[BIA Integration] Initial message sent to start conversation with ${payload.phoneNumber}`
+    );
+
+    return data;
+  } catch (error) {
+    logger.error(
+      `[BIA Integration] Failed to send lead to BIA: ${error.message}`
+    );
+    throw error;
+  }
+}
+
+/**
+ * Sincroniza o Lead e adiciona a Interação no CVcrm (CVIO).
+ * Cria o lead se não existir, ou edita adicionando a interação se já existir.
+ */
+export async function syncLeadAndInteractionCvcrm(
+  biaPayload,
+  summaryText,
+  cvcrmKey,
+  cvcrmEmail,
+  cvcrmBaseUrl,
+  idSituacao = null
+) {
+  if (!cvcrmKey || !cvcrmEmail) {
+    logger.warn(
+      '[CVCrm Integration] CVcrm API Token or Email is missing. Aborting sync.'
+    );
+    return null;
+  }
+
+  try {
+    const endpoint = `${cvcrmBaseUrl.replace(/\/$/, '')}/api/cvio/lead`;
+
+    // Separa o telefone para o padrão do CVcrm (DDI + Número)
+    let rawPhone = biaPayload.phoneNumber || biaPayload.phone || '';
+    let telefone_ddi = '';
+    let telefone = rawPhone;
+
+    if (rawPhone.startsWith('+')) {
+      const match = rawPhone.match(/^(\+\d{2,3})(\d+)$/);
+      if (match) {
+        telefone_ddi = match[1];
+        telefone = match[2];
+      }
+    }
+
+    const payload = {
+      nome: biaPayload.name || 'Lead via WhatsApp (BIA)',
+      telefone: telefone,
+      email: biaPayload.email || '',
+      origem: 'WhatsApp BIA',
+      empreendimento:
+        biaPayload.metadata?.empreendimento || 'Bosque dos Pássaros',
+      permitir_alteracao: 'true', // CVIO exige string ou boolean 'true' para alterar
+    };
+
+    if (telefone_ddi) {
+      payload.telefone_ddi = telefone_ddi;
+    }
+
+    if (idSituacao) {
+      payload.idsituacao = idSituacao;
+    }
+
+    if (summaryText) {
+      payload.interacoes = [
+        {
+          tipo: 'A', // Anotação
+          descricao: summaryText,
+        },
+      ];
+    }
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        email: cvcrmEmail,
+        token: cvcrmKey,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error(
+        `[CVCrm Integration] Error syncing lead. Status: ${response.status} - ${errorText}`
+      );
+      throw new Error(`CVcrm API error (Sync Lead): ${response.status}`);
+    }
+
+    const textData = await response.text();
+    const data = textData ? JSON.parse(textData) : {};
+
+    // CVIO retorna { id: X } ou { idlead: X }
+    const leadId =
+      data.id || data.idlead || data.id_lead || 'lead_simulado_' + Date.now();
+    logger.info(`[CVCrm Integration] Lead synced on CVcrm. ID: ${leadId}`);
+    return leadId;
+  } catch (error) {
+    logger.error(
+      `[CVCrm Integration] Failed to sync lead on CVcrm: ${error.message}`
+    );
+    throw error;
+  }
+}
+
+/**
+ * Lida com o webhook recebido do CVcrm (Novo Lead)
+ */
+export async function handleCvcrmWebhook(tenantId, payload) {
+  logger.info(
+    `[CVCrm Webhook] Received new lead payload for tenant ${tenantId}`
+  );
+
+  const { biaKey, biaBaseUrl, cvcrmKey, cvcrmEmail, cvcrmBaseUrl } =
+    await getTenantIntegrationConfigs(tenantId);
+
+  // 1. Envia para a BIA para iniciar o atendimento via WhatsApp
+  await sendLeadToBia(payload, biaKey, biaBaseUrl);
+
+  // 2. Atualiza a situação no CVcrm para "Em Atendimento IA" (idsituacao: 2)
+  const mappedBiaPayload = mapCvcrmLeadToBia(payload);
+  await syncLeadAndInteractionCvcrm(
+    mappedBiaPayload,
+    null,
+    cvcrmKey,
+    cvcrmEmail,
+    cvcrmBaseUrl,
+    2
+  );
+
+  return true;
+}
+
+/**
+ * Lida com o webhook recebido da BIA (Resumo de Atendimento Concluído ou em Andamento)
+ */
+export async function handleBiaWebhook(tenantId, payload) {
+  logger.info(`[BIA Webhook] Received chat summary for tenant ${tenantId}`);
+
+  const { cvcrmKey, cvcrmEmail, cvcrmBaseUrl } =
+    await getTenantIntegrationConfigs(tenantId);
+
+  const summaryText = payload.summary || payload.message;
+
+  // Verifica se a BIA finalizou o atendimento (isso precisa ser configurado lá no fluxo do Xano)
+  const isFinished =
+    payload.status === 'finished' || payload.metadata?.finished === true;
+
+  // Status 12 = Em Atendimento Corretor / Status 2 = Em Atendimento IA
+  const idSituacao = isFinished ? 12 : 2;
+
+  // Sincroniza lead, adiciona histórico e atualiza a situação
+  return syncLeadAndInteractionCvcrm(
+    payload,
+    summaryText,
+    cvcrmKey,
+    cvcrmEmail,
+    cvcrmBaseUrl,
+    idSituacao
+  );
+}

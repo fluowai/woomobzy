@@ -1,0 +1,570 @@
+import { logger } from '@/utils/logger';
+import React, { useState, useEffect } from 'react';
+import { useSettings } from '../../context/SettingsContext';
+import {
+  Save,
+  Check,
+  Upload,
+  Palette,
+  Layout,
+  Globe,
+  Eye,
+  Monitor,
+  Smartphone,
+} from 'lucide-react';
+import { uploadFile } from '../../services/storage';
+import { extractColorsFromImage } from '../../utils/colors';
+
+const AppearanceSettings: React.FC = () => {
+  const { settings, updateSettings } = useSettings();
+  const [formData, setFormData] = useState({
+    agencyName: '',
+    primaryColor: '#000000',
+    secondaryColor: '#000000',
+    headerColor: '#ffffff',
+    logoUrl: '',
+    logoHeight: 80,
+    fontFamily: 'Inter, sans-serif',
+    isLive: false,
+    contactEmail: '',
+    contactPhone: '',
+    urbanSubtype: 'imobiliaria' as
+      | 'imobiliaria'
+      | 'loteadora'
+      | 'incorporadora',
+  });
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (settings) {
+      setFormData({
+        agencyName: settings.agencyName || '',
+        primaryColor: settings.primaryColor || '#1e3a8a',
+        secondaryColor: settings.secondaryColor || '#1e40af',
+        headerColor: settings.headerColor || '#ffffff',
+        logoUrl: settings.logoUrl || '',
+        logoHeight: settings.logoHeight || 80,
+        fontFamily: settings.fontFamily || 'Inter, sans-serif',
+        isLive: settings.isLive ?? false,
+        contactEmail: settings.contactEmail || '',
+        contactPhone: settings.contactPhone || '',
+        urbanSubtype: settings.urbanSubtype || 'imobiliaria',
+      });
+      setLogoPreview(settings.logoUrl || null);
+    }
+  }, [settings]);
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      await updateSettings({
+        ...settings,
+        ...formData,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (error) {
+      logger.error('Error saving:', error);
+      alert('Erro ao salvar aparência.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const publicUrl = await uploadFile(file, 'imobzyimg', 'logos');
+      if (!publicUrl) throw new Error('Logo upload failed');
+
+      setFormData((prev) => ({ ...prev, logoUrl: publicUrl }));
+      setLogoPreview(publicUrl);
+
+      // Auto-detect colors from the uploaded logo
+      try {
+        // Fetch as blob to prevent Canvas Tainted Errors (CORS) from Supabase Storage
+        const res = await fetch(publicUrl);
+        const blob = await res.blob();
+        const objectUrl = URL.createObjectURL(blob);
+
+        const img = new Image();
+        img.src = objectUrl;
+
+        const colors = await extractColorsFromImage(img);
+
+        if (colors) {
+          setFormData((prev) => ({
+            ...prev,
+            logoUrl: publicUrl,
+            primaryColor: colors.primary,
+            secondaryColor: colors.secondary,
+          }));
+          alert(
+            '✨ Cores detectadas e aplicadas automaticamente a partir da sua logo!'
+          );
+        }
+      } catch (colorError) {
+        logger.error('Info: Could not auto-detect colors', colorError);
+        // Non-blocking error
+      }
+    } catch (error) {
+      logger.error('Error uploading logo:', error);
+      alert(
+        'Erro ao fazer upload da logo. Verifique se o bucket "logos" existe e é público.'
+      );
+    }
+  };
+
+  return (
+    <div className="wootech-reference-screen bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="wootech-page-heading border-b border-gray-100 p-6">
+        <div>
+          <div className="wootech-breadcrumb">
+            <strong>Configurações</strong>
+            <span>/</span>
+            <span>Aparência</span>
+          </div>
+          <h1 className="flex items-center gap-2">
+            <Palette size={24} /> Aparência do site
+          </h1>
+          <p>
+            Personalize identidade, cores, logo e experiência pública da sua
+            imobiliária.
+          </p>
+        </div>
+        <div className="wootech-action-row">
+          <button
+            className="wootech-secondary-action"
+            onClick={() =>
+              document
+                .getElementById('site-appearance-preview')
+                ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }
+          >
+            <Eye size={17} /> Pré-visualizar site
+          </button>
+          <button
+            className="wootech-primary-action"
+            onClick={handleSave}
+            disabled={saving}
+          >
+            <Save size={17} /> {saving ? 'Salvando...' : 'Salvar alterações'}
+          </button>
+        </div>
+      </div>
+
+      <div className="p-6 space-y-8">
+        {/* Site Status Control */}
+        <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 flex items-center justify-between gap-6">
+          <div className="flex-1">
+            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+              <Globe
+                size={18}
+                className={
+                  formData.isLive ? 'text-emerald-500' : 'text-orange-500'
+                }
+              />
+              Publicação do site
+            </h3>
+            <p className="text-sm text-slate-500 mt-1">
+              {formData.isLive
+                ? 'Seu site está ONLINE para o público geral.'
+                : 'Seu site está em MODO MANUTENÇÃO. Apenas administradores podem visualizá-lo.'}
+            </p>
+            <p className="mt-2 text-xs font-semibold text-slate-400">
+              Desligado = página de lançamento com captura. Ligado = site
+              completo publicado.
+            </p>
+          </div>
+          <button
+            onClick={() =>
+              setFormData({ ...formData, isLive: !formData.isLive })
+            }
+            className={`
+              relative inline-flex h-8 w-14 items-center rounded-full transition-colors outline-none
+              ${formData.isLive ? 'bg-emerald-500' : 'bg-slate-300'}
+            `}
+          >
+            <span
+              className={`
+                inline-block h-6 w-6 transform rounded-full bg-white transition-transform
+                ${formData.isLive ? 'translate-x-7' : 'translate-x-1'}
+              `}
+            />
+          </button>
+        </div>
+
+        {/* Agency Settings */}
+        <div>
+          <h3 className="text-sm font-medium text-gray-900 mb-4 flex items-center gap-2">
+            <Layout size={16} /> Identidade & Contato
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nome da Imobiliária
+              </label>
+              <input
+                type="text"
+                value={formData.agencyName}
+                onChange={(e) =>
+                  setFormData({ ...formData, agencyName: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                E-mail de Contato
+              </label>
+              <input
+                type="email"
+                value={formData.contactEmail}
+                onChange={(e) =>
+                  setFormData({ ...formData, contactEmail: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                placeholder="contato@empresa.com.br"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Telefone de Contato
+              </label>
+              <input
+                type="text"
+                value={formData.contactPhone}
+                onChange={(e) =>
+                  setFormData({ ...formData, contactPhone: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                placeholder="(00) 00000-0000"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Modelo de Negócio (Urbano)
+              </label>
+              <select
+                value={formData.urbanSubtype}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    urbanSubtype: e.target.value as any,
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              >
+                <option value="imobiliaria">Imobiliária Tradicional</option>
+                <option value="loteadora">Loteadora Exclusiva</option>
+                <option value="incorporadora">Incorporadora</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <hr className="border-gray-100" />
+
+        {/* Colors */}
+        <div>
+          <h3 className="text-sm font-medium text-gray-900 mb-4 flex items-center gap-2">
+            <Palette size={16} /> Cores
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Cor Primária
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={formData.primaryColor}
+                  onChange={(e) =>
+                    setFormData({ ...formData, primaryColor: e.target.value })
+                  }
+                  className="h-10 w-10 rounded border border-gray-200 cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={formData.primaryColor}
+                  onChange={(e) =>
+                    setFormData({ ...formData, primaryColor: e.target.value })
+                  }
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm uppercase"
+                />
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Botões, destaques, links.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Cor Secundária
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={formData.secondaryColor}
+                  onChange={(e) =>
+                    setFormData({ ...formData, secondaryColor: e.target.value })
+                  }
+                  className="h-10 w-10 rounded border border-gray-200 cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={formData.secondaryColor}
+                  onChange={(e) =>
+                    setFormData({ ...formData, secondaryColor: e.target.value })
+                  }
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm uppercase"
+                />
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Bordas, detalhes sutis.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Cor do Header
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={formData.headerColor}
+                  onChange={(e) =>
+                    setFormData({ ...formData, headerColor: e.target.value })
+                  }
+                  className="h-10 w-10 rounded border border-gray-200 cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={formData.headerColor}
+                  onChange={(e) =>
+                    setFormData({ ...formData, headerColor: e.target.value })
+                  }
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm uppercase"
+                />
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Fundo do menu superior.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <hr className="border-gray-100" />
+
+        {/* Logo */}
+        <div>
+          <h3 className="text-sm font-medium text-gray-900 mb-4 flex items-center gap-2">
+            <Upload size={16} /> Logo
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Upload da Logo
+              </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors relative">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <div className="space-y-2">
+                  <div className="mx-auto h-12 w-12 text-gray-400 flex items-center justify-center">
+                    <Upload size={24} />
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    <span className="font-medium text-indigo-600">
+                      Clique para enviar
+                    </span>{' '}
+                    ou arraste
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    PNG, JPG ou SVG (Max 2MB)
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Pré-visualização
+              </label>
+              <div
+                className="h-32 rounded-lg border border-gray-200 flex items-center justify-center bg-gray-100 overflow-hidden"
+                style={{ backgroundColor: formData.headerColor }}
+              >
+                {logoPreview ? (
+                  <img
+                    src={logoPreview}
+                    alt="Logo Preview"
+                    style={{
+                      height: `${formData.logoHeight}px`,
+                      objectFit: 'contain',
+                    }}
+                  />
+                ) : (
+                  <span className="text-gray-400 text-sm">Sem logo</span>
+                )}
+              </div>
+              <div className="mt-4">
+                <label className="block text-xs font-medium text-gray-500 mb-1">
+                  Altura da Logo (px)
+                </label>
+                <input
+                  type="range"
+                  min="30"
+                  max="150"
+                  value={formData.logoHeight}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      logoHeight: Number(e.target.value),
+                    })
+                  }
+                  className="w-full accent-indigo-600"
+                />
+                <span className="text-xs text-gray-500">
+                  {formData.logoHeight}px
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <section
+          id="site-appearance-preview"
+          className="rounded-xl border border-slate-200 bg-slate-50 p-4 md:p-6"
+        >
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h3 className="font-semibold text-slate-900">Preview do site</h3>
+              <p className="text-xs text-slate-500">
+                As alterações aparecem aqui antes da publicação.
+              </p>
+            </div>
+            <div className="flex rounded-lg border border-slate-200 bg-white p-1 text-slate-500">
+              <button
+                className="rounded-md bg-emerald-50 p-2 text-emerald-700"
+                aria-label="Visualização desktop"
+              >
+                <Monitor size={16} />
+              </button>
+              <button
+                className="rounded-md p-2"
+                aria-label="Visualização mobile"
+              >
+                <Smartphone size={16} />
+              </button>
+            </div>
+          </div>
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-3">
+              <div
+                className="flex items-center gap-3 font-bold"
+                style={{
+                  color:
+                    formData.headerColor === '#ffffff'
+                      ? formData.primaryColor
+                      : formData.headerColor,
+                }}
+              >
+                {logoPreview ? (
+                  <img
+                    src={logoPreview}
+                    alt="Logo da imobiliária"
+                    className="h-7 max-w-36 object-contain"
+                  />
+                ) : (
+                  <span>{formData.agencyName || 'Sua imobiliária'}</span>
+                )}
+              </div>
+              <div className="hidden items-center gap-5 text-xs font-medium text-slate-600 md:flex">
+                <span>Comprar</span>
+                <span>Alugar</span>
+                <span>Rural</span>
+                <span>Contato</span>
+              </div>
+              <button
+                className="rounded-md px-3 py-2 text-xs font-semibold text-white"
+                style={{ backgroundColor: formData.primaryColor }}
+              >
+                Fale conosco
+              </button>
+            </div>
+            <div
+              className="relative min-h-72 overflow-hidden px-6 py-12 text-white md:px-10"
+              style={{
+                background: `linear-gradient(120deg, ${formData.headerColor} 0%, ${formData.primaryColor} 100%)`,
+              }}
+            >
+              <div className="relative z-10 max-w-md">
+                <h3 className="!text-white text-3xl font-bold leading-tight">
+                  Encontre o imóvel ideal com inteligência
+                </h3>
+                <p className="mt-3 text-sm text-white/80">
+                  As melhores oportunidades, com tecnologia e atendimento
+                  especializado para você.
+                </p>
+              </div>
+              <div className="relative z-10 mt-7 flex max-w-3xl flex-col gap-2 rounded-lg bg-white p-2 sm:flex-row">
+                <input
+                  className="min-h-10 flex-1 rounded-md border border-slate-200 px-3 text-sm text-slate-700"
+                  placeholder="Onde você quer morar?"
+                />
+                <select className="min-h-10 rounded-md border border-slate-200 px-3 text-sm text-slate-700">
+                  <option>Tipo de imóvel</option>
+                </select>
+                <button
+                  className="rounded-md px-5 py-2 text-sm font-semibold text-white"
+                  style={{ backgroundColor: formData.primaryColor }}
+                >
+                  Buscar
+                </button>
+              </div>
+              <div className="absolute -right-16 -bottom-28 h-72 w-72 rounded-full bg-white/10" />
+            </div>
+          </div>
+        </section>
+
+        <div className="flex justify-end pt-6 border-t border-gray-100">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className={`
+                            flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium transition-all
+                            ${
+                              saved
+                                ? 'bg-green-500 text-white hover:bg-green-600'
+                                : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100'
+                            }
+                            disabled:opacity-70 disabled:cursor-not-allowed
+                        `}
+          >
+            {saving ? (
+              'Salvando...'
+            ) : saved ? (
+              <>
+                <Check size={18} /> Salvo!
+              </>
+            ) : (
+              <>
+                <Save size={18} /> Salvar Alterações
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AppearanceSettings;

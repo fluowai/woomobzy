@@ -1,0 +1,76 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Environment files - NEVER COMMIT THESE
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Security scan reports (raw scanner output)
+security-reports/
+
+# Secrets backup
+*.secrets.md
+portainer-stack-*-filled.yml
+portainer-stack-pronta-corrigida.yml
+stack-wootech-imob-prod-portainer.yml
+
+# Temp scripts
+.tmp-*.mjs
+
+# Debug files
+debug_scrape.html
+*.debug
+scratch/
+outputs/
+WaCalls_repo/
+whatsapp-service/run_*.txt
+whatsapp-service/internal/voip/media/mlow/testdata/
+scripts/debug/
+imobzy-message-isolation-report-*.json
+owner-access-repair-*.json
+
+# WhatsApp Sessions
+.sessions/
+
+# Traefik certificate storage - contains private keys in production
+traefik/acme.json
+
+# Test coverage
+coverage
+
+# Playwright generated artifacts
+playwright-report/
+test-results/
+
+# Backup files
+*.bak
+*.backup
+*.new
+
+# Supabase CLI temp download
+supabase/.temp/cli-latest

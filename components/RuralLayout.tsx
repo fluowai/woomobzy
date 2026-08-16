@@ -1,0 +1,388 @@
+import { logger } from '@/utils/logger';
+import React, { useState, useEffect } from 'react';
+import {
+  NavLink,
+  Link as RouterLink,
+  Navigate,
+  Outlet,
+  useLocation,
+} from 'react-router-dom';
+import {
+  LayoutDashboard,
+  Users,
+  MessageSquare,
+  Mail,
+  Home,
+  Map as MapIcon,
+  Globe,
+  Settings,
+  Menu,
+  X,
+  PieChart,
+  LogOut,
+  Calendar,
+  ChevronRight,
+  ShieldAlert,
+  DollarSign,
+  Headset,
+  Briefcase,
+  Target,
+  Zap,
+  Bot,
+  Link as LinkIcon,
+  LayoutTemplate,
+  FileQuestion,
+  LucideIcon,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from 'lucide-react';
+import { useSettings } from '../context/SettingsContext';
+import { useAuth } from '../context/AuthContext';
+import SupportModal from './SupportModal';
+
+type MenuItem = {
+  icon: LucideIcon;
+  label: string;
+  path: string;
+};
+
+type MenuSection = {
+  title: string;
+  items: MenuItem[];
+};
+
+const RuralLayout: React.FC = () => {
+  useSettings();
+  const { profile, signOut, isImpersonating, loading } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(false);
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const { pathname } = useLocation();
+  const isWorkspaceRoute =
+    pathname.startsWith('/rural/whatsapp') ||
+    pathname.startsWith('/rural/email');
+
+  useEffect(() => {
+    if (isWorkspaceRoute) {
+      setIsDesktopSidebarOpen(false);
+    }
+  }, [isWorkspaceRoute]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      window.location.href = '/login';
+    } catch (error) {
+      logger.error('Logout error:', error);
+    }
+  };
+
+  const operationItems: MenuItem[] = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/rural' },
+    { icon: MessageSquare, label: 'Mensagens', path: '/rural/whatsapp' },
+    { icon: Mail, label: 'Email', path: '/rural/email' },
+    { icon: Briefcase, label: 'Funil / CRM', path: '/rural/kanban' },
+    { icon: Calendar, label: 'Minha Agenda', path: '/rural/agenda' },
+    { icon: Users, label: 'CRM Leads', path: '/rural/crm' },
+  ];
+
+  const assetItems: MenuItem[] = [
+    { icon: Home, label: 'Imóveis Rurais', path: '/rural/properties' },
+    { icon: MapIcon, label: 'Território Rural', path: '/rural/territorio' },
+    {
+      icon: DollarSign,
+      label: 'Valuation CAR',
+      path: '/rural/territorio/valuation',
+    },
+  ];
+
+  const growthItems: MenuItem[] = [
+    { icon: Target, label: 'Metas & Vendas', path: '/rural/financial' },
+    { icon: Globe, label: 'Meu Site', path: '/rural/site' },
+    {
+      icon: LayoutTemplate,
+      label: 'Landing Pages',
+      path: '/rural/landing-pages',
+    },
+    { icon: FileQuestion, label: 'Quiz', path: '/rural/quiz' },
+    { icon: Zap, label: 'Matchmaking 360', path: '/rural/matchmaking' },
+    { icon: Bot, label: 'Agentes IA', path: '/rural/ai-agents' },
+    { icon: Bot, label: 'WooTech AI', path: '/rural/wootech-ai' },
+
+    { icon: PieChart, label: 'Relatórios', path: '/rural/reports' },
+  ];
+
+  const systemItems: MenuItem[] = [
+    { icon: LinkIcon, label: 'Conexões', path: '/rural/connections' },
+    { icon: Settings, label: 'Configurações', path: '/rural/settings' },
+  ];
+
+  if (profile?.role === 'superadmin') {
+    const isMegaAdmin = !profile?.organization?.is_reseller;
+    systemItems.push({
+      icon: ShieldAlert,
+      label: isMegaAdmin ? 'Mega Admin' : 'Super Admin',
+      path: isMegaAdmin ? '/megaadmin' : '/superadmin',
+    });
+  }
+
+  const menuSections: MenuSection[] = [
+    { title: 'Operação', items: operationItems },
+    { title: 'Carteira Rural', items: assetItems },
+    { title: 'Crescimento', items: growthItems },
+    { title: 'Sistema', items: systemItems },
+  ];
+
+  useEffect(() => {
+    // Scroll to top on route change
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  if (!loading && profile?.role === 'superadmin' && !isImpersonating) {
+    const isMegaAdmin = !profile?.organization?.is_reseller;
+    return <Navigate to={isMegaAdmin ? '/megaadmin' : '/superadmin'} replace />;
+  }
+
+  const isMenuItemActive = (path: string, isActive: boolean) => {
+    if (path === '/rural/territorio/valuation') return pathname === path;
+    if (path === '/rural/territorio') {
+      return (
+        pathname.startsWith('/rural/territorio') &&
+        pathname !== '/rural/territorio/valuation'
+      );
+    }
+    return isActive;
+  };
+
+  const isLandingPageEditor =
+    (pathname.includes('/landing-pages/') ||
+      pathname.includes('/site/pages/')) &&
+    pathname.split('/').length > 3;
+
+  const renderMenuItem = (item: MenuItem, expanded: boolean) => (
+    <NavLink
+      key={item.path}
+      to={item.path}
+      end={item.path === '/rural'}
+      onClick={() => {
+        setIsMobileMenuOpen(false);
+        setIsDesktopSidebarOpen(false);
+      }}
+      className={({ isActive }) => {
+        const active = isMenuItemActive(item.path, isActive);
+        return `workspace-nav-item flex items-center justify-between group ${
+          active ? 'workspace-nav-item-active' : ''
+        }`;
+      }}
+    >
+      {({ isActive }) => {
+        const active = isMenuItemActive(item.path, isActive);
+
+        return (
+          <>
+            <div className="flex items-center gap-3.5 min-w-0">
+              <item.icon
+                size={20}
+                className={
+                  active
+                    ? 'text-primary shrink-0'
+                    : 'text-slate-400 group-hover:text-primary shrink-0'
+                }
+              />
+              {expanded && <span className="truncate">{item.label}</span>}
+            </div>
+            {expanded && item.path !== '/rural' && (
+              <ChevronRight
+                size={14}
+                className={
+                  active
+                    ? 'text-primary/70 shrink-0'
+                    : 'text-slate-300 group-hover:text-primary shrink-0'
+                }
+              />
+            )}
+          </>
+        );
+      }}
+    </NavLink>
+  );
+
+  const renderSidebarContent = (forceExpanded = false) => {
+    const expanded = forceExpanded || isDesktopSidebarOpen;
+
+    return (
+      <>
+        <div
+          className={`py-5 flex items-center transition-all ${expanded ? 'px-6 justify-between' : 'px-0 justify-center flex-col gap-4'}`}
+        >
+          {expanded && (
+            <RouterLink
+              to="/rural"
+              className="flex items-center gap-3 group"
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                setIsDesktopSidebarOpen(false);
+              }}
+            >
+              <img
+                src="/logo-wootech-imob.svg"
+                alt="WooTech Imob"
+                className="workspace-logo transition-transform group-hover:scale-[1.02]"
+              />
+            </RouterLink>
+          )}
+          <button
+            onClick={() => setIsDesktopSidebarOpen(!isDesktopSidebarOpen)}
+            className="hidden md:flex text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg p-2 transition-colors"
+            title="Alternar Menu"
+          >
+            {expanded ? (
+              <PanelLeftClose size={18} />
+            ) : (
+              <PanelLeftOpen size={18} />
+            )}
+          </button>
+        </div>
+
+        <nav
+          className={`flex-1 overflow-y-auto space-y-5 custom-scrollbar ${expanded ? 'px-3 py-4' : 'px-2 py-4'}`}
+        >
+          {menuSections.map((section) => (
+            <div key={section.title} className="space-y-2">
+              {expanded ? (
+                <p className="workspace-section-title">{section.title}</p>
+              ) : (
+                <div className="w-full h-px bg-slate-100 my-2"></div>
+              )}
+              <div className="space-y-1">
+                {section.items.map((item) => renderMenuItem(item, expanded))}
+              </div>
+            </div>
+          ))}
+
+          <button
+            onClick={() => setIsSupportOpen(true)}
+            className={`workspace-nav-item flex items-center group ${expanded ? 'justify-between w-full' : 'justify-center w-full'}`}
+            title="Suporte"
+          >
+            <div className="flex items-center gap-3.5">
+              <Headset
+                size={20}
+                className="text-slate-400 group-hover:text-primary shrink-0"
+              />
+              {expanded && <span>Suporte</span>}
+            </div>
+          </button>
+        </nav>
+
+        <div
+          className={`border-t border-slate-100 bg-slate-50/60 ${expanded ? 'p-4' : 'p-2 flex flex-col items-center gap-2'}`}
+        >
+          <div
+            className={`flex items-center gap-3 bg-white border border-slate-200 rounded-xl ${expanded ? 'mb-3 p-2' : 'p-1'}`}
+          >
+            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold border border-primary/20 shrink-0">
+              {profile?.full_name?.charAt(0) || profile?.name?.charAt(0) || 'R'}
+            </div>
+            {expanded && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-900 truncate">
+                  {profile?.full_name || profile?.name || 'Carregando...'}
+                </p>
+                {profile?.role === 'superadmin' ? (
+                  <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-semibold uppercase tracking-wide rounded">
+                    SUPER ADMIN
+                  </span>
+                ) : (
+                  <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide truncate">
+                    {profile?.role === 'admin'
+                      ? 'Admin Imobiliária'
+                      : loading
+                        ? '...'
+                        : profile?.role || 'Corretor'}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={handleLogout}
+            className={`flex items-center gap-2 text-slate-500 hover:text-red-600 text-xs font-semibold transition-all rounded-lg hover:bg-red-50 ${expanded ? 'w-full p-2' : 'p-2 justify-center'}`}
+            title="Sair"
+          >
+            <LogOut size={16} className="shrink-0" /> {expanded && 'Sair'}
+          </button>
+        </div>
+        <SupportModal
+          isOpen={isSupportOpen}
+          onClose={() => setIsSupportOpen(false)}
+        />
+      </>
+    );
+  };
+
+  return (
+    <div className="workspace-shell flex h-screen h-dvh overflow-hidden selection:bg-primary/20 selection:text-primary">
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-[110] md:hidden">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          <aside className="workspace-sidebar absolute left-0 top-0 bottom-0 text-slate-900 flex flex-col animate-in slide-in-from-left duration-300">
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-all z-50"
+            >
+              <X size={20} />
+            </button>
+            {renderSidebarContent(true)}
+          </aside>
+        </div>
+      )}
+
+      {/* Desktop Sidebar */}
+      {!isLandingPageEditor && (
+        <aside
+          className={`workspace-sidebar text-slate-900 hidden md:flex flex-col shrink-0 overflow-hidden transition-all duration-300 ease-in-out border-r border-slate-200 ${
+            isDesktopSidebarOpen ? 'w-[280px]' : 'w-[72px]'
+          }`}
+        >
+          {renderSidebarContent()}
+        </aside>
+      )}
+
+      <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        <button
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="fixed left-3 top-3 z-[110] flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-md md:hidden"
+          aria-label="Abrir menu"
+        >
+          <Menu size={21} />
+        </button>
+        <div
+          className={`flex-1 overflow-y-auto ${
+            isLandingPageEditor
+              ? 'p-0'
+              : isWorkspaceRoute
+                ? 'p-2 sm:p-3 md:p-4'
+                : 'p-3 sm:p-4 md:p-6'
+          }`}
+        >
+          <div
+            className={
+              isLandingPageEditor || isWorkspaceRoute
+                ? 'w-full h-full min-h-0'
+                : 'max-w-[1600px] mx-auto'
+            }
+          >
+            <Outlet />
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default RuralLayout;

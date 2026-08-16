@@ -1,0 +1,254 @@
+name: imobzy-local
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
+        VITE_PANEL_URL: http://localhost:3006
+    env_file:
+      - .env.production
+    environment:
+      VITE_API_URL: same-origin
+      VITE_WHATSAPP_API_URL: /api/whatsapp
+      VITE_WHATSAPP_WS_URL: /api/whatsapp/ws
+      VITE_PUBLIC_APP_URL: http://localhost:3006
+      VITE_PANEL_URL: http://localhost:3006
+      VITE_PLATFORM_IP: 127.0.0.1
+      VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+      VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
+    ports:
+      - '3006:80'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1/health || exit 1']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - imobzy
+    cpus: '0.50'
+    mem_limit: 256m
+    logging: &default-logging
+      driver: json-file
+      options:
+        max-size: '20m'
+        max-file: '5'
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: development
+      PORT: 3002
+      WHATSAPP_PROVIDER: whatsmeow
+      WHATSAPP_API_URL: http://whatsapp-service:3100
+      WHATSMEOW_URL: http://whatsapp-service:3100
+      WHATSAPP_SERVICE_TOKEN: ${WHATSAPP_SERVICE_TOKEN:-local-whatsapp-service-token}
+      WHATSAPP_INTERNAL_TOKEN: ${WHATSAPP_INTERNAL_TOKEN:-local-whatsapp-internal-token}
+      WHATSAPP_WS_JWT_SECRET: ${WHATSAPP_WS_JWT_SECRET:-local-whatsapp-ws-secret-change-me}
+      DOCUMENT_WEBHOOK_SECRET: ${DOCUMENT_WEBHOOK_SECRET:-local-document-webhook-secret-change-me}
+      SIGNATURE_WEBHOOK_SECRET: ${SIGNATURE_WEBHOOK_SECRET:-local-signature-webhook-secret-change-me}
+      AGRO_INTEL_URL: http://agro-intelligence:8000
+      NODE_URL: http://api:3002
+      ALLOWED_ORIGINS: http://localhost:3006,http://127.0.0.1:3006
+      CORS_ORIGINS: http://localhost:3006,http://127.0.0.1:3006
+    volumes:
+      - ./traefik/dynamic:/traefik/dynamic
+    expose:
+      - '3002'
+    depends_on:
+      whatsapp-service:
+        condition: service_healthy
+      agro-intelligence:
+        condition: service_started
+      document-worker:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(''http://127.0.0.1:3002/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - imobzy
+    cpus: '1.00'
+    mem_limit: 768m
+    logging: *default-logging
+    restart: unless-stopped
+
+  whatsapp-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.whatsapp
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: development
+      PORT: 3100
+      NODE_URL: http://api:3002
+      WHATSMEOW_URL: http://whatsapp-service:3100
+      WHATSAPP_API_URL: http://whatsapp-service:3100
+      WHATSAPP_SERVICE_TOKEN: ${WHATSAPP_SERVICE_TOKEN:-local-whatsapp-service-token}
+      WHATSAPP_INTERNAL_TOKEN: ${WHATSAPP_INTERNAL_TOKEN:-local-whatsapp-internal-token}
+      PGSSLMODE: require
+      CORS_ORIGINS: http://localhost:3006,http://127.0.0.1:3006
+      ALLOWED_ORIGINS: http://localhost:3006,http://127.0.0.1:3006
+    volumes:
+      - whatsapp_sessions:/app/.sessions
+    expose:
+      - '3100'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'curl -fsS http://127.0.0.1:3100/health >/dev/null || exit 1',
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - imobzy
+    cpus: '1.50'
+    mem_limit: 1g
+    logging: *default-logging
+    restart: unless-stopped
+
+  agro-intelligence:
+    build:
+      context: .
+      dockerfile: Dockerfile.agro
+    expose:
+      - '8000'
+    networks:
+      - imobzy
+    cpus: '1.00'
+    mem_limit: 1g
+    logging: *default-logging
+    restart: unless-stopped
+
+  document-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.document-worker
+    env_file:
+      - .env.production
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      WEBHOOK_URL: http://api:3002/api/documents/webhook/worker-result
+      DOCUMENT_WEBHOOK_SECRET: ${DOCUMENT_WEBHOOK_SECRET:-local-document-webhook-secret-change-me}
+    expose:
+      - '8001'
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fsS http://127.0.0.1:8001/health || exit 1']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - imobzy
+    cpus: '1.00'
+    mem_limit: 1g
+    logging: *default-logging
+    restart: unless-stopped
+
+  instagram-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.instagram-service
+    environment:
+      NODE_ENV: development
+      PORT: '3200'
+      REDIS_URL: 'redis://redis:6379'
+      INSTAGRAM_WORKER_URL: 'http://instagram-worker:8000'
+      INSTAGRAM_INTERNAL_TOKEN: 'ig-internal-token-local'
+      ALLOWED_ORIGINS: http://localhost:3006,http://127.0.0.1:3006
+    env_file:
+      - .env.production
+    expose:
+      - '3200'
+    depends_on:
+      - redis
+    networks:
+      - imobzy
+    cpus: '0.50'
+    mem_limit: 256m
+    logging: *default-logging
+    restart: unless-stopped
+
+  instagram-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.instagram-worker
+    environment:
+      REDIS_URL: 'redis://redis:6379'
+      INSTAGRAM_INTERNAL_TOKEN: 'ig-internal-token-local'
+      NODE_SERVICE_URL: 'http://instagram-service:3200'
+    env_file:
+      - .env.production
+    volumes:
+      - instagram_devices:/data/devices
+      - instagram_sessions:/data/sessions
+    expose:
+      - '8000'
+    depends_on:
+      - redis
+    networks:
+      - imobzy
+    cpus: '1.00'
+    mem_limit: 512m
+    logging: *default-logging
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    expose:
+      - '6379'
+    networks:
+      - imobzy
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: *default-logging
+    restart: unless-stopped
+
+  omniroute:
+    image: diegosouzapw/omniroute:latest
+    container_name: imobzy-omniroute
+    ports:
+      - '20128:20128'
+    volumes:
+      - ./docker/omniroute:/app/config
+    environment:
+      - PORT=20128
+      - OMNIROUTE_CONFIG=/app/config/omniroute.yml
+    restart: unless-stopped
+    networks:
+      - imobzy
+
+volumes:
+  whatsapp_sessions:
+
+  instagram_devices:
+  instagram_sessions:
+  redis_data:
+
+networks:
+  imobzy:
+    driver: bridge

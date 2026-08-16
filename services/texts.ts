@@ -1,0 +1,196 @@
+import { logger } from '@/utils/logger';
+import { publicSupabase, supabase } from './supabase';
+import { getApiUrl } from '../src/lib/api';
+
+// Removed duplicate client creation and unsafe process.env usage
+
+// ============================================
+// SITE TEXTS SERVICE
+// ============================================
+
+const isPublicReadAuthError = (error: any) =>
+  error?.message?.includes('JWT expired') ||
+  error?.message?.includes('Invalid API key') ||
+  error?.code === 'PGRST303';
+
+/**
+ * Busca todos os textos do site
+ * @param {string} category - Filtrar por categoria (opcional)
+ * @param {string} section - Filtrar por seção (opcional)
+ * @returns {Promise<Object>} Objeto com textos em formato chave-valor
+ */
+export const getAllTexts = async (category = null, section = null) => {
+  try {
+    const params = new URLSearchParams();
+    if (category) params.set('category', category);
+    if (section) params.set('section', section);
+
+    try {
+      const apiResponse = await fetch(
+        getApiUrl(`/api/public/texts${params.toString() ? `?${params}` : ''}`)
+      );
+      if (apiResponse.ok) {
+        const payload = await apiResponse.json();
+        return { texts: payload.texts || {}, raw: [] };
+      }
+    } catch (apiError: any) {
+      logger.warn(
+        '[texts.ts] Public texts API unavailable, trying Supabase fallback:',
+        apiError?.message || apiError
+      );
+    }
+
+    let query = publicSupabase.from('site_texts').select('*');
+
+    if (category) {
+      query = query.eq('category', category);
+    }
+
+    if (section) {
+      query = query.eq('section', section);
+    }
+
+    const { data, error } = await query.order('key', { ascending: true });
+
+    if (error) throw error;
+
+    // Transformar em objeto chave-valor
+    const textsMap = {};
+    data.forEach((text) => {
+      textsMap[text.key] = text.value;
+    });
+
+    return { texts: textsMap, raw: data };
+  } catch (error: any) {
+    if (isPublicReadAuthError(error)) {
+      logger.warn(
+        '[texts.ts] Public site texts unavailable, using fallback texts'
+      );
+      return { texts: {}, raw: [] };
+    }
+
+    // Only log as error if it's NOT a JWT issue (those are handled upstream)
+    if (error?.message?.includes('JWT expired') || error?.code === 'PGRST303') {
+      logger.warn('⚠️ [texts.ts] JWT expired, skipping fetch');
+    } else {
+      logger.error('Error fetching texts:', error);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Busca um texto específico por chave
+ * @param {string} key - Chave do texto
+ * @returns {Promise<Object>} Dados do texto
+ */
+export const getTextByKey = async (key) => {
+  try {
+    const { data, error } = await publicSupabase
+      .from('site_texts')
+      .select('*')
+      .eq('key', key)
+      .single();
+
+    if (error) throw error;
+
+    return data;
+  } catch (error) {
+    logger.error(`Error fetching text ${key}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Atualiza um texto específico
+ * @param {string} key - Chave do texto
+ * @param {string} value - Novo valor
+ * @returns {Promise<Object>} Texto atualizado
+ */
+export const updateText = async (key, value) => {
+  try {
+    const { data, error } = await supabase
+      .from('site_texts')
+      .update({ value, updated_at: new Date().toISOString() })
+      .eq('key', key)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return data;
+  } catch (error) {
+    logger.error(`Error updating text ${key}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Atualiza múltiplos textos de uma vez
+ * @param {Array} updates - Array de objetos { key, value }
+ * @returns {Promise<Object>} Resultado da atualização
+ */
+export const bulkUpdateTexts = async (updates) => {
+  try {
+    const results = [];
+    const errors = [];
+
+    for (const update of updates) {
+      try {
+        const data = await updateText(update.key, update.value);
+        results.push(data);
+      } catch (err) {
+        errors.push({ key: update.key, error: err.message });
+      }
+    }
+
+    return { results, errors };
+  } catch (error) {
+    logger.error('Error in bulk update:', error);
+    throw error;
+  }
+};
+
+/**
+ * Restaura um texto para o valor padrão
+ * @param {string} key - Chave do texto
+ * @returns {Promise<Object>} Texto restaurado
+ */
+export const resetTextToDefault = async (key) => {
+  try {
+    // Buscar o valor padrão
+    const { data: textData, error: fetchError } = await supabase
+      .from('site_texts')
+      .select('default_value')
+      .eq('key', key)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // Atualizar para o valor padrão
+    const { data, error } = await supabase
+      .from('site_texts')
+      .update({
+        value: textData.default_value,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('key', key)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return data;
+  } catch (error) {
+    logger.error(`Error resetting text ${key}:`, error);
+    throw error;
+  }
+};
+
+export const textsService = {
+  getAllTexts,
+  getTextByKey,
+  updateText,
+  bulkUpdateTexts,
+  resetTextToDefault,
+};

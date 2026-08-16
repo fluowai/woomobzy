@@ -1,0 +1,1056 @@
+import { logger } from '@/utils/logger';
+import { getRuntimeEnv } from '@/utils/runtimeConfig';
+import { callApi } from '../../../src/lib/api';
+import {
+  clearImpersonationSession,
+  getImpersonationHeaders,
+  getStoredImpersonationSession,
+} from '../../../src/lib/impersonation';
+
+const DEFAULT_WHATSAPP_API_URL = '/api/whatsapp';
+const DEFAULT_WHATSAPP_WS_PATH = '/api/whatsapp/ws';
+
+const RAW_WHATSAPP_API_URL = getRuntimeEnv(
+  'VITE_WHATSAPP_API_URL',
+  DEFAULT_WHATSAPP_API_URL
+);
+const API_BASE = normalizeWhatsAppApiUrl(RAW_WHATSAPP_API_URL);
+const USE_DIRECT_WHATSAPP_API = /^https?:\/\//i.test(API_BASE);
+const LEGACY_STORAGE_HOSTS = ['n.woopanel.com.br'];
+const STORAGE_PUBLIC_URL = normalizeStoragePublicBase(
+  getRuntimeEnv('VITE_MINIO_PUBLIC_URL', 'https://s.wootech.com.br')
+);
+export const WS_URL = normalizeWhatsAppWsUrl(
+  getRuntimeEnv('VITE_WHATSAPP_WS_URL', DEFAULT_WHATSAPP_WS_PATH)
+);
+
+import { supabase } from '@/services/supabase';
+
+let tenantIdCache: string | null | undefined;
+let userTenantContextCache:
+  | {
+      userId: string;
+      role: string | null;
+      organizationId: string | null;
+    }
+  | undefined;
+
+export class WhatsAppApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly code?: string
+  ) {
+    super(message);
+    this.name = 'WhatsAppApiError';
+  }
+}
+
+function normalizeWhatsAppApiUrl(url: string): string {
+  const clean = (url || '').trim().replace(/\/$/, '');
+  if (!clean) return DEFAULT_WHATSAPP_API_URL;
+
+  if (!/^https?:\/\//i.test(clean)) {
+    return clean || '/api/whatsapp';
+  }
+
+  if (/\/api\/whatsapp$/i.test(clean)) return clean;
+  if (/\/api$/i.test(clean)) return `${clean}/whatsapp`;
+
+  return `${clean}/api/whatsapp`;
+}
+
+function normalizeWhatsAppWsUrl(url: string): string {
+  const clean = (url || '').trim().replace(/\/$/, '');
+  if (!clean) return buildSameOriginWsUrl(DEFAULT_WHATSAPP_WS_PATH);
+
+  if (!/^wss?:\/\//i.test(clean)) {
+    return buildSameOriginWsUrl(clean || DEFAULT_WHATSAPP_WS_PATH);
+  }
+
+  if (/\/api\/whatsapp\/ws$/i.test(clean)) return clean;
+  if (/\/api\/whatsapp$/i.test(clean)) return `${clean}/ws`;
+  if (/\/api$/i.test(clean)) return `${clean}/whatsapp/ws`;
+  if (/\/ws$/i.test(clean)) return clean;
+
+  return `${clean}/api/whatsapp/ws`;
+}
+
+function buildSameOriginWsUrl(path: string): string {
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return `${wsProtocol}//${window.location.host}${cleanPath}`;
+}
+
+async function apiRequest<T>(
+  path: string,
+  options?: RequestInit & { instanceId?: string }
+): Promise<T> {
+  let session = await getApiSession();
+  const impersonatedOrgId = USE_DIRECT_WHATSAPP_API
+    ? await getValidImpersonatedOrgId(session?.user?.id)
+    : getImpersonatedOrgId();
+  const activeOrgId = !impersonatedOrgId
+    ? getActiveOrganizationId(session?.user?.id)
+    : null;
+  const tenantId = USE_DIRECT_WHATSAPP_API
+    ? impersonatedOrgId || activeOrgId || (await getTenantId(session?.user?.id))
+    : null;
+
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const url = buildApiUrl(`${cleanPath}`, tenantId);
+
+  const body = withTenantBody(options?.body, tenantId);
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...options,
+      headers: buildApiHeaders(
+        options?.headers,
+        session?.access_token,
+        impersonatedOrgId,
+        activeOrgId
+      ),
+      body,
+    });
+
+    if (res.status === 401 && session) {
+      session = await getApiSession(true);
+      if (session) {
+        res = await fetch(url, {
+          ...options,
+          headers: buildApiHeaders(
+            options?.headers,
+            session.access_token,
+            impersonatedOrgId,
+            activeOrgId
+          ),
+          body,
+        });
+      }
+    }
+  } catch (networkErr: any) {
+    throw new Error(
+      `WHATSAPP_UNAVAILABLE: Serviço não acessível em ${url} - ${networkErr.message}`
+    );
+  }
+
+  // Detect proxy failure: server returned HTML instead of JSON
+  const contentType = res.headers.get('content-type') || '';
+  if (contentType.includes('text/html')) {
+    throw new Error(
+      `WHATSAPP_UNAVAILABLE: ${url} retornou HTML. O proxy /api nao esta chegando no backend Node.js.`
+    );
+  }
+
+  if (!res.ok) {
+    const error = await res
+      .json()
+      .catch(() => ({ error: res.statusText, code: undefined }));
+    if (res.status === 401) {
+      logger.warn('[WhatsApp API] Falha 401 apos renovar a sessao.');
+    }
+    if (
+      error.code === 'INVALID_TENANT' ||
+      error.code === 'INVALID_IMPERSONATED_ORG'
+    ) {
+      clearImpersonationStorage();
+      tenantIdCache = undefined;
+    }
+
+    const message = getFriendlyApiErrorMessage(error, res.status);
+    throw new WhatsAppApiError(message, res.status, error.code);
+  }
+
+  return normalizeStorageUrls(await res.json()) as T;
+}
+
+function getFriendlyApiErrorMessage(error: any, status: number): string {
+  if (error?.code === 'TENANT_REQUIRED') {
+    return 'Selecione uma organizacao antes de acessar o WhatsApp.';
+  }
+
+  if (error?.code === 'PROFILE_NO_ORG') {
+    return 'Sua conta ainda nao esta vinculada a uma organizacao.';
+  }
+
+  if (error?.code === 'PROFILE_ORG_NOT_FOUND') {
+    return 'A organizacao vinculada ao seu perfil nao foi encontrada.';
+  }
+
+  if (error?.code === 'PROFILE_ORG_INACTIVE') {
+    return 'A organizacao vinculada ao seu perfil esta inativa.';
+  }
+
+  return error?.error || `API Error: ${status}`;
+}
+
+function buildApiHeaders(
+  customHeaders: HeadersInit | undefined,
+  accessToken: string | undefined,
+  impersonatedOrgId: string | null,
+  activeOrgId: string | null
+) {
+  const headers = new Headers(customHeaders);
+  if (!headers.has('Content-Type'))
+    headers.set('Content-Type', 'application/json');
+  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
+  if (impersonatedOrgId) {
+    for (const [key, value] of Object.entries(getImpersonationHeaders())) {
+      headers.set(key, value);
+    }
+  }
+  return headers;
+}
+
+async function getApiSession(forceRefresh = false) {
+  if (forceRefresh) {
+    const { data, error } = await supabase.auth.refreshSession();
+    return error ? null : data.session;
+  }
+
+  const { data } = await supabase.auth.getSession();
+  const session = data.session;
+  const expiresAtMs = (session?.expires_at || 0) * 1000;
+
+  if (session && expiresAtMs <= Date.now() + 30_000) {
+    const { data: refreshed, error } = await supabase.auth.refreshSession();
+    return error ? session : refreshed.session;
+  }
+
+  return session;
+}
+
+export async function getAuthorizedWhatsAppWsUrl(): Promise<string> {
+  const response = await apiRequest<{ token: string }>('/socket-token', {
+    method: 'POST',
+  });
+  const url = new URL(WS_URL);
+  url.searchParams.set('ws_token', response.token);
+  const payload = decodeJwtPayload(response.token);
+  if (payload?.org_id) {
+    url.searchParams.set('tenant_id', payload.org_id);
+  }
+  return url.toString();
+}
+
+function decodeJwtPayload(token: string): { org_id?: string } | null {
+  const payload = token.split('.')[1];
+  if (!payload) return null;
+
+  try {
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+    const parsed = JSON.parse(atob(padded));
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function getImpersonatedOrgId(): string | null {
+  return getStoredImpersonationSession()?.organizationId || null;
+}
+
+function getActiveOrganizationId(userId?: string): string | null {
+  const storedUserId = sessionStorage.getItem('active_organization_user_id');
+  const storedOrgId = sessionStorage.getItem('active_organization_id');
+
+  if (!storedOrgId || storedOrgId === 'null' || storedOrgId === 'undefined')
+    return null;
+  if (userId && storedUserId && storedUserId !== userId) return null;
+
+  return storedOrgId;
+}
+
+async function getValidImpersonatedOrgId(
+  userId?: string
+): Promise<string | null> {
+  const impersonatedOrgId = getImpersonatedOrgId();
+  if (!impersonatedOrgId) return null;
+
+  const context = await getUserTenantContext(userId);
+  if (context?.role !== 'superadmin') {
+    clearImpersonationStorage();
+    return null;
+  }
+
+  const { data } = await supabase
+    .from('organizations')
+    .select('id')
+    .eq('id', impersonatedOrgId)
+    .maybeSingle();
+
+  if (!data?.id) {
+    clearImpersonationStorage();
+    return null;
+  }
+
+  return data.id;
+}
+
+function clearImpersonationStorage() {
+  clearImpersonationSession();
+  tenantIdCache = undefined;
+  userTenantContextCache = undefined;
+}
+
+async function getTenantId(userId?: string): Promise<string | null> {
+  if (!userId) return null;
+  if (tenantIdCache !== undefined) return tenantIdCache;
+
+  const context = await getUserTenantContext(userId);
+  tenantIdCache = context?.organizationId || null;
+  return tenantIdCache;
+}
+
+async function getUserTenantContext(userId?: string) {
+  if (!userId) return null;
+  if (userTenantContextCache?.userId === userId) return userTenantContextCache;
+
+  const { data } = await supabase
+    .from('profiles')
+    .select('role, organization_id')
+    .eq('id', userId)
+    .single();
+
+  userTenantContextCache = {
+    userId,
+    role: data?.role || null,
+    organizationId: data?.organization_id || null,
+  };
+  return userTenantContextCache;
+}
+
+function buildApiUrl(path: string, tenantId?: string | null): string {
+  const url = new URL(`${API_BASE}${path}`, window.location.origin);
+  if (
+    USE_DIRECT_WHATSAPP_API &&
+    tenantId &&
+    !url.searchParams.has('tenant_id')
+  ) {
+    url.searchParams.set('tenant_id', tenantId);
+  }
+  return url.toString();
+}
+
+function withTenantBody(
+  body: BodyInit | null | undefined,
+  tenantId?: string | null
+): BodyInit | null | undefined {
+  if (!USE_DIRECT_WHATSAPP_API || !tenantId || typeof body !== 'string')
+    return body;
+
+  try {
+    const parsed = JSON.parse(body);
+    if (
+      parsed &&
+      typeof parsed === 'object' &&
+      !Array.isArray(parsed) &&
+      !parsed.tenant_id
+    ) {
+      return JSON.stringify({ ...parsed, tenant_id: tenantId });
+    }
+  } catch {
+    return body;
+  }
+
+  return body;
+}
+
+export function normalizeStorageUrls(value: unknown): unknown {
+  if (typeof value === 'string') return normalizeStorageUrl(value);
+  if (Array.isArray(value)) return value.map(normalizeStorageUrls);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, entry]) => [
+        key,
+        normalizeStorageUrls(entry),
+      ])
+    );
+  }
+  return value;
+}
+
+function normalizeStorageUrl(value: string): string {
+  if (!value || !/^https?:\/\//i.test(value)) return value;
+  try {
+    const url = new URL(value);
+    if (!LEGACY_STORAGE_HOSTS.includes(url.hostname)) return value;
+    const target = new URL(STORAGE_PUBLIC_URL);
+    url.protocol = target.protocol;
+    url.hostname = target.hostname;
+    url.port = target.port;
+    return url.toString();
+  } catch {
+    return value;
+  }
+}
+
+function normalizeStoragePublicBase(value: string): string {
+  const fallback = 'https://s.wootech.com.br';
+  try {
+    const url = new URL(value || fallback);
+    if (LEGACY_STORAGE_HOSTS.includes(url.hostname)) return fallback;
+    return url.toString().replace(/\/$/, '');
+  } catch {
+    return fallback;
+  }
+}
+
+// ---- Types ----
+export interface Instance {
+  id: string;
+  tenant_id?: string;
+  name: string;
+  status: 'connected' | 'disconnected' | 'connecting' | 'qr_pending';
+  qr_code?: string;
+  phone?: string;
+  jid?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HistoryImportResponse {
+  message: string;
+  requested: number;
+  analyzing: boolean;
+  since_days?: number;
+  imported_chats?: number;
+  imported_messages?: number;
+}
+
+export interface PairCodeResponse {
+  pairing_code: string;
+  phone: string;
+  expires_in: number;
+  message: string;
+}
+
+export interface Chat {
+  id: string;
+  instance_id: string;
+  chat_jid: string;
+  name: string;
+  display_name?: string;
+  phone?: string;
+  phone_display?: string;
+  push_name?: string;
+  is_group: boolean;
+  last_message?: string;
+  last_message_at?: string;
+  unread_count: number;
+  avatar_url?: string;
+  created_at: string;
+  updated_at: string;
+  crm_lead_id?: string;
+  crm_assigned_to?: string | null;
+  crm_is_mine?: boolean;
+  crm_status?: string | null;
+  crm_classification?: string | null;
+  crm_lead_score?: number | null;
+  crm_tags?: string[];
+}
+
+export interface Message {
+  id: string;
+  instance_id: string;
+  chat_id: string;
+  message_id: string;
+  sender_phone: string;
+  sender_name: string;
+  sender_avatar_url?: string;
+  is_from_me: boolean;
+  is_group: boolean;
+  type:
+    | 'text'
+    | 'image'
+    | 'audio'
+    | 'video'
+    | 'document'
+    | 'sticker'
+    | 'location'
+    | 'contact'
+    | 'unknown';
+  content?: string;
+  delivery_status?: 'sent' | 'delivered' | 'read' | 'played' | 'failed';
+  media_url?: string;
+  media_id?: string;
+  media_mimetype?: string;
+  media_filename?: string;
+  media_status?:
+    | 'none'
+    | 'pending'
+    | 'downloading'
+    | 'processing'
+    | 'ready'
+    | 'failed'
+    | 'expired';
+  media_error?: string;
+  media_retry_count?: number;
+  quoted_message_id?: string;
+  timestamp: string;
+  created_at: string;
+}
+
+export interface MessageListResponse {
+  messages: Message[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface DeleteChatsResponse {
+  deleted_chats: number;
+  deleted_direct: number;
+  deleted_groups: number;
+  deleted_messages: number;
+}
+
+export interface CrmLead {
+  id: string;
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  status?: string | null;
+  classification?: string | null;
+  assigned_to?: string | null;
+  lead_score?: number | null;
+  qualification_score?: number | null;
+  budget?: number | null;
+  ai_next_action?: string | null;
+  ai_last_intent?: string | null;
+  property_id?: string | null;
+  preferences?: Record<string, unknown> | null;
+}
+
+export interface CrmTask {
+  id: string;
+  title: string;
+  due_at: string;
+  status: string;
+  kind: string;
+}
+
+export interface CrmProperty {
+  id: string;
+  title: string;
+  property_type?: string | null;
+  neighborhood?: string | null;
+  city?: string | null;
+  state?: string | null;
+  price?: number | null;
+  rental_value?: number | null;
+  images?: string[] | null;
+}
+
+export interface CrmContactResponse {
+  lead: CrmLead | null;
+  tags: string[];
+  assignee?: CrmAssignee | null;
+  tasks?: CrmTask[];
+  property?: CrmProperty | null;
+}
+
+export interface CrmAssignee {
+  id: string;
+  name: string;
+  email?: string;
+  role?: string;
+}
+
+export interface CrmAssigneesResponse {
+  users: CrmAssignee[];
+}
+
+export interface WhatsAppMediaUrlResponse {
+  id: string;
+  url: string | null;
+  status: string;
+  code?: string;
+  error?: string;
+  mime_type?: string;
+  filename?: string;
+  expires_in?: number | null;
+}
+
+export interface WhatsAppMediaRetryResponse {
+  id: string;
+  status: string;
+  retry_count: number;
+  message: string;
+}
+
+const LEGACY_MEDIA_PREVIEWS: Record<string, string> = {
+  '[image]': 'Imagem',
+  '[audio]': 'Audio',
+  '[video]': 'Video',
+  '[document]': 'Documento',
+  '[sticker]': 'Figurinha',
+  '[location]': 'Localizacao',
+  '[contact]': 'Contato',
+  '[unknown]': 'Mensagem',
+};
+
+export function normalizeMessagePreview(value?: string): string {
+  const clean = (value || '').trim();
+  if (!clean) return '';
+  return LEGACY_MEDIA_PREVIEWS[clean.toLowerCase()] || clean;
+}
+
+export function isTechnicalMediaPlaceholder(value?: string): boolean {
+  const clean = (value || '').trim().toLowerCase();
+  return Boolean(clean && LEGACY_MEDIA_PREVIEWS[clean]);
+}
+
+export function isSupportedChat(
+  chat: Pick<Chat, 'chat_jid' | 'is_group'>
+): boolean {
+  const jid = (chat.chat_jid || '').toLowerCase();
+  if (chat.is_group) return jid.includes('@g.us');
+  return jid.includes('@s.whatsapp.net') && Boolean(formatPhoneDisplay(jid));
+}
+
+export interface WhatsAppMediaStatusEvent {
+  message_id: string;
+  media_id?: string;
+  status:
+    | 'pending'
+    | 'downloading'
+    | 'processing'
+    | 'ready'
+    | 'failed'
+    | 'expired';
+  url?: string;
+  error?: string;
+}
+
+export interface WhatsAppMessageReceiptEvent {
+  instance_id: string;
+  chat_jid: string;
+  message_ids: string[];
+  status: 'sent' | 'delivered' | 'read' | 'played' | 'failed';
+  timestamp: string;
+}
+
+// ---- Instance API ----
+export const instanceApi = {
+  create: (name: string) =>
+    apiRequest<Instance>('/instances', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    }),
+
+  list: () => apiRequest<Instance[]>('/instances'),
+
+  get: (id: string) =>
+    apiRequest<Instance>(`/instances/${id}`, { instanceId: id }),
+
+  delete: (id: string) =>
+    apiRequest(`/instances/${id}`, { method: 'DELETE', instanceId: id }),
+
+  getQRCode: (id: string) =>
+    apiRequest<{ qr_code?: string; status: string; expires_at?: string }>(
+      `/instances/${id}/qrcode`,
+      { instanceId: id }
+    ),
+
+  requestPairingCode: (id: string, phone: string) =>
+    apiRequest<PairCodeResponse>(`/instances/${id}/pair-code`, {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+      instanceId: id,
+    }),
+
+  connect: (id: string) =>
+    apiRequest(`/instances/${id}/connect`, { method: 'POST', instanceId: id }),
+
+  logout: (id: string) =>
+    apiRequest(`/instances/${id}/logout`, { method: 'POST', instanceId: id }),
+
+  importHistory: (
+    id: string,
+    options: {
+      chat_limit?: number;
+      per_chat?: number;
+      since_days?: number;
+    } = {}
+  ) =>
+    apiRequest<HistoryImportResponse>(`/instances/${id}/import-history`, {
+      method: 'POST',
+      body: JSON.stringify(options),
+      instanceId: id,
+    }),
+};
+
+// ---- Chat API ----
+export const chatApi = {
+  list: (instanceId: string) =>
+    apiRequest<Chat[]>(`/chats?instance_id=${instanceId}`, { instanceId }),
+
+  ensureDirect: (
+    instanceId: string,
+    payload: { phone: string; name?: string }
+  ) =>
+    apiRequest<Chat>(`/chats/ensure?instance_id=${instanceId}`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      instanceId,
+    }),
+
+  deleteAll: (instanceId: string) =>
+    apiRequest<DeleteChatsResponse>(`/chats?instance_id=${instanceId}`, {
+      method: 'DELETE',
+      instanceId,
+    }),
+
+  markRead: (chatId: string, instanceId: string) =>
+    apiRequest(`/chats/${chatId}/read?instance_id=${instanceId}`, {
+      method: 'POST',
+      instanceId,
+    }),
+
+  updateContactName: (
+    chatId: string,
+    instanceId: string,
+    displayName: string
+  ) =>
+    apiRequest<Chat>(`/chats/${chatId}/contact?instance_id=${instanceId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ display_name: displayName }),
+      instanceId,
+    }),
+};
+
+export const crmContactApi = {
+  get: (phone: string) =>
+    callApi(
+      `/api/crm/whatsapp/contact?phone=${encodeURIComponent(phone)}`
+    ) as Promise<CrmContactResponse>,
+
+  assignees: () =>
+    callApi('/api/crm/whatsapp/assignees') as Promise<CrmAssigneesResponse>,
+
+  inboxContext: (phones: string[]) =>
+    callApi('/api/crm/whatsapp/inbox-context', {
+      method: 'POST',
+      body: JSON.stringify({ phones }),
+    }) as Promise<{
+      contacts: Record<
+        string,
+        {
+          lead_id: string;
+          assigned_to?: string | null;
+          is_mine?: boolean;
+          status?: string | null;
+          classification?: string | null;
+          lead_score?: number | null;
+          tags?: string[];
+        }
+      >;
+    }>,
+
+  link: (payload: {
+    phone: string;
+    name?: string;
+    chat_jid?: string;
+    source?: string;
+  }) =>
+    callApi('/api/crm/whatsapp/link-contact', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }) as Promise<CrmContactResponse>,
+
+  update: (payload: {
+    phone: string;
+    name?: string;
+    email?: string;
+    chat_jid?: string;
+    source?: string;
+  }) =>
+    callApi('/api/crm/whatsapp/contact-profile', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }) as Promise<CrmContactResponse>,
+
+  addTags: (payload: {
+    phone: string;
+    name?: string;
+    chat_jid?: string;
+    tags: string[];
+    source?: string;
+  }) =>
+    callApi('/api/crm/whatsapp/contact-tags', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }) as Promise<CrmContactResponse>,
+
+  markPriority: (payload: {
+    phone: string;
+    name?: string;
+    chat_jid?: string;
+    source?: string;
+  }) =>
+    callApi('/api/crm/whatsapp/priority', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }) as Promise<CrmContactResponse>,
+
+  transfer: (payload: {
+    phone?: string;
+    chat_jid?: string;
+    assigned_to?: string;
+    queue_id?: string;
+    name?: string;
+    source?: string;
+  }) =>
+    callApi('/api/crm/whatsapp/transfer', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }) as Promise<CrmContactResponse & { assignee?: CrmAssignee }>,
+
+  createTask: (payload: {
+    phone: string;
+    name?: string;
+    chat_jid?: string;
+    title?: string;
+    due_at?: string;
+    source?: string;
+  }) =>
+    callApi('/api/crm/whatsapp/task', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }) as Promise<CrmContactResponse & { task?: CrmTask }>,
+
+  updateTask: (taskId: string, status: 'pending' | 'completed') =>
+    callApi(`/api/crm/whatsapp/task/${taskId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }) as Promise<{ task: CrmTask }>,
+};
+
+// ---- Message API ----
+export const messageApi = {
+  list: (chatId: string, instanceId: string, limit = 50, offset = 0) =>
+    apiRequest<MessageListResponse>(
+      `/messages/${chatId}?instance_id=${instanceId}&limit=${limit}&offset=${offset}`,
+      { instanceId }
+    ),
+
+  send: (
+    chatId: string,
+    instanceId: string,
+    content: string,
+    type: string = 'text'
+  ) =>
+    apiRequest(`/messages/${chatId}/send?instance_id=${instanceId}`, {
+      method: 'POST',
+      body: JSON.stringify({ content, type }),
+      instanceId,
+    }),
+
+  sendMedia: async (
+    chatId: string,
+    instanceId: string,
+    file: File,
+    content = ''
+  ) => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const impersonatedOrgId = getImpersonatedOrgId();
+    const activeOrgId = !impersonatedOrgId
+      ? getActiveOrganizationId(session?.user?.id)
+      : null;
+    const tenantId = USE_DIRECT_WHATSAPP_API
+      ? impersonatedOrgId ||
+        activeOrgId ||
+        (await getTenantId(session?.user?.id))
+      : null;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('content', content);
+    formData.append('type', mediaTypeFromFile(file));
+
+    const cleanPath = `/messages/${chatId}/send-media?instance_id=${instanceId}`;
+    const res = await fetch(buildApiUrl(cleanPath, tenantId), {
+      method: 'POST',
+      headers: {
+        Authorization: session ? `Bearer ${session.access_token}` : '',
+        ...(impersonatedOrgId ? getImpersonationHeaders() : {}),
+      },
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: res.statusText }));
+      if (res.status === 401) {
+        logger.warn(
+          '[WhatsApp API] Falha 401 na midia. Servidor Node.js pode estar com a Service Role Key incorreta.'
+        );
+      }
+      throw new Error(error.error || `API Error: ${res.status}`);
+    }
+
+    return res.json();
+  },
+};
+
+export const mediaApi = {
+  getUrl: (mediaId: string, expiresInSeconds = 300) =>
+    apiRequest<WhatsAppMediaUrlResponse>(
+      `/media/${mediaId}/url?expiresInSeconds=${expiresInSeconds}`
+    ),
+
+  retry: (mediaId: string) =>
+    apiRequest<WhatsAppMediaRetryResponse>(`/media/${mediaId}/retry`, {
+      method: 'POST',
+    }),
+};
+
+export const accountApi = {
+  recoverOrg: async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const res = await fetch('/api/account/recover-org', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : {}),
+      },
+    });
+    const body = await res.json();
+    if (!res.ok)
+      throw new WhatsAppApiError(
+        body.error || 'Falha na recuperacao',
+        res.status,
+        body.code
+      );
+    return body as {
+      success: boolean;
+      message: string;
+      organization?: { id: string; name: string };
+      organization_id?: string;
+    };
+  },
+};
+
+// ---- Phone Utils ----
+export function formatPhone(number: string): string {
+  const cleaned = number.replace(/\D/g, '').replace(/^0+/, '');
+  if (cleaned.length === 10 || cleaned.length === 11) return `55${cleaned}`;
+  return cleaned;
+}
+
+export function isValidBrazilianPhone(number: string): boolean {
+  const normalized = formatPhone(number);
+  return (
+    normalized.startsWith('55') &&
+    (normalized.length === 12 || normalized.length === 13)
+  );
+}
+
+export function formatPhoneDisplay(phone: string): string {
+  const normalized = formatPhone(phone);
+  return isValidBrazilianPhone(normalized) ? `+${normalized}` : '';
+}
+
+export function formatPhoneFriendly(phone: string): string {
+  const normalized = formatPhone(phone);
+  if (!isValidBrazilianPhone(normalized)) return normalized;
+  return `+${normalized}`; // Exibição bruta padrão E.164, conforme solicitado
+}
+
+export function formatPhoneVisual(phone: string): string {
+  const normalized = formatPhone(phone).replace(/^55/, '');
+  if (!normalized) return phone;
+
+  // Format based on length (10 digits vs 11 digits)
+  if (normalized.length === 11) {
+    // 11 digits: +55 (XX) XXXXX-XXXX
+    return `+55 ${normalized.slice(0, 2)} ${normalized.slice(2, 7)}-${normalized.slice(7)}`;
+  } else if (normalized.length === 10) {
+    // 10 digits: +55 (XX) XXXX-XXXX
+    return `+55 ${normalized.slice(0, 2)} ${normalized.slice(2, 6)}-${normalized.slice(6)}`;
+  }
+
+  // Fallback to standard + if it doesn't match expected Brazilian lengths
+  return `+${formatPhone(phone)}`;
+}
+
+export function getDisplayName(
+  pushName: string | null,
+  number: string
+): string {
+  if (pushName && !isPlaceholderName(pushName)) return pushName.trim();
+  if (number) {
+    const cleaned = formatPhone(number);
+    if (isValidBrazilianPhone(cleaned)) return formatPhoneFriendly(cleaned);
+  }
+  return 'Contato sem telefone';
+}
+
+export function getChatDisplayName(
+  chat: Pick<Chat, 'name' | 'chat_jid' | 'is_group'>
+): string {
+  const richChat = chat as Partial<Chat>;
+  if (chat.is_group) return chat.name || 'Grupo';
+  if (richChat.display_name && !isPlaceholderName(richChat.display_name))
+    return richChat.display_name;
+  if (chat.name && !isPlaceholderName(chat.name)) return chat.name;
+  if (richChat.phone_display) return richChat.phone_display;
+  const phoneFromJid = getPhoneFromJid(chat.chat_jid);
+  return phoneFromJid || chat.name || 'Contato sem telefone';
+}
+
+export function getPhoneFromJid(jid: string): string {
+  if (
+    !jid ||
+    jid.includes('@g.us') ||
+    jid.includes('@lid') ||
+    jid.includes('@broadcast')
+  )
+    return '';
+  const raw = jid.split('@')[0]?.replace(/\D/g, '') || '';
+  return isValidBrazilianPhone(raw) ? formatPhoneFriendly(raw) : '';
+}
+
+function mediaTypeFromFile(file: File): string {
+  if (file.type.startsWith('image/')) return 'image';
+  if (file.type.startsWith('audio/')) return 'audio';
+  if (file.type.startsWith('video/')) return 'video';
+  return 'document';
+}
+
+export function isPlaceholderName(value?: string | null): boolean {
+  const clean = String(value || '').trim();
+  if (!clean) return true;
+  const lower = clean.toLowerCase();
+  if (
+    [
+      '~',
+      'me',
+      'contato sem telefone',
+      'telefone nao identificado',
+      'telefone não identificado',
+      'lead whatsapp',
+    ].includes(lower)
+  ) {
+    return true;
+  }
+  if (
+    /@(s\.whatsapp\.net|c\.us|g\.us|lid|broadcast)$/i.test(clean) ||
+    clean.includes('@lid')
+  )
+    return true;
+  const digits = clean.replace(/\D/g, '');
+  if (digits.length >= 2 && (/[-*•…]{2,}/.test(clean) || clean.includes('...')))
+    return true;
+  if (digits.length >= 8 && digits.length === clean.length) return true;
+  if (/^[A-Za-zÀ-ÿ]{1,3}$/.test(clean)) return true;
+  return false;
+}

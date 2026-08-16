@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>WooTech Imob</title>
+    <meta
+      name="description"
+      content="CRM imobiliario do ecossistema WooTech para operacao, captacao e crescimento."
+    />
+    <meta name="theme-color" content="#16a34a" />
+    <meta name="color-scheme" content="light" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="WooTech Imob" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="WooTech Imob" />
+    <meta name="msapplication-TileColor" content="#16a34a" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+    <link
+      rel="apple-touch-icon"
+      sizes="512x512"
+      href="/icons/icon-512x512.png"
+    />
+    <link rel="icon" type="image/svg+xml" href="/logo-wootech-imob.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap"
+      onload="
+        this.onload = null;
+        this.rel = 'stylesheet';
+      "
+    />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
+    <script>
+      (function () {
+        try {
+          const params = new URLSearchParams(window.location.search);
+          const utmData = {};
+          [
+            'utm_source',
+            'utm_medium',
+            'utm_campaign',
+            'utm_term',
+            'utm_content',
+          ].forEach(function (key) {
+            if (params.has(key)) {
+              utmData[key] = params.get(key);
+            }
+          });
+          if (Object.keys(utmData).length > 0) {
+            sessionStorage.setItem('utm_params', JSON.stringify(utmData));
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <style>
+      .visual-editor-active .opacity-0,
+      .visual-editor-active .invisible {
+        opacity: 1 !important;
+        visibility: visible !important;
+      }
+      .visual-editor-active .group-hover\:opacity-100 {
+        opacity: 1 !important;
+      }
+      .visual-editor-active .translate-y-4 {
+        transform: translateY(0) !important;
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #1e293b;
+        border-radius: 10px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #334155;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="/env-config.js"></script>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

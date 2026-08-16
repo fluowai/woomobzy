@@ -1,0 +1,209 @@
+.wootech-reference-screen {
+  --wootech-ink: #10221d;
+  --wootech-muted: #64706c;
+  --wootech-line: #e2e8e5;
+  --wootech-soft: #f5f8f6;
+  --wootech-green: #079455;
+  --wootech-green-dark: #063f31;
+  --wootech-green-soft: #eaf7f0;
+  color: var(--wootech-ink);
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+.wootech-reference-screen :is(h1, h2, h3) {
+  color: var(--wootech-ink);
+  letter-spacing: -0.025em;
+}
+
+.wootech-reference-screen :is(.bg-indigo-600, .bg-blue-600) {
+  background-color: var(--wootech-green) !important;
+}
+
+.wootech-reference-screen
+  :is(.hover\:bg-indigo-700:hover, .hover\:bg-blue-700:hover) {
+  background-color: #087747 !important;
+}
+
+.wootech-reference-screen :is(.text-indigo-600, .text-blue-600) {
+  color: var(--wootech-green) !important;
+}
+
+.wootech-reference-screen :is(.bg-indigo-50, .bg-blue-50) {
+  background-color: var(--wootech-green-soft) !important;
+}
+
+.wootech-reference-screen :is(.border-indigo-100, .border-blue-100) {
+  border-color: #cfe9dc !important;
+}
+
+.wootech-reference-screen :is(.shadow-sm, .shadow-md, .shadow-lg, .shadow-xl) {
+  box-shadow:
+    0 1px 2px rgb(16 34 29 / 0.04),
+    0 8px 24px rgb(16 34 29 / 0.035);
+}
+
+.wootech-reference-screen
+  :is(button, input, select, textarea, [role='button']) {
+  outline-color: var(--wootech-green);
+}
+
+.wootech-reference-screen button:focus-visible,
+.wootech-reference-screen [role='button']:focus-visible,
+.wootech-reference-screen input:focus-visible,
+.wootech-reference-screen select:focus-visible,
+.wootech-reference-screen textarea:focus-visible {
+  outline: 2px solid var(--wootech-green);
+  outline-offset: 2px;
+}
+
+.wootech-page-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.wootech-page-heading h1 {
+  margin: 0;
+  font-size: clamp(1.75rem, 2.4vw, 2.35rem);
+  font-weight: 760;
+  line-height: 1.1;
+}
+
+.wootech-page-heading p {
+  margin-top: 0.45rem;
+  color: var(--wootech-muted);
+  font-size: 0.9rem;
+}
+
+.wootech-breadcrumb {
+  display: flex;
+  gap: 0.55rem;
+  margin-bottom: 0.75rem;
+  color: var(--wootech-muted);
+  font-size: 0.78rem;
+}
+
+.wootech-breadcrumb strong {
+  color: var(--wootech-green);
+  font-weight: 650;
+}
+
+.wootech-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.wootech-primary-action,
+.wootech-secondary-action {
+  min-height: 42px;
+  border-radius: 9px;
+  padding: 0 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: 160ms ease;
+}
+
+.wootech-primary-action {
+  border: 1px solid var(--wootech-green);
+  background: var(--wootech-green);
+  color: white;
+}
+
+.wootech-primary-action:hover {
+  background: #087747;
+}
+
+.wootech-secondary-action {
+  border: 1px solid var(--wootech-line);
+  background: white;
+  color: var(--wootech-ink);
+}
+
+.wootech-secondary-action:hover {
+  background: var(--wootech-soft);
+}
+
+.wootech-status-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.wootech-status-card {
+  min-width: 0;
+  border: 1px solid var(--wootech-line);
+  border-radius: 12px;
+  background: white;
+  padding: 1rem;
+}
+
+.wootech-status-card > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.wootech-status-icon {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--wootech-green-soft);
+  color: var(--wootech-green);
+}
+
+.wootech-status-card strong {
+  display: block;
+  color: var(--wootech-ink);
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.wootech-status-card span {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--wootech-muted);
+  font-size: 0.72rem;
+}
+
+@media (max-width: 1100px) {
+  .wootech-status-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .wootech-reference-screen {
+    padding-inline: 0.25rem;
+  }
+  .wootech-page-heading {
+    flex-direction: column;
+  }
+  .wootech-action-row {
+    width: 100%;
+    justify-content: stretch;
+  }
+  .wootech-action-row > * {
+    flex: 1 1 auto;
+  }
+  .wootech-status-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 390px) {
+  .wootech-status-grid {
+    grid-template-columns: 1fr;
+  }
+}

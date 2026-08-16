@@ -1,0 +1,2 @@
+# Cloudflare Pages Redirects
+# Disabled because wrangler.json natively handles SPA routing with not_found_handling

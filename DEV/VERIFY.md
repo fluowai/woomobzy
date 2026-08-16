@@ -1,0 +1,590 @@
+# Verificação
+
+## 2026-08-15 — Agentes de IA autônomos e swarm operacional
+
+- `node --check` nos 8 arquivos JS alterados do runtime/API: **aprovado**.
+- ESLint focado em frontend, API, runtime e testes: **0 erros / 0 warnings**.
+- Testes focados de orquestração, guardrails e hardening: **15 aprovados**.
+- Suíte completa: **39 arquivos / 271 testes aprovados**, exit 0.
+- Build de produção: **aprovado**, 4.104 módulos transformados.
+- Smoke local em `http://localhost:3105/urban/ai-agents`: rota protegida redirecionou corretamente ao login e o console não registrou erro/warning. O fluxo autenticado não foi executado porque não havia sessão disponível e nenhum dado real foi criado.
+- `npm run type-check`: os erros introduzidos nos novos testes foram corrigidos; restaram apenas erros fora do escopo em `src/components/lease/LeaseDetail.tsx` para campos `pdf_url` e `invitation_url` de alterações paralelas já presentes no working tree.
+- Revisão de segurança final: sem P0/P1 bloqueador restante no escopo AI. Simulação isolada em sessão `sim-*` e com `allowSideEffects: false`; tools de escrita reservam a idempotência antes do efeito; agenda possui lock transacional no banco.
+- Migração aplicada no Supabase `db.agklraytctednncsncbd.supabase.co`: dry-run transacional aprovado, apply transacional aprovado e pós-flight aprovado.
+- Integração de banco: `appointment_conflict_blocked=true`, `tool_replay_blocked=true`, `cross_tenant_runtime_denied=true`, `service_role_runtime_access=true`, `rolled_back=true`.
+- Verificação operacional ainda necessária após reiniciar os serviços: atendimento real via WhatsApp/agenda com usuário autenticado.
+
+## 2026-08-14 — AI Agents: fix orchestrator creation and sub-agent selection navigation
+
+- **Sintoma**: o orquestrador não permite criar agentes, não abre o formulário (janela) e não deixa selecionar quais agentes fazem parte da orquestração.
+- **Causa raiz (3 bugs de navegação no frontend)**:
+  1. `views/AIAgents.tsx` — botão "Novo agente" no header chamava `startNew()` sem alternar `mainTab` para `'specialists'`. Se o usuário estava na aba "Swarms Autônomos" (default), o `SwarmBuilder` continuava renderizado e o formulário de criação/edição nunca aparecia.
+  2. `views/AIAgents.tsx` — `SwarmBuilder.onSelectAgent` usava `selectAgent()` que via para `view='dashboard'`. Clicar num orquestrador ou no link "Conectar especialistas" abria o **dashboard** em vez do **formulário de edição**, onde está a seção "Equipe de Especialistas (Swarm)" com os checkboxes para selecionar sub-agentes.
+  3. `views/AIAgents.tsx` — `startNew()` não recebia o tipo de agente como parâmetro, exigindo sets manuais de `draft.agent_type` nos callers.
+- **Fix aplicado**:
+  1. `startNew(type)` agora aceita `'orchestrator' | 'specialist'` (default `'orchestrator'`) e sempre chama `setMainTab('specialists')` — o formulário aparece independentemente da aba atual.
+  2. Nova função `editAgent(id)` que vai direto para `view='builder'` (formulário de edição) — usada pelo `SwarmBuilder.onSelectAgent`, que antes via para o dashboard.
+  3. `applyPreset()` também chama `setMainTab('specialists')` para robustez.
+  4. Botão "Novo agente" no header chama `startNew('orchestrator')` explicitamente.
+- **Evidência**:
+  - `npm run type-check` → **0 erros** ✓ (exit 0, sem output)
+  - `npx eslint views/AIAgents.tsx` → **0 erros, 0 warnings** ✓
+  - CI GitHub Actions (#1785 push): frontend build ✅, API build ✅, 256 testes ✅; única falha é `whatsapp-go` (Go build no `Dockerfile.whatsapp`, pré-existente e desrelacionada)
+  - Commit `c92099e` em `codex/main-whatsapp-media-hotfix` — push ✅
+- **Fluxo corrigido (validar no navegador)**:
+  1. Aba "Swarms" → clicar "Novo Orquestrador" → formulário aparece com seção Swarm visível ✅
+  2. Navegar para "Agentes Especialistas" → criar especialistas ✅
+  3. Voltar para aba "Swarms" → clicar no orquestrador ou "Conectar especialistas" → abre o **formulário de edição** com a lista de especialistas para selecionar ✅
+  4. Marcar especialistas → salvar → orquestrador com sub-agentes conectados ✅
+- **Arquivos alterados**: `views/AIAgents.tsx` (apenas frontend)
+- **Próxima ação (maestro)**: validar visualmente no navegador o fluxo completo de criar orquestrador + especialistas + conectar.
+
+## 2026-08-13 — Multi-tenant impersonation: meg admin → revenda → imobiliária — CORRIGIDO
+
+- **Sintoma**: meg admin impersonificando uma revenda e depois acessando uma imobiliária filha da revenda → redirecionado para `/admin` ou `/megaadmin` em vez de `/urban`/`/rural`.
+- **Causa raiz (7 fatores cumulativos)**:
+  1. `setUpImpersonationSession` (`AuthContext.tsx:562`) usava `fetch` raw sem incluir os headers de impersonificação atuais → servidor não sabia que havia sessão anterior → não revogava → sessão órfã.
+  2. `loadProfile` (`AuthContext.tsx:180-187`) limpava a sessão e setava `isImpersonating=false` em qualquer falha da query de organização → `getPanelHomePath` via para `/megaadmin`.
+  3. `NicheRedirect.tsx:44` usava apenas `opts?.isImpersonating` (React state) sem fallback `sessionStorage` → após reload, state ainda não hidratado → `/megaadmin`.
+  4. `App.routes.tsx:409` — rota `/superadmin` sem `<SuperAdminGuard>`.
+  5. `setUpImpersonationSession` não sincronizava `expiresAt` via `syncImpersonationSessionExpiry`.
+  6. Sem renovação proativa → sessão podia expirar silenciosamente entre navegações.
+  7. `handleCreateImpersonationSession` (`server/routes/admin.js`) não validava hierarquia nem revogava sessão anterior.
+- **Fix aplicado (working tree)**:
+  1. `AuthContext.tsx` (`setUpImpersonationSession`): inclui headers atuais; revoga sessão anterior (DELETE + retry em conflito); sincroniza expiry.
+  2. `AuthContext.tsx` (`loadProfile`): em falha da query de org, mantém `isImpersonating=true` (não limpa sessão).
+  3. `AuthContext.tsx`: novo `useEffect` de renovação proativa (5 min interval).
+  4. `NicheRedirect.tsx`: `getPanelHomePath` faz fallback para `getStoredImpersonationSession()`; se sessão ativa sem org carregada → `/admin` (força reload) em vez de `/megaadmin`.
+  5. `App.routes.tsx`: `<SuperAdminGuard>` adicionado em `/superadmin`.
+  6. `src/lib/impersonation.ts`: nova `shouldRenewImpersonationSession()`.
+  7. `server/routes/admin.js` (`handleCreateImpersonationSession`): valida hierarquia (filha da revenda); revoga sessão anterior; validação UUID.
+- **Evidência (estática)**:
+  - `npm run type-check` → **0 erros** ✓
+  - `npx eslint context/AuthContext.tsx components/NicheRedirect.tsx App.routes.tsx src/lib/impersonation.ts src/lib/api.ts server/routes/admin.js` → **0 erros, 0 warnings** ✓
+  - `node --check server/routes/admin.js` → **OK** ✓
+  - `npx vitest run src/test/impersonationSession.test.ts` → **6/6 testes aprovados** ✓
+- **Pendente (maestro)**: validar no navegador o fluxo completo (meg admin → revenda → imobiliária → voltar para a revenda). Commit + push a decidir.
+
+- **Fix**: `views/OkaPublicSite.tsx` e `src/views/sites/megainvestimentos/MegaTheme.tsx` deixam de usar imóveis hardcoded e carregam de `public_available_properties` via `get_tenant_public` (RPC com GRANT anon); `cities`/`propertyTypes` derivados dos dados; fallback de imagem para `HERO_IMAGE`.
+- **Evidência**: `npm run type-check` ✓ (0 erros).
+- **Pendente (maestro)**: validar no navegador `/site/okaimoveis` (ou domínio OKA) e `/megainvestimentos` que os imóveis reais aparecem com preço/cidade/imagem corretos; conferir se a org OKA (`okaimoveis`) tem imóveis com `status` público e `show_on_site`.
+
+## 2026-08-10 — Plano não setava / checkout 404 — prefixo duplicado em subscription ✓ (código)
+
+- **Causa**: `server/api/subscription/index.js` montava sub-routers com prefixo duplicado → rotas reais `/api/subscription/checkout/checkout`, `/api/subscription/status/status`, `/api/subscription/invoices/invoices`, `/api/subscription/cancel/cancel`; frontend chamava `/api/subscription/checkout` e `/api/subscription/invoices` (sem `Authorization`) → 404.
+- **Fix**: sub-routers montados sem prefixo (`router.use(checkoutRoutes)` etc.) → rotas em `/api/subscription/checkout|cancel|status|invoices|webhook/asaas`. `paymentService.ts` migrado de `fetch` para `callApi`.
+- **Evidência**: script estático de rotas montadas ✓ (paths corretos); `npm run type-check` ✓; eslint `server/api/subscription/index.js` + `services/paymentService.ts` ✓ (0 errors); vitest `src/test/subscriptionGuard.test.tsx` ✓ (1/1); vitest `server/__tests__/subscriptionSelection.test.ts` ✓ (1/1).
+- **Pendente (maestro)**: deploy; registrar/atualizar webhook Asaas para `/api/subscription/webhook/asaas`; teste de ponta a ponta selecionar plano → pagar → `subscription_status='active'`.
+
+## 2026-08-10 — Rotas de sistema no domínio do site → redirect ao platform_domain ✓ (código)
+
+- **Fix**: `DomainRouter.tsx` — rotas de painel (`/login`, `/urban`, `/admin`, ...) em tenant `site` com `platform_domain` → `window.location.replace('https://{platform_domain}{path}')`; `initialSystemPath` agora exige host de plataforma.
+- **Evidência**: `npm run type-check` ✓; eslint `components/DomainRouter.tsx` ✓ (0 errors); `npm run build` ✓. RPC `get_tenant_by_any_domain` já retorna `platform_domain` (org Delazari: `app.inovebrokers.com.br`).
+- **Pendente (maestro)**: deploy do frontend; validar `inovebrokers.com.br` → landing e `inovebrokers.com.br/login` → `app.inovebrokers.com.br/login`.
+
+## 2026-08-10 — inovebrokers.com.br servindo "Em breve" em vez da landing Delazari — corrigido ✓
+
+- **Causa**: org Delazari (`e2403fc5`, `is_reseller: true`, slug com espaço final) sem `landing_pages`/`site_settings` → `PublicLandingPage` caía em `ComingSoon`. `RevendaDelazari` não estava mapeada no roteamento público.
+- **Fix**: `PublicLandingPage.tsx` → `isDelazariSite` (casa por `custom_domain` `inovebrokers.com.br`/slug trim/`activeSlug`) renderiza `<RevendaDelazari />`.
+- **Evidência**: DNS A ✓ (207.58.153.219); HTTPS 200 servindo SPA; RPC `get_tenant_by_any_domain('inovebrokers.com.br')` → org Delazari `domain_type=site`; `get_tenant_public('Delazari Imóveis ')` (com espaço) → org encontrada. `type-check` ✓; eslint ✓ (0 errors); `build` ✓.
+- **Pendente (maestro)**: deploy do frontend para validar a landing ao vivo.
+
+## 2026-08-10 — Superadmin de revenda → painel errado (Mega em vez de Super) ✓
+
+- **Causa**: `AuthContext.tsx:241` carregava `organization` apenas para não-superadmin → `profile.organization` `undefined` para superadmin → `NicheRedirect.tsx:47`/`MegaAdminGuard`/`MegaAdminLayout:69` não enxergavam `is_reseller`.
+- **Fix**: org agora carregada para qualquer perfil com `organization_id`, inclusive superadmin.
+- **Evidência**: `suporte@alexandredelazari.com.br` = role `superadmin`, org `Delazari Imóveis` com `is_reseller: true` (via service role) → após fix roteia para `/superadmin`. Superadmin sem org (mega admin) segue em `/megaadmin`. `type-check` ✓; eslint ✓ (0 errors).
+- **Pendente (maestro)**: deploy do frontend e validação com login real.
+
+## 2026-08-10 — WhatsApp "no LID found" no envio — fix definitivo ✓
+
+- **Causa**: whatsmeow exige LID para DM (`send.go:329-352`); `GetLIDForPN` vazio + `GetUserInfo` full sem LID → `no LID found` → 400. `IsOnWhatsApp` (usync query) aquece o store (`PutManyLIDMappings`) mas só era chamado no `EnsureDirectChat`.
+- **Fix**: `whatsapp-service/internal/whatsapp/media.go` → `Client.ResolveSendJID` (resolve LID via store + `IsOnWhatsApp` para PN canônico) aplicado em `SendTextMessage` e `SendMediaMessage`; exe rebuildado e commitado.
+- **Evidência**: `go build` ✓, `go vet` ✓, `go test ./...` ✓ (cmd/server, handlers, whatsapp, phone) — via cópia ASCII `Temp\opencode\wasvc-lidwarm`.
+- **Commit**: `fb9f623` (enviado p/ `codex/main-whatsapp-media-hotfix`).
+- **Pendente (maestro)**: reimplantar `whatsapp-service` em produção e validar envio ao número antes com LID ausente.
+
+## 2026-08-10 — CI PR #1752 — teste licensing timeout ✓
+
+- **Causa**: `licensing-admin-service.test.ts:813` fazia `dns.lookup` real (timeout 8s) → >5s no GitHub Actions → Vitest timeout.
+- **Fix**: mock de `node:dns/promises` no teste (`dnsVerified: false` preservado).
+- **Evidência**: `npm test` ✓ 36 arquivos / 256 testes. Commit `6bbd26b`, push ✓.
+- **Pendente**: revisão/rebase da PR pelo maestro.
+
+## 2026-08-10 — Sync working tree ✓
+
+- Commit `7b40813` (127 arquivos) + push. Arquivos com secrets (`stack-wootech-imob-prod-portainer.yml`) e temp scripts (`.tmp-*.mjs`) adicionados ao `.gitignore` — nunca serão commitados.
+
+## 2026-08-09 — Wizard de Locação: auto-save 400 "Dados inválidos" — corrigido ✓
+
+- **Causa**: `PUT /api/locacao/leases/:id` recebia o `lease` inteiro com `null`/`""`/`NaN`/`due_day: 0`; schema zod rejeitava (`.optional()` não aceita `null`/`""`).
+- **Fix**: `server/api/locacao/lease.routes.js` → `normalizeLeasePayload` (drop de null/undefined/NaN/strings vazias/due_day 0) em POST e PUT; `useLeaseWizard.ts` → removido `setInterval` duplicado.
+- **Evidência**: `node --check` ✓; teste node do normalizador ✓ (PASS — valores inválidos removidos, `co_tenants: []`/válidos preservados); `npm run type-check` ✓ (exit 0); `npm run lint` ✓ (0 errors, warnings pré-existentes não relacionados).
+- **Pendente (maestro)**: reiniciar backend (3006) para carregar o fix; validar wizard ao vivo. Nenhum commit/push.
+
+## 2026-08-09 — Email Center: diagnóstico do 400 + fix de crash TLS ✓
+
+- **Causa do 400**: servidor de e-mail rejeita as credenciais (`AUTHENTICATIONFAILED` / `535`), confirmado por teste direto com imapflow/nodemailer contra `mail.wootech.com.br` (993, 143 e 465), usuário `paulo@wootech.com.br` e `paulo`. Não é o app.
+- **Fix aplicado** (`server/services/email/emailService.js`): `createImapClient` com `client.on('error', () => {})` (evita crash por `ERR_TLS_CERT_ALTNAME_INVALID` não tratado na porta 143/STARTTLS); `testEmailConnection` fecha IMAP em falha e SMTP em `finally`.
+- **Evidência**: `node --check` ✓; `npx eslint server/services/email/emailService.js` ✓ (exit 0); re-teste dos cenários → erro limpo, processo sobrevive (antes: crash na 143).
+- **Pendente (maestro)**: reiniciar backend (3002) p/ carregar o fix; validar reautenticação com senha correta da caixa. Nenhum commit/push.
+
+## 2026-08-08 — DNO: migration APLICADA em produção + verificação REST (anon) ✓
+
+- **Aplicação**: `migrations/20260808_property_owner_dno.sql` executada em produção `epgaftsjmqmpczvzsrcc` via `exec_sql` → **9/9 statements OK** (roles normalizadas p/ `'Proprietário'`, índice `idx_properties_owner_id`, view `public_available_properties` criada + GRANT anon/authenticated, DROP da policy `"Public read available properties"`, REVOKE SELECT anon em `properties`).
+- **Correção**: bloco de RLS na view removido do arquivo (Postgres não suporta RLS em views); controle de acesso = GRANT + projeção de vitrine + filtro de status.
+- **Verificação real via REST (cliente anon, como os sites públicos usam)**:
+  - `GET /rest/v1/public_available_properties?select=id,title,owner_id,owner_info` → **400** `column public_available_properties.owner_id does not exist` → **anon NÃO vê dados de dono** ✓
+  - `GET /rest/v1/public_available_properties?select=id,title,price,status` → **200**, 366 imóveis → vitrine pública intacta ✓
+  - `GET /rest/v1/properties?select=id,title` (anon) → **401** `permission denied for table properties` → REVOKE aplicado ✓
+- **Pendente (maestro)**: validar acesso autenticado (org vê seus imóveis; outra org não vê) e UI ponta a ponta (cadastro imóvel com DNO, locação com prefill). Nenhum commit/push.
+
+## 2026-08-08 — DNO do Imóvel: Fases 1-3 + hardening anti-vazamento público — gates verdes (parcial)
+
+- **Escopo**: `migrations/20260808_property_owner_dno.sql` (nova), `scripts/run-migrations.mjs`, `services/properties.ts`, `types/property.ts`, `views/PropertyEditor.tsx`, `services/sites.ts`, `services/landingPages.ts`, `views/LandingPage.tsx`, `views/FazendasBrasilPublicSite.tsx`, `src/components/lease/steps/StepProperty.tsx`, `StepOwnerData.tsx`.
+- **Hardening público**: 4 consumidores públicos trocados para a view `public_available_properties` (`sites.ts:345`, `landingPages.ts:244`, `LandingPage.tsx:201`, `FazendasBrasilPublicSite.tsx:557`). Auditado: nenhum `.from('properties').select('*')` público restante (demais são views autenticadas do CRM); `OkaPublicSite` usa array hardcoded (sem DB).
+- **Fase 2**: `PropertyEditor.tsx` grava `owner_id` via create-or-resolve em clients (busca por doc → cria com roles `['Proprietário']`); `mapToDatabase`/`mapToModel` mapeiam `owner_id`.
+- **Fase 3**: `StepProperty.tsx` pré-preenche `owner_*` ao selecionar imóvel (`property.owner_id → clients`); `StepOwnerData.tsx` mostra aviso quando `owner_id`.
+- **Evidência (estática)**: `npm run type-check` exit 0 ✓; eslint nos arquivos alterados 0 erros (warnings pré-existentes em `PropertyEditor`/`sites.ts`/`landingPages.ts`) ✓; `npm run build` ✓ (~2m33s, inclui chunks `PropertyEditor-*.js`, `Locacao-*.js`).
+- **NÃO verificado ainda**: migration aplicada em dev/prod (pendente `exec_sql` — obrigatória junto do código, senão os sites públicos quebram pois a policy anon foi dropada + REVOKE); testes RLS anon/org (Fase 4); UI ponta a ponta (cadastro com DNO novo/existente, locação). Nenhum commit/push executado.
+
+## 2026-08-08 — Agentes IA: guardrails só com agente ativo + prompt grande + swarm compartilhado — gates verdes
+
+- **Escopo**: `server/lib/AIAutomation.js`, `server/services/ai/agentOrchestrator.js`, `server/api/ai/helpers.js`, `components/agents/AgentForm.tsx`, `views/AIAgents.tsx`, `services/aiAgents.ts`.
+- **Guardrail condicionado**: os 4 redirecionamentos de guardrail em `handleWhatsAppMessage` (rate limit, conteúdo sensível, desvio de assunto, fora de contexto imobiliário) agora retornam `skipped` **sem reply** quando `!agent`. Antes respondiam "só ajudo com imóveis" mesmo sem agente ativo conectado.
+- **Prompt grande**: "Instruções operacionais (prompt)" em `AgentForm.tsx` em largura total (`lg:col-span-2`), `min-h-72`, `resize-y`.
+- **Swarm compartilhado**: campo `share_prompt_with_subagents` (tipo `AIAgent`, `views/AIAgents.tsx`, `AgentForm.tsx`) + refactor em `agentOrchestrator.js` (`_runReActLoop`, `_loadSubAgents`, `_detectSpecialist` score≥2, `_delegateToSpecialist`) para delegar ao especialista com prompt compartilhado + histórico da mesma conversa. Persistência via `handoff_rules.__operational360` (`agent_type`, `sub_agents`, `share_prompt_with_subagents`) em `helpers.js`, hidratados por `_loadActiveAgent`/`hydrateAgent`.
+- **Evidência (estática)**: type-check exit 0; eslint 0 erros/0 warnings nos arquivos front alterados; `node --check` OK em `agentOrchestrator.js`, `helpers.js`, `AIAutomation.js`; build Vite ✓ (1m7s).
+- **Pendente (maestro)**: validação visual — orquestrador com compartilhamento de prompt + especialistas conectados, chat acionando o especialista na mesma conversa, e conferir que sem agente ativo não há resposta de guardrail. Nenhum commit/push executado.
+
+## 2026-08-08 — Aba Relatórios reescrita (ReportsCenter) — gates verdes
+
+- **Escopo**: `/urban/reports` (BIUrbano) e `/rural/reports` (BIRural) agora renderizam `views/ReportsCenter.tsx` (prop `mode`) com 5 tipos de relatório: Visão Geral, Comercial, Leads & Funil, Corretores e Locação.
+- **Dados reais**: `properties`, `leads`, `profiles`, `lead_activities` e `rental_contracts` via Supabase (RLS tenant por `organization_id`), com `.limit(100000)` (o default de 1000 do PostgREST truncava as contagens nos BIs antigos). Nicho filtrado por `isRuralProperty`/`isUrbanProperty` e `match_profile`.
+- **Evidência (estática)**: type-check exit 0; eslint 0 erros/0 warnings nos 3 arquivos; build Vite ✓ (chunk `ReportsCenter-*.js`). Ranking de corretores usa `leads.assigned_to`/`profiles.role !== 'superadmin'` (endpoint backend antigo usava `broker_id`/role `BROKER`, inexistentes).
+- **Fix de gate pré-existente**: `src/components/lease/steps/StepProperty.tsx` importava `../../../services/properties` (inexistente) → corrigido para `../../../../services/properties`.
+- **Pendente (maestro)**: validação visual com login real (abas, filtro de período, exportar CSV/PDF) antes de commit/push. Nenhum commit/push executado.
+
+## 2026-08-08 — Seletor de imóvel no contrato de locação (RLS de properties sem policies)
+
+- **Sintoma**: etapa "Selecionar Imóvel" do wizard de locação (`StepProperty.tsx`) listava vazio com imóveis cadastrados.
+- **Causa raiz (confirmada)**: `properties` com RLS habilitado e **nenhuma policy** (`pg_policies` → `[]`); 366 imóveis com status `Disponível` invisíveis para `anon`/`authenticated` via PostgREST (REST anon → `[]`).
+- **Fix aplicado em produção** (`epgaftsjmqmpczvzsrcc`): `migrations/20260808_fix_properties_rls_missing_policies.sql` → 2/2 policies criadas e verificadas em `pg_policy` ("Tenant isolation properties" authenticated + "Public read available properties" anon).
+- **Evidência**: REST anon `GET /rest/v1/properties` retornava `[]` antes e agora retorna imóveis; grants `authenticated` (SELECT/INSERT/UPDATE/DELETE) presentes; todos os imóveis têm `organization_id` (policy tenant resolve por org).
+- **Gates**: aplicação + verificação contra o banco de produção; nenhuma mudança de código frontend.
+- **Pendente (maestro)**: validar no navegador a etapa "Selecionar Imóvel" do wizard de locação; depois decisão de commit/push.
+
+## 2026-08-08 — RLS do módulo urban alinhada ao padrão CRM (fix do 403 no Simulador/Fintech)
+
+- **Sintoma**: superadmin impersonando org (`91b29fed` — Enzo Imoveis) → `POST /rest/v1/urban_financing_simulations` → **403** ao salvar simulação no `/urban/simulador` (e `/urban/fintech`).
+- **Causa raiz (confirmada em `pg_policy`)**: as tabelas do módulo urban usavam `organization_id IN (SELECT organization_id FROM profiles WHERE id = auth.uid())` — quando o superadmin impersona, o frontend envia o `organization_id` da org impersonada, mas o `auth.uid()` real é o superadmin (outra org) → WITH CHECK bloqueia o INSERT. Tabelas CRM já usam `get_my_org_id() OR is_superadmin()`.
+- **Fix aplicado em produção** (`epgaftsjmqmpczvzsrcc`): `migrations/20260808_fix_urban_module_rls_superadmin.sql` via `exec_sql` → **20/20 statements OK** (helpers `get_my_org_id`/`is_superadmin` garantidos + 9 policies recriadas com `USING`/`WITH CHECK` no padrão CRM).
+- **Evidência (SQL direto `pg_policy`)**: 9/9 policies do módulo urban com `is_superadmin()` em USING e WITH CHECK: `urban_lots`, `key_control`, `condominiums`, `condominium_tickets`, `urban_documents`, `urban_portal_integrations`, `urban_portal_sync_logs`, `urban_financing_simulations`, `urban_property_favorites`.
+- **Gates**: aplicação + verificação contra o banco de produção; `node --check scripts/run-migrations.mjs` ✓.
+- **Pendente (maestro)**: validar no navegador `/urban/simulador` (Salvar simulação) e `/urban/fintech` em sessão impersonada; depois decisão de commit/push.
+
+## 2026-08-07 — WhatsApp Inbox: constraints UNIQUE adicionadas em produção (fix do 42P10)
+
+- **Sintoma**: instância conectada + WS realtime OK, mas nenhuma mensagem aparecia no front.
+- **Causa raiz (confirmada no banco)**: `whatsapp_chats`, `whatsapp_contacts`, `whatsapp_messages` **sem nenhuma** constraint UNIQUE em `pg_constraint` (`[]`) → `ON CONFLICT` dos repos → SQLSTATE 42P10 (`Failed to upsert contact/chat` em `whatsapp-service/run_stderr.txt`) → `handleMessage` abortava antes de salvar/emitir `new_message`.
+- **Fix aplicado em produção** (`epgaftsjmqmpczvzsrcc`): `migrations/20260807_add_whatsapp_upsert_constraints.sql` via conexão direta em transação → **OK** (migration rodou; tabelas estavam vazias, dedup defensivo incluso).
+- **Evidência (SQL direto)**:
+  - `pg_constraint` → 3/3 presentes: `whatsapp_chats_instance_chat_jid_key UNIQUE(instance_id, chat_jid)`, `whatsapp_contacts_instance_phone_key UNIQUE(instance_id, phone)`, `whatsapp_messages_instance_message_id_key UNIQUE(instance_id, message_id)`.
+  - Teste transacional (ROLLBACK) dos upserts exatos de `chat_repo.go`/`contact_repo.go`/`message_repo.go` → **sem 42P10**.
+  - Duplicatas/nulls antes do fix: `0` linhas nas 3 tabelas (sem backfill necessário).
+- **Gates**: aplicação + verificação feitas contra o banco de produção; nenhuma mudança de código (fix é só schema).
+- **Pendente (maestro)**: mensagem de teste real na instância conectada → conferir que aparece no inbox em tempo real; acompanhar `run_stderr.txt` por novos 42P10.
+
+## 2026-08-07 — RPC `match_properties_to_lead` corrigida e APLICADA em produção
+
+- **Sintoma**: `POST /rest/v1/rpc/match_properties_to_lead` → **400** ao abrir a aba "Matches" do LeadDetailsModal.
+- **Causa raiz (confirmada no banco)**: a função referenciava `p.bedrooms`/`p.area` — colunas que **não existem** em `properties` (imóvel rural: `total_area_ha`, `area_total_ha`, `features->>'areaHectares'`). Além disso, retornava `id`/`match_score`, enquanto o frontend consome `property_id`/`score`/`reasons`.
+- **Fix aplicado em produção** (`epgaftsjmqmpczvzsrcc`): `migrations/20260807_fix_match_properties_to_lead.sql` via conexão direta → **MIGRATION APPLIED OK** (DROP + CREATE com retorno novo; `NOTIFY pgrst, 'reload schema'`).
+- **Evidência (SQL direto)**:
+  - Assinatura: `lead_id uuid, max_results integer` → `TABLE(property_id uuid, title text, property_type text, price numeric, area numeric, address text, neighborhood text, city text, state text, status text, score numeric, reasons text[])`.
+  - Chamada com lead real (`8ff3e48a-...`) → **1 linha, sem erro**: `{ property_id, title: "imovel sao jose", price: 1500, city: "São José", state: "Santa Catarina", score: 50, reasons: ["Dentro do orçamento", "Área compatível"] }`.
+  - Schema validado via `information_schema` antes do fix (colunas `properties`: id, organization_id, title, price, property_type, status, total_area_ha, area_total_ha, city, state, address, neighborhood, features; SEM bedrooms/area).
+- **Gates**: `npm run type-check` ✓; body da função validado por execução real no banco.
+- **Pendente**: validação no navegador autenticado da aba "Matches" (lista com score/reasons); conferir se o lead tem `organization_id` com imóveis para ver mais de 1 resultado.
+
+## 2026-08-07 — Fix do 502 do Instagram na aba Mensagens (local, verificado por HTTP)
+
+- **Estado final**: backend Node (3002, PID 6704, `--env-file=.env`) + `instagram-service` (3200, PID 3896) + Vite (3006) no ar.
+- **Causas**: env desatualizado no processo backend (iniciado antes do `.env` com `INSTAGRAM_SERVICE_URL=http://127.0.0.1:3200`) e proxy `/api/instagram` sem `pathRewrite` (enviava `/conversations`; serviço espera `/api/instagram/conversations`).
+- **Fix**: `server/api/instagram/index.js` com `pathRewrite: rewriteInstagramPath` (preserva `/api/instagram` e mantém `/api/instagram/ws` no upgrade).
+- **Evidência**: `node --check server/api/instagram/index.js` OK; `GET http://127.0.0.1:3002/api/instagram/conversations` → **401** (antes 502/404); `GET http://127.0.0.1:3006/api/instagram/conversations` (via Vite) → **401** (requer token — caminho e conectividade confirmados).
+- **Pendente**: validação no navegador autenticado (`200` esperado) e WS `/api/instagram/ws`; replicar o fix no deploy de produção do `api`.
+
+## 2026-08-07 — "Em breve" personalizado por revenda: RPC APLICADA e VERIFICADA em produção
+
+- **RPC aplicada em produção** (`epgaftsjmqmpczvzsrcc`) via `exec_sql` (service role): `migrations/20260807_reseller_branding_rpc.sql` → **5/5 statements OK**.
+- **Verificação REST anon**:
+  - `get_reseller_branding {"slug_input":"lalbero"}` → retorna a revenda Delazari (`e2403fc5...`, `primary_color=#064e3b`, `secondary_color=#d4af37`, `logo_url=null`) — cliente `lalbero` tem `parent_id` = Delazari.
+  - `get_reseller_branding {"slug_input":"okaimoveis"}` → `Object[]` vazio (HTTP 200) — cliente sem revenda → página mantém o padrão WooTech Imob.
+- **Código**: `components/ComingSoon.tsx` (prop `resellerBranding`; logo/nome da revenda no rodapé + cores via CSS vars `--cs-*`; fallback WooTech Imob) e `views/PublicLandingPage.tsx` (carrega `get_reseller_branding`).
+- **Evidência local**: `npm run type-check` OK; eslint dos 2 arquivos OK (0 erros; 3 warnings pré-existentes em PublicLandingPage).
+- **Build BLOQUEADO por WIP de outra sessão**: `components/RuralLayout.tsx` declara `isWorkspaceRoute` 2x (linhas 61 e 156) — arquivo não tocado nesta tarefa; não corrigir sem alinhar com a sessão dona.
+- **Risco restante**: `logo_url` da Delazari é `null` (fallback para `logo-wootech-imob.svg`); contraste do botão com cores claras de revenda a validar visualmente.
+
+## 2026-08-07 — QR do WhatsApp fora do DevTools (DOM/API) — verificado em build/testes
+
+- **F12 antes**: `QRCodeModal.tsx` usava `QRCodeSVG` (qrcode.react) → o token de pareamento cru virava `<path>` no DOM (selecionável/copiável); `GET /api/whatsapp/instances` retornava o `qr_code` persistido; `GET /instances/:id` do Go também.
+- **Depois**: `QRCodeCanvas` (apenas pixels no canvas, token só em memória React); listagem do Node sem `qr_code`; Go `Instance.QRCode` `json:"-"`.
+- **Evidência**: `npm run type-check` OK; eslint 0 erros (1 warning pré-existente); vitest 36 arquivos / 254 testes OK; `node --check` OK; Go `go build ./...` + `go vet` + `go test ./internal/{handlers,whatsapp,models}` OK (build via cópia ASCII em temp).
+- **Limitação documentada**: a aba Network ainda mostra o token no endpoint `/instances/:id/qrcode` e nos frames WS `qr_code` durante o pareamento ativo. Solução 100% = gerar a imagem do QR no servidor (proposta, não implementada).
+
+## 2026-08-07 — Fix do 400 em UserManagement (coluna `approved` + RLS de admin) — APLICADO e VERIFICADO em produção
+
+- **Causa confirmada por código**: `views/admin/UserManagement.tsx` envia `{ approved }`/`{ role }` via `supabase.from('profiles').update(...)`; nenhum schema do repo tinha `approved` em `profiles` → PATCH 400 do PostgREST (coluna inexistente) dispara `Error updating user` (logger.ts:101).
+- **RLS original**: única policy de UPDATE self-only (`auth.uid() = id`) + `"Profiles isolation"` FOR ALL (WITH CHECK implícito = USING) que deixava qualquer membro da org alterar role (inclusive para `superadmin`).
+- **Migration** `migrations/20260807_fix_admin_approved_column_rls.sql`: 1) `ADD COLUMN approved` + backfill `true`; 2) helper `is_org_admin()` SECURITY DEFINER; 3) policy FOR UPDATE (admin/superadmin da org; bloqueia escalada a `superadmin`); 4) hardening da `"Profiles isolation"` com WITH CHECK (role privilegiado só gravável por admin/superadmin).
+- **APLICADA em produção** via `exec_sql` (service role): 2ª execução **7/7 statements OK** (1ª execução falhou 2: `UPDATE` sem WHERE — guarda do `exec_sql` — e `NEW.role` inexistente em policy RLS; corrigidos para `WHERE approved = false` e coluna direta `role`).
+- **Verificação pg direto**: `has_approved_col=1`, `approved_true=19`, `approved_false=0`, `has_fn=1`, `has_policy=1`. `pg_policies` confirma USING/WITH CHECK das policies.
+- **Simulação RLS (transações revertidas, como `authenticated` com JWT do admin)**: admin→org `approved=true` rowCount **1**; escalada broker→`superadmin` **BLOQUEADA** (RLS error); promoção broker→admin rowCount **1**; mudança de nome rowCount **1**. ROLLBACK OK — apenas a migration persistiu.
+- `scripts/run-migrations.mjs` com a migration na lista canônica; `node --check` OK. Sem mudança TS. Sem commit/push.
+
+## 2026-08-06 — Domínios InoveBrokers: RPC aplicada em produção + stack atualizada
+
+- Probes externas antes do fix: `https://inovebrokers.com.br` e `https://app.inovebrokers.com.br` → HTTPS com `CN=TRAEFIK DEFAULT CERT` (verify return code 18, self-signed) e HTTP 404 (`curl -k`). DNS A OK → 207.58.153.219 nos 2.
+- Banco (pg direto, read-only): org `e2403fc5-fabd-4715-a6e6-eae5d0603106` "Delazari Imóveis" (`is_reseller=true`, `custom_domain=inovebrokers.com.br`, `platform_domain=app.inovebrokers.com.br`); `domains` com `purpose site/panel`, `status=pending_ssl`. RPC `get_tenant_by_any_domain` **ausente** em `pg_proc` (só `get_tenant_public`).
+- **Aplicado em produção**: `sql/rpc_get_tenant_by_any_domain.sql` via `exec_sql` (service role) → **2/2 statements OK (204)**. Pós-verificação:
+  - `pg_proc` → `get_tenant_by_any_domain(domain_input text)` presente.
+  - REST (anon key) `rpc/get_tenant_by_any_domain` `{"domain_input":"inovebrokers.com.br"}` → `domain_type=site`, org Delazari; `app.inovebrokers.com.br` → `domain_type=platform`.
+- Repo (working tree, sem commit do WIP de outras sessões): `scripts/run-migrations.mjs` ganhou `'sql/rpc_get_tenant_by_any_domain.sql'` na lista canônica (idempotente — `create or replace`); `stack-wootech-imob-prod.yml` imagem da API `e7d546b...` → `5daaa4a05b3d9f85556d4c41b1d23b655e44bfa7` (alias CI, aponta para build `b79058d` com o fix). YAML parseado (js-yaml): 5 serviços, `api` com `volumes: [/var/run/docker.sock:/var/run/docker.sock]`. `node --check scripts/run-migrations.mjs` OK.
+- CI: último run do workflow "Docker Images" na branch `codex/main-whatsapp-media-hotfix` (head `b79058d`) → **completed/success** — imagem com provisionamento Docker nativo já publicada (`latest` + alias `5daaa4a...`).
+- **Gate de runtime PENDENTE (VPS/Portainer)**: redeploy da stack `wootech-imob-prod` com a imagem nova (alias/latest) + `docker.sock` montado no `api`; depois `curl -I https://inovebrokers.com.br` / `https://app.inovebrokers.com.br` = 200 e `openssl s_client` com CN Let's Encrypt. O boot da API roda `syncRegisteredDockerDomains` (`server/index.js:407`) e provisiona os routers dos 2 domínios automaticamente.
+- Sem commit/push da doc (WIP de outras sessões no working tree — conferir `git status`). Token GitHub usado nesta sessão deve ser rotacionado.
+
+## 2026-08-06 — Rotação de credenciais RabbitMQ + stack de produção (erro "Too short cookie string")
+
+- `docker-compose.yml` / `portainer-stack-imobfluow-filled-compose.yml` / `stack-wootech-imob-prod.yml`: cookie `LE58zns01Mw7CVJxaHRNhpk9crIeoZ3BdguFXtm4yQOvUGKq` (48 chars) e `RABBITMQ_DEFAULT_PASS` `RbIe1a7l2KJ43SHYuXcFQ6U9LB` (24 chars); `RABBITMQ_URL` em `api` atualizado para a nova senha.
+- Diff automatizado campo-a-campo entre `stack-wootech-imob-prod.yml` e `docker-compose.yml`: chaves sensíveis (Supabase anon/service-role/JWT, MINIO access/secret, WhatsApp tokens, GROQ, RABBITMQ_URL) com valores idênticos — diferenças só de aspas simples vs duplas.
+- `portainer-stack-wootech-public.yml`: cookie de fallback atualizado; senha/usuário permanecem via variáveis (não fixa).
+- Gate de runtime pendente (Docker indisponível nesta máquina Windows): `docker compose config` e re-subir `rabbitmq` no VPS validando `rabbitmq-diagnostics -q ping`.
+- Pendência VPS: remover `rabbitmq_data_v4` (uma vez), `docker compose up -d rabbitmq`, conferir logs sem `auth`/`badmatch`. Cookie está fora do volume (monta só `mnesia`), recriar container resolve.
+- Sem commit/push/deploy.
+
+## 2026-08-05 — Change set: MinIO dentro da stack — FRESH START (MinIO novo)
+
+- YAML validado com `js-yaml` (Node): `docker-compose.yml`, `portainer-stack.yml`, `portainer-stack-imobfluow-filled.yml` parseiam sem erro; serviços incluem `minio` e `minio-init`; volume `minio_data` declarado nos 3.
+- Entrypoint do `minio-init` revisado (renderizado do YAML): retry de até 120s no `mc alias set`, `mc mb --ignore-existing` nos 7 buckets, policy `imobzy-rw` (s3:_ em `imobzy_`), `mc admin user add`+ attach com`|| true`(idempotente).`$$` preserva `$` literal para o shell do container após interpolação do Compose.
+- Revisão do contrato de código (sem mudança): `server/lib/minio-storage.js` `normalizeEndpoint` mantém `http://minio:9000` e usa `MINIO_PUBLIC_URL` para a URL pública; `whatsapp-service` `config.go`/`media.go` derivam `secure=false` de `http://`. Ambos passam a apontar para a rede interna após o deploy.
+- Root creds do MinIO **embutidas** no YAML (`wootechadmin` / `<minio-root-password>`) nas 3 stacks (serviço `minio` e `minio-init`) — nenhuma variável a definir no Portainer; `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` sem placeholder restante (grep confirmou).
+- Docker indisponível nesta máquina Windows: `docker compose config` não executado (gate a rodar no servidor).
+- Pendência runtime (no VPS/Portainer): `docker stack rm minio`, update do stack principal, setar root creds novas, verificar `http://minio:9000/minio/health/live`=200, buckets listados, PUT autenticado `provider: minio`=200 e `https://nb.consultio.com.br/minio/health/live`=200. Roteiro: `DEV/SPECS/MINIO_INTO_STACK_MIGRATION.md`.
+- Sem commit/push/deploy.
+
+## 2026-08-04 — Agenda multi-agenda (agendas por corretor + visita a imóveis)
+
+- `migrations/20260804_create_agendas.sql`: tabela `agendas` + colunas `agenda_id`/`property_id` em `lead_appointments` + RLS + índices — sintaxe validada por leitura e pelo parser de statements de `scripts/run-migrations.mjs` (sem `$$`, só statements com `;`). Não aplicada (depende de autorização do maestro em dev/prod via `exec_sql`).
+- `npm run type-check`: **0 erros**.
+- `npx eslint views/CRM/Agenda/index.tsx views/CRM/KanbanBoard/LeadDetailsModal.tsx`: **0 erros** (2 warnings pré-existentes no LeadDetailsModal: exhaustive-deps em effect antigo e `err` não usado em catch antigo).
+- `npm run build`: **✓ built in 1m40s** (PWA generateSW, 281 entries).
+- `npx vitest run`: **36 arquivos / 254 testes aprovados**.
+- `node --check server/services/ai/agentOrchestrator.js`: **aprovado**.
+- Pendência runtime (requer dev server + backend + migration aplicada): criar agenda → vincular corretor → agendar visita a imóvel em `/urban/agenda` e `/rural/agenda`; conferir filtros, badges e criação de compromisso no Kanban (aba Agendamentos).
+- Sem commit/push/deploy.
+
+## 2026-08-04 — CI PR #66: fix dos testes de licenciamento + gates verdes
+
+- `server/lib/licensing/admin-service.js`: `bindDomainToLicenseViaSetupToken` agora chama `verifySetupToken(token, { now })` — propaga `context.now` para a verificação temporal do token (antes usava `Date.now()` real, ignorando o relógio injetado).
+- `npx vitest run server/__tests__/licensing-admin-service.test.ts`: **26/26 testes aprovados** (antes 2 falhas: `TOKEN_EXPIRED` em vez de bind OK e de `LICENSE_ORG_MISMATCH`).
+- Suíte completa `npm run test -- --run`: **36 arquivos / 254 testes aprovados** (CI reportava 2 falhas em 254).
+- `npm run type-check`: **0 erros** (erros TS de woosign eram de commit anterior, já corrigidos em `5d28053`).
+- `npm run lint`: **0 erros** (609 warnings pré-existentes); `components/SiteEditor/PropertySelectionPanel.tsx` sem warnings (removido `site` não usado; `&quot;` nos textos).
+- Sem commit/push/deploy.
+
+## 2026-08-03 — MinIO produção: buckets + key + política provisionados (fix upload 503)
+
+- Fix TLS em produção: `https://nb.consultio.com.br/minio/health/live` → 200; `openssl s_client` → `subject=CN=nb.consultio.com.br`, `issuer=Let's Encrypt YR1`; router via labels `minio_nb` na stack minio (Traefik só tem provider Swarm — `traefik/dynamic/nb_consultio_com_br.yml` é inerte).
+- Buckets criados via root S3 API: `imobzycrm`, `imobzywhatsapp`, `imobzy-media`, `imobzy-documents`, `imobzy-exports`, `imobzy-backups`.
+- Policy `imobzy-rw` (s3:\* nos 6 buckets) + user `8aHPnW4JQsRWhbKld9Yw` (status enabled, policy attachada) criados via API console MinIO (auth `Cookie: token=...`).
+- Verificado com a key do app (`8aHP...`): ListBuckets OK nos 6 buckets; PUT/DELETE OK em `imobzywhatsapp` e `imobzy-media` (probe removido).
+- Assinatura SigV4 manual idêntica a `server/lib/minio-storage.js` (`uploadObject`) executada no container `api` com env de produção: PUT 200 em `imobzywhatsapp` e `imobzy-media`.
+- Env real do stack: `MINIO_WHATSAPP_BUCKET=imobzywhatsapp`, sem `MINIO_MEDIA_BUCKET`; `storage_integrations` sem row (config = env puro).
+- Não executado: upload autenticado via `/api/storage/upload` (requer JWT Supabase); nenhum commit/push/deploy.
+
+## 2026-08-03 — Central de Licenciamento Wootech — Incremento 7 (enforcement no acesso autenticado)
+
+- `node --check` em `server/middleware/auth.js` e `server/lib/licensing/enforcement.js`: aprovado.
+- `npx vitest run server/__tests__/licensing-enforcement.test.ts`: **23 testes aprovados** (modo off fail-open + auditoria; soft bloqueando blocked/revoked/suspended; grace/expired soft em modo degradado; expired hard → `LICENSE_BLOCKED_HARD`; no_license soft/off liberando + audit; hard no_license sem/sem legacy; isenções superadmin/control-plane/sem-org; impersonação pela org alvo; erro de banco fail-open; cache e invalidação; parsing de env; `buildEnforcementDecision`).
+- Suíte de licenciamento completa (7 arquivos): **99 testes aprovados**.
+- `npm run type-check`: aprovado (sem output).
+- `npm run lint` nos arquivos alterados (`enforcement.js`, `auth.js`, `licensing-enforcement.test.ts`): **0 erros** (1 aviso de unused var corrigido no teste).
+- `npx vitest run` (suíte completa, `--pool=threads --maxWorkers=2`): **220 passed / 1 falha** em `src/test/subscriptionGuard.test.tsx` — flaky pré-existente sob carga, **passa isolado** (confirmado nesta sessão); 2 arquivos (`hooks.test.ts`, `App.test.tsx`) com falha de worker no pool — **passam isolados** (limite de recurso do Windows, sem relação com a mudança).
+- `.env.example`: seção "Licenciamento Wootech" documentada (`LICENSE_ENFORCEMENT`, `LICENSE_ENFORCEMENT_LEGACY_TENANTS`, `LICENSE_SIGNING_PRIVATE_KEY`, `LICENSE_SIGNING_PUBLIC_KEY`).
+- Pendência runtime (requer dev server + backend): modo `off` mantém tudo liberado (comportamento atual de produção é inalterado); testar `soft`/`hard` via env e conferir 403 no login de org bloqueada.
+- Sem commit/push/deploy.
+
+## 2026-08-03 — Central de Licenciamento Wootech — Incrementos 5-6
+
+- `node --check` em `server/lib/licensing/admin-service.js`, `server/lib/licensing/installation-service.js`, `server/api/mega-licenses/index.js`, `server/routes/index.js`: aprovado.
+- `npx vitest run server/__tests__/licensing-admin-service.test.ts`: **18 testes aprovados** (admin service: list/detail/create/update/status transitions/revoke installation/reissue key/heartbeats/audit, com mock Supabase estendido para organizations/plans/audit_logs).
+- `npm run type-check`: aprovado (sem output).
+- `npm run lint`: aprovado com 0 erros; 599 avisos preexistentes — nenhum em `views/megaadmin/Licenses.tsx`, `views/megaadmin/LicenseDetail.tsx`, `App.routes.tsx` ou `views/megaadmin/MegaAdminLayout.tsx` (grep no output confirmou ausência).
+- `npx vitest run` (suíte completa): **202 passed / 1 falha de timeout (5s)** em `src/test/subscriptionGuard.test.tsx` — teste pré-existente do SubscriptionGuard, sem relação com licenciamento; **re-executado isolado passou** (flaky sob carga da suíte, setup do env ~446s).
+- Rotas verificadas por leitura: `/api/mega/licenses` montado em `server/routes/index.js` após `/api/mega`; todas as rotas protegidas por `verifyMegaAdmin`; `handleError` mapeia `LicenseAdminError`.
+- Frontend: rotas lazy `/megaadmin/licenses` e `/megaadmin/licenses/:id` no bloco `/megaadmin` (ProtectedRoute + MegaAdminGuard + MegaAdminLayout); item "Licenças" no `navItems`.
+- Pendência runtime (requer dev server + backend + login mega admin): criar licença, transições de status, reemitir chave, revogar instalação e conferir abas/auditoria em `/megaadmin/licenses`.
+- Incremento 7 (enforcement em `server/middleware/auth.js`/bootstrap + env vars) ainda não implementado.
+- Sem commit/push/deploy.
+
+## 2026-08-03 — Hardening do escopo de revenda (`server/routes/admin.js`)
+
+- `node --check server/routes/admin.js`: aprovado.
+- `npx eslint server/routes/admin.js`: aprovado (0 erros, arquivo JS fora do escopo do `npm run lint` que cobre ts/tsx).
+- `npx vitest run server/__tests__`: **13 arquivos / 102 testes aprovados** (inclui `adminOrganizationsFallback.test.ts`, que importa `admin.js` — módulo carrega limpo).
+- `npm run type-check`: aprovado (sem output).
+- `npm run lint` (projeto, ts/tsx): não re-executado nesta sessão — não cobre `.js` e o run foi abortado pelo usuário; nenhum arquivo ts/tsx foi alterado.
+- Evidência de banco (produção, read-only): `pg_policies` de `organizations` → policies de revenda limitam SELECT/UPDATE/INSERT a `parent_id = get_auth_organization_id()`; filhas do Delazari = Mega/Pamas/Vapt; 6 clientes diretos (`parent_id IS NULL`) invisíveis para revenda.
+- Comportamento preservado: GET refatorado para `resolveAdminOrgScope` (mesma lógica de `req.orgId`/`req.realOrgId`); mutações novas retornam 403 fora do escopo.
+- Pendência runtime (requer credenciais/sessão da revenda): reproduzir lista (só filhos), tentar editar/excluir org fora do grupo (espera 403) e criar org (fica sob a revenda).
+- Sem commit/push/deploy; `query_org_scope.tmp.mjs` removido.
+
+## 2026-08-03 — Produção revenda Delazari: fix em produção, via build da PR #66
+
+- Bundle de produção `index-D0eZEUaE.js`: `getPanelHomePath` com `is_reseller` (revenda → `/superadmin`; cliente → `/rural`/`/urban`) + marcadores de sessões curtas → **fix `214595a` está em produção**.
+- GitHub compare API: `214595a...e7d546b` → `diverged` (behind_by=68) ⇒ **main não tem o fix**; `214595a...c3e927cae3` → `ahead` (behind_by=0) ⇒ head do último build contém o fix; `c3e927cae3` presente na branch local (`git branch --contains`).
+- Runs do workflow Docker Images: último run em `main` com `deploy-portainer` executado = 30/07 16:43-16:45Z (`e7d546b`, success) — anterior ao fix. Deploy automático não pode ter publicado o fix.
+- Probe de produção: `/api/system-status` → `{"success":true,"status":"online",...,"uptime":57346.36}` ⇒ processo da API iniciado ~02/08 21:25:22Z (após builds da branch 21:11Z/21:21Z) — consistente com redeploy manual da stack pós-push da branch.
+- Probes de versão: `/api/info`, `/api/health`, `/api/version`, `/api/system/info` → 404 (backend sem endpoint de versão).
+- Verificação documental: `git diff --check` não aplicável (nenhum código alterado); DEV docs e report atualizados.
+- Não executado: repro no navegador (requer credenciais/sessão do ator Delazari); merge da PR #66; nenhum commit/push/deploy.
+
+## 2026-08-03 — Diagnóstico revenda Delazari (análise estática)
+
+- Nenhum arquivo de produto alterado → type-check/lint/build não executados.
+- Evidência de banco: sessões ativas em `impersonation_sessions` criadas pelo ator `e3d30425` (Delazari, superadmin) → tenant `52757ffb` (Mega), status active, TTL 15 min; ontem `df587a67` → `8f9bf0f1`. POST de impersonação comprovado.
+- Evidência de código: cadeia completa lida e verificada (`server/routes/admin.js`, `server/lib/impersonation-session.js`, `server/middleware/auth.js`, `src/lib/impersonation.ts`, `src/lib/api.ts`, `context/AuthContext.tsx`, `components/NicheRedirect.tsx`, `components/PanelGuard.tsx`, `components/MegaAdminGuard.tsx`, `views/superadmin/TenantManager.tsx`).
+- Pendência runtime: confirmar versão deployada (inclui `214595a`?) e reproduzir sintoma 2 com logs de browser (target do NicheRedirect, isImpersonating, sessionStorage).
+
+## 2026-08-03 — Mega Admin: frontend de domínios dos whitelabels
+
+- `npm run type-check`: aprovado (sem output).
+- `npm run lint`: aprovado com 0 erros; 598 avisos preexistentes no repositório — nenhum em `views/megaadmin/ResellerDomains.tsx`, `MegaAdminLayout.tsx`, `App.routes.tsx` ou `ResellerManager.tsx` (grep no output confirmou ausência dos arquivos alterados).
+- `npm run build`: aprovado; novos chunks gerados `assets/ResellerDomains-*.js` (20,97 kB / gzip 3,82 kB) e `MegaAdminLayout-*.js` atualizado.
+- Backend revalidado por leitura: `server/routes/mega-admin.js` exporta `POST/DELETE /resellers/:id/domain` e retorna `domains` no `POST /resellers`; `linkDomainToOrganization`/`unlinkDomainFromOrganization` retornam `dnsVerified`/`provisioned`/`purpose` e aceitam purpose `site`/`panel`/`both`.
+- Pendência (runtime, requer dev server + backend + login mega admin): abrir `/megaadmin/domains`, vincular domínio de site/painel a um whitelabel, verificar DNS e remover vínculo; conferir que `POST /resellers` com `site_domain`/`panel_domain` cria o reseller e retorna `domains`.
+
+## 2026-08-02 — Agentes IA: protocolo de saudação/apresentação e conversa humana
+
+- Novo `server/services/ai/agentPrompt.js`: construtor compartilhado de system prompt (identidade, marca, personalidade, ferramentas, histórico, protocolo de saudação/apresentação e regras de conversa humana).
+- `node --check` em `server/api/ai/chat.routes.js`, `server/lib/AIAutomation.js`, `server/services/ai/agentOrchestrator.js` e `server/services/ai/agentPrompt.js`: aprovado.
+- `npm run type-check`: aprovado.
+- `npx eslint` nos arquivos alterados: 0 erros; 1 aviso pré-existente (`matchLeadProperties` não usado em `agentOrchestrator.js`, fora do diff).
+- `npm run test`: 27 arquivos e 127 testes aprovados.
+- `git diff --check`: aprovado antes da atualização documental.
+- Validação runtime (enviar "oi" no chat de teste e em instância WhatsApp real) permanece pendente e depende do dev server + chave Gemini configurada.
+
+## 2026-08-02 — QR WhatsApp: mensagens de falha por fase de conexão
+
+- `npm run type-check`: aprovado.
+- `npx eslint views/WhatsApp/QRCodeModal.tsx`: 0 erros; 1 aviso pré-existente de `react-hooks/exhaustive-deps` (fetchQR/onClose/pairingPhone) fora do diff.
+- `npx vitest run tests/whatsapp-qr-timeout.test.ts`: 1 arquivo e 2 testes aprovados.
+- Go `go build ./...` + `go vet ./...` + `go test ./...`: todos os pacotes aprovados (em cópia ASCII em temp — path com acento corrompe o módulo Go no Windows).
+- Novo `TestQRStartupFailureMessage`: aprovado (mensagens de conexão aberta vs. encerrada distinguíveis).
+- `git diff --check` antes da atualização documental: aprovado.
+- Validação runtime em produção continua pendente: redeploy do stack via Portainer forçando pull da imagem `latest`.
+
+## 2026-08-02 — Auditoria de tipografia e cores
+
+- Inspecionados `index.css`, `index.html`, `SettingsContext`, layouts, configuração de aparência, camada WooTech e CSS do WhatsApp.
+- Contagens reproduzidas com `rg` sobre arquivos TypeScript/TSX do núcleo, excluindo testes e as principais superfícies públicas de tema isolado.
+- Contrastes calculados pela fórmula de luminância relativa WCAG para as combinações críticas documentadas.
+- Relatório e documentação verificados com `git diff --check` após a gravação.
+- Não executados build, lint ou testes, pois nenhuma fonte de produto foi alterada.
+- Validação visual autenticada em navegador permanece pendente e está explicitada como limite do relatório.
+
+## 2026-08-02 — Novas telas WooTech Imob
+
+- `npm run type-check`: aprovado.
+- `npm run lint`: aprovado com 0 erros; 596 avisos preexistentes no repositório.
+- `npm run test -- --run`: 27 arquivos e 127 testes aprovados.
+- `npm run build`: aprovado; 4.079 módulos transformados e PWA gerada.
+- `git diff --check`: aprovado antes da atualização documental.
+- Escopo compilado: portfólio, CRM/Kanban, mensagens, metas rurais, Matchmaking, BI Rural, configurações, aparência, condomínio, simulador, chaves, loteamentos, jurídico e locações.
+- Validação visual autenticada no navegador não foi executada nesta rodada; permanece recomendada em desktop e mobile antes do deploy.
+
+## 2026-08-02 — Diagnóstico e atualização do protocolo WhatsApp
+
+- Produção: `https://imob.wootech.com.br/assets/QRCodeModal-CzCKB0xN.js` contém o timeout e o retry atuais; frontend confirmado atualizado.
+- Banco: instância observada ficou `disconnected`, `has_qr=false` e `qr_length=0`; nenhum QR foi persistido para o frontend.
+- GitHub Actions: build das imagens do commit `7129a6f` passou; `deploy-portainer` ficou `skipped` por restrição da workflow à branch `main`.
+- Comparação oficial do WhatsMeow: versão alvo está 19 commits à frente, com atualizações de protocolo e pareamento.
+- Após upgrade: `go test ./...`, `go vet ./...` e `go build ./cmd/server` passaram em cópia ASCII do módulo.
+- O proxy público de saúde passa a refletir apenas a versão não sensível retornada pelo serviço Go.
+- Smoke externo de QR não executado: o driver SQLite local exige CGO; a verificação real permanece dependente do container Linux e do acesso dele ao WhatsApp.
+
+## 2026-08-01 — WhatsApp: watchdog para QR sem evento
+
+- Causa confirmada: `QRCodeModal.fetchQR` mantinha loading sem limite para `connecting` e `qr_pending`; se o WhatsMeow não emitisse código nem erro terminal, não havia transição de saída.
+- `npm run type-check`: passou.
+- `npm run lint`: passou com 0 erros e 594 avisos preexistentes.
+- `npm run test -- --run`: 26 arquivos e 125 testes passaram; inclui 2 testes novos do timeout de QR.
+- `npm run build`: passou; 4.076 módulos transformados e PWA com 264 entradas.
+- `scripts/test-whatsapp-go.ps1`: `go test ./...` e `go build ./cmd/server` passaram; inclui teste novo do watchdog do QR.
+- `git diff --check`: passou antes da atualização documental.
+- Runtime: `GET https://imob.wootech.com.br/api/whatsapp/health` retornou HTTP 200 com Node e WhatsMeow saudáveis. O pareamento real requer deploy desta alteração e leitura pelo celular, portanto permanece pendente.
+
+## 2026-08-01 — WhatsApp: 404 de QR para instância inexistente (fix frontend)
+
+- Confirmado por pg direto (prod `epgaftsjmqmpczvzsrcc` e dev `lkzcsaydpcnypdevoikr`): a instância `d8a5611e-c472-4cc1-bd80-2574fffdfdc8` não existe em `whatsapp_instances` nem em qualquer tabela whatsapp; produção tem 3 instâncias presas em `connecting`.
+- Health: `curl https://imob.wootech.com.br/api/whatsapp/health` → 200 `{"ok":true,"node":{"ok":true,"uptime":...},"whatsmeow":{"ok":true,"status":200}}`. Proxy Node e rota Go `/instances/:id/qrcode` íntegros — o 404 é do handler Go ao não achar a instância.
+- Fix: `views/WhatsApp/QRCodeModal.tsx` — em `fetchQR`, `error.status === 404` → `setNotFound(true)` + `clearInterval` (para o polling) e renderiza "Instância não encontrada" com botão Fechar. Antes o 404 era ignorado e o modal polava para sempre em spinner.
+- `npm run type-check`: passou. `npm run lint`: 0 erros (594 warnings pré-existentes).
+- Não executado: redeploy/CI (correção só vale em produção após push+Portainer); validação do fluxo real de pareamento.
+
+## 2026-08-01 — WhatsApp + testes E2E estabilizados
+
+- `npm run type-check`: passou.
+- `npm run lint`: passou com 0 erros e 594 avisos preexistentes.
+- ESLint direcionado aos cinco arquivos TypeScript alterados: 0 erros; 2 avisos preexistentes em `QRCodeModal.tsx` e `api.ts`.
+- `npm run test -- --run`: 25 arquivos e 123 testes passaram.
+- `npm run build`: passou, 4.076 módulos transformados.
+- Playwright direcionado: 32/32 testes passaram em Chromium desktop e mobile.
+- Estabilidade do fluxo de autenticação/cadastro: 12/12 testes passaram com `--repeat-each=3`.
+- `git diff --check`: passou.
+- Não executado: pareamento real do WhatsApp com QR Code, pois depende do backend WhatsApp e de credenciais válidas.
+
+## 2026-08-01 — WhatsApp não gerava QR no frontend (fix BUG 1 frontend + BUG 2 backend)
+
+- BUG 1 (`views/WhatsApp/QRCodeModal.tsx`): o polling só consultava `getQRCode` em `qr_pending`; em `connecting`/`disconnected` o fluxo entrava em loading e nunca chamava `getQRCode` → QR perdido e spinner infinito (~40s). Corrigido: `fetchQR` sempre chama `getQRCode`; `emptyQRAttemptsRef` conta 3 tentativas sem QR e sem conexão ativa → tela de erro/retry ("QR Code não disponível..."); em `connected` limpa o QR e fecha o modal em 1.8s.
+- BUG 2 (`whatsapp-service/internal/whatsapp/manager.go`): falhas em `initializeSessionStore`/`deviceForInstance`/`client.Connect()` não resetavam o status nem notificavam o front. Corrigido: helper `failConnect` (status `disconnected` + broadcast `instance_status` com erro) em todas as falhas antes da conexão; goroutine de `client.Connect()` que falha também emite broadcast "Não foi possível conectar ao WhatsApp...".
+- Frontend: `npm run type-check` passou; `npx eslint views/WhatsApp/QRCodeModal.tsx` 0 erros (1 warning pré-existente de exhaustive-deps na L92); `npm run lint` 0 erros (~594 warnings pré-existentes); `npm run build` passou (built in 1m 7s).
+- Backend: `go build ./...` passou; `go vet ./...` passou; `go test ./...` passou (config, handlers, whatsapp, phone) — executados via cópia ASCII em temp (o path com acento da área de trabalho corrompe o `go` nativo no Windows); artefatos temporários removidos.
+- Não executado: validação runtime (subir Go whatsapp-service 3100 + Node 3001/3002 + Vite 3006 e testar QR de instância em `/urban/whatsapp` e `/rural/whatsapp`); alinhamento do `whatsapp-service/.env` local (Supabase `lkzcsaydpcnypdevoikr` vs produção `epgaftsjmqmpczvzsrcc`); push.
+
+## 2026-08-01 — Instagram Service: preparação do deploy de produção
+
+- `node --check server/api/instagram/index.js` e `server/index.js`: passou.
+- `docker compose config --services` (produção): `agro-intelligence, api, frontend, redis, instagram-service, instagram-worker, rabbitmq, whatsapp-service` — passou. Avisos apenas de interpolação local (`.env` sem os tokens Instagram, esperado) e `version` obsoleto.
+- Revisão manual dos Dockerfiles: `COPY` agora aponta para `instagram-service/` e `instagram-worker/` (contexto `.` usado pelo CI e pelo compose local).
+- Não executado (depende do redeploy em produção): build das imagens, deploy, validação runtime de `/api/instagram/conversations` e do WebSocket `/api/instagram/ws`, conexão de conta Instagram via QR.
+
+## 2026-08-01 — WhatsAppDashboard integrado + desbloqueio de gates
+
+- `npm run type-check`: passou (0 erros) após corrigir `App.routes.tsx` (import `./src/views/sites/megainvestimentos/MegaTheme`) e `HeroSearch.tsx` (`Home` no import do lucide-react).
+- `npx eslint` na shell e arquivos alterados: 0 erros; 4 warnings preexistentes de exhaustive-deps em `useWhatsAppInbox.ts`.
+- `npm run build`: passou (4.076 módulos, PWA generateSW 264 entries; `WhatsAppDashboard-*.js` 130 kB / gzip 22,7 kB).
+- `npm run test`: 25 arquivos / 123 testes passaram.
+- `git diff` limpo nos fontes (arquivos batem com HEAD `99abe95`); alterações apenas em DEV docs.
+- Pendência: validação runtime — subir Go whatsapp-service (3100), Node backend (3001/3002) e Vite (3006); conferir aba Mensagens em `/urban/whatsapp` e `/rural/whatsapp` com instância conectada.
+
+## 2026-07-30 — Fix do gap LegalContracts (contracts + RLS + UI)
+
+- `scratch/apply_contracts_fix.mjs` (exec_sql RPC): migration `20260730_fix_contracts_legal_tab.sql` aplicada em produção **7/7 statements OK** (colunas `title`/`type`/`value`/`template_id`/`contract_type`, policy RLS, trigger, index). Splitter corrigido: o antigo descartava statements após linhas de comentário.
+- RLS simulada como `authenticated` via transação revertida: INSERT + SELECT em `contracts` OK, 0 rows persistidos.
+- `scratch/verify_20260730_final.mjs` (pg direto): todos os checks passam — colunas presentes, policy ativa, trigger + index, `contracts.status` default `'draft'`.
+- Runtime validado: `views/urban/Cobranca.tsx` lê `rental_contracts` (select autenticado OK); `views/LegalContracts.tsx` insert envia `contract_type`.
+- Gates: `npm run type-check` passou; `npx eslint` em `LegalContracts.tsx`/`run-migrations.mjs` 0 erros (10 warnings preexistentes); `npm run build` passou.
+- Nenhum commit/push/deploy executado.
+
+## 2026-07-30 — Análise de segurança (advisory)
+
+- gitleaks v8.30.1 (histórico, `--redact`): **212 leaks**; confirmados por fingerprint SHA256 contra `.env` local: service role key e JWT secret de produção iguais aos do `.env`; credencial (email/senha) em 2 scripts de teste.
+- npm audit `--omit=dev` (produção): 18 vulnerabilidades (16 high); saída bruta em `security-reports/npm-audit-prod.json`.
+- SAST (semgrep/trivy) **não executado**: ferramentas ausentes e docker daemon inativo — substituído por revisão manual de código/config.
+- Verificação pendente (depende de acesso ao banco/produção): grants de `exec_sql` para anon/authenticated; confirmação visual dos webhooks; aplicação de `secure_rpc.sql` como migration.
+
+## 2026-07-30 — Rural UX batch (5 views)
+
+- `npm run type-check`: passou (sem output).
+- `npx eslint` nos 5 arquivos: 0 erros; 4 avisos preexistentes (`MapPin` em RuralDashboard; `FileText`/`PropertyGeo` em CadastroTecnico; hooks-deps em DossieInteligente) — nenhum introduzido pelo diff.
+- `npm run build`: passou; 4.063 módulos transformados; PWA `generateSW` 237 entries.
+- Coberto por revisão de código (sem teste autenticado executado): quick actions, exclusão de propriedade, upload por item (20MB), minuta gated por riskScore >= 80.
+- Pendência: validação visual/funcional no navegador com autenticação em `/rural` (dashboard, cadastro-tecnico, due-diligence, dossie, financeiro).
+
+## 2026-07-30 — Migrations 20260730\_\* aplicadas em produção
+
+- `scratch/run_migrations_20260730.mjs` (exec_sql RPC, statement a statement): dry run OK (169 statements); execução real **169/169 ok, 0 falhas, 0 ignorados** nos 6 arquivos.
+- `scratch/verify_20260730.mjs` (pg direto com `SUPABASE_DB_URL`, sslmode removido): **14/14 checks OK** — condominium_tickets, condominiums.status, rental_contracts.{tenant_name,property_id,monthly_rent}, clients, lead_activities.lead_id, get_my_org_id, is_superadmin, handle_updated_at, pgcrypto, policy plans, policy landing_pages (`Public read landing_pages`, com underscore). `contracts.title` ausente conforme esperado.
+- Nenhum commit/push/deploy executado.
+
+## 2026-07-30 — Resolução do v8 (BI RPCs + views billings/contracts)
+
+- Probe pg em produção (`pg_class`/`information_schema.columns`): `billing`=TABLE(11 cols), `billings`=TABLE(17), `contracts`=TABLE(10), `rental_contracts`=TABLE(47); RPCs `get_bi_stats`→jsonb e `get_bi_lead_sources`→TABLE(name,value) existem e têm assinatura correta.
+- `CREATE OR REPLACE VIEW billings`/`contracts` bloqueado por colisão de nomes com tabelas reais → statements #3/#4 do v8 ficam registrados como "skipped" (não executar); GRANTs correspondentes também.
+- Fix frontend aplicado: `views/urban/Cobranca.tsx` `loadContracts` agora lê `rental_contracts` (`tenant_name`, `monthly_rent`, `property:property_id(title)`, `status='active'`).
+- Gates: `npm run type-check` passou (sem output); `npm run lint` 0 erros (593 avisos preexistentes, nenhum no diff); `npm run build` passou (4.063 módulos, PWA generateSW 237 entries).
+- Pendência: validar no navegador o dropdown de contratos em `/urban/cobranca` (autenticado); decidir se aplico as migrations `20260730_*` ainda não executadas.
+
+## 2026-07-30 — Fix 404 do Metas & Vendas Rurais
+
+- Confirmado via `information_schema`/`pg_class` que `rural_financial_goals`, `rural_property_favorites` e `rural_property_visits` existem em produção (OID ~22204-22246, criadas ~13/07).
+- Reprodução da query exata do console (anon key, `organization_id` + `period_month`): 404 → após `NOTIFY pgrst, 'reload schema'` → 200 `[]`.
+- `npm run type-check`: passou. `npm run lint`: 0 erros; 593 avisos preexistentes, nenhum em `views/rural/FinanceiroRural.tsx`.
+- `period_month` agora sempre `YYYY-MM-01` (sem shift de UTC) no load e no save.
+- Pendência: validação visual/funcional no navegador em `/rural/financeiro` com autenticação (dev server ou produção após deploy).
+
+## 2026-07-30 — Port da sidebar colapsável (sanfona) para o Rural
+
+- `npm run type-check`: passou (sem output).
+- `npx eslint components/RuralLayout.tsx`: 0 erros.
+- `npx prettier --check components/RuralLayout.tsx`: aprovado após `--write`.
+- `npm run build`: passou; `dist` gerado (4.059 módulos, PWA `generateSW` 237 entries).
+- Comportamento coberto por revisão de código (sem teste autenticado executado): toggle desktop `280px ↔ 72px`, auto-colapso ao navegar, menu móvel com labels sempre visíveis (`renderSidebarContent(true)`).
+- Pendência: validação visual/funcional no navegador em `/rural` (desktop + mobile) com autenticação.
+
+## 2026-07-30 — Reforma da aba Agentes IA
+
+- `npm run type-check`: passou (sem output).
+- `npm run lint`: 0 erros; 593 avisos preexistentes, nenhum em `views/AIAgents.tsx` ou `components/agents/`.
+- `npm run build`: passou; 4.059 módulos transformados; bundle da aba `AIAgents-*.js` 94 kB (gzip 15,8 kB).
+- Remoção de `components/AgentPremiumDashboard.tsx` verificada: nenhuma referência restante (grep).
+- Pendência: validação visual/funcional no navegador com autenticação.
+
+## 2026-07-30 — Fix TemplateManager 500 (global_templates)
+
+- `node --check` em `server/routes/admin-templates.js` e `scripts/run-migrations.mjs`: passou.
+- Migração `migrations/20260713_global_templates.sql` executada em produção via RPC `exec_sql`: 7/7 statements OK (table, 3 índices, RLS, 2 policies).
+- Verificação pós-migração: SELECT em `public.global_templates` retorna `[]` sem erro (tabela existe).
+- Pendência: confirmar no navegador que o TemplateManager carrega e faz o seed dos templates padrão no primeiro GET.
+
+## 2026-07-28 — Auditoria funcional, execução da Onda 0
+
+- `npm run audit:matrix`: 143 rotas; 49 Urbanas, 48 Rurais, 13 Super Admin, 13 Mega Admin e 20 públicas/compartilhadas.
+- Playwright público: 10/10 passaram em Chromium desktop e mobile.
+- Playwright anônimo dos painéis: 8/8 passaram.
+- Testes direcionados de autenticação, impersonação e assinatura: passaram.
+- `npx vitest run`: 25 arquivos e 123 testes passaram no estado final desta execução.
+- `npm run type-check`: passou após as correções da revisão independente.
+- `npm run build`: passou.
+- `npm run lint`: código zero, 0 erros e 598 avisos preexistentes/de dívida técnica.
+- `go test ./...`: passou em cópia temporária sem acentos no caminho; a execução direta falha por limitação da toolchain no caminho `Área de Trabalho`.
+- Revisão independente: cinco achados corrigidos; reteste aprovou o recorte.
+- A auditoria autenticada completa permanece bloqueada pela ausência das oito variáveis de credenciais E2E.
+- `npm run test:e2e:audit`: 8 casos anônimos passaram, 25 casos autenticados foram ignorados e o contrato falhou intencionalmente ao listar as oito credenciais ausentes.
+- A rotação de segredos e a validação da migration/RLS não foram executadas.
+
+## 2026-07-28 — Linha de base para auditoria funcional
+
+- `npm run type-check`: passou.
+- `npm run build`: passou.
+- `npm run test -- --run`: 18 arquivos e 90 testes aprovados.
+- `npm run lint`: terminou com código zero e muitos avisos.
+- `npx playwright test --list`: 5 cenários lógicos em 2 arquivos, executados nos projetos Chromium desktop e mobile, totalizando 10 execuções.
+- Inspeção de `App.tsx`: 48 tags de rota no bloco Rural, 47 no Urbano, 13 no Mega Admin e 12 no Super Admin.
+- O planejamento não comprova o funcionamento dos módulos autenticados; essa verificação pertence às ondas definidas em `DEV/SPECS/AUDITORIA_FUNCIONAL_REGRESSAO.md`.
+
+## 2026-07-28 — WhatsMeow QR Code e consulta de leads
+
+- `go test ./...`: passou na toolchain Go 1.25.0, em workspace temporário sem acentos no caminho.
+- `go build ./cmd/server`: passou.
+- Teste de regressão `TestShouldStartQRConnection`: passou.
+- `npm run build`: passou; 4.042 módulos transformados.
+- ESLint nos arquivos relacionados: 0 erros; 6 avisos preexistentes.
+- `git diff --check`: passou.
+- `npm run type-check`: inconclusivo; o processo `tsc` foi encerrado pelo Windows sem emitir diagnóstico TypeScript. O build Vite de produção passou.
+- Produção antes do deploy: health do Node/WhatsMeow em HTTP 200; instância `22222` presa em `connecting`, com QR vazio.
+- Recuperação imediata aplicada em produção: atualização condicional da instância `22222` para `disconnected`; permaneceu aguardando uma requisição autenticada do modal durante a janela de observação.
+
+## 2026-08-15 — Auditoria completa WhatsApp/Whatsmeow
+
+- `npm.cmd run test -- --run tests/whatsapp-qr-timeout.test.ts tests/whatsapp-inbox-presentation.test.ts`: 2 arquivos, 4 testes, aprovados.
+- `scripts/test-whatsapp-go.ps1` em diretório temporário ASCII com Go 1.25.0: `go test ./...` e `go build ./cmd/server` aprovados.
+- `go list -m -u -json go.mau.fi/whatsmeow`: versão fixada `2026-07-30`; upstream detectado `2026-08-14`, 14 commits à frente.
+- `go vet ./...` direto: inconclusivo devido à resolução de packages no caminho Windows com acento, limitação conhecida do projeto.
+- `go test -race ./...` direto: não executado porque CGO não está habilitado no host.
+- Docker build e `docker compose config`: não executados porque o executável Docker não está disponível neste host.
+- Revisão estática confirmou deduplicação `(instance_id, message_id)` e isolamento dos handlers/WebSocket por tenant.
+- Nenhuma instância real foi pareada durante a auditoria; cenários de restart, `StreamReplaced`, `LoggedOut`, concorrência e mídia grande exigem testes de regressão na fase de correção.

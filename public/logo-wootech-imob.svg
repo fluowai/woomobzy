@@ -1,0 +1,12 @@
+<svg width="320" height="72" viewBox="0 0 320 72" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title">
+  <title id="title">WooTech Imob</title>
+  <rect x="4" y="4" width="64" height="64" rx="20" fill="#0B1C18"/>
+  <rect x="4" y="4" width="64" height="64" rx="20" stroke="#1F5F50" stroke-width="2"/>
+  <circle cx="36" cy="36" r="18" stroke="#C8FF66" stroke-width="3"/>
+  <path d="M24.5 44L29 27H33.2L37 39L41 27H45.1L49.5 44H45.2L42.6 32.5L38.8 44H35.3L31.5 32.5L28.8 44H24.5Z" fill="#F8FAFC"/>
+  <circle cx="51" cy="22" r="5.5" fill="#14B87A"/>
+  <text x="86" y="29" fill="#0B1C18" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" letter-spacing="0.28em">WOOTECH</text>
+  <text x="86" y="56" fill="#0B1C18" font-family="Inter, Arial, sans-serif" font-size="31" font-weight="800">Imob</text>
+  <path d="M171 40H245" stroke="#14B87A" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="256" cy="40" r="8" fill="#C8FF66"/>
+</svg>

@@ -1,0 +1,234 @@
+import { Router } from 'express';
+import { verifyAuth, verifyAdmin } from '../../middleware/auth.js';
+import { requireTenant } from '../../middleware/tenant.js';
+import { getSupabaseServer } from '../../lib/supabase-server.js';
+import { enrichPropertyWithAcp } from '../../services/acpPropertyAgent.js';
+import instagramPostRouter from './instagram-post.js';
+import {
+  applyRuralFilter,
+  applyUrbanFilter,
+  isRuralType,
+  isUrbanType,
+  normalizeNiche,
+} from '../../utils/propertyNiche.js';
+
+const router = Router();
+router.use(instagramPostRouter);
+
+const supabase = new Proxy(
+  {},
+  {
+    get: (_, prop) => {
+      const client = getSupabaseServer();
+      const value = client[prop];
+      return typeof value === 'function' ? value.bind(client) : value;
+    },
+  }
+);
+
+/**
+ * GET /api/properties
+ */
+router.get('/', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { page = 1, limit = 50 } = req.query;
+    const offset = (page - 1) * limit;
+
+    // 1. Buscar o nicho da organização para saber o que filtrar
+    let niche = 'urbano';
+    if (req.orgId) {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('niche')
+        .eq('id', req.orgId)
+        .single();
+      niche = normalizeNiche(org?.niche) || 'urbano';
+    }
+
+    // 2. Montar a query com o filtro de nicho
+    let query = supabase
+      .from('properties')
+      .select(
+        'id, title, price, city, neighborhood, property_type, status, images, description, niche, created_at',
+        { count: 'exact' }
+      );
+
+    if (req.orgId) {
+      query = query.eq('organization_id', req.orgId);
+    }
+
+    // Se o cliente pediu um nicho específico via query string, usamos ele
+    // Caso contrário, usamos o nicho da organização
+    const filterNiche = normalizeNiche(req.query.niche) || niche;
+
+    if (filterNiche === 'rural') {
+      query = applyRuralFilter(query);
+    } else if (filterNiche === 'urbano') {
+      query = applyUrbanFilter(query);
+    }
+
+    const { data, error, count } = await query
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      properties: data,
+      pagination: {
+        total: count,
+        page: Number(page),
+        limit: Number(limit),
+      },
+    });
+  } catch (err) {
+    console.error('[Properties] List error:', err.message);
+    res.status(500).json({ error: 'Erro ao listar imoveis' });
+  }
+});
+
+/**
+ * POST /api/properties
+ */
+router.post('/', verifyAdmin, requireTenant, async (req, res) => {
+  try {
+    const propertyData = req.body;
+    const explicitNiche = normalizeNiche(propertyData.niche);
+    const inferredNiche = isRuralType(propertyData.property_type)
+      ? 'rural'
+      : isUrbanType(propertyData.property_type)
+        ? 'urbano'
+        : '';
+
+    const { data, error } = await supabase
+      .from('properties')
+      .insert({
+        ...propertyData,
+        niche: explicitNiche || inferredNiche || propertyData.niche || null,
+        organization_id: req.orgId, // FORÇADO
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.status(201).json({ success: true, property: data });
+  } catch (err) {
+    console.error('[Properties] Create error:', err.message);
+    res.status(500).json({ error: 'Erro ao criar imovel' });
+  }
+});
+
+/**
+ * PUT /api/properties/:id
+ */
+router.put('/:id', verifyAdmin, requireTenant, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const propertyData = req.body;
+
+    delete propertyData.organization_id;
+    delete propertyData.id;
+
+    const { data, error } = await supabase
+      .from('properties')
+      .update(propertyData)
+      .eq('id', id)
+      .eq('organization_id', req.orgId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: 'Imóvel não encontrado' });
+
+    res.json({ success: true, property: data });
+  } catch (err) {
+    console.error('[Properties] Update error:', err.message);
+    res.status(500).json({ error: 'Erro ao atualizar imovel' });
+  }
+});
+
+/**
+ * GET /api/properties/:id
+ */
+router.get('/:id', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('organization_id', req.orgId)
+      .single();
+
+    if (error || !data)
+      return res.status(404).json({ error: 'Imóvel não encontrado' });
+    res.json({ success: true, property: data });
+  } catch (err) {
+    console.error('[Properties] Get error:', err.message);
+    res.status(500).json({ error: 'Erro ao buscar imovel' });
+  }
+});
+
+/**
+ * POST /api/properties/:id/acp
+ */
+router.post('/:id/acp', verifyAdmin, requireTenant, async (req, res) => {
+  try {
+    const { data: property, error: loadError } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('organization_id', req.orgId)
+      .single();
+
+    if (loadError || !property) {
+      return res.status(404).json({ error: 'Imovel nao encontrado' });
+    }
+
+    const enriched = await enrichPropertyWithAcp({
+      supabase,
+      organizationId: req.orgId,
+      property,
+    });
+
+    const { data, error } = await supabase
+      .from('properties')
+      .update({ features: enriched.features })
+      .eq('id', req.params.id)
+      .eq('organization_id', req.orgId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      property: data,
+      acp: data.features?.acp || null,
+    });
+  } catch (err) {
+    console.error('[Properties] ACP error:', err.message);
+    res.status(500).json({ error: 'Erro ao processar ACP' });
+  }
+});
+
+/**
+ * DELETE /api/properties/:id
+ */
+router.delete('/:id', verifyAdmin, requireTenant, async (req, res) => {
+  try {
+    const { error } = await supabase
+      .from('properties')
+      .delete()
+      .eq('id', req.params.id)
+      .eq('organization_id', req.orgId);
+
+    if (error) throw error;
+    res.json({ success: true, message: 'Imóvel excluído' });
+  } catch (err) {
+    console.error('[Properties] Delete error:', err.message);
+    res.status(500).json({ error: 'Erro ao excluir imovel' });
+  }
+});
+
+export default router;

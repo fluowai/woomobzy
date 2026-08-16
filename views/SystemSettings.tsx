@@ -1,0 +1,909 @@
+import { logger } from '@/utils/logger';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { useSettings } from '../context/SettingsContext';
+import { useAuth } from '../context/AuthContext';
+import { oruloService } from '../services/orulo';
+import { portalService } from '../services/portals';
+import {
+  Save,
+  Brain,
+  Check,
+  Info,
+  Globe,
+  Palette,
+  Users,
+  Key,
+  HelpCircle,
+  Activity,
+  Shield,
+  Link,
+  Building2,
+  Mail,
+  Copy,
+  MessageCircle,
+  History,
+} from 'lucide-react';
+import TrackingSettings from './admin/TrackingSettings';
+import DomainSettings from './admin/DomainSettings';
+import AppearanceSettings from './admin/AppearanceSettings';
+import UserManagement from './admin/UserManagement';
+import SupportPortal from './admin/SupportPortal';
+import ChannelsSettings from './admin/ChannelsSettings';
+import SmtpSettings from './admin/SmtpSettings';
+
+function SettingsStatus({
+  icon: Icon,
+  title,
+  status,
+  detail,
+  tone = 'success',
+}: {
+  icon: React.ComponentType<{ size?: number }>;
+  title: string;
+  status: string;
+  detail: string;
+  tone?: 'success' | 'warning';
+}) {
+  return (
+    <div className="wootech-status-card">
+      <div className="mb-3">
+        <span className="wootech-status-icon">
+          <Icon size={19} />
+        </span>
+        <strong className="!text-base">{title}</strong>
+      </div>
+      <span
+        className={tone === 'warning' ? '!text-amber-600' : '!text-emerald-700'}
+      >
+        ● {status}
+      </span>
+      <span>{detail}</span>
+    </div>
+  );
+}
+
+const SystemSettings: React.FC = () => {
+  const { settings, updateSettings, loading } = useSettings();
+  const { profile } = useAuth();
+  const location = useLocation();
+  const [openaiKey, setOpenaiKey] = useState('');
+  const [groqKey, setGroqKey] = useState('');
+  const [geminiKey, setGeminiKey] = useState('');
+  const [namoBanaKey, setNamoBanaKey] = useState('');
+  const [asaasKey, setAsaasKey] = useState('');
+  const [zapsignKey, setZapsignKey] = useState('');
+  const [cvcrmKey, setCvcrmKey] = useState('');
+  const [cvcrmEmail, setCvcrmEmail] = useState('');
+  const [cvcrmBaseUrl, setCvcrmBaseUrl] = useState(
+    'https://<seu-dominio>.cvcrm.com.br'
+  );
+  const [biaKey, setBiaKey] = useState('');
+  const [oruloBrokerConnected, setOruloBrokerConnected] = useState(false);
+  const [oruloBrokerConnecting, setOruloBrokerConnecting] = useState(false);
+  const [oruloBrokerExpiresAt, setOruloBrokerExpiresAt] = useState<
+    string | null
+  >(null);
+  const [vivarealEnabled, setVivarealEnabled] = useState(false);
+  const [vivarealApiKey, setVivarealApiKey] = useState('');
+  const [vivarealPartnerId, setVivarealPartnerId] = useState('');
+  const [zapEnabled, setZapEnabled] = useState(false);
+  const [zapApiKey, setZapApiKey] = useState('');
+  const [zapPartnerId, setZapPartnerId] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [activeTab, setActiveTab] = useState<
+    | 'appearance'
+    | 'users'
+    | 'ai'
+    | 'tracking'
+    | 'domains'
+    | 'support'
+    | 'canais'
+    | 'portals'
+    | 'smtp'
+  >(location.pathname.endsWith('/integrations') ? 'ai' : 'appearance');
+
+  useEffect(() => {
+    if (location.pathname.endsWith('/integrations')) {
+      setActiveTab('ai');
+    }
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (settings?.integrations?.openai?.apiKey)
+      setOpenaiKey(settings.integrations.openai.apiKey);
+    if (settings?.integrations?.groq?.apiKey)
+      setGroqKey(settings.integrations.groq.apiKey);
+    if (settings?.integrations?.gemini?.apiKey)
+      setGeminiKey(settings.integrations.gemini.apiKey);
+    if (settings?.integrations?.namoBana?.apiKey)
+      setNamoBanaKey(settings.integrations.namoBana.apiKey);
+    if (settings?.integrations?.asaas?.apiKey)
+      setAsaasKey(settings.integrations.asaas.apiKey);
+    if (settings?.integrations?.zapsign?.apiKey)
+      setZapsignKey(settings.integrations.zapsign.apiKey);
+    if (settings?.integrations?.cvcrm?.apiKey)
+      setCvcrmKey(settings.integrations.cvcrm.apiKey);
+    if (settings?.integrations?.cvcrm?.email)
+      setCvcrmEmail(settings.integrations.cvcrm.email);
+    if (settings?.integrations?.cvcrm?.baseUrl)
+      setCvcrmBaseUrl(settings.integrations.cvcrm.baseUrl);
+    if (settings?.integrations?.bia?.apiKey)
+      setBiaKey(settings.integrations.bia.apiKey);
+    loadPortalConfigs();
+  }, [settings]);
+
+  const loadPortalConfigs = async () => {
+    try {
+      const vivarealConfig = await portalService.getConfig('vivareal');
+      if (vivarealConfig) {
+        setVivarealEnabled(vivarealConfig.enabled ?? false);
+        setVivarealApiKey(vivarealConfig.apiKey || '');
+        setVivarealPartnerId(vivarealConfig.partnerId || '');
+      }
+      const zapConfig = await portalService.getConfig('zap');
+      if (zapConfig) {
+        setZapEnabled(zapConfig.enabled ?? false);
+        setZapApiKey(zapConfig.apiKey || '');
+        setZapPartnerId(zapConfig.partnerId || '');
+      }
+    } catch (error) {
+      logger.error('Erro ao carregar configurações de portais', error);
+    }
+  };
+
+  useEffect(() => {
+    if (!location.pathname.endsWith('/integrations')) return;
+
+    const params = new URLSearchParams(location.search);
+    const code = params.get('code');
+
+    const loadStatus = async () => {
+      try {
+        const status = await oruloService.endUserStatus();
+        setOruloBrokerConnected(Boolean(status.connected));
+        setOruloBrokerExpiresAt(status.expiresAt || null);
+      } catch (error) {
+        logger.warn('Erro ao carregar status do corretor Orulo', error);
+      }
+    };
+
+    const connectWithCode = async () => {
+      if (!code) {
+        await loadStatus();
+        return;
+      }
+
+      try {
+        setOruloBrokerConnecting(true);
+        const redirectUri = `${window.location.origin}${location.pathname}`;
+        const result = await oruloService.connectEndUser(code, redirectUri);
+        setOruloBrokerConnected(Boolean(result.connected));
+        setOruloBrokerExpiresAt(result.expiresAt || null);
+        window.history.replaceState({}, document.title, location.pathname);
+      } catch (error) {
+        logger.error('Erro ao conectar corretor Orulo', error);
+      } finally {
+        setOruloBrokerConnecting(false);
+      }
+    };
+
+    connectWithCode();
+  }, [location.pathname, location.search]);
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const safeIntegrations = { ...(settings.integrations || {}) };
+      delete safeIntegrations.orulo;
+      await updateSettings({
+        ...settings,
+        integrations: {
+          ...safeIntegrations,
+          openai: { apiKey: openaiKey, model: 'gpt-4o' },
+          groq: { apiKey: groqKey, model: 'llama-3.3-70b-versatile' },
+          gemini: { apiKey: geminiKey },
+          namoBana: { apiKey: namoBanaKey },
+          asaas: { apiKey: asaasKey, environment: 'production' },
+          zapsign: { apiKey: zapsignKey },
+          cvcrm: { apiKey: cvcrmKey, baseUrl: cvcrmBaseUrl, email: cvcrmEmail },
+          bia: { apiKey: biaKey },
+        },
+      });
+
+      await portalService.saveConfig('vivareal', {
+        enabled: vivarealEnabled,
+        apiKey: vivarealApiKey.trim(),
+        partnerId: vivarealPartnerId.trim(),
+      });
+      await portalService.saveConfig('zap', {
+        enabled: zapEnabled,
+        apiKey: zapApiKey.trim(),
+        partnerId: zapPartnerId.trim(),
+      });
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (error) {
+      logger.error('Error saving settings:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleConnectOruloBroker = async () => {
+    try {
+      setOruloBrokerConnecting(true);
+      const redirectUri = `${window.location.origin}${location.pathname}`;
+      const result = await oruloService.getEndUserAuthorizeUrl(redirectUri);
+      window.location.href = result.authUrl;
+    } catch (error) {
+      logger.error('Erro ao iniciar OAuth do corretor Orulo', error);
+    } finally {
+      setOruloBrokerConnecting(false);
+    }
+  };
+
+  const handleDisconnectOruloBroker = async () => {
+    try {
+      setOruloBrokerConnecting(true);
+      await oruloService.disconnectEndUser();
+      setOruloBrokerConnected(false);
+      setOruloBrokerExpiresAt(null);
+    } catch (error) {
+      logger.error('Erro ao desconectar corretor Orulo', error);
+    } finally {
+      setOruloBrokerConnecting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  if (profile?.role === 'broker') {
+    return (
+      <div className="max-w-3xl mx-auto space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-text-primary">
+            Integração Órulo
+          </h1>
+          <p className="mt-2 text-sm text-text-secondary">
+            O catálogo da imobiliária já usa a credencial mestre da plataforma.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-sky-500/20 bg-sky-500/5 p-6">
+          <div className="flex items-start gap-4">
+            <div className="rounded-2xl border border-sky-500/20 bg-sky-500/10 p-3">
+              <Building2 className="text-sky-500" size={24} />
+            </div>
+            <div className="flex-1">
+              <h2 className="font-semibold text-text-primary">
+                Minha conta Órulo
+              </h2>
+              <p className="mt-1 text-sm text-text-secondary">
+                Conecte sua própria conta para acessar contatos comerciais,
+                arquivos, unidades e outros dados protegidos.
+              </p>
+
+              <div className="mt-5 rounded-xl border border-border-subtle bg-bg-card p-4">
+                <p className="text-sm font-semibold text-text-primary">
+                  {oruloBrokerConnected
+                    ? 'Conta conectada'
+                    : 'Conta ainda não conectada'}
+                </p>
+                {oruloBrokerExpiresAt && (
+                  <p className="mt-1 text-xs text-text-secondary">
+                    Autorização válida até{' '}
+                    {new Date(oruloBrokerExpiresAt).toLocaleString('pt-BR')}.
+                  </p>
+                )}
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {oruloBrokerConnected && (
+                    <button
+                      type="button"
+                      onClick={handleDisconnectOruloBroker}
+                      disabled={oruloBrokerConnecting}
+                      className="btn-secondary disabled:opacity-60"
+                    >
+                      Desconectar
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleConnectOruloBroker}
+                    disabled={oruloBrokerConnecting}
+                    className="btn-primary disabled:opacity-60"
+                  >
+                    {oruloBrokerConnecting
+                      ? 'Conectando...'
+                      : oruloBrokerConnected
+                        ? 'Reconectar minha conta'
+                        : 'Conectar minha conta'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const tabs = [
+    { id: 'appearance', label: 'Aparência', icon: Palette },
+    { id: 'users', label: 'Membros & Acesso', icon: Users },
+    { id: 'domains', label: 'Domínios', icon: Globe },
+    { id: 'ai', label: 'Integrações 360', icon: Brain },
+    { id: 'tracking', label: 'Tracking', icon: Activity },
+    { id: 'canais', label: 'Canais', icon: Link },
+    { id: 'portals', label: 'Portais', icon: Globe },
+    { id: 'smtp', label: 'Servidor de E-mail', icon: Mail },
+    { id: 'support', label: 'Ajuda & Suporte', icon: HelpCircle },
+  ];
+
+  return (
+    <div className="wootech-reference-screen max-w-[1400px] mx-auto space-y-8">
+      <div className="wootech-page-heading">
+        <div>
+          <div className="wootech-breadcrumb">
+            <strong>Administração</strong>
+            <span>/</span>
+            <span>Configurações</span>
+          </div>
+          <h1>Central de configurações</h1>
+          <p>
+            Gerencie identidade, publicação, canais, acessos e integrações da
+            sua imobiliária.
+          </p>
+        </div>
+        <div className="wootech-action-row">
+          <button
+            className="wootech-secondary-action"
+            onClick={() => setActiveTab('tracking')}
+          >
+            <History size={17} /> Ver histórico
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="wootech-primary-action disabled:opacity-50"
+          >
+            {saving ? (
+              'Salvando...'
+            ) : saved ? (
+              <>
+                <Check size={18} /> Salvo!
+              </>
+            ) : (
+              <>
+                <Save size={18} /> Salvar alterações
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      <div className="wootech-status-grid">
+        <SettingsStatus
+          icon={Palette}
+          title="Site"
+          status="Em manutenção"
+          detail="Publicação controlada"
+          tone="warning"
+        />
+        <SettingsStatus
+          icon={Globe}
+          title="Domínio"
+          status="Conectado"
+          detail="Domínio personalizado"
+        />
+        <SettingsStatus
+          icon={MessageCircle}
+          title="WhatsApp"
+          status="Conectado"
+          detail="1 instância conectada"
+        />
+        <SettingsStatus
+          icon={Mail}
+          title="E-mail"
+          status="DNS pendente"
+          detail="Configure os registros"
+          tone="warning"
+        />
+        <SettingsStatus
+          icon={Building2}
+          title="Portais"
+          status="Ativos"
+          detail="Integrações de anúncios"
+        />
+      </div>
+
+      {/* Modern Tabs */}
+      <div className="flex items-center gap-1 border-b border-border-subtle overflow-x-auto">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`flex items-center gap-2 px-5 py-3.5 text-sm font-medium transition-all relative whitespace-nowrap rounded-t-lg ${
+              activeTab === tab.id
+                ? 'text-primary bg-primary/5'
+                : 'text-text-tertiary hover:text-text-secondary hover:bg-bg-hover'
+            }`}
+          >
+            <tab.icon size={16} />
+            {tab.label}
+            {activeTab === tab.id && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Content Area */}
+      <div className="min-h-[600px]">
+        {activeTab === 'appearance' && <AppearanceSettings />}
+        {activeTab === 'users' && <UserManagement />}
+        {activeTab === 'domains' && <DomainSettings />}
+        {activeTab === 'tracking' && <TrackingSettings />}
+        {activeTab === 'canais' && <ChannelsSettings />}
+        {activeTab === 'smtp' && <SmtpSettings />}
+        {activeTab === 'portals' && (
+          <div className="space-y-6">
+            <div className="bg-bg-card border border-border-subtle rounded-2xl p-6">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
+                  <Globe size={24} className="text-emerald-500" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-text-primary">
+                    Publicação em Portais
+                  </h3>
+                  <p className="text-sm text-text-secondary mt-0.5">
+                    Publique seus imóveis nos maiores portais do Brasil.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="rounded-2xl border border-border-subtle bg-bg-primary/40 p-5 space-y-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-2xl">
+                        <Building2 size={22} className="text-blue-500" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-text-primary">
+                          VivaReal
+                        </h4>
+                        <p className="text-xs text-text-secondary mt-0.5">
+                          Credenciais de parceiro VivaReal.
+                        </p>
+                      </div>
+                    </div>
+                    <label className="inline-flex items-center gap-3 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={vivarealEnabled}
+                        onChange={(e) => setVivarealEnabled(e.target.checked)}
+                        className="sr-only"
+                      />
+                      <span
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${vivarealEnabled ? 'bg-primary' : 'bg-slate-300'}`}
+                      >
+                        <span
+                          className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${vivarealEnabled ? 'translate-x-5' : 'translate-x-1'}`}
+                        />
+                      </span>
+                      <span className="text-xs font-semibold text-text-secondary">
+                        {vivarealEnabled ? 'Ativa' : 'Inativa'}
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">
+                        API Key
+                      </label>
+                      <input
+                        type="password"
+                        value={vivarealApiKey}
+                        onChange={(e) => setVivarealApiKey(e.target.value)}
+                        placeholder="Chave da API VivaReal"
+                        className="input-premium font-mono"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">
+                        Partner ID
+                      </label>
+                      <input
+                        type="text"
+                        value={vivarealPartnerId}
+                        onChange={(e) => setVivarealPartnerId(e.target.value)}
+                        placeholder="ID do parceiro"
+                        className="input-premium"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-border-subtle bg-bg-primary/40 p-5 space-y-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
+                        <Building2 size={22} className="text-amber-500" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-text-primary">
+                          Zap Imóveis
+                        </h4>
+                        <p className="text-xs text-text-secondary mt-0.5">
+                          Credenciais de parceiro Zap Imóveis.
+                        </p>
+                      </div>
+                    </div>
+                    <label className="inline-flex items-center gap-3 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={zapEnabled}
+                        onChange={(e) => setZapEnabled(e.target.checked)}
+                        className="sr-only"
+                      />
+                      <span
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${zapEnabled ? 'bg-primary' : 'bg-slate-300'}`}
+                      >
+                        <span
+                          className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${zapEnabled ? 'translate-x-5' : 'translate-x-1'}`}
+                        />
+                      </span>
+                      <span className="text-xs font-semibold text-text-secondary">
+                        {zapEnabled ? 'Ativa' : 'Inativa'}
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">
+                        API Key
+                      </label>
+                      <input
+                        type="password"
+                        value={zapApiKey}
+                        onChange={(e) => setZapApiKey(e.target.value)}
+                        placeholder="Chave da API Zap Imóveis"
+                        className="input-premium font-mono"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">
+                        Partner ID
+                      </label>
+                      <input
+                        type="text"
+                        value={zapPartnerId}
+                        onChange={(e) => setZapPartnerId(e.target.value)}
+                        placeholder="ID do parceiro"
+                        className="input-premium"
+                      />
+                    </div>
+                  </div>
+                  {zapEnabled && (
+                    <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                      <label className="text-xs font-semibold text-emerald-700 uppercase tracking-widest mb-1 block">
+                        URL do Feed XML (ZAP / Canal Pro)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          readOnly
+                          value={`https://api.imobzy.com/api/public/zap/feed/${profile?.organization?.custom_domain || profile?.organization_id}.xml`}
+                          className="w-full bg-white/50 text-emerald-900 border border-emerald-200 rounded-lg px-3 py-2 text-sm font-mono cursor-copy"
+                          onClick={(e) => {
+                            (e.target as HTMLInputElement).select();
+                            navigator.clipboard.writeText(
+                              (e.target as HTMLInputElement).value
+                            );
+                            alert('URL copiada para a área de transferência!');
+                          }}
+                        />
+                        <button
+                          onClick={() => {
+                            const url = `https://api.imobzy.com/api/public/zap/feed/${profile?.organization?.custom_domain || profile?.organization_id}.xml`;
+                            navigator.clipboard.writeText(url);
+                            alert('URL copiada!');
+                          }}
+                          className="p-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded-lg transition-colors"
+                          title="Copiar URL"
+                        >
+                          <Copy size={16} />
+                        </button>
+                      </div>
+                      <div className="text-xs text-emerald-700 mt-3 p-3 bg-emerald-50 rounded-lg border border-emerald-100">
+                        <p className="font-bold mb-2">
+                          Como ativar a integração ZAP para a{' '}
+                          {settings?.agencyName || 'sua imobiliária'}:
+                        </p>
+                        <ol className="list-decimal list-inside space-y-1.5 ml-1">
+                          <li>
+                            Acesse sua conta corporativa no{' '}
+                            <strong>Canal Pro</strong> (Grupo ZAP).
+                          </li>
+                          <li>
+                            Vá no menu{' '}
+                            <strong>
+                              Configurações &gt; Integração de Anúncios
+                            </strong>
+                            .
+                          </li>
+                          <li>
+                            Cole a URL acima no campo de{' '}
+                            <strong>Feed XML</strong>.
+                          </li>
+                          <li>
+                            O ZAP passará a consultar a{' '}
+                            <strong>
+                              {settings?.agencyName || 'nossa plataforma'}
+                            </strong>{' '}
+                            automaticamente todos os dias para atualizar sua
+                            vitrine!
+                          </li>
+                        </ol>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {activeTab === 'support' && <SupportPortal />}
+
+        {activeTab === 'ai' && (
+          <div className="space-y-6">
+            {/* AI Integrations Card */}
+            <div className="bg-bg-card border border-border-subtle rounded-2xl p-6">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="p-3 bg-primary/10 border border-primary/20 rounded-2xl">
+                  <Key size={24} className="text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-text-primary">
+                    Centro de Integrações 360
+                  </h3>
+                  <p className="text-sm text-text-secondary mt-0.5">
+                    Configure as chaves secretas para unificar Financeiro,
+                    Jurídico e IA.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {[
+                    {
+                      label: 'OpenAI API Key (GPT-4o)',
+                      value: openaiKey,
+                      setter: setOpenaiKey,
+                      placeholder: 'sk-...',
+                      desc: 'Usado para gerações complexas e análise de dossiês.',
+                    },
+                    {
+                      label: 'Namo Bana AI Key',
+                      value: namoBanaKey,
+                      setter: setNamoBanaKey,
+                      placeholder: 'Chave do cliente...',
+                      desc: 'Chave personalizada do cliente para criação assistida por IA.',
+                    },
+                    {
+                      label: 'Gemini API Key (Google)',
+                      value: geminiKey,
+                      setter: setGeminiKey,
+                      placeholder: 'AIzaSy...',
+                      desc: 'Obtenha sua chave gratuita no Google AI Studio.',
+                    },
+                    {
+                      label: 'Groq API Key (Llama 3)',
+                      value: groqKey,
+                      setter: setGroqKey,
+                      placeholder: 'gsk_...',
+                      desc: 'Gerações ultrarrápidas de baixo custo.',
+                    },
+                  ].map((field) => (
+                    <div key={field.label} className="space-y-2">
+                      <label className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">
+                        {field.label}
+                      </label>
+                      <input
+                        type="password"
+                        value={field.value}
+                        onChange={(e) => field.setter(e.target.value)}
+                        placeholder={field.placeholder}
+                        className="input-premium font-mono"
+                      />
+                      <p className="text-xs text-text-tertiary">{field.desc}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="h-px bg-border-subtle" />
+
+                <h4 className="text-sm font-semibold text-text-primary uppercase tracking-widest">
+                  Módulos de Negócio (360)
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {[
+                    {
+                      label: 'Asaas API Key (Financeiro)',
+                      value: asaasKey,
+                      setter: setAsaasKey,
+                      placeholder: '$aas_...',
+                      desc: 'Para automação de boletos, PIX e gestão de aluguéis.',
+                    },
+                    {
+                      label: 'ZapSign API Token (Jurídico)',
+                      value: zapsignKey,
+                      setter: setZapsignKey,
+                      placeholder: 'Token de acesso ZapSign',
+                      desc: 'Para envio de contratos e assinaturas digitais via WhatsApp.',
+                    },
+                    {
+                      label: 'CVcrm API Token (CRM)',
+                      value: cvcrmKey,
+                      setter: setCvcrmKey,
+                      placeholder: 'Token do CVcrm',
+                      desc: 'Para registrar histórico de atendimentos.',
+                    },
+                    {
+                      label: 'CVcrm E-mail de Integração',
+                      value: cvcrmEmail,
+                      setter: setCvcrmEmail,
+                      placeholder: 'email@imobiliaria.com.br',
+                      desc: 'E-mail do usuário que gerou o token (Obrigatório).',
+                    },
+                    {
+                      label: 'CVcrm URL Base',
+                      value: cvcrmBaseUrl,
+                      setter: setCvcrmBaseUrl,
+                      placeholder: 'https://suaimobiliaria.cvcrm.com.br',
+                      desc: 'URL de acesso ao seu CVcrm (inclua o https://).',
+                    },
+                    {
+                      label: 'BIA API Key (Xano)',
+                      value: biaKey,
+                      setter: setBiaKey,
+                      placeholder: 'Chave da API BIA',
+                      desc: 'Para disparo de atendimento com IA.',
+                    },
+                  ].map((field) => (
+                    <div key={field.label} className="space-y-2">
+                      <label className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">
+                        {field.label}
+                      </label>
+                      <input
+                        type="password"
+                        value={field.value}
+                        onChange={(e) => field.setter(e.target.value)}
+                        placeholder={field.placeholder}
+                        className="input-premium font-mono"
+                      />
+                      <p className="text-xs text-text-tertiary">{field.desc}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="h-px bg-border-subtle" />
+
+                <div className="rounded-2xl border border-sky-500/20 bg-sky-500/5 p-5 space-y-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-sky-500/10 border border-sky-500/20 rounded-2xl">
+                        <Building2 size={22} className="text-sky-500" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-text-primary">
+                          Órulo Catálogo Urbano
+                        </h4>
+                        <p className="text-xs text-text-secondary mt-0.5">
+                          O catálogo usa a credencial mestre da plataforma,
+                          disponível para todas as imobiliárias.
+                        </p>
+                      </div>
+                    </div>
+                    <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-600">
+                      Integração da plataforma
+                    </span>
+                  </div>
+
+                  <div className="rounded-xl border border-border-subtle bg-bg-card p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h5 className="text-xs font-bold uppercase tracking-widest text-text-primary">
+                        Minha conta Órulo
+                      </h5>
+                      <p className="mt-1 text-xs text-text-secondary">
+                        {oruloBrokerConnected
+                          ? `Conta Órulo autorizada${oruloBrokerExpiresAt ? ` até ${new Date(oruloBrokerExpiresAt).toLocaleString('pt-BR')}` : ''}.`
+                          : 'Cada corretor deve conectar a própria conta para consultar contatos, arquivos, unidades e outros dados protegidos.'}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {oruloBrokerConnected && (
+                        <button
+                          type="button"
+                          onClick={handleDisconnectOruloBroker}
+                          disabled={oruloBrokerConnecting}
+                          className="btn-secondary text-xs uppercase tracking-widest font-bold disabled:opacity-60"
+                        >
+                          Desconectar
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleConnectOruloBroker}
+                        disabled={oruloBrokerConnecting}
+                        className="btn-primary text-xs uppercase tracking-widest font-bold disabled:opacity-60"
+                      >
+                        {oruloBrokerConnecting
+                          ? 'Conectando...'
+                          : oruloBrokerConnected
+                            ? 'Reconectar minha conta'
+                            : 'Conectar minha conta'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Info Banner */}
+                <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl flex items-start gap-3">
+                  <Info size={16} className="text-primary mt-0.5 shrink-0" />
+                  <p className="text-sm text-text-secondary leading-relaxed">
+                    <strong className="text-text-primary">Dica Premium:</strong>{' '}
+                    Recomendamos o uso da{' '}
+                    <strong className="text-primary">Gemini (1.5 Flash)</strong>{' '}
+                    para custos otimizados e maior velocidade de resposta em
+                    atendimentos de chat e descrições técnicas.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Security Card */}
+            <div className="bg-bg-card border border-border-subtle rounded-2xl p-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-2xl">
+                    <Shield size={22} className="text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-text-primary">
+                      Segurança & Criptografia
+                    </h3>
+                    <p className="text-xs text-text-secondary mt-0.5">
+                      Suas chaves são armazenadas com criptografia de ponta a
+                      ponta.
+                    </p>
+                  </div>
+                </div>
+                <button className="text-xs font-semibold text-primary hover:underline transition-colors">
+                  Ver Termos
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default SystemSettings;

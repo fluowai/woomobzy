@@ -1,0 +1,1383 @@
+package whatsapp
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/google/uuid"
+	"go.mau.fi/whatsmeow"
+	waE2E "go.mau.fi/whatsmeow/proto/waE2E"
+	"go.mau.fi/whatsmeow/types"
+	"go.mau.fi/whatsmeow/types/events"
+	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
+
+	"whatsapp-service/internal/models"
+	"whatsapp-service/internal/repository"
+	"whatsapp-service/internal/ws"
+	"whatsapp-service/pkg/phone"
+)
+
+// Client wraps a WhatsMeow client with business logic
+type Client struct {
+	ctx                context.Context
+	cancel             context.CancelFunc
+	instanceID         uuid.UUID
+	tenantID           *uuid.UUID
+	instanceName       string
+	waClient           *whatsmeow.Client
+	instanceRepo       *repository.InstanceRepo
+	chatRepo           *repository.ChatRepo
+	contactRepo        *repository.ContactRepo
+	messageRepo        *repository.MessageRepo
+	mediaRepo          *repository.MediaRepo
+	hub                *ws.Hub
+	logger             *zap.Logger
+	qrCode             string
+	pairingError       string
+	pairingRecoverable bool
+	qrChan             <-chan whatsmeow.QRChannelItem
+	connected          bool
+	eventHandlerID     uint32
+	mu                 sync.RWMutex
+	historyMu          sync.RWMutex
+	historyCutoff      time.Time
+	supabaseURL        string
+	supabaseKey        string
+	storageBucket      string
+	minioEndpoint      string
+	minioPublicURL     string
+	minioAccessKey     string
+	minioSecretKey     string
+	minioRegion        string
+	automation         *AutomationClient
+	pairClientType     whatsmeow.PairClientType
+	pairClientName     string
+	pairMu             sync.Mutex
+	pairPhone          string
+	pairCode           string
+	pairErr            error
+	pairReady          chan struct{}
+	pairDone           bool
+	eventSlots         chan struct{}
+
+	callManager *CallManager
+}
+
+// NewClient creates a new WhatsApp client wrapper
+func NewClient(
+	parentCtx context.Context,
+	instanceID uuid.UUID,
+	tenantID *uuid.UUID,
+	instanceName string,
+	waClient *whatsmeow.Client,
+	instanceRepo *repository.InstanceRepo,
+	chatRepo *repository.ChatRepo,
+	contactRepo *repository.ContactRepo,
+	messageRepo *repository.MessageRepo,
+	mediaRepo *repository.MediaRepo,
+	hub *ws.Hub,
+	logger *zap.Logger,
+	supabaseURL string,
+	supabaseKey string,
+	storageBucket string,
+	minioEndpoint string,
+	minioPublicURL string,
+	minioAccessKey string,
+	minioSecretKey string,
+	minioRegion string,
+	nodeURL string,
+	internalToken string,
+	automationEnabled bool,
+	pairClientType whatsmeow.PairClientType,
+	pairClientName string,
+) *Client {
+	clientCtx, cancel := context.WithCancel(parentCtx)
+	var automation *AutomationClient
+	if automationEnabled && nodeURL != "" && internalToken != "" {
+		automation = NewAutomationClient(nodeURL, internalToken, logger)
+	}
+
+	return &Client{
+		ctx:            clientCtx,
+		cancel:         cancel,
+		instanceID:     instanceID,
+		tenantID:       tenantID,
+		instanceName:   instanceName,
+		waClient:       waClient,
+		instanceRepo:   instanceRepo,
+		chatRepo:       chatRepo,
+		contactRepo:    contactRepo,
+		messageRepo:    messageRepo,
+		mediaRepo:      mediaRepo,
+		hub:            hub,
+		logger:         logger,
+		supabaseURL:    supabaseURL,
+		supabaseKey:    supabaseKey,
+		storageBucket:  storageBucket,
+		minioEndpoint:  minioEndpoint,
+		minioPublicURL: minioPublicURL,
+		minioAccessKey: minioAccessKey,
+		minioSecretKey: minioSecretKey,
+		minioRegion:    minioRegion,
+		automation:     automation,
+		pairClientType: pairClientType,
+		pairClientName: pairClientName,
+		eventSlots:     make(chan struct{}, 32),
+	}
+}
+
+// Connect initiates the WhatsApp connection
+func (c *Client) Connect(ctx context.Context) error {
+	c.mu.Lock()
+	c.pairingError = ""
+	c.pairingRecoverable = false
+	if c.eventHandlerID == 0 {
+		c.eventHandlerID = c.waClient.AddEventHandler(c.eventHandler)
+	}
+	c.mu.Unlock()
+
+	if c.waClient.Store.ID == nil {
+		if err := c.instanceRepo.UpdateStatus(ctx, c.instanceID, models.StatusQRPending); err != nil {
+			c.logger.Error("Failed to update QR pending status",
+				zap.String("instance", c.instanceID.String()),
+				zap.Error(err),
+			)
+		}
+
+		c.broadcastEvent("instance_status", models.InstanceStatusEvent{
+			InstanceID: c.instanceID,
+			Status:     models.StatusQRPending,
+		})
+
+		qrChan, err := c.waClient.GetQRChannel(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to get QR channel: %w", err)
+		}
+		c.qrChan = qrChan
+
+		if err := c.waClient.ConnectContext(ctx); err != nil {
+			return fmt.Errorf("failed to connect: %w", err)
+		}
+
+		// Process QR codes
+		for evt := range qrChan {
+			switch evt.Event {
+			case whatsmeow.QRChannelEventCode:
+				// Render the pairing QR as a PNG data URL so the raw pairing
+				// token never leaves the service (no DOM, no API, no WS).
+				qrImage, imgErr := qrImageDataURL(evt.Code)
+				if imgErr != nil {
+					c.logger.Error("Failed to render QR image",
+						zap.String("instance", c.instanceID.String()),
+						zap.Error(imgErr),
+					)
+					break
+				}
+
+				c.mu.Lock()
+				c.qrCode = qrImage
+				c.pairingError = ""
+				c.pairingRecoverable = false
+				c.mu.Unlock()
+
+				c.logger.Info("QR Code generated",
+					zap.String("instance", c.instanceID.String()),
+				)
+
+				// Save to DB
+				if err := c.instanceRepo.UpdateQRCode(ctx, c.instanceID, qrImage); err != nil {
+					c.logger.Error("Failed to persist QR code",
+						zap.String("instance", c.instanceID.String()),
+						zap.Error(err),
+					)
+				}
+
+				// Broadcast to WebSocket
+				c.broadcastEvent("qr_code", models.QRCodeEvent{
+					InstanceID: c.instanceID,
+					QRCode:     qrImage,
+					ExpiresAt:  time.Now().Add(evt.Timeout),
+				})
+				c.generatePendingPairCode(ctx, evt.Timeout)
+
+			case whatsmeow.QRChannelSuccess.Event:
+				c.mu.Lock()
+				c.qrCode = ""
+				c.mu.Unlock()
+
+			default:
+				if message, recoverable := pairingFailureMessage(evt.Event); message != "" {
+					c.finishPairingWithError(ctx, message, recoverable, evt.Error)
+				}
+			}
+		}
+	} else {
+		// Existing session: socket connection alone is not enough. Wait until
+		// WhatsApp confirms that the device is authenticated.
+		if err := c.waClient.ConnectContext(ctx); err != nil {
+			return fmt.Errorf("failed to reconnect: %w", err)
+		}
+		if err := c.waitUntilLoggedIn(ctx); err != nil {
+			c.waClient.Disconnect()
+			return err
+		}
+	}
+
+	return nil
+}
+
+// PreparePairCode arms the next pre-login QR event to also request a phone
+// pairing code. WhatsApp only accepts PairPhone after the login websocket is up.
+func (c *Client) PreparePairCode(phoneNumber string) {
+	c.pairMu.Lock()
+	defer c.pairMu.Unlock()
+	if c.pairReady == nil || c.pairDone {
+		c.pairReady = make(chan struct{})
+	}
+	c.pairPhone = phone.Normalize(phoneNumber)
+	c.pairCode = ""
+	c.pairErr = nil
+	c.pairDone = false
+}
+
+// WaitPairCode waits until PairPhone finishes or the request times out.
+func (c *Client) WaitPairCode(ctx context.Context) (string, string, error) {
+	c.pairMu.Lock()
+	ready := c.pairReady
+	if c.pairDone {
+		code, normalizedPhone, err := c.pairCode, c.pairPhone, c.pairErr
+		c.pairMu.Unlock()
+		return code, normalizedPhone, err
+	}
+	c.pairMu.Unlock()
+
+	if ready == nil {
+		return "", "", fmt.Errorf("pairing code was not requested")
+	}
+
+	select {
+	case <-ctx.Done():
+		return "", "", ctx.Err()
+	case <-ready:
+		c.pairMu.Lock()
+		defer c.pairMu.Unlock()
+		return c.pairCode, c.pairPhone, c.pairErr
+	}
+}
+
+// generatePendingPairCode calls whatsmeow.PairPhone once the QR channel proves
+// the pre-login session is ready. The QR remains available as a fallback.
+func (c *Client) generatePendingPairCode(ctx context.Context, qrTimeout time.Duration) {
+	c.pairMu.Lock()
+	phoneNumber := c.pairPhone
+	if phoneNumber == "" || c.pairDone {
+		c.pairMu.Unlock()
+		return
+	}
+	c.pairDone = true
+	ready := c.pairReady
+	c.pairMu.Unlock()
+
+	clientType := c.pairClientType
+	if clientType == "" {
+		clientType = whatsmeow.PairClientChrome
+	}
+	clientName := strings.TrimSpace(c.pairClientName)
+	if clientName == "" {
+		clientName = "Chrome (Windows)"
+	}
+
+	code, err := c.waClient.PairPhone(ctx, phoneNumber, true, clientType, clientName)
+
+	c.pairMu.Lock()
+	c.pairCode = code
+	c.pairErr = err
+	c.pairMu.Unlock()
+	if ready != nil {
+		close(ready)
+	}
+
+	if err != nil {
+		c.logger.Warn("Failed to generate WhatsApp pairing code",
+			zap.String("instance", c.instanceID.String()),
+			zap.String("phone", phoneNumber),
+			zap.Error(err),
+		)
+		return
+	}
+
+	expiresAt := time.Now().Add(qrTimeout)
+	c.logger.Info("WhatsApp pairing code generated",
+		zap.String("instance", c.instanceID.String()),
+		zap.String("phone", phoneNumber),
+	)
+	c.broadcastEvent("pairing_code", models.PairCodeEvent{
+		InstanceID:  c.instanceID,
+		PairingCode: code,
+		Phone:       phoneNumber,
+		ExpiresAt:   expiresAt,
+	})
+}
+
+// pairingFailureMessage maps a QR channel event to a user-facing message and
+// whether the failure is recoverable. Recoverable failures (e.g. a QR code
+// that expired) can be resolved by simply restarting the QR flow, so the API
+// clears them automatically instead of surfacing a hard error.
+func pairingFailureMessage(event string) (message string, recoverable bool) {
+	switch event {
+	case whatsmeow.QRChannelTimeout.Event:
+		return "O QR Code expirou. Gere um novo código e tente novamente.", true
+	case whatsmeow.QRChannelEventError:
+		return "O WhatsApp recusou o pareamento. Gere um novo QR Code.", false
+	case whatsmeow.QRChannelClientOutdated.Event:
+		return "A versão do conector WhatsApp está desatualizada.", false
+	case whatsmeow.QRChannelScannedWithoutMultidevice.Event:
+		return "Ative Aparelhos Conectados no WhatsApp e tente novamente.", false
+	case whatsmeow.QRChannelErrUnexpectedEvent.Event:
+		return "A sessão mudou durante o pareamento. Gere um novo QR Code.", true
+	default:
+		return "", false
+	}
+}
+
+func (c *Client) finishPairingWithError(ctx context.Context, message string, recoverable bool, err error) {
+	c.mu.Lock()
+	c.connected = false
+	c.qrCode = ""
+	c.pairingError = message
+	c.pairingRecoverable = recoverable
+	c.mu.Unlock()
+
+	fields := []zap.Field{
+		zap.String("instance", c.instanceID.String()),
+		zap.String("pairing_error", message),
+		zap.Bool("recoverable", recoverable),
+	}
+	if err != nil {
+		fields = append(fields, zap.Error(err))
+	}
+	c.logger.Warn("WhatsApp pairing finished with error", fields...)
+
+	if updateErr := c.instanceRepo.UpdateStatus(ctx, c.instanceID, models.StatusDisconnected); updateErr != nil {
+		c.logger.Error("Failed to clear QR pairing state",
+			zap.String("instance", c.instanceID.String()),
+			zap.Error(updateErr),
+		)
+	}
+	c.broadcastEvent("instance_status", models.InstanceStatusEvent{
+		InstanceID:  c.instanceID,
+		Status:      models.StatusDisconnected,
+		Error:       message,
+		Recoverable: recoverable,
+	})
+}
+
+// Disconnect cleanly disconnects the WhatsApp client
+func (c *Client) Disconnect() {
+	c.mu.Lock()
+	c.cancel()
+	c.connected = false
+	c.mu.Unlock()
+	if c.waClient != nil {
+		c.waClient.Disconnect()
+	}
+}
+
+func (c *Client) waitUntilLoggedIn(ctx context.Context) error {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		if c.waClient.IsLoggedIn() {
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("WhatsApp authentication timed out: %w", ctx.Err())
+		case <-ticker.C:
+		}
+	}
+}
+
+// IsConnected returns whether the client is currently connected
+func (c *Client) IsConnected() bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.connected
+}
+
+// IsRunning reports whether this wrapper still owns an active lifecycle. A
+// transient Disconnected event remains running because whatsmeow reconnects it.
+func (c *Client) IsRunning() bool {
+	return c.ctx.Err() == nil
+}
+
+// CurrentQRCode returns the current in-memory QR code without a data race.
+func (c *Client) CurrentQRCode() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.qrCode
+}
+
+// CurrentPairingError returns the terminal error from the current QR flow.
+func (c *Client) CurrentPairingError() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.pairingError
+}
+
+// PairingErrorRecoverable reports whether the current pairing error can be
+// cleared and the QR flow restarted automatically.
+func (c *Client) PairingErrorRecoverable() bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.pairingRecoverable
+}
+
+// ClearPairingError clears any pending pairing error so a fresh QR flow can
+// start without user interaction.
+func (c *Client) ClearPairingError() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.pairingError = ""
+	c.pairingRecoverable = false
+}
+
+// IsSocketConnected reports whether the WhatsApp websocket is still open.
+func (c *Client) IsSocketConnected() bool {
+	return c.waClient != nil && c.waClient.IsConnected()
+}
+
+// GetWAClient returns the underlying WhatsMeow client (for sending messages)
+func (c *Client) GetWAClient() *whatsmeow.Client {
+	return c.waClient
+}
+
+// InitCallManager initializes the CallManager with the given bridge and repository.
+func (c *Client) InitCallManager(repo *repository.CallRepo) {
+	cm := NewCallManager(c, repo, c.hub, c.logger)
+	vb := newVoipBridge(c.waClient, c.logger)
+	cm.SetBridge(vb)
+	c.callManager = cm
+}
+
+// CallManager returns the call manager for this client.
+func (c *Client) CallManager() *CallManager {
+	return c.callManager
+}
+
+// StorageBucket returns the configured WhatsApp media bucket.
+func (c *Client) StorageBucket() string {
+	return c.storageBucket
+}
+
+func (c *Client) broadcastEvent(event string, data interface{}) {
+	c.hub.BroadcastEventToTenant(uuidToString(c.tenantID), event, data)
+}
+
+// eventHandler processes all WhatsMeow events
+func (c *Client) eventHandler(evt interface{}) {
+	switch v := evt.(type) {
+	case *events.Message:
+		c.runEventTask(func() { c.handleMessage(v) })
+
+	case *events.Connected:
+		c.mu.Lock()
+		c.connected = true
+		c.mu.Unlock()
+		c.logger.Info("WhatsApp connected event", zap.String("instance", c.instanceID.String()))
+		c.markConnected(c.ctx)
+
+	case *events.Disconnected:
+		c.mu.Lock()
+		c.connected = false
+		c.mu.Unlock()
+		c.logger.Warn("WhatsApp disconnected event", zap.String("instance", c.instanceID.String()))
+
+		c.instanceRepo.UpdateStatus(c.ctx, c.instanceID, models.StatusReconnecting)
+		c.broadcastEvent("instance_status", models.InstanceStatusEvent{
+			InstanceID: c.instanceID,
+			Status:     models.StatusReconnecting,
+		})
+
+	case *events.PairSuccess:
+		jid := v.ID.String()
+		if err := c.instanceRepo.BindSession(c.ctx, c.instanceID, phone.ExtractFromJID(jid), jid); err != nil {
+			c.logger.Error("Failed to persist paired WhatsApp session", zap.String("instance", c.instanceID.String()), zap.Error(err))
+		}
+
+	case *events.LoggedOut:
+		c.mu.Lock()
+		c.connected = false
+		c.mu.Unlock()
+		c.logger.Warn("WhatsApp logged out", zap.String("instance", c.instanceID.String()))
+		_ = c.instanceRepo.ClearSession(c.ctx, c.instanceID, models.StatusLoggedOut)
+		c.broadcastEvent("instance_status", models.InstanceStatusEvent{
+			InstanceID: c.instanceID,
+			Status:     models.StatusLoggedOut,
+		})
+		c.cancel()
+
+	case *events.StreamReplaced:
+		c.mu.Lock()
+		c.connected = false
+		c.mu.Unlock()
+		_ = c.instanceRepo.UpdateStatus(c.ctx, c.instanceID, models.StatusStreamReplaced)
+		c.broadcastEvent("instance_status", models.InstanceStatusEvent{
+			InstanceID: c.instanceID,
+			Status:     models.StatusStreamReplaced,
+			Error:      "A sessão foi assumida por outra conexão.",
+		})
+		c.cancel()
+
+	case *events.TemporaryBan:
+		message := fmt.Sprintf("A conta recebeu um bloqueio temporário do WhatsApp (%s).", v.Code)
+		if v.Expire > 0 {
+			message = fmt.Sprintf("A conta recebeu um bloqueio temporário do WhatsApp por %s.", v.Expire.Round(time.Minute))
+		}
+		c.markConnectionError(message)
+
+	case *events.ClientOutdated:
+		c.markConnectionError("O conector WhatsApp está desatualizado e precisa ser atualizado.")
+
+	case *events.ConnectFailure:
+		if v.Reason.IsLoggedOut() {
+			c.mu.Lock()
+			c.connected = false
+			c.mu.Unlock()
+			_ = c.instanceRepo.ClearSession(c.ctx, c.instanceID, models.StatusLoggedOut)
+			c.broadcastEvent("instance_status", models.InstanceStatusEvent{
+				InstanceID: c.instanceID,
+				Status:     models.StatusLoggedOut,
+				Error:      "A sessão foi encerrada pelo WhatsApp.",
+			})
+			c.cancel()
+		} else {
+			c.markConnectionError(fmt.Sprintf("Falha de conexão do WhatsApp (%s): %s", v.Reason, v.Message))
+		}
+
+	case *events.HistorySync:
+		c.runEventTask(func() { c.handleHistorySync(v) })
+
+	case *events.Receipt:
+		c.handleReceipt(v)
+
+	case *events.CallOffer:
+		if cm := c.callManager; cm != nil {
+			cm.handleCallEventOffer(c.ctx, v)
+		}
+
+	case *events.CallAccept:
+		if cm := c.callManager; cm != nil {
+			cm.handleCallEventAccept(c.ctx, v)
+		}
+
+	case *events.CallTransport:
+		if cm := c.callManager; cm != nil {
+			cm.handleCallEventTransport(c.ctx, v)
+		}
+
+	case *events.CallTerminate:
+		if cm := c.callManager; cm != nil {
+			cm.handleCallEventTerminate(v)
+		}
+
+	case *events.JoinedGroup:
+		c.handleJoinedGroup(v)
+
+	case *events.GroupInfo:
+		c.handleGroupInfo(v)
+	}
+}
+
+func (c *Client) runEventTask(task func()) {
+	select {
+	case c.eventSlots <- struct{}{}:
+		go func() {
+			defer func() { <-c.eventSlots }()
+			task()
+		}()
+	case <-c.ctx.Done():
+	}
+}
+
+func (c *Client) markConnectionError(message string) {
+	c.mu.Lock()
+	c.connected = false
+	c.mu.Unlock()
+	if err := c.instanceRepo.UpdateStatus(c.ctx, c.instanceID, models.StatusError); err != nil {
+		c.logger.Error("Failed to persist WhatsApp connection error", zap.String("instance", c.instanceID.String()), zap.Error(err))
+	}
+	c.broadcastEvent("instance_status", models.InstanceStatusEvent{
+		InstanceID: c.instanceID,
+		Status:     models.StatusError,
+		Error:      message,
+	})
+	c.cancel()
+}
+
+func (c *Client) handleJoinedGroup(evt *events.JoinedGroup) {
+	c.logger.Info("Joined group", zap.String("group_jid", evt.JID.String()), zap.String("name", evt.GroupName.Name))
+}
+
+func (c *Client) handleGroupInfo(evt *events.GroupInfo) {
+	if evt.JID.Server != types.GroupServer {
+		return
+	}
+	for _, jid := range evt.Leave {
+		if c.waClient != nil && c.waClient.Store.ID != nil && jid.ToNonAD() == c.waClient.Store.ID.ToNonAD() {
+			c.logger.Info("Left group", zap.String("group_jid", evt.JID.String()))
+			break
+		}
+	}
+}
+
+// handleMessage processes an incoming WhatsApp message
+func (c *Client) handleMessage(evt *events.Message) {
+	ctx, cancel := context.WithTimeout(c.ctx, 2*time.Minute)
+	defer cancel()
+
+	// Unwrap message for ephemeral (disappearing messages), view once and document with caption
+	if evt.Message != nil {
+		if evt.Message.GetEphemeralMessage() != nil {
+			evt.Message = evt.Message.GetEphemeralMessage().GetMessage()
+		}
+		if evt.Message.GetViewOnceMessage() != nil {
+			evt.Message = evt.Message.GetViewOnceMessage().GetMessage()
+		}
+		if evt.Message.GetViewOnceMessageV2() != nil {
+			evt.Message = evt.Message.GetViewOnceMessageV2().GetMessage()
+		}
+		if evt.Message.GetDocumentWithCaptionMessage() != nil {
+			evt.Message = evt.Message.GetDocumentWithCaptionMessage().GetMessage()
+		}
+	}
+	if c.logFullHistoryOnDemandResponse(evt) {
+		return
+	}
+
+	info := evt.Info
+	canonicalJID := canonicalChatJID(info)
+	chatJID := canonicalJID.String()
+	isGroup := phone.IsGroupJID(chatJID)
+	if !isGroup && !isPhoneJID(canonicalJID) {
+		c.logger.Debug("Ignoring one-to-one WhatsApp message without canonical phone JID",
+			zap.String("instance", c.instanceID.String()),
+			zap.String("chat_jid", chatJID),
+			zap.String("message_id", info.ID),
+		)
+		return
+	}
+	alternateJIDs := alternateChatJIDs(info, chatJID)
+
+	// Determine sender info
+	var senderPhone, senderName string
+	var participantInfo *models.ParticipantInfo
+
+	if isGroup {
+		senderJID := preferredSenderPhoneJID(info)
+		senderPhone = normalizedBRPhoneFromJID(senderJID)
+		pushName := info.PushName
+		senderName = c.resolveDisplayName(ctx, firstNonEmptyJID(senderJID, info.Sender), pushName, senderPhone)
+		avatarURL := c.resolveAvatarURL(ctx, firstNonEmptyJID(senderJID, info.Sender))
+
+		participantInfo = &models.ParticipantInfo{
+			PushName:    pushName,
+			Phone:       senderPhone,
+			DisplayName: senderName,
+			AvatarURL:   avatarURL,
+		}
+	} else {
+		if info.IsFromMe {
+			if c.waClient.Store.ID != nil {
+				senderPhone = phone.ExtractFromJID(c.waClient.Store.ID.String())
+			}
+			senderName = c.resolveMyDisplayName(ctx)
+		} else {
+			senderPhone = normalizedBRPhoneFromJID(canonicalJID)
+			senderName = c.resolveDisplayName(ctx, canonicalJID, info.PushName, senderPhone)
+		}
+	}
+
+	// Determine message type and content (with mention resolution)
+	msgType, content := extractMessageContent(evt)
+	if (msgType == models.MessageTypeUnknown || msgType == models.MessageTypeText) && strings.TrimSpace(content) == "" {
+		c.logger.Debug("Ignoring WhatsApp event without renderable message content",
+			zap.String("instance", c.instanceID.String()),
+			zap.String("message_id", info.ID),
+		)
+		return
+	}
+
+	// Resolve @mentions to pushnames
+	if evt.Message.GetExtendedTextMessage() != nil && evt.Message.GetExtendedTextMessage().ContextInfo != nil {
+		mentionedJIDs := evt.Message.GetExtendedTextMessage().ContextInfo.MentionedJID
+		if len(mentionedJIDs) > 0 {
+			content = c.resolveMentions(ctx, content, mentionedJIDs)
+		}
+	}
+
+	// Determine chat name
+	chatName := ""
+	if isGroup {
+		chatName = c.resolveGroupName(ctx, canonicalJID, chatJID)
+	} else {
+		if info.IsFromMe {
+			chatName = c.resolveDisplayName(ctx, canonicalJID, "", phone.Normalize(canonicalJID.User))
+		} else {
+			chatName = c.resolveDisplayName(ctx, canonicalJID, info.PushName, senderPhone)
+		}
+	}
+
+	chatAvatarURL := c.resolveAvatarURL(ctx, canonicalJID)
+
+	// Upsert contact (only for non-group or for the sender in a group)
+	if senderPhone != "" && !info.IsFromMe {
+		contact := &models.Contact{
+			InstanceID:  c.instanceID,
+			Phone:       senderPhone,
+			PushName:    info.PushName,
+			DisplayName: senderName,
+			AvatarURL:   chatAvatarURL,
+		}
+		if err := c.contactRepo.Upsert(ctx, contact); err != nil {
+			c.logger.Error("Failed to upsert contact", zap.Error(err))
+		}
+	}
+
+	// Get preview content for last_message
+	previewContent := content
+	if msgType != models.MessageTypeText {
+		previewContent = mediaPreviewContent(msgType, content)
+	}
+	if len(previewContent) > 100 {
+		previewContent = previewContent[:100] + "..."
+	}
+
+	// Upsert chat
+	now := time.Now()
+	chat := &models.Chat{
+		InstanceID:    c.instanceID,
+		ChatJID:       chatJID,
+		Name:          chatName,
+		IsGroup:       isGroup,
+		LastMessage:   previewContent,
+		LastMessageAt: &now,
+		AvatarURL:     chatAvatarURL,
+	}
+	if err := c.chatRepo.Upsert(ctx, chat); err != nil {
+		c.logger.Error("Failed to upsert chat", zap.Error(err))
+		return
+	}
+	mergedIDs, err := c.chatRepo.MergeJIDs(ctx, c.instanceID, chat.ID, alternateJIDs)
+	if err != nil {
+		c.logger.Warn("Failed to merge duplicate chat JIDs",
+			zap.String("instance", c.instanceID.String()),
+			zap.String("chat_jid", chatJID),
+			zap.Error(err),
+		)
+	}
+
+	// Queue media download without blocking message persistence.
+	var mediaURL, mediaMimetype, mediaFilename string
+	mediaStatus := ""
+	mediaError := ""
+	if isMediaMessageType(msgType) {
+		mediaStatus = "pending"
+		mediaMimetype, mediaFilename = mediaMetadata(evt.Message)
+	}
+
+	// Create message record
+	msg := &models.Message{
+		InstanceID:      c.instanceID,
+		ChatID:          chat.ID,
+		MessageID:       info.ID,
+		SenderPhone:     senderPhone,
+		SenderName:      senderName,
+		SenderAvatarURL: chatAvatarURL,
+		IsFromMe:        info.IsFromMe,
+		IsGroup:         isGroup,
+		Type:            msgType,
+		Content:         content,
+		MediaURL:        mediaURL,
+		MediaMimetype:   mediaMimetype,
+		MediaFilename:   mediaFilename,
+		MediaStatus:     mediaStatus,
+		MediaError:      mediaError,
+		Timestamp:       info.Timestamp,
+	}
+
+	// Handle quoted message
+	if evt.Message.GetExtendedTextMessage() != nil && evt.Message.GetExtendedTextMessage().ContextInfo != nil {
+		if quotedID := evt.Message.GetExtendedTextMessage().ContextInfo.GetStanzaID(); quotedID != "" {
+			msg.QuotedMessageID = quotedID
+		}
+	}
+
+	inserted, err := c.messageRepo.Create(ctx, msg)
+	if err != nil {
+		c.logger.Error("Failed to save message", zap.Error(err))
+		return
+	}
+	if inserted && !info.IsFromMe {
+		unread, unreadErr := c.chatRepo.IncrementUnread(ctx, chat.ID, c.instanceID)
+		if unreadErr != nil {
+			c.logger.Warn("Failed to increment unread count", zap.Error(unreadErr))
+		} else {
+			chat.UnreadCount = unread
+		}
+	}
+	if isMediaMessageType(msgType) {
+		c.queueMessageMedia(ctx, msg, evt.Message)
+	} else {
+		c.persistMessageMedia(ctx, msg)
+	}
+
+	// Broadcast via WebSocket
+	c.broadcastEvent("new_message", models.NewMessageEvent{
+		Message:       *msg,
+		Chat:          *chat,
+		MergedChatIDs: mergedIDs,
+		Instance: struct {
+			ID   uuid.UUID `json:"id"`
+			Name string    `json:"name"`
+		}{
+			ID:   c.instanceID,
+			Name: c.instanceName,
+		},
+		Participant: participantInfo,
+	})
+
+	c.logger.Info("Message processed",
+		zap.String("instance", c.instanceID.String()),
+		zap.String("from", senderName),
+		zap.String("type", string(msgType)),
+		zap.Bool("group", isGroup),
+	)
+
+	if c.automation != nil && !info.IsFromMe && !isGroup && senderPhone != "" {
+		go func(saved models.Message, savedChat models.Chat, participant *models.ParticipantInfo) {
+			automationCtx, cancel := context.WithTimeout(c.ctx, 60*time.Second)
+			defer cancel()
+			result, err := c.automation.ProcessMessage(automationCtx, AutomationMessagePayload{
+				InstanceID:   c.instanceID,
+				TenantID:     uuidToString(c.tenantID),
+				InstanceName: c.instanceName,
+				Chat:         savedChat,
+				Message:      saved,
+				Participant:  participant,
+			})
+			if err != nil {
+				c.logger.Warn("AI automation failed",
+					zap.String("instance", c.instanceID.String()),
+					zap.String("message_id", saved.MessageID),
+					zap.Error(err),
+				)
+				return
+			}
+
+			if result != nil && result.ShouldReply {
+				replyCtx, cancel := context.WithTimeout(c.ctx, 30*time.Second)
+				defer cancel()
+
+				if result.AudioPath != "" {
+					audioData, err := os.ReadFile(result.AudioPath)
+					if err == nil {
+						_, _, _, _, _, err = c.SendMediaMessage(replyCtx, savedChat.ChatJID, "audio", audioData, "audio/mpeg", "audio.mp3", "")
+						os.Remove(result.AudioPath)
+					}
+					if err != nil {
+						c.logger.Warn("AI automatic audio reply failed",
+							zap.String("instance", c.instanceID.String()),
+							zap.Error(err),
+						)
+						return
+					}
+				} else if strings.TrimSpace(result.Reply) != "" {
+					if _, _, err := c.SendTextMessage(replyCtx, savedChat.ChatJID, strings.TrimSpace(result.Reply)); err != nil {
+						c.logger.Warn("AI automatic reply failed",
+							zap.String("instance", c.instanceID.String()),
+							zap.String("message_id", saved.MessageID),
+							zap.String("agent_id", result.AgentID),
+							zap.Error(err),
+						)
+						return
+					}
+				}
+
+				c.logger.Info("AI automatic reply sent",
+					zap.String("instance", c.instanceID.String()),
+					zap.String("message_id", saved.MessageID),
+					zap.String("agent_id", result.AgentID),
+					zap.String("agent_name", result.AgentName),
+				)
+			}
+		}(*msg, *chat, participantInfo)
+	}
+}
+
+func (c *Client) logFullHistoryOnDemandResponse(evt *events.Message) bool {
+	if evt == nil || evt.Message == nil {
+		return false
+	}
+	protoMsg := evt.Message.GetProtocolMessage()
+	if protoMsg == nil {
+		return false
+	}
+	peerResp := protoMsg.GetPeerDataOperationRequestResponseMessage()
+	if peerResp == nil || peerResp.GetPeerDataOperationRequestType() != waE2E.PeerDataOperationRequestType_FULL_HISTORY_SYNC_ON_DEMAND {
+		return false
+	}
+
+	for _, result := range peerResp.GetPeerDataOperationResult() {
+		fullResp := result.GetFullHistorySyncOnDemandRequestResponse()
+		if fullResp == nil {
+			continue
+		}
+		metadata := fullResp.GetRequestMetadata()
+		c.logger.Info("Received full WhatsApp history on-demand response",
+			zap.String("instance", c.instanceID.String()),
+			zap.String("message_id", evt.Info.ID),
+			zap.String("stanza_id", peerResp.GetStanzaID()),
+			zap.String("request_id", metadata.GetRequestID()),
+			zap.String("response_code", fullResp.GetResponseCode().String()),
+		)
+	}
+	return true
+}
+
+func (c *Client) queueMessageMedia(ctx context.Context, msg *models.Message, waMessage *waE2E.Message) {
+	if c.mediaRepo == nil || c.tenantID == nil || waMessage == nil {
+		return
+	}
+	payload, err := proto.Marshal(waMessage)
+	if err != nil {
+		c.logger.Warn("Failed to marshal WhatsApp media payload", zap.String("message_id", msg.MessageID), zap.Error(err))
+		return
+	}
+	if err := c.mediaRepo.UpsertPendingFromMessage(ctx, msg, *c.tenantID, c.storageBucket, payload); err != nil {
+		c.logger.Warn("Failed to queue media job", zap.String("message_id", msg.MessageID), zap.Error(err))
+	}
+}
+
+func (c *Client) handleReceipt(receipt *events.Receipt) {
+	if receipt == nil || len(receipt.MessageIDs) == 0 {
+		return
+	}
+	status := receiptStatus(receipt.Type)
+	ids := make([]string, 0, len(receipt.MessageIDs))
+	for _, id := range receipt.MessageIDs {
+		ids = append(ids, string(id))
+	}
+	ctx, cancel := context.WithTimeout(c.ctx, 10*time.Second)
+	defer cancel()
+	if err := c.messageRepo.UpdateDeliveryStatus(ctx, c.instanceID, ids, status); err != nil {
+		c.logger.Warn("Failed to update receipt status", zap.String("instance", c.instanceID.String()), zap.Error(err))
+		return
+	}
+	c.broadcastEvent("message_receipt", models.MessageReceiptEvent{
+		InstanceID: c.instanceID,
+		ChatJID:    receipt.Chat.String(),
+		MessageIDs: ids,
+		Status:     status,
+		Timestamp:  receipt.Timestamp,
+	})
+}
+
+func receiptStatus(receiptType types.ReceiptType) string {
+	switch receiptType {
+	case types.ReceiptTypeRead, types.ReceiptTypeReadSelf:
+		return "read"
+	case types.ReceiptTypePlayed, types.ReceiptTypePlayedSelf:
+		return "played"
+	case types.ReceiptTypeServerError, types.ReceiptTypeInactive:
+		return "failed"
+	default:
+		return "delivered"
+	}
+}
+
+func mediaMetadata(msg *waE2E.Message) (mimeType, fileName string) {
+	switch {
+	case msg.GetImageMessage() != nil:
+		return msg.GetImageMessage().GetMimetype(), ""
+	case msg.GetAudioMessage() != nil:
+		return msg.GetAudioMessage().GetMimetype(), ""
+	case msg.GetVideoMessage() != nil:
+		return msg.GetVideoMessage().GetMimetype(), ""
+	case msg.GetDocumentMessage() != nil:
+		return msg.GetDocumentMessage().GetMimetype(), msg.GetDocumentMessage().GetFileName()
+	case msg.GetStickerMessage() != nil:
+		return msg.GetStickerMessage().GetMimetype(), ""
+	default:
+		return "", ""
+	}
+}
+
+func (c *Client) markConnected(ctx context.Context) {
+	if c.waClient.Store.ID == nil {
+		return
+	}
+
+	jid := c.waClient.Store.ID.String()
+	phoneNum := phone.ExtractFromJID(jid)
+
+	if err := c.instanceRepo.UpdateConnected(ctx, c.instanceID, phoneNum, jid); err != nil {
+		c.logger.Error("Failed to update connected status",
+			zap.String("instance", c.instanceID.String()),
+			zap.Error(err),
+		)
+		return
+	}
+
+	c.broadcastEvent("instance_status", models.InstanceStatusEvent{
+		InstanceID: c.instanceID,
+		Status:     models.StatusConnected,
+		Phone:      phoneNum,
+	})
+}
+
+func (c *Client) persistMessageMedia(ctx context.Context, msg *models.Message) {
+	if c.mediaRepo == nil || c.tenantID == nil || !isMediaMessageType(msg.Type) {
+		return
+	}
+	if err := c.mediaRepo.UpsertFromMessage(ctx, msg, *c.tenantID, c.storageBucket); err != nil {
+		c.logger.Warn("Failed to persist media metadata",
+			zap.String("instance", c.instanceID.String()),
+			zap.String("message_id", msg.MessageID),
+			zap.Error(err),
+		)
+	}
+}
+
+func (c *Client) resolveDisplayName(ctx context.Context, jid types.JID, pushName, fallbackPhone string) string {
+	if pushName != "" {
+		return pushName
+	}
+	if c.waClient.Store != nil && c.waClient.Store.Contacts != nil && !jid.IsEmpty() {
+		if contact, err := c.waClient.Store.Contacts.GetContact(ctx, jid); err == nil {
+			switch {
+			case contact.FullName != "":
+				return contact.FullName
+			case contact.PushName != "":
+				return contact.PushName
+			case contact.BusinessName != "":
+				return contact.BusinessName
+			case contact.FirstName != "":
+				return contact.FirstName
+			}
+		}
+	}
+	return phone.GetDisplayName("", fallbackPhone)
+}
+
+func (c *Client) resolveAvatarURL(ctx context.Context, jid types.JID) string {
+	if jid.IsEmpty() {
+		return ""
+	}
+	picture, err := c.waClient.GetProfilePictureInfo(ctx, jid, &whatsmeow.GetProfilePictureParams{Preview: true})
+	if err != nil || picture == nil || picture.URL == "" {
+		return ""
+	}
+
+	// Faz o download da imagem do WhatsApp CDN
+	req, err := http.NewRequestWithContext(ctx, "GET", picture.URL, nil)
+	if err != nil {
+		c.logger.Warn("Failed to create request for avatar", zap.Error(err))
+		return ""
+	}
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		c.logger.Warn("Failed to download avatar", zap.Error(err))
+		return ""
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		c.logger.Warn("Failed to download avatar, bad status", zap.Int("status", resp.StatusCode))
+		return ""
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		c.logger.Warn("Failed to read avatar body", zap.Error(err))
+		return ""
+	}
+
+	// Define o nome do arquivo e o path no MinIO
+	phoneNum := phone.Normalize(jid.User)
+	if phoneNum == "" {
+		phoneNum = jid.User
+	}
+
+	publicURL, _, _, err := c.uploadToStorageWithDedup(ctx, "whatsapp/avatars", data, "image/jpeg", "avatar", "whatsapp_avatar", phoneNum)
+	if err != nil {
+		c.logger.Warn("Failed to upload avatar to storage", zap.Error(err))
+		return ""
+	}
+
+	return publicURL
+}
+
+func (c *Client) resolveMyDisplayName(ctx context.Context) string {
+	if c.waClient.Store.ID == nil {
+		return "Me"
+	}
+	myJID := c.waClient.Store.ID
+	// Try own pushname from store
+	if c.waClient.Store.PushName != "" {
+		return c.waClient.Store.PushName
+	}
+	// Try contact store
+	if c.waClient.Store.Contacts != nil {
+		if contact, err := c.waClient.Store.Contacts.GetContact(ctx, *myJID); err == nil {
+			switch {
+			case contact.FullName != "":
+				return contact.FullName
+			case contact.PushName != "":
+				return contact.PushName
+			case contact.BusinessName != "":
+				return contact.BusinessName
+			case contact.FirstName != "":
+				return contact.FirstName
+			}
+		}
+	}
+	phoneNum := phone.ExtractDisplayFromJID(myJID.String())
+	if phoneNum != "" {
+		return phoneNum
+	}
+	return "Me"
+}
+
+func (c *Client) resolveGroupName(ctx context.Context, chat types.JID, fallbackJID string) string {
+	// Try live group info
+	groupInfo, err := c.waClient.GetGroupInfo(ctx, chat)
+	if err == nil && groupInfo != nil && groupInfo.Name != "" {
+		return groupInfo.Name
+	}
+	// Try contact store for group subject
+	if c.waClient.Store.Contacts != nil {
+		if contact, err := c.waClient.Store.Contacts.GetContact(ctx, chat.ToNonAD()); err == nil {
+			switch {
+			case contact.FullName != "":
+				return contact.FullName
+			case contact.PushName != "":
+				return contact.PushName
+			}
+		}
+	}
+	// Return empty string instead of fake group name so the DB won't persist it as the real name.
+	return ""
+}
+
+// resolveMentions replaces @mentioned JIDs in the content with their pushnames.
+func (c *Client) resolveMentions(ctx context.Context, content string, mentionedJIDs []string) string {
+	if len(mentionedJIDs) == 0 || content == "" {
+		return content
+	}
+
+	result := content
+	for _, rawJID := range mentionedJIDs {
+		if rawJID == "" {
+			continue
+		}
+
+		jid, err := types.ParseJID(rawJID)
+		if err != nil {
+			continue
+		}
+
+		phoneNum := phone.ExtractFromJID(rawJID)
+		pushName := c.resolveDisplayName(ctx, jid, "", phoneNum)
+
+		// Replace @phone_number or @jid in content with @pushname
+		searchJID := rawJID
+		if idx := strings.IndexByte(rawJID, '@'); idx > 0 {
+			searchJID = rawJID[:idx]
+		}
+
+		oldMention := "@" + searchJID
+		newMention := "@" + pushName
+		result = strings.ReplaceAll(result, oldMention, newMention)
+	}
+
+	return result
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func uuidToString(id *uuid.UUID) string {
+	if id == nil {
+		return ""
+	}
+	return id.String()
+}
+
+func canonicalChatJID(info types.MessageInfo) types.JID {
+	if phone.IsGroupJID(info.Chat.String()) {
+		return info.Chat.ToNonAD()
+	}
+
+	for _, jid := range []types.JID{info.RecipientAlt, info.SenderAlt, info.Chat, info.Sender} {
+		if isPhoneJID(jid) {
+			return types.NewJID(phone.Normalize(jid.User), types.DefaultUserServer)
+		}
+	}
+
+	return info.Chat.ToNonAD()
+}
+
+func preferredSenderPhoneJID(info types.MessageInfo) types.JID {
+	for _, jid := range []types.JID{info.SenderAlt, info.Sender} {
+		if isPhoneJID(jid) {
+			return types.NewJID(phone.Normalize(jid.User), types.DefaultUserServer)
+		}
+	}
+	return types.JID{}
+}
+
+func firstNonEmptyJID(values ...types.JID) types.JID {
+	for _, value := range values {
+		if !value.IsEmpty() {
+			return value
+		}
+	}
+	return types.JID{}
+}
+
+func normalizedBRPhoneFromJID(jid types.JID) string {
+	if !isPhoneJID(jid) {
+		return ""
+	}
+	return phone.Normalize(jid.User)
+}
+
+func alternateChatJIDs(info types.MessageInfo, canonical string) []string {
+	seen := map[string]bool{canonical: true, "": true}
+	var alternates []string
+
+	for _, jid := range []types.JID{info.Chat, info.Sender, info.SenderAlt, info.RecipientAlt} {
+		value := jid.ToNonAD().String()
+		if !seen[value] {
+			seen[value] = true
+			alternates = append(alternates, value)
+		}
+		if isPhoneJID(jid) {
+			normalized := types.NewJID(phone.Normalize(jid.User), types.DefaultUserServer).String()
+			if !seen[normalized] {
+				seen[normalized] = true
+				alternates = append(alternates, normalized)
+			}
+		}
+	}
+
+	return alternates
+}
+
+func isPhoneJID(jid types.JID) bool {
+	if jid.IsEmpty() || jid.User == "" {
+		return false
+	}
+	if jid.Server != types.DefaultUserServer && jid.Server != types.LegacyUserServer {
+		return false
+	}
+	return phone.IsValidBR(jid.User)
+}
+
+func mediaPreviewContent(msgType models.MessageType, content string) string {
+	trimmed := strings.TrimSpace(content)
+	if trimmed != "" {
+		return trimmed
+	}
+
+	switch msgType {
+	case models.MessageTypeImage:
+		return "Imagem"
+	case models.MessageTypeAudio:
+		return "Audio"
+	case models.MessageTypeVideo:
+		return "Video"
+	case models.MessageTypeDocument:
+		return "Documento"
+	case models.MessageTypeSticker:
+		return "Figurinha"
+	case models.MessageTypeLocation:
+		return "Localizacao"
+	case models.MessageTypeContact:
+		return "Contato"
+	default:
+		return ""
+	}
+}
+
+func isMediaMessageType(msgType models.MessageType) bool {
+	switch msgType {
+	case models.MessageTypeImage,
+		models.MessageTypeAudio,
+		models.MessageTypeVideo,
+		models.MessageTypeDocument,
+		models.MessageTypeSticker:
+		return true
+	default:
+		return false
+	}
+}
+
+// extractMessageContent determines the type and text content of a message
+func extractMessageContent(evt *events.Message) (models.MessageType, string) {
+	msg := evt.Message
+
+	if msg.GetConversation() != "" {
+		return models.MessageTypeText, msg.GetConversation()
+	}
+
+	if ext := msg.GetExtendedTextMessage(); ext != nil {
+		return models.MessageTypeText, ext.GetText()
+	}
+
+	if img := msg.GetImageMessage(); img != nil {
+		caption := img.GetCaption()
+		return models.MessageTypeImage, caption
+	}
+
+	if audio := msg.GetAudioMessage(); audio != nil {
+		return models.MessageTypeAudio, ""
+	}
+
+	if video := msg.GetVideoMessage(); video != nil {
+		caption := video.GetCaption()
+		return models.MessageTypeVideo, caption
+	}
+
+	if doc := msg.GetDocumentMessage(); doc != nil {
+		return models.MessageTypeDocument, doc.GetCaption()
+	}
+
+	if sticker := msg.GetStickerMessage(); sticker != nil {
+		return models.MessageTypeSticker, ""
+	}
+
+	if loc := msg.GetLocationMessage(); loc != nil {
+		return models.MessageTypeLocation, fmt.Sprintf("%f,%f", loc.GetDegreesLatitude(), loc.GetDegreesLongitude())
+	}
+
+	if contact := msg.GetContactMessage(); contact != nil {
+		return models.MessageTypeContact, contact.GetDisplayName()
+	}
+
+	return models.MessageTypeUnknown, ""
+}

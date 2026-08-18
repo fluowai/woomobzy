@@ -2,24 +2,18 @@ name: imobzy-local
 
 services:
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
-      args:
-        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
-        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
-        VITE_PANEL_URL: http://localhost:3006
-    env_file:
-      - .env.production
+    image: ghcr.io/fluowai/woomobzy-frontend:latest
+    pull_policy: always
+    restart: unless-stopped
     environment:
-      VITE_API_URL: same-origin
-      VITE_WHATSAPP_API_URL: /api/whatsapp
-      VITE_WHATSAPP_WS_URL: /api/whatsapp/ws
-      VITE_PUBLIC_APP_URL: http://localhost:3006
-      VITE_PANEL_URL: http://localhost:3006
-      VITE_PLATFORM_IP: 127.0.0.1
-      VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
-      VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
+      VITE_API_URL: 'same-origin'
+      VITE_WHATSAPP_API_URL: '/api/whatsapp'
+      VITE_WHATSAPP_WS_URL: '/api/whatsapp/ws'
+      VITE_SUPABASE_URL: 'https://epgaftsjmqmpczvzsrcc.supabase.co'
+      VITE_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2FmdHNqbXFtcGN6dnpzcmNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5NjUyNDUsImV4cCI6MjEwMDU0MTI0NX0.3p4x2i_BtGwzp4ElNV-HqeeVlQcQS53SWai5nJ2NTL0'
+      VITE_PANEL_URL: 'http://localhost:3006'
+      VITE_PUBLIC_APP_URL: 'http://localhost:3006'
+      VITE_PLATFORM_IP: '127.0.0.1'
     ports:
       - '3006:80'
     healthcheck:
@@ -32,7 +26,7 @@ services:
       - imobzy
     cpus: '0.50'
     mem_limit: 256m
-    logging: &default-logging
+    logging:
       driver: json-file
       options:
         max-size: '20m'
@@ -60,6 +54,11 @@ services:
       NODE_URL: http://api:3002
       ALLOWED_ORIGINS: http://localhost:3006,http://127.0.0.1:3006
       CORS_ORIGINS: http://localhost:3006,http://127.0.0.1:3006
+      DATABASE_URL: postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=require&default_query_exec_mode=simple_protocol
+      PGSSLMODE: require
+      GROQ_API_KEY: "gsk_dummy1234567890123456789012345678901234567890123456"
+      OPENAI_API_KEY: "sk-dummy1234567890"
+      GEMINI_API_KEY: "AIzaSy-dummy1234567890"
     volumes:
       - ./traefik/dynamic:/traefik/dynamic
     expose:
@@ -105,6 +104,18 @@ services:
       PGSSLMODE: require
       CORS_ORIGINS: http://localhost:3006,http://127.0.0.1:3006
       ALLOWED_ORIGINS: http://localhost:3006,http://127.0.0.1:3006
+      DATABASE_URL: postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=require&default_query_exec_mode=simple_protocol
+      SUPABASE_DB_URL: ""
+      DATABASE_PRIVATE_URL: ""
+      POSTGRES_URL: ""
+      DIRECT_URL: ""
+      POSTGRES_PRIVATE_URL: ""
+      POSTGRES_PRISMA_URL: ""
+      POSTGRES_URL_NON_POOLING: ""
+      POSTGRESQL_URL: ""
+      PGDATABASE_URL: ""
+      PG_URL: ""
+      DB_URL: ""
     volumes:
       - whatsapp_sessions:/app/.sessions
     expose:

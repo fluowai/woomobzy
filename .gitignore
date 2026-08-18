@@ -74,3 +74,10 @@ test-results/
 
 # Supabase CLI temp download
 supabase/.temp/cli-latest
+
+# Build artifacts
+whatsapp-service/build_output.txt
+whatsapp-service/out.txt
+whatsapp-service/whatsapp-service.exe
+instagram-service/node_modules/
+instagram-service/dist/

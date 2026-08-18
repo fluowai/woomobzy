@@ -30,6 +30,8 @@ import {
   type MediaPost,
 } from '../../services/propertyInstagram';
 import type { Property } from '../../types';
+import { toast } from 'sonner';
+
 
 interface InstagramPostGeneratorProps {
   property: Property;
@@ -132,7 +134,7 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
       anchor.remove();
       URL.revokeObjectURL(objectUrl);
     } catch (err: any) {
-      alert(err.message || 'Erro ao gerar arte');
+      toast.error(err.message || 'Erro ao gerar arte');
     } finally {
       setGenerating(false);
     }
@@ -146,7 +148,7 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
       loadSavedPosts();
       setShowSaved(true);
     } catch (err: any) {
-      alert(err.message || 'Erro ao salvar arte');
+      toast.error(err.message || 'Erro ao salvar arte');
     } finally {
       setSaving(false);
     }
@@ -158,7 +160,7 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
       await deleteMediaPost(property.id, postId);
       setSavedPosts((prev) => prev.filter((p) => p.id !== postId));
     } catch (err: any) {
-      alert(err.message || 'Erro ao excluir');
+      toast.error(err.message || 'Erro ao excluir');
     }
   };
 

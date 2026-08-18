@@ -105,7 +105,7 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
       .from('rental_contracts')
       .insert({
         organization_id: req.orgId,
-        created_by: req.userId,
+        created_by: req.authUserId,
         status: 'draft',
         ...validation.data,
       })
@@ -119,7 +119,7 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
       organization_id: req.orgId,
       action: 'created',
       description: 'Contrato de locação criado',
-      user_id: req.userId,
+      user_id: req.authUserId,
     });
 
     res.status(201).json({ success: true, data });
@@ -173,7 +173,7 @@ router.put('/:id', verifyAuth, requireTenant, async (req, res) => {
     const supabase = getSupabaseServer();
     const { data, error } = await supabase
       .from('rental_contracts')
-      .update({ ...validation.data, updated_by: req.userId })
+      .update({ ...validation.data, updated_by: req.authUserId })
       .eq('id', id)
       .eq('organization_id', req.orgId)
       .select()
@@ -201,7 +201,7 @@ router.delete('/:id', verifyAuth, requireTenant, async (req, res) => {
     const supabase = getSupabaseServer();
     const { error } = await supabase
       .from('rental_contracts')
-      .update({ status: 'archived', updated_by: req.userId })
+      .update({ status: 'archived', updated_by: req.authUserId })
       .eq('id', id)
       .eq('organization_id', req.orgId);
 
@@ -239,7 +239,7 @@ router.patch('/:id/status', verifyAuth, requireTenant, async (req, res) => {
     }
 
     const supabase = getSupabaseServer();
-    const updates = { status, updated_by: req.userId };
+    const updates = { status, updated_by: req.authUserId };
 
     if (status === 'active') updates.activated_at = new Date().toISOString();
     if (status === 'terminated')

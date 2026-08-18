@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { callApi } from '../../src/lib/api';
+import { toast } from 'sonner';
+
 import {
   Check,
   X,
@@ -100,7 +102,7 @@ const UserManagement: React.FC = () => {
       setUsers(users.map((u) => (u.id === userId ? { ...u, ...updates } : u)));
     } catch (error) {
       logger.error('Error updating user:', error);
-      alert('Erro ao atualizar usuário.');
+      toast.error('Erro ao atualizar usuário.');
     } finally {
       setProcessing(null);
     }
@@ -109,7 +111,7 @@ const UserManagement: React.FC = () => {
   const handleChangePassword = async () => {
     if (!selectedUser || !newPassword) return;
     if (newPassword.length < 6) {
-      alert('A senha deve ter pelo menos 6 caracteres.');
+      toast.info('A senha deve ter pelo menos 6 caracteres.');
       return;
     }
 
@@ -120,13 +122,13 @@ const UserManagement: React.FC = () => {
         body: JSON.stringify({ password: newPassword }),
       });
 
-      alert('Senha atualizada com sucesso!');
+      toast.success('Senha atualizada com sucesso!');
       setShowPasswordModal(false);
       setNewPassword('');
       setSelectedUser(null);
     } catch (error: any) {
       logger.error('Error changing password:', error);
-      alert(error.message || 'Erro ao alterar senha.');
+      toast.error(error.message || 'Erro ao alterar senha.');
     } finally {
       setProcessing(null);
     }
@@ -148,10 +150,10 @@ const UserManagement: React.FC = () => {
 
       // Remove from list
       setUsers(users.filter((u) => u.id !== user.id));
-      alert('Usuário excluído com sucesso.');
+      toast.success('Usuário excluído com sucesso.');
     } catch (error: any) {
       logger.error('Error deleting user:', error);
-      alert(error.message || 'Erro ao excluir usuário.');
+      toast.error(error.message || 'Erro ao excluir usuário.');
     } finally {
       setProcessing(null);
     }

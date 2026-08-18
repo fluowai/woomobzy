@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
+import { toast } from 'sonner';
+
 
 const SiteManager: React.FC = () => {
   const { profile } = useAuth();
@@ -126,7 +128,7 @@ const SiteManager: React.FC = () => {
       await loadSite();
     } catch (error) {
       logger.error('Erro ao criar site:', error);
-      alert('Erro ao criar site. Tente novamente.');
+      toast.error('Erro ao criar site. Tente novamente.');
     } finally {
       setCreatingFromTemplate(false);
     }
@@ -162,7 +164,7 @@ const SiteManager: React.FC = () => {
       await loadSite();
     } catch (error) {
       logger.error('Erro ao criar site:', error);
-      alert('Erro ao criar site. Tente novamente.');
+      toast.error('Erro ao criar site. Tente novamente.');
     } finally {
       setCreatingFromTemplate(false);
     }

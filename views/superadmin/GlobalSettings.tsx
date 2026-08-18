@@ -2,6 +2,8 @@ import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabase';
 import { oruloService } from '../../services/orulo';
+import { toast } from 'sonner';
+
 import {
   Key,
   Save,
@@ -109,10 +111,10 @@ const GlobalSettings: React.FC = () => {
         setOruloClientSecret('');
       }
 
-      alert('Configurações salvas com sucesso! ✅');
+      toast.success('Configurações salvas com sucesso! ✅');
     } catch (error: any) {
       logger.error('Save Error:', error);
-      alert(`Erro ao salvar: ${error.message}`);
+      toast.error(`Erro ao salvar: ${error.message}`);
     } finally {
       setSaving(false);
     }

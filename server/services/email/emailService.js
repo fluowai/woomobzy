@@ -696,3 +696,26 @@ export async function sendSystemEmail({
     replyTo: replyTo || undefined,
   });
 }
+
+export async function sendWelcomeEmail({ email, name, password, loginUrl, organizationId }) {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333; line-height: 1.6;">
+      <h2 style="color: #16a34a;">Bem-vindo(a), ${name || 'Usuário'}!</h2>
+      <p>Sua conta foi criada com sucesso. Abaixo estão suas credenciais de acesso:</p>
+      <div style="background-color: #f4f4f5; padding: 16px; border-radius: 8px; margin: 16px 0;">
+        <p style="margin: 0;"><strong>E-mail:</strong> ${email}</p>
+        <p style="margin: 8px 0 0 0;"><strong>Senha Temporária:</strong> ${password}</p>
+      </div>
+      <p>Recomendamos que você altere sua senha após o primeiro acesso.</p>
+      <a href="${loginUrl || process.env.APP_URL || 'https://imobzy.com/login'}" style="display: inline-block; background-color: #16a34a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 16px;">Acessar a Plataforma</a>
+    </div>
+  `;
+
+  return sendSystemEmail({
+    organizationId,
+    to: email,
+    subject: 'Bem-vindo(a) ao Sistema!',
+    html
+  });
+}
+

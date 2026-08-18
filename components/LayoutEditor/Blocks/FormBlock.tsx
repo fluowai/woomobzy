@@ -1,5 +1,7 @@
 import React from 'react';
 import { Block, FormBlockConfig } from '../../../types';
+import { toast } from 'sonner';
+
 
 interface FormBlockProps {
   block: Block;
@@ -12,7 +14,7 @@ export const FormBlock: React.FC<FormBlockProps> = ({ block, isEditing }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isEditing) {
-      alert('Formulário em modo de edição - não será enviado');
+      toast.info('Formulário em modo de edição - não será enviado');
     }
   };
 

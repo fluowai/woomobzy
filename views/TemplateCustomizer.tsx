@@ -30,6 +30,8 @@ import { uploadFile } from '../services/storage';
 import { LayoutEditorProvider } from '../context/LayoutEditorContext';
 import { LayoutEditor } from '../components/LayoutEditor/LayoutEditor';
 import { callApi } from '../src/lib/api';
+import { toast } from 'sonner';
+
 
 const getContrastColor = (hexcolor: string | undefined) => {
   if (!hexcolor) return 'white';
@@ -72,7 +74,7 @@ const TemplateCustomizer: React.FC = () => {
     setTimeout(() => {
       updateSettings(localSettings);
       setSaving(false);
-      alert('Alterações publicadas com sucesso em todo o sistema!');
+      toast.success('Alterações publicadas com sucesso em todo o sistema!');
     }, 800);
   };
 
@@ -86,7 +88,7 @@ const TemplateCustomizer: React.FC = () => {
           setLocalSettings({ ...localSettings, logoUrl: publicUrl });
         }
       } catch (error) {
-        alert('Erro ao fazer upload da logo.');
+        toast.error('Erro ao fazer upload da logo.');
       } finally {
         setSaving(false);
       }
@@ -114,7 +116,7 @@ const TemplateCustomizer: React.FC = () => {
           });
         }
       } catch (error) {
-        alert('Erro ao fazer upload da foto.');
+        toast.error('Erro ao fazer upload da foto.');
       } finally {
         setSaving(false);
       }
@@ -1127,7 +1129,7 @@ const TemplateCustomizer: React.FC = () => {
                         !config?.token ||
                         !config?.instanceName
                       ) {
-                        alert('Preencha todos os campos antes de testar.');
+                        toast.info('Preencha todos os campos antes de testar.');
                         return;
                       }
                       try {
@@ -1146,17 +1148,17 @@ const TemplateCustomizer: React.FC = () => {
                         );
 
                         if (result.ok) {
-                          alert(
+                          toast.success(
                             `Conexão estabelecida com sucesso!\nEstado: ${result.state || 'open'}`
                           );
                         } else {
-                          alert(
+                          toast.info(
                             `Instância encontrada, mas estado é: ${result.state || 'desconhecido'}`
                           );
                         }
                       } catch (e: any) {
                         logger.error('Erro de conexão:', e);
-                        alert(
+                        toast.error(
                           `Falha na conexão: ${e.message}\n\nVerifique:\n- URL base está correta\n- Token (apikey) está válido\n- Nome da instância existe`
                         );
                       }

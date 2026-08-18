@@ -51,14 +51,14 @@ export function RentalsBordero() {
       );
       const data = await res.json();
       if (data.success) {
-        alert(`Borderô Gerado: Repasse de R$ ${data.data.total_to_repass}`);
+        toast.info(`Borderô Gerado: Repasse de R$ ${data.data.total_to_repass}`);
         // Aqui conectaria com uma lib para gerar PDF real (ex: jsPDF ou React-pdf)
       } else {
-        alert('Nenhuma fatura paga encontrada para este período');
+        toast.info('Nenhuma fatura paga encontrada para este período');
       }
     } catch (error) {
       logger.error('Erro ao gerar bordero:', error);
-      alert('Erro ao gerar borderô');
+      toast.error('Erro ao gerar borderô');
     } finally {
       setLoading(false);
     }

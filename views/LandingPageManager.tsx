@@ -31,6 +31,8 @@ import {
 } from 'lucide-react';
 import AICloneModal from '../components/LandingPageEditor/AICloneModal';
 import CloneSiteWrapper from '../components/LandingPageEditor/CloneSiteWrapper';
+import { toast } from 'sonner';
+
 
 const LandingPageManager: React.FC = () => {
   const { user, profile } = useAuth();
@@ -68,7 +70,7 @@ const LandingPageManager: React.FC = () => {
       await loadPages();
     } catch (error) {
       logger.error('Error deleting landing page:', error);
-      alert('Erro ao excluir landing page');
+      toast.error('Erro ao excluir landing page');
     }
   };
 
@@ -78,7 +80,7 @@ const LandingPageManager: React.FC = () => {
       await loadPages();
     } catch (error) {
       logger.error('Error duplicating landing page:', error);
-      alert('Erro ao duplicar landing page');
+      toast.error('Erro ao duplicar landing page');
     }
   };
 
@@ -92,7 +94,7 @@ const LandingPageManager: React.FC = () => {
       await loadPages();
     } catch (error) {
       logger.error('Error toggling status:', error);
-      alert('Erro ao alterar status');
+      toast.error('Erro ao alterar status');
     }
   };
 
@@ -485,12 +487,12 @@ const CreateLandingPageModal: React.FC<CreateLandingPageModalProps> = ({
 
   const handleSelectTemplate = async (templateId: string) => {
     if (!user?.id) {
-      alert('Erro: usuário não autenticado');
+      toast.error('Erro: usuário não autenticado');
       return;
     }
 
     if (!profile?.organization_id) {
-      alert('Erro: usuário não possui organização vinculada');
+      toast.error('Erro: usuário não possui organização vinculada');
       return;
     }
 
@@ -538,24 +540,24 @@ const CreateLandingPageModal: React.FC<CreateLandingPageModalProps> = ({
       window.location.href = `${prefix}/landing-pages/${newPage.id}`;
     } catch (error) {
       logger.error('Error creating from template:', error);
-      alert('Erro ao criar landing page');
+      toast.error('Erro ao criar landing page');
       setCreating(false);
     }
   };
 
   const handleCreateBlank = async () => {
     if (!user?.id) {
-      alert('Erro: usuário não autenticado');
+      toast.error('Erro: usuário não autenticado');
       return;
     }
 
     if (!profile?.organization_id) {
-      alert('Erro: usuário não possui organização vinculada');
+      toast.error('Erro: usuário não possui organização vinculada');
       return;
     }
 
     if (!name || !slug) {
-      alert('Preencha nome e slug');
+      toast.info('Preencha nome e slug');
       return;
     }
 
@@ -621,7 +623,7 @@ const CreateLandingPageModal: React.FC<CreateLandingPageModalProps> = ({
       window.location.href = `${prefix}/landing-pages/${newPage.id}`;
     } catch (error) {
       logger.error('Error creating landing page:', error);
-      alert('Erro ao criar landing page');
+      toast.error('Erro ao criar landing page');
       setCreating(false);
     }
   };
@@ -819,7 +821,7 @@ const CreateAILandingPageModal: React.FC<CreateLandingPageModalProps> = ({
         selectedPropId,
         userId: user?.id,
       });
-      alert('Erro: Informações do usuário incompletas.');
+      toast.error('Erro: Informações do usuário incompletas.');
       return;
     }
 
@@ -898,7 +900,7 @@ const CreateAILandingPageModal: React.FC<CreateLandingPageModalProps> = ({
       window.location.href = `${prefix}/landing-pages/${newPage.id}`;
     } catch (error: any) {
       logger.error('AI Generation failed:', error);
-      alert('Falha na geração: ' + error.message);
+      toast.error('Falha na geração: ' + error.message);
       setStep('property');
     }
   };

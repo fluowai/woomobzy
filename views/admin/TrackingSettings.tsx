@@ -2,6 +2,8 @@ import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useSettings } from '../../context/SettingsContext';
 import { supabase } from '../../services/supabase';
+import { toast } from 'sonner';
+
 import {
   Activity,
   CheckCircle,
@@ -91,7 +93,7 @@ const TrackingSettings: React.FC = () => {
 
     if (pixelType === 'facebook' && (window as any).fbq) {
       (window as any).fbq('track', 'PageView');
-      alert(
+      toast.info(
         'Evento de teste enviado para Facebook Pixel! Verifique no Facebook Events Manager.'
       );
     } else if (pixelType === 'google_analytics' && (window as any).gtag) {
@@ -99,14 +101,14 @@ const TrackingSettings: React.FC = () => {
         event_category: 'Test',
         event_label: 'Manual Test',
       });
-      alert(
+      toast.info(
         'Evento de teste enviado para Google Analytics! Verifique no Google Analytics em tempo real.'
       );
     } else if (pixelType === 'google_ads' && (window as any).gtag) {
       (window as any).gtag('event', 'conversion', { send_to: 'test' });
-      alert('Evento de teste enviado para Google Ads!');
+      toast.info('Evento de teste enviado para Google Ads!');
     } else {
-      alert(
+      toast.success(
         'Pixel não está carregado. Salve as configurações e recarregue a página.'
       );
     }

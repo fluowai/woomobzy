@@ -4,6 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import { landingPageService } from '../../services/landingPages';
 import { LandingPageStatus } from '../../types/landingPage';
 import AICloneModal from './AICloneModal';
+import { toast } from 'sonner';
+
 
 // ============================================
 // CLONE MODAL WRAPPER
@@ -14,7 +16,7 @@ const CloneSiteWrapper: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
   const handleCloneApply = async (layoutConfig: any) => {
     if (!profile?.id || !profile?.organization_id) {
-      alert('Erro: usuário não autenticado');
+      toast.error('Erro: usuário não autenticado');
       return;
     }
 
@@ -79,7 +81,7 @@ const CloneSiteWrapper: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       window.location.href = `/admin/landing-pages/${newPage.id}`;
     } catch (error) {
       logger.error('Erro ao criar página clonada:', error);
-      alert('Erro ao salvar página clonada');
+      toast.error('Erro ao salvar página clonada');
     }
   };
 

@@ -15,6 +15,8 @@ import {
   Key,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { toast } from 'sonner';
+
 
 interface Reseller {
   id: string;
@@ -169,7 +171,7 @@ const ResellerManager: React.FC = () => {
       await fetchResellers();
     } catch (error: any) {
       logger.error('Error saving reseller:', error);
-      alert(`Erro ao salvar reseller: ${error.message || 'Erro desconhecido'}`);
+      toast.error(`Erro ao salvar reseller: ${error.message || 'Erro desconhecido'}`);
     } finally {
       setFormLoading(false);
     }
@@ -186,7 +188,7 @@ const ResellerManager: React.FC = () => {
       });
       fetchResellers();
     } catch (error: any) {
-      alert(`Erro ao atualizar status: ${error.message}`);
+      toast.error(`Erro ao atualizar status: ${error.message}`);
     }
   };
 
@@ -204,7 +206,7 @@ const ResellerManager: React.FC = () => {
       await callApi(`/api/mega/resellers/${id}`, { method: 'DELETE' });
       fetchResellers();
     } catch (error: any) {
-      alert(`Erro ao excluir: ${error.message}`);
+      toast.error(`Erro ao excluir: ${error.message}`);
     }
   };
 
@@ -471,7 +473,7 @@ const ResellerManager: React.FC = () => {
                         navigator.clipboard.writeText(
                           `${window.location.origin}/setup-whitelabel?email=${encodeURIComponent(setupInfo.email)}&t=${setupInfo.password}`
                         );
-                        alert('Link copiado!');
+                        toast.info('Link copiado!');
                       }}
                       className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-bold shrink-0"
                     >

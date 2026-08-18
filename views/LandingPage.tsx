@@ -25,6 +25,8 @@ import VisualEditorToolbar from '../components/VisualEditorToolbar';
 import DotGrid from '../components/DotGrid';
 import LeadCaptureModal from '../components/LeadCaptureModal';
 import PropertySubmissionModal from '../components/PropertySubmissionModal';
+import { toast } from 'sonner';
+
 
 interface LandingPageProps {
   organizationId?: string;
@@ -119,7 +121,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
       }, 4000);
     } catch (error) {
       logger.error('Erro ao submeter imóvel', error);
-      alert(
+      toast.error(
         t(
           'submit_modal.error_alert',
           'Houve um erro ao enviar seu imóvel. Por favor, tente novamente.'
@@ -176,7 +178,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ organizationId }) => {
       }, 3000);
     } catch (error) {
       logger.error('Erro ao enviar lead', error);
-      alert(
+      toast.error(
         t(
           'lead_modal.error_alert',
           'Houve um erro ao enviar seus dados. Por favor, tente novamente.'

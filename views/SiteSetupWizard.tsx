@@ -11,6 +11,8 @@ import {
 } from '../services/landingPageTemplates';
 import { useNavigate } from 'react-router-dom';
 import { isRuralOrganization } from '../components/NicheRedirect';
+import { toast } from 'sonner';
+
 import {
   Sparkles,
   ArrowRight,
@@ -105,7 +107,7 @@ const SiteSetupWizard: React.FC = () => {
       if (parsed.description) updateData('description', parsed.description);
     } catch (e) {
       logger.error(e);
-      alert('Erro ao gerar com IA, por favor digite manualmente.');
+      toast.error('Erro ao gerar com IA, por favor digite manualmente.');
     } finally {
       setAiGenerating(false);
     }
@@ -258,7 +260,7 @@ const SiteSetupWizard: React.FC = () => {
         }
       }
 
-      alert('🎉 Site gerado com sucesso!');
+      toast.success('🎉 Site gerado com sucesso!');
 
       // Envia pra edição visual nativa
       const org: any = profile?.organization;
@@ -268,7 +270,7 @@ const SiteSetupWizard: React.FC = () => {
       navigate(`/${baseRoute}/visual-editor`);
     } catch (error) {
       logger.error('Erro ao gerar site', error);
-      alert(
+      toast.info(
         'Houve um pequeno problema ao finalizar a criação. Tente novamente.'
       );
       setFinishing(false);
@@ -671,13 +673,13 @@ const SiteSetupWizard: React.FC = () => {
                                 organizationId: profile.organization_id,
                               }),
                             });
-                            alert(
+                            toast.success(
                               '🎉 Todos os ' +
                                 siteData.extractedProperties.length +
                                 ' imóveis foram importados e salvos no seu banco com sucesso!'
                             );
                           } catch (e) {
-                            alert('Erro ao salvar no banco');
+                            toast.error('Erro ao salvar no banco');
                           }
                         }}
                         className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-transform active:scale-95 shadow-lg shadow-indigo-200/50"
@@ -741,7 +743,7 @@ const SiteSetupWizard: React.FC = () => {
               <button
                 onClick={() => {
                   if (step === 2 && !siteData.selectedTemplateId) {
-                    alert(
+                    toast.info(
                       'Lembre-se de clicar num modelo na lista antes de avançar!'
                     );
                     return;

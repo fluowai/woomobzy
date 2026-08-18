@@ -30,6 +30,8 @@ import UserManagement from './admin/UserManagement';
 import SupportPortal from './admin/SupportPortal';
 import ChannelsSettings from './admin/ChannelsSettings';
 import SmtpSettings from './admin/SmtpSettings';
+import { toast } from 'sonner';
+
 
 const SystemSettings: React.FC = () => {
   const { settings, updateSettings, loading } = useSettings();
@@ -547,14 +549,14 @@ const SystemSettings: React.FC = () => {
                             navigator.clipboard.writeText(
                               (e.target as HTMLInputElement).value
                             );
-                            alert('URL copiada para a área de transferência!');
+                            toast.info('URL copiada para a área de transferência!');
                           }}
                         />
                         <button
                           onClick={() => {
                             const url = `https://api.imobzy.com/api/public/zap/feed/${profile?.organization?.custom_domain || profile?.organization_id}.xml`;
                             navigator.clipboard.writeText(url);
-                            alert('URL copiada!');
+                            toast.info('URL copiada!');
                           }}
                           className="p-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded-lg transition-colors"
                           title="Copiar URL"

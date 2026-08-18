@@ -2,6 +2,8 @@ import { logger } from '@/utils/logger';
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'sonner';
+
 import {
   Send,
   X,
@@ -165,7 +167,7 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
         fetchTickets();
       }, 2000);
     } catch (err) {
-      alert('Erro ao enviar chamado. Tente novamente mais tarde.');
+      toast.error('Erro ao enviar chamado. Tente novamente mais tarde.');
     } finally {
       setLoading(false);
     }
@@ -189,7 +191,7 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
       setNewMessage('');
       fetchMessages(selectedTicket.id);
     } catch (err) {
-      alert('Erro ao enviar mensagem.');
+      toast.error('Erro ao enviar mensagem.');
     } finally {
       setSendingMessage(false);
     }

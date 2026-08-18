@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import { uploadFile } from '../../services/storage';
 import { extractColorsFromImage } from '../../utils/colors';
+import { toast } from 'sonner';
+
 
 const AppearanceSettings: React.FC = () => {
   const { settings, updateSettings } = useSettings();
@@ -65,7 +67,7 @@ const AppearanceSettings: React.FC = () => {
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
       logger.error('Error saving:', error);
-      alert('Erro ao salvar aparência.');
+      toast.error('Erro ao salvar aparência.');
     } finally {
       setSaving(false);
     }
@@ -101,7 +103,7 @@ const AppearanceSettings: React.FC = () => {
             primaryColor: colors.primary,
             secondaryColor: colors.secondary,
           }));
-          alert(
+          toast.info(
             '✨ Cores detectadas e aplicadas automaticamente a partir da sua logo!'
           );
         }
@@ -111,7 +113,7 @@ const AppearanceSettings: React.FC = () => {
       }
     } catch (error) {
       logger.error('Error uploading logo:', error);
-      alert(
+      toast.error(
         'Erro ao fazer upload da logo. Verifique se o bucket "logos" existe e é público.'
       );
     }

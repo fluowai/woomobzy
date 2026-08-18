@@ -13,6 +13,8 @@ import {
 import { DEFAULT_SITE_SETTINGS } from '../constants';
 import { uploadFile } from '../services/storage';
 import { extractColorsFromImage } from '../utils/colors';
+import { toast } from 'sonner';
+
 
 const SetupWizard: React.FC = () => {
   const navigate = useNavigate();
@@ -66,7 +68,7 @@ const SetupWizard: React.FC = () => {
         }
       }
     } catch (error) {
-      alert('Erro ao fazer upload da imagem.');
+      toast.error('Erro ao fazer upload da imagem.');
     } finally {
       setIsUploading(false);
     }
@@ -98,7 +100,7 @@ const SetupWizard: React.FC = () => {
       }, 1500);
     } catch (error) {
       logger.error(error);
-      alert('Erro ao salvar configurações inicial. Tente novamente.');
+      toast.error('Erro ao salvar configurações inicial. Tente novamente.');
     } finally {
       setLoading(false);
     }

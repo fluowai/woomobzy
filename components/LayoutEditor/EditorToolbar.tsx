@@ -1,5 +1,7 @@
 import React from 'react';
 import { useLayoutEditor } from '../../context/LayoutEditorContext';
+import { toast } from 'sonner';
+
 import {
   Save,
   Undo,
@@ -32,7 +34,7 @@ export const EditorToolbar: React.FC = () => {
     try {
       await saveLayout();
     } catch (error) {
-      alert('Erro ao salvar layout');
+      toast.error('Erro ao salvar layout');
     } finally {
       setSaving(false);
     }

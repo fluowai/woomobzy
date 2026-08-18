@@ -18,6 +18,8 @@ import {
   Check,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+
 import {
   LANDING_PAGE_TEMPLATES,
   generateBlocksFromTemplate,
@@ -97,7 +99,7 @@ const VisualSiteEditor: React.FC = () => {
   };
 
   const handleApplyTemplate = async (templateId: string) => {
-    if (!pageId) return alert('Página principal não encontrada.');
+    if (!pageId) return toast.info('Página principal não encontrada.');
     if (
       !confirm(
         'Deseja aplicar este modelo? A estrutura da página será substituída pelo novo modelo.'
@@ -121,7 +123,7 @@ const VisualSiteEditor: React.FC = () => {
       reloadIframe();
     } catch (error) {
       logger.error('Erro ao aplicar template:', error);
-      alert('Erro ao mudar de modelo.');
+      toast.error('Erro ao mudar de modelo.');
     } finally {
       setSaving(false);
     }
@@ -178,7 +180,7 @@ const VisualSiteEditor: React.FC = () => {
           }
         }
 
-        alert(
+        toast.info(
           '✨ A IA detectou as cores da sua logo e o tema do site foi atualizado!'
         );
         reloadIframe();
@@ -186,7 +188,7 @@ const VisualSiteEditor: React.FC = () => {
       };
     } catch (error) {
       logger.error('Erro no processamento da logo:', error);
-      alert('Erro ao enviar a logo.');
+      toast.error('Erro ao enviar a logo.');
       setUploadingLogo(false);
     }
   };

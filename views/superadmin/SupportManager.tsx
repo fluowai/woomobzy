@@ -1,6 +1,8 @@
 import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
+import { toast } from 'sonner';
+
 import {
   MessageSquare,
   Clock,
@@ -188,7 +190,7 @@ const SupportManager: React.FC = () => {
       setNewMessage('');
       fetchMessages(selectedTicket.id);
     } catch (err) {
-      alert('Erro ao enviar mensagem.');
+      toast.error('Erro ao enviar mensagem.');
     } finally {
       setSending(false);
     }

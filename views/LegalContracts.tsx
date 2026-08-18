@@ -198,7 +198,7 @@ const LegalContracts: React.FC = () => {
       });
     } catch (error) {
       logger.error('Error creating contract:', error);
-      alert('Erro ao criar contrato no banco');
+      toast.error('Erro ao criar contrato no banco');
     }
   };
 

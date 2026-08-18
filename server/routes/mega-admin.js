@@ -2,6 +2,8 @@ import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 import { verifyMegaAdmin } from '../middleware/auth.js';
 import { getSupabaseServer } from '../lib/supabase-server.js';
+import { assertValidDomain, normalizeDomain } from '../utils/domains.js';
+import { sendWelcomeEmail } from '../services/email/emailService.js';
 
 const router = express.Router();
 
@@ -168,6 +170,17 @@ router.post('/resellers', verifyMegaAdmin, async (req, res) => {
       );
       if (createError) throw createError;
       authUser = data.user;
+
+      try {
+        await sendWelcomeEmail({
+          email: String(owner_email).toLowerCase().trim(),
+          name: owner_name || name,
+          password: finalPassword,
+          organizationId: organization.id
+        });
+      } catch (err) {
+        console.warn('[MegaAdmin] Erro enviando bem-vindo reseller:', err.message);
+      }
     } else {
       const { error: updateError } = await supabase.auth.admin.updateUserById(
         authUser.id,
@@ -381,6 +394,17 @@ router.post('/direct-clients', verifyMegaAdmin, async (req, res) => {
       );
       if (createError) throw createError;
       authUser = data.user;
+
+      try {
+        await sendWelcomeEmail({
+          email: String(owner_email).toLowerCase().trim(),
+          name: owner_name || name,
+          password: finalPassword,
+          organizationId: organization.id
+        });
+      } catch (err) {
+        console.warn('[MegaAdmin] Erro enviando bem-vindo cliente direto:', err.message);
+      }
     } else {
       const { error: updateError } = await supabase.auth.admin.updateUserById(
         authUser.id,

@@ -20,6 +20,8 @@ import {
   MousePointer2,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+
 
 const TextsManager: React.FC = () => {
   const {
@@ -86,7 +88,7 @@ const TextsManager: React.FC = () => {
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
       logger.error('Erro ao salvar:', error);
-      alert('Erro ao salvar alterações');
+      toast.error('Erro ao salvar alterações');
     } finally {
       setIsSaving(false);
     }

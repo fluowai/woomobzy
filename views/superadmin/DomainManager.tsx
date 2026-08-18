@@ -12,6 +12,8 @@ import {
 import { supabase } from '../../services/supabase';
 import { callApi } from '../../src/lib/api';
 import { PLATFORM_IP } from '../../utils/platform';
+import { toast } from 'sonner';
+
 
 // Real Domain Interface
 interface DomainEntry {
@@ -76,7 +78,7 @@ const DomainManager: React.FC = () => {
       // Optional: verify all? might be slow. Let's verify on demand or showing "Check Status"
     } catch (e) {
       logger.error('Error fetching data:', e);
-      alert('Erro ao carregar dados');
+      toast.error('Erro ao carregar dados');
     } finally {
       setLoading(false);
     }
@@ -88,7 +90,7 @@ const DomainManager: React.FC = () => {
 
     // Validation
     if (!newDomain.includes('.')) {
-      alert('Por favor insira um domínio válido (ex: cliente.com.br)');
+      toast.info('Por favor insira um domínio válido (ex: cliente.com.br)');
       return;
     }
 
@@ -104,7 +106,7 @@ const DomainManager: React.FC = () => {
         }),
       });
 
-      alert(
+      toast.success(
         `Dominio ${newDomain} salvo. Oriente o cliente a apontar o registro A para ${PLATFORM_IP}.`
       );
       setNewDomain('');
@@ -114,7 +116,7 @@ const DomainManager: React.FC = () => {
       fetchData();
     } catch (e: any) {
       logger.error('Add Error:', e);
-      alert(`Erro ao adicionar: ${e.message}`);
+      toast.error(`Erro ao adicionar: ${e.message}`);
     } finally {
       setAdding(false);
     }
@@ -134,7 +136,7 @@ const DomainManager: React.FC = () => {
 
       fetchData(); // Refresh
     } catch (e: any) {
-      alert(`Erro ao remover: ${e.message}`);
+      toast.error(`Erro ao remover: ${e.message}`);
     }
   };
 
@@ -159,14 +161,14 @@ const DomainManager: React.FC = () => {
       );
 
       if (data.verified) {
-        alert(`✅ ${domain}: DNS Configurado Corretamente!`);
+        toast.info(`✅ ${domain}: DNS Configurado Corretamente!`);
       } else {
-        alert(
+        toast.info(
           `${domain}: DNS pendente ou incorreto.\nVerifique se o registro A aponta para ${PLATFORM_IP}.`
         );
       }
     } catch (e) {
-      alert('Erro ao verificar status.');
+      toast.error('Erro ao verificar status.');
     } finally {
       setVerifying(null);
     }
@@ -186,10 +188,10 @@ const DomainManager: React.FC = () => {
       const response = await callApi('/api/domains/sync-all', {
         method: 'POST',
       });
-      alert(response.message);
+      toast.info(response.message);
       fetchData();
     } catch (e: any) {
-      alert(`Erro na sincronização: ${e.message}`);
+      toast.error(`Erro na sincronização: ${e.message}`);
     } finally {
       setSyncing(false);
     }

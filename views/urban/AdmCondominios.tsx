@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Building, TrendingDown, Users, Wrench, Plus, X } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { toast } from 'sonner';
+
 
 type Condominium = {
   id: string;
@@ -88,7 +90,7 @@ export default function AdmCondominios() {
   const createTicket = async () => {
     if (!profile?.organization_id) return;
     if (condominiums.length === 0) {
-      window.alert('Cadastre um condominio antes de abrir um chamado.');
+      toast.info('Cadastre um condominio antes de abrir um chamado.');
       return;
     }
     const selectedName = window
@@ -101,7 +103,7 @@ export default function AdmCondominios() {
       (item) => item.name.toLowerCase() === selectedName?.toLowerCase()
     );
     if (!condominium) {
-      window.alert('Condominio nao encontrado.');
+      toast.info('Condominio nao encontrado.');
       return;
     }
     const description = window.prompt('Descreva o chamado:')?.trim();
@@ -133,7 +135,7 @@ export default function AdmCondominios() {
     });
 
     if (error) {
-      window.alert('Erro ao salvar condominio: ' + error.message);
+      toast.error('Erro ao salvar condominio: ' + error.message);
       return;
     }
 

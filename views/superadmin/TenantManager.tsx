@@ -15,6 +15,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { toast } from 'sonner';
+
 import {
   getTenantBaseUrl,
   getTenantSiteUrl,
@@ -167,7 +169,7 @@ const TenantManager: React.FC = () => {
       await fetchTenants();
     } catch (error: any) {
       logger.error('Error saving:', error);
-      alert(
+      toast.error(
         `Erro ao salvar imobiliária: ${error.message || 'Erro desconhecido'}`
       );
     } finally {
@@ -186,7 +188,7 @@ const TenantManager: React.FC = () => {
       });
       fetchTenants();
     } catch (error: any) {
-      alert(`Erro ao atualizar status: ${error.message}`);
+      toast.error(`Erro ao atualizar status: ${error.message}`);
     }
   };
 
@@ -207,7 +209,7 @@ const TenantManager: React.FC = () => {
       setSelectedTenantIds((prev) => prev.filter((item) => item !== id));
       fetchTenants();
     } catch (error: any) {
-      alert(`Erro ao excluir: ${error.message}`);
+      toast.error(`Erro ao excluir: ${error.message}`);
     }
   };
 
@@ -269,7 +271,7 @@ const TenantManager: React.FC = () => {
       setSelectedTenantIds([]);
       await fetchTenants();
     } catch (error: any) {
-      alert(`Erro ao excluir imobiliarias: ${error.message}`);
+      toast.error(`Erro ao excluir imobiliarias: ${error.message}`);
     } finally {
       setBulkDeleting(false);
     }
@@ -510,7 +512,7 @@ const TenantManager: React.FC = () => {
                             window.location.href = '/admin';
                           } catch (err: any) {
                             logger.error(err);
-                            alert(`Erro: ${err.message}`);
+                            toast.error(`Erro: ${err.message}`);
                           }
                         }}
                         className="p-1.5 text-purple-600 bg-purple-50 hover:bg-purple-100 rounded mr-2"
@@ -619,7 +621,7 @@ const TenantManager: React.FC = () => {
                         window.location.href = '/admin';
                       } catch (err: any) {
                         logger.error(err);
-                        alert(`Erro: ${err.message}`);
+                        toast.error(`Erro: ${err.message}`);
                       }
                     }}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"

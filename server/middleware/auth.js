@@ -741,25 +741,50 @@ async function createProfileForUser(
   user,
   { email, organizationId, name, role, source }
 ) {
-  const { data: createdProfile, error: createProfileError } = await supabase
+  const normalizedRole = normalizeRole(role) || 'admin';
+  const profileData = {
+    id: user.id,
+    email,
+    name:
+      user.user_metadata?.name ||
+      user.user_metadata?.full_name ||
+      name ||
+      email,
+    role: normalizedRole,
+    organization_id: organizationId,
+    updated_at: new Date().toISOString(),
+  };
+
+  // Try INSERT first - fails if profile already exists (race condition safe)
+  let { data: createdProfile, error: createProfileError } = await supabase
     .from('profiles')
-    .upsert(
-      {
-        id: user.id,
-        email,
-        name:
-          user.user_metadata?.name ||
-          user.user_metadata?.full_name ||
-          name ||
-          email,
-        role: normalizeRole(role) || 'admin',
-        organization_id: organizationId,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'id' }
-    )
+    .insert(profileData)
     .select('id, email, role, organization_id')
     .single();
+
+  // If duplicate key (race condition), fetch existing profile
+  if (createProfileError?.code === '23505') {
+    const { data: existingProfile, error: fetchError } = await supabase
+      .from('profiles')
+      .select('id, email, role, organization_id')
+      .eq('id', user.id)
+      .single();
+
+    if (!fetchError && existingProfile) {
+      // Ensure organization_id is set if missing
+      if (!existingProfile.organization_id && organizationId) {
+        const { data: updatedProfile } = await supabase
+          .from('profiles')
+          .update({ organization_id: organizationId, updated_at: new Date().toISOString() })
+          .eq('id', user.id)
+          .select('id, email, role, organization_id')
+          .single();
+        if (updatedProfile) return updatedProfile;
+      }
+      return existingProfile;
+    }
+    createProfileError = fetchError;
+  }
 
   if (createProfileError) {
     console.error(
@@ -769,7 +794,7 @@ async function createProfileForUser(
         email,
         source,
         organizationId,
-        role,
+        role: normalizedRole,
         userId: user.id,
       }
     );
@@ -779,7 +804,7 @@ async function createProfileForUser(
   console.warn('[Auth] Perfil criado automaticamente', {
     email,
     organizationId,
-    role: normalizeRole(role) || 'admin',
+    role: normalizedRole,
     source,
   });
   return createdProfile;

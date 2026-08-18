@@ -14,6 +14,7 @@ import {
 } from '../lib/impersonation-session.js';
 import { requireTenant } from '../middleware/tenant.js';
 import { getSupabaseServer } from '../lib/supabase-server.js';
+import { sendWelcomeEmail } from '../services/email/emailService.js';
 import {
   applyLifecycle,
   deleteDuplicates,
@@ -306,6 +307,18 @@ async function ensureOrganizationOwner({
     });
     if (error) throw error;
     authUser = data.user;
+
+    // Disparar e-mail de boas-vindas
+    try {
+      await sendWelcomeEmail({
+        email,
+        name: ownerName || organization.owner_name || organization.name,
+        password,
+        organizationId: organization.id
+      });
+    } catch (emailErr) {
+      console.warn('[Admin] Erro ao enviar e-mail de boas-vindas:', emailErr.message);
+    }
   } else {
     const { error } = await supabase.auth.admin.updateUserById(authUser.id, {
       password,

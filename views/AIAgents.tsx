@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Activity,
@@ -436,8 +436,18 @@ function normalizePreviewText(value = '') {
     .toLowerCase();
 }
 
+function isGreeting(text: string): string | null {
+  const normalized = normalizePreviewText(text).trim();
+  if (normalized === 'bom dia') return 'Bom dia';
+  if (normalized === 'boa tarde') return 'Boa tarde';
+  if (normalized === 'boa noite') return 'Boa noite';
+  if (normalized === 'ola' || normalized === 'oi' || normalized === 'hi' || normalized === 'hey') return 'Oi';
+  return null;
+}
+
 function buildPreviewDiagnostics(message: string) {
   const text = normalizePreviewText(message);
+  const greeting = isGreeting(text);
   const budget = message.match(
     /(?:r\$\s*)?(\d{2,3}(?:[.,]\d{3})*|\d+)\s*(milhao|milhoes|mi|m|mil)?/i
   );
@@ -449,6 +459,8 @@ function buildPreviewDiagnostics(message: string) {
   const isSale = /\b(comprar|compra|procuro|busco|quero)\b/.test(text);
 
   return {
+    isGreeting: !!greeting,
+    greeting,
     intent: isVisit
       ? 'Visita'
       : isRent
@@ -483,7 +495,15 @@ function buildDraftAgentReply(draft: BuilderDraft, message: string) {
     return `${intro} Vou te ajudar com a locacao. Qual cidade/bairro, faixa de aluguel e data desejada para mudanca?`;
   }
 
-  return `${intro} Entendi seu interesse. Voce procura para morar ou investir? Tem preferencia de bairro, tipo de imovel e forma de pagamento?`;
+  if (diagnostics.isGreeting) {
+    const greeting = diagnostics.greeting || 'Oi';
+    if (style === 'curto') {
+      return `${greeting}! Qual seu nome?`;
+    }
+    return `${greeting}! Tudo bem? Qual seu nome?`;
+  }
+
+  return `${intro} Entendi seu interesse. Qual seu nome e qual a sua meta hoje (comprar, vender, alugar)?`;
 }
 
 function buildLeadSimulatorReply(
@@ -516,8 +536,12 @@ function buildLeadSimulatorReply(
       : 'Ainda estou ajustando o orcamento, mas queria algo com bom custo-beneficio e possibilidade de negociar.';
   }
 
-  if (leadTurns === 0) {
+  if (leadTurns === 0 && !diagnostics.isGreeting) {
     return `Oi, ${agentName}. Estou procurando um imovel e queria entender quais opcoes fazem sentido para meu perfil.`;
+  }
+
+  if (diagnostics.isGreeting) {
+    return `Oi ${agentName}, tudo bem? Estou com duvidas sobre imoveis.`;
   }
 
   return 'Entendi. Pode me mandar uma opcao com valor, bairro e principais diferenciais? Quero comparar antes de marcar visita.';
@@ -2294,3 +2318,4 @@ const PreviewMetric: React.FC<{
 );
 
 export default AIAgents;
+

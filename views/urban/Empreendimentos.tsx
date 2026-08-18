@@ -17,6 +17,8 @@ import {
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
+
 
 interface Development {
   id: string;
@@ -107,7 +109,7 @@ const Empreendimentos: React.FC = () => {
   const handleSave = async () => {
     if (!form.name) return;
     if (!profile?.organization_id) {
-      alert(
+      toast.error(
         'Erro: Organização não identificada. Por favor, recarregue a página.'
       );
       return;

@@ -2,6 +2,8 @@ import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabase';
 import { CreditCard, Plus, X, Save, Edit2, Trash2, Check } from 'lucide-react';
+import { toast } from 'sonner';
+
 
 interface Plan {
   id: string;
@@ -86,7 +88,7 @@ const PlanManager: React.FC = () => {
       setIsModalOpen(false);
     } catch (error) {
       logger.error(error);
-      alert('Erro ao salvar plano');
+      toast.error('Erro ao salvar plano');
     } finally {
       setFormLoading(false);
     }
@@ -96,7 +98,7 @@ const PlanManager: React.FC = () => {
     if (!confirm('Tem certeza? Isso pode afetar tenants usando este plano.'))
       return;
     const { error } = await supabase.from('plans').delete().eq('id', id);
-    if (error) alert('Erro ao deletar (o plano pode estar em uso)');
+    if (error) toast.error('Erro ao deletar (o plano pode estar em uso)');
     else fetchPlans();
   };
 

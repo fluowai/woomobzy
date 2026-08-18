@@ -37,6 +37,8 @@ import ThemeCustomizer from '../components/LandingPageEditor/ThemeCustomizer';
 import SEOSettings from '../components/LandingPageEditor/SEOSettings';
 import AICloneModal from '../components/LandingPageEditor/AICloneModal';
 import AIGenerationModal from '../components/LandingPageEditor/AIGenerationModal';
+import { toast } from 'sonner';
+
 
 type ViewMode = 'desktop' | 'tablet' | 'mobile';
 
@@ -85,7 +87,7 @@ const LandingPageEditor: React.FC = () => {
       }
     } catch (error) {
       logger.error('Error loading page:', error);
-      alert('Erro ao carregar landing page');
+      toast.error('Erro ao carregar landing page');
       navigate('/landing-pages');
     } finally {
       setLoading(false);
@@ -126,12 +128,12 @@ const LandingPageEditor: React.FC = () => {
       setLastSaved(new Date());
 
       if (!isAutoSave) {
-        alert('Landing page salva com sucesso!');
+        toast.success('Landing page salva com sucesso!');
       }
     } catch (error) {
       logger.error('❌ Erro ao salvar:', error);
       if (!isAutoSave) {
-        alert('Erro ao salvar landing page: ' + (error as Error).message);
+        toast.error('Erro ao salvar landing page: ' + (error as Error).message);
       }
     } finally {
       setSaving(false);
@@ -152,11 +154,11 @@ const LandingPageEditor: React.FC = () => {
     try {
       setSaving(true);
       await landingPageService.publish(page.id);
-      alert('Landing page publicada com sucesso!');
+      toast.success('Landing page publicada com sucesso!');
       await loadPage();
     } catch (error) {
       logger.error('Error publishing page:', error);
-      alert('Erro ao publicar landing page');
+      toast.error('Erro ao publicar landing page');
     } finally {
       setSaving(false);
     }
@@ -282,7 +284,7 @@ const LandingPageEditor: React.FC = () => {
     });
 
     setShowAICloneModal(false);
-    alert('Site clonado com sucesso! Verifique os novos blocos.');
+    toast.success('Site clonado com sucesso! Verifique os novos blocos.');
   };
 
   const getViewModeWidth = () => {
@@ -468,7 +470,7 @@ const LandingPageEditor: React.FC = () => {
               onClick={() => {
                 const url = `${window.location.origin}/lp/${page.slug}`;
                 navigator.clipboard.writeText(url);
-                alert('Link copiado! ' + url);
+                toast.info('Link copiado! ' + url);
               }}
               className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
             >

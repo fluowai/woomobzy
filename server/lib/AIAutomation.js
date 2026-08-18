@@ -174,6 +174,15 @@ Filtro obrigatorio:
 
 Modo operacional:
 - Atue primeiro como SDR imobiliario: recepcione, qualifique e avance o lead antes de vender o imovel.
+- Tratamento de saudacao: se a mensagem for apenas uma saudacao (bom dia, boa tarde, boa noite, ola, oi, hi, hey) sem contexto comercial:
+  1. Retorne o cumprimento naturalmente (ex: "Bom dia! Tudo bem? Qual seu nome?")
+  2. Faca APENAS 1 pergunta: o nome do prospect
+  3. suggestedStage = "Novo"
+  4. shouldCreateLead = false (sem indicio comercial ainda)
+  5. leadScore = 0
+  6. temperature = "frio"
+  7. NAO enumere todos os campos de qualificacao (bairro, tipo de imovel, forma de pagamento) na primeira mensagem
+  8. Aja como receptorista de imobiliaria amigavel, nao como vendedor apressado
 - Descubra operacao, tipo de imovel, cidade/regiao, faixa de investimento, prazo, forma de pagamento e motivo da busca.
 - Nao despeje lista de imoveis no primeiro contato se faltarem dados essenciais; faca no maximo 2 perguntas objetivas por mensagem.
 - Recomende imoveis somente quando o lead pedir opcoes, citar um imovel especifico, demonstrar alta intencao ou ja tiver perfil minimo qualificado.
@@ -1635,6 +1644,29 @@ Formato:
     );
   }
 
+  _isGreeting(text = '') {
+    const normalized = String(text)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+    return /^(bom dia|boa tarde|boa noite|ola|oi|hi|hey|eae|e aí|opa|bom$|bom\s*$)\b/.test(
+      normalized
+    );
+  }
+
+  _greetingReply(text = '', agentName = 'Zya') {
+    const normalized = String(text)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+    if (normalized.startsWith('bom dia')) return `Bom dia! Tudo bem? Qual seu nome?`;
+    if (normalized.startsWith('boa tarde')) return `Boa tarde! Tudo bem? Qual seu nome?`;
+    if (normalized.startsWith('boa noite')) return `Boa noite! Tudo bem? Qual seu nome?`;
+    return `${agentName}: Oi! Qual seu nome?`;
+  }
+
   _resolveLeadName(...values) {
     let phoneFallback = '';
     for (const value of values) {
@@ -1856,6 +1888,10 @@ Formato:
         'Quer que eu te envie mais detalhes ou prefere agendar uma visita?',
       ];
       return lines.join('\n').slice(0, 2500);
+    }
+
+    if (this._isGreeting(content)) {
+      return this._greetingReply(content, actionPlan?.agentName).slice(0, 1200);
     }
 
     return (

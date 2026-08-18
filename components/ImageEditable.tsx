@@ -10,6 +10,8 @@ import {
   Upload,
 } from 'lucide-react';
 import { uploadFile } from '../services/storage';
+import { toast } from 'sonner';
+
 
 interface ImageEditableProps {
   textKey: string;
@@ -48,7 +50,7 @@ const ImageEditable: React.FC<ImageEditableProps> = ({
     e.stopPropagation();
 
     if (!imageUrl.trim()) {
-      alert('Por favor, insira uma URL válida');
+      toast.info('Por favor, insira uma URL válida');
       return;
     }
 
@@ -58,7 +60,7 @@ const ImageEditable: React.FC<ImageEditableProps> = ({
       setIsEditing(false);
     } catch (error) {
       logger.error('Failed to update image:', error);
-      alert('Erro ao salvar imagem');
+      toast.error('Erro ao salvar imagem');
     } finally {
       setIsSaving(false);
     }
@@ -89,7 +91,7 @@ const ImageEditable: React.FC<ImageEditableProps> = ({
       }
     } catch (error) {
       logger.error('Upload failed:', error);
-      alert('Falha ao fazer upload da imagem');
+      toast.error('Falha ao fazer upload da imagem');
     } finally {
       setIsUploading(false);
     }

@@ -34,6 +34,10 @@ dist-ssr
 *.secrets.md
 portainer-stack-*-filled.yml
 portainer-stack-pronta-corrigida.yml
+stack-wootech-imob-prod-portainer.yml
+
+# Security scan reports (raw scanner output)
+security-reports/
 
 # Debug files
 debug_scrape.html

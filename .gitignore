@@ -60,3 +60,10 @@ coverage
 *.bak
 *.backup
 *.new
+
+# Build artifacts
+whatsapp-service/build_output.txt
+whatsapp-service/out.txt
+whatsapp-service/whatsapp-service.exe
+instagram-service/node_modules/
+instagram-service/dist/

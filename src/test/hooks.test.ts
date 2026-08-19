@@ -26,8 +26,8 @@ describe('Hooks', () => {
     expect(useProperties).toBeDefined();
   });
 
-  it('should export useAuth', async () => {
-    const { useAuth } = await import('../hooks/useAuth');
+  it('should export useAuth from context', async () => {
+    const { useAuth } = await import('../../context/AuthContext');
     expect(useAuth).toBeDefined();
   });
 

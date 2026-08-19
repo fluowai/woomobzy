@@ -11,9 +11,15 @@ const PanelGuard: React.FC<{
   const { profile, isImpersonating, loading } = useAuth();
 
   if (loading) return <FullScreenSpinner />;
+  
+  // Wait for organization to be loaded (superadmin bypass)
   if (profile?.role === 'superadmin' && !isImpersonating)
     return <>{children}</>;
+    
   if (!profile?.organization_id) return <Navigate to="/onboarding" replace />;
+  
+  // Ensure organization object is loaded
+  if (!profile.organization) return <FullScreenSpinner />;
 
   const org: any = profile.organization;
   const correctPanel = isRuralOrganization(org?.niche, org?.name, org?.slug)

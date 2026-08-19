@@ -388,7 +388,7 @@ router.get(
         const mesInad = billings
           .filter(
             (b) =>
-              b.status === 'vencido' &&
+              b.status === 'aberto' &&
               new Date(b.due_date) < new Date() &&
               b.due_date >= startDate &&
               b.due_date <= endDate
@@ -415,7 +415,7 @@ router.get(
         .filter((b) => b.status === 'pago')
         .reduce((sum, b) => sum + (b.amount || 0), 0);
       const totalVencido = billings
-        .filter((b) => b.status === 'vencido')
+        .filter((b) => b.status === 'aberto' && new Date(b.due_date) < new Date())
         .reduce((sum, b) => sum + (b.amount || 0), 0);
       const totalAberto = billings
         .filter((b) => b.status === 'aberto')
@@ -622,7 +622,7 @@ router.get(
             ? propertyMap[c.property_id] || null
             : null;
           const totalDebito = contractBillings
-            .filter((b) => b.status !== 'pago')
+            .filter((b) => b.status === 'aberto' && new Date(b.due_date) < new Date())
             .reduce((sum, b) => sum + (b.amount || 0), 0);
 
           const diasVencido = Math.max(

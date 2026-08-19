@@ -237,8 +237,28 @@ if (!isProduction) {
 import { tenantContext } from './lib/supabase-server.js';
 import { createClient } from '@supabase/supabase-js';
 
-// Cache para evitar query na Master DB em toda requisição
+// Cache com TTL de 5 minutos
 const tenantConfigCache = new Map();
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
+function setCacheWithTTL(key, value) {
+  tenantConfigCache.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
+function getCache(key) {
+  const entry = tenantConfigCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    tenantConfigCache.delete(key);
+    return null;
+  }
+  return entry.value;
+}
+
+// Invalidação de cache - exportar para uso em rotas de admin
+export function invalidateTenantCache(domain) {
+  if (domain) tenantConfigCache.delete(domain);
+}
 
 app.use(async (req, res, next) => {
   // Rotas de API sempre usam o client master — BYOB é apenas para páginas públicas
@@ -258,12 +278,11 @@ app.use(async (req, res, next) => {
     return next();
   }
 
-  // Tenta achar no cache (TTL de 5 min recomendado em prod, mas aqui mantemos simples)
-  let tenantClient = tenantConfigCache.get(tenantDomain);
+  // Tenta achar no cache com TTL
+  let tenantClient = getCache(tenantDomain);
 
   if (!tenantClient) {
     try {
-      // Usa o master client para descobrir as credenciais do tenant
       const masterClient = getSupabaseServer();
       const { data, error } = await masterClient
         .from('public_tenant_discovery')
@@ -272,13 +291,6 @@ app.use(async (req, res, next) => {
         .single();
 
       if (!error && data && data.supabase_url && data.supabase_anon_key) {
-        // Criamos um client para o tenant (aqui deveríamos usar a service_role para o backend,
-        // mas para fins de discovery seguro, a anon_key foi exposta. O ideal é que a master db
-        // retorne a service_role key em uma RPC protegida, mas como o plano é BYOB,
-        // vamos inicializar com o que temos ou fazer um fallback. Se não tivermos a service_role_key,
-        // muitas APIs admin falharão. Na tabela criamos a supabase_service_role_key.
-        // A VIEW public_tenant_discovery NÃO TEM a service_role_key.
-        // Vamos buscar a tabela usando admin/service_role direto!
         const { data: adminData } = await masterClient
           .from('reseller_infrastructure')
           .select('supabase_url, supabase_service_role_key')
@@ -291,20 +303,23 @@ app.use(async (req, res, next) => {
             adminData.supabase_url,
             adminData.supabase_service_role_key
           );
-          tenantConfigCache.set(tenantDomain, tenantClient);
+          setCacheWithTTL(tenantDomain, tenantClient);
           console.log(`🔌 BYOB: Server client resolved for ${tenantDomain}`);
+        } else {
+          console.warn(`⚠️ BYOB: No service_role_key for ${tenantDomain}, using master client`);
         }
       }
     } catch (err) {
-      console.error(`❌ BYOB Middleware Error:`, err);
+      console.error(`❌ BYOB Middleware Error for ${tenantDomain}:`, err.message);
     }
   }
 
   if (tenantClient) {
-    // Roda a requisição inteira dentro do AsyncLocalStorage com o client do tenant
     return tenantContext.run({ supabaseClient: tenantClient }, next);
   }
 
+  // Fallback explícito: log e continua com master client
+  console.warn(`⚠️ BYOB: Tenant client not resolved for ${tenantDomain}, falling back to master`);
   next();
 });
 

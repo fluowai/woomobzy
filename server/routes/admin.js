@@ -779,26 +779,47 @@ router.post('/organizations', verifySuperAdmin, async (req, res) => {
       }
     }
 
-    const { data, error } = await supabase
-      .from('organizations')
-      .insert([payload])
-      .select()
-      .single();
-    if (error) throw error;
+    // Use transactional creation via direct DB if available, else Supabase
+    const directDbUrl = getDirectDatabaseUrl();
+    let data, domainProvisioning, ownerUser;
 
-    const domainProvisioning = normalizedCustomDomain
-      ? await syncOrganizationCustomDomain({
-          organizationId: data.id,
-          nextDomain: normalizedCustomDomain,
-        })
-      : null;
+    if (directDbUrl) {
+      // Transactional creation
+      const result = await createOrganizationWithTransaction({
+        payload,
+        normalizedCustomDomain,
+        owner_name,
+        owner_email,
+        password,
+        supabase,
+      });
+      data = result.organization;
+      domainProvisioning = result.domainProvisioning;
+      ownerUser = result.ownerUser;
+    } else {
+      // Fallback to Supabase (non-transactional)
+      const { data: orgData, error } = await supabase
+        .from('organizations')
+        .insert([payload])
+        .select()
+        .single();
+      if (error) throw error;
+      data = orgData;
 
-    const ownerUser = await ensureOrganizationOwner({
-      organization: data,
-      ownerName: owner_name,
-      ownerEmail: owner_email,
-      password,
-    });
+      domainProvisioning = normalizedCustomDomain
+        ? await syncOrganizationCustomDomain({
+            organizationId: data.id,
+            nextDomain: normalizedCustomDomain,
+          })
+        : null;
+
+      ownerUser = await ensureOrganizationOwner({
+        organization: data,
+        ownerName: owner_name,
+        ownerEmail: owner_email,
+        password,
+      });
+    }
 
     res.json({
       success: true,
@@ -1387,6 +1408,82 @@ router.post('/link-profile', verifySuperAdmin, async (req, res) => {
     return res.status(500).json({ error: 'Erro ao vincular perfil' });
   }
 });
+
+// Transactional organization creation
+async function createOrganizationWithTransaction({ payload, normalizedCustomDomain, owner_name, owner_email, password, supabase }) {
+  const rawConnectionString = getDirectDatabaseUrl();
+  const connectionString = normalizeDirectDatabaseUrl(rawConnectionString);
+  
+  const pool = new pg.Pool({
+    connectionString,
+    ssl: shouldUseSsl(rawConnectionString)
+      ? { rejectUnauthorized: false }
+      : false,
+    max: 1,
+    idleTimeoutMillis: 1000,
+    connectionTimeoutMillis: 5000,
+  });
+
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query('BEGIN');
+
+    // 1. Insert organization
+    const orgColumns = Object.keys(payload).join(', ');
+    const orgValues = Object.values(payload).map((v, i) => `$${i + 1}`).join(', ');
+    const orgResult = await client.query(
+      `INSERT INTO public.organizations (${orgColumns}) VALUES (${orgValues}) RETURNING *`,
+      Object.values(payload)
+    );
+    const organization = orgResult.rows[0];
+
+    // 2. Provision domain if provided
+    let domainProvisioning = null;
+    if (normalizedCustomDomain) {
+      await client.query(
+        `INSERT INTO public.domains (organization_id, domain, is_custom, is_primary, status, ssl_status, updated_at)
+         VALUES ($1, $2, true, true, 'pending_ssl', 'pending', NOW())
+         ON CONFLICT (domain) DO UPDATE SET organization_id = $1, updated_at = NOW()`,
+        [organization.id, normalizedCustomDomain]
+      );
+      domainProvisioning = { domain: normalizedCustomDomain, status: 'pending_ssl' };
+    }
+
+    // 3. Create owner user in auth (via Supabase Admin API)
+    let ownerUser = null;
+    if (owner_email && password) {
+      const { data, error } = await supabase.auth.admin.createUser({
+        email: owner_email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          name: owner_name || organization.owner_name || organization.name,
+          agencyName: organization.name,
+        },
+      });
+      if (!error && data.user) {
+        ownerUser = data.user;
+        // 4. Create profile
+        await client.query(
+          `INSERT INTO public.profiles (id, organization_id, name, email, role, updated_at)
+           VALUES ($1, $2, $3, $4, 'admin', NOW())
+           ON CONFLICT (id) DO UPDATE SET organization_id = $2, name = $3, email = $4, role = 'admin', updated_at = NOW()`,
+          [ownerUser.id, organization.id, owner_name || organization.name, owner_email]
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+    return { organization, domainProvisioning, ownerUser };
+  } catch (error) {
+    if (client) await client.query('ROLLBACK').catch(() => {});
+    throw error;
+  } finally {
+    if (client) client.release();
+    await pool.end().catch(() => {});
+  }
+}
 
 // --- 👥 User Management (Tenant Isolated) ---
 

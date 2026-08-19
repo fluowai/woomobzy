@@ -675,7 +675,9 @@ function normalizeRole(role) {
   if (normalized === 'broker') return 'broker';
   if (normalized === 'assistente') return 'assistente';
   if (normalized === 'user') return 'user';
-  return null;
+  // Default to 'user' for unknown roles instead of null
+  console.warn('[Auth] Unknown role, defaulting to user:', role);
+  return 'user';
 }
 
 export function getSafeProfileBootstrapIdentity(user) {

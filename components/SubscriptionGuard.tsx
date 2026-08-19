@@ -20,19 +20,25 @@ const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [saving, setSaving] = useState(false);
   const [requestedPlanId, setRequestedPlanId] = useState<string | null>(null);
-  const plansCached = useRef(false);
 
+  // Fetch plans when organization changes
   useEffect(() => {
-    if (plansCached.current) return;
-    plansCached.current = true;
-
+    if (!profile?.organization_id) return;
+    
+    let cancelled = false;
     supabase
       .from('plans')
       .select('*')
       .eq('is_active', true)
       .order('price_monthly', { ascending: true })
-      .then(({ data }) => setPlans((data || []) as SubscriptionPlan[]));
-  }, []);
+      .then(({ data }) => {
+        if (!cancelled) {
+          setPlans((data || []) as SubscriptionPlan[]);
+        }
+      });
+
+    return () => { cancelled = true; };
+  }, [profile?.organization_id]);
 
   if (loading) return <FullScreenSpinner />;
   if (!profile?.organization || profile.role === 'superadmin')

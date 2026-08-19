@@ -498,7 +498,12 @@ Formato:
       console.warn('[AIAutomation] Matchmaking indisponivel:', error.message);
     }
 
-    const reply = this._buildWhatsAppReply({ lead, actionPlan, content });
+    const reply = this._buildWhatsAppReply({
+      lead,
+      actionPlan,
+      content,
+      agentName: agent?.name || 'Zya',
+    });
     if (reply) {
       await this._saveConversationMemory(
         organizationId,
@@ -1849,7 +1854,7 @@ Formato:
     return parts.length ? parts.join('; ') : 'nao identificado';
   }
 
-  _buildWhatsAppReply({ lead, actionPlan, content = '' }) {
+  _buildWhatsAppReply({ lead, actionPlan, content = '', agentName = 'Zya' }) {
     const matchMessage = String(lead?.match_whatsapp_message || '').trim();
     const shouldRecommend = this._shouldRecommendProperties({
       actionPlan,
@@ -1891,7 +1896,7 @@ Formato:
     }
 
     if (this._isGreeting(content)) {
-      return this._greetingReply(content, actionPlan?.agentName).slice(0, 1200);
+      return this._greetingReply(content, agentName).slice(0, 1200);
     }
 
     return (

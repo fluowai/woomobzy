@@ -347,6 +347,41 @@ Cinco endpoints estavam falhando no console:
 ### Verificação
 
 - Suíte Go completa e build do servidor: passaram.
+
+## [2026-08-19] Fix RLS recursion blocking profile query for fluowai@gmail.com
+
+### Contexto
+
+- Usuário `fluowai@gmail.com` (id: `df587a67-d525-4e01-9ff6-c82ba596fb13`) não conseguia acessar `/megaadmin`.
+- Logs exibiam: `Error: infinite recursion detected in policy for relation "profiles"`.
+- A query de perfil no AuthContext retornava `false` com erro, impedindo o login.
+- Docker/imagem não era o problema — as imagens `:latest` já estavam corretas no Portainer.
+- O problema era **puramente no banco de dados Supabase** (política RLS recursiva).
+
+### Causa raiz
+
+- A política RLS `profiles_self` na tabela `profiles` continha uma subquery que fazia SELECT na própria tabela `profiles`:
+  ```sql
+  EXISTS (SELECT 1 FROM profiles WHERE profiles_1.id = auth.uid() AND ...)
+  ```
+  Isso causava recursão infinita: a query em `profiles` disparava a política, que fazia outra query em `profiles`, repetindo indefinidamente.
+- Além disso, a função `get_my_org_id()` existente não era `SECURITY DEFINER`, amplificando o problema.
+
+### Correção (executada diretamente no Supabase)
+
+- **Dropped** a política recursiva `profiles_self` da tabela `profiles`.
+- Criada função `get_my_org_id()` como `STABLE SECURITY DEFINER` que tenta JWT primeiro e só faz fallback para query direta no `profiles` (bypassando RLS via SECURITY DEFINER).
+- Criada política limpa `Profiles_own_access` sem recursão (usa apenas `auth.uid()` e `auth.jwt()`).
+- Sincronizados `organization_id` em `auth.users.raw_app_meta_data` para 2 usuários (sync de 15 no passo anterior).
+- Perfil de `fluowai@gmail.com` verificado: `role = 'superadmin'` (já correto), `organization_id = 8f9bf0f1-9df1-4e42-b00a-06a9d0717528` (atribuído durante a sessão).
+
+### Verificação
+
+- `SELECT * FROM profiles WHERE id = 'df587a67...'` → **retorna sucesso** (antes: infinite recursion error).
+- `app_metadata` do usuário agora contém `organization_id: "8f9bf0f1-9df1-4e42-b00a-06a9d0717528"`.
+- 5 políticas restantes em `profiles` inspecionadas — nenhuma é recursiva.
+- `normalizeRole('superadmin')` → `'superadmin'` ✓ (compatível com `MegaAdminGuard`).
+
 - Build Vite de produção: passou.
 - ESLint relacionado: 0 erros.
 - Deploy não executado; a implantação das novas imagens permanece pendente.

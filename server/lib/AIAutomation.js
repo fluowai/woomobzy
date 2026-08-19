@@ -1655,7 +1655,7 @@ Formato:
       .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase()
       .trim();
-    return /^(bom dia|boa tarde|boa noite|ola|oi|hi|hey|eae|e aí|opa|bom$|bom\s*$)\b/.test(
+    return /^(bom dia|boa tarde|boa noite|ola|oi|hi|hey|eae|opa)(\s|$)/.test(
       normalized
     );
   }
@@ -1666,9 +1666,12 @@ Formato:
       .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase()
       .trim();
-    if (normalized.startsWith('bom dia')) return `Bom dia! Tudo bem? Qual seu nome?`;
-    if (normalized.startsWith('boa tarde')) return `Boa tarde! Tudo bem? Qual seu nome?`;
-    if (normalized.startsWith('boa noite')) return `Boa noite! Tudo bem? Qual seu nome?`;
+    if (normalized.startsWith('bom dia'))
+      return 'Bom dia! Tudo bem? Qual seu nome?';
+    if (normalized.startsWith('boa tarde'))
+      return 'Boa tarde! Tudo bem? Qual seu nome?';
+    if (normalized.startsWith('boa noite'))
+      return 'Boa noite! Tudo bem? Qual seu nome?';
     return `${agentName}: Oi! Qual seu nome?`;
   }
 

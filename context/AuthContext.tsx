@@ -404,7 +404,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const enableDebugMode = async () => {
-    if (profile?.role !== 'superadmin') {
+    const role = String(profile?.role || '').toLowerCase();
+    if (role !== 'superadmin' && role !== 'super_admin') {
       throw new Error('Apenas SuperAdmins podem ativar o modo de debug.');
     }
 

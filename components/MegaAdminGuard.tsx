@@ -18,8 +18,13 @@ const PUBLIC_PATHS = [
   '/impersonate',
 ];
 
-const isMegaAdmin = (profile: any) =>
-  profile?.role === 'superadmin' && !profile?.organization?.is_reseller;
+const isMegaAdmin = (profile: any) => {
+  const role = String(profile?.role || '').toLowerCase();
+  return (
+    (role === 'superadmin' || role === 'super_admin') &&
+    !profile?.organization?.is_reseller
+  );
+};
 
 const MegaAdminGuard: React.FC<{ children: React.ReactNode }> = ({
   children,

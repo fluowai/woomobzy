@@ -2,7 +2,7 @@ import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 import { verifyMegaAdmin } from '../middleware/auth.js';
 import { getSupabaseServer } from '../lib/supabase-server.js';
-import { assertValidDomain, normalizeDomain } from '../utils/domains.js';
+import { assertValidDomain, normalizeDomain } from '../domainService.js';
 import { sendWelcomeEmail } from '../services/email/emailService.js';
 
 const router = express.Router();

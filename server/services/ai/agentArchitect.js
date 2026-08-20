@@ -292,25 +292,51 @@ export class AgentArchitect {
       };
     }
     
-    // Build comprehensive prompt
-    const prompt = this.buildArchitectPrompt(input);
-    
-    // Generate with structured output
-    const result = await this.generateWithSchema(prompt, this.getOutputSchema());
-    
-    // Validate and enrich
-    const architecture = this.validateAndEnrich(result, input);
-    
-    // Generate test plan
-    architecture.testPlan = await this.generateTestPlan(architecture, input);
-    
-    logger.info('[AgentArchitect] Architecture designed', {
-      agentsCount: architecture.agents.length,
-      workflowsCount: architecture.workflows.length,
-      testCasesCount: architecture.testPlan.length
-    });
-    
-    return architecture;
+    try {
+      // Build comprehensive prompt
+      const prompt = this.buildArchitectPrompt(input);
+      
+      // Generate with structured output
+      const result = await this.generateWithSchema(prompt, this.getOutputSchema());
+      
+      // Validate and enrich
+      const architecture = this.validateAndEnrich(result, input);
+      
+      // Generate test plan
+      architecture.testPlan = await this.generateTestPlan(architecture, input);
+      
+      logger.info('[AgentArchitect] Architecture designed', {
+        agentsCount: architecture.agents.length,
+        workflowsCount: architecture.workflows.length,
+        testCasesCount: architecture.testPlan.length
+      });
+      
+      return architecture;
+    } catch (error) {
+      logger.error('[AgentArchitect] Design failed, falling back to mock architecture', {
+        error: error.message,
+        tenant: input.tenant?.id,
+        segment: input.segment
+      });
+      
+      // Return mock architecture instead of throwing 500
+      return {
+        operation: {
+          id: input.tenant?.id || 'dev',
+          name: input.tenant?.name || 'Dev Operation',
+          segment: input.segment || 'URBAN_REAL_ESTATE',
+          business_model: input.businessModel || {},
+          objectives: input.objectives || [],
+          status: 'DRAFT',
+          architecture: {
+            agents: [],
+            workflows: [],
+            testPlan: []
+          }
+        },
+        testPlan: []
+      };
+    }
   }
 
   /**

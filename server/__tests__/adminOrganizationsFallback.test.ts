@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { isInvalidSupabaseApiKeyError } from '../routes/admin.js';
 import {
-  isInvalidSupabaseApiKeyError,
   normalizeDirectDatabaseUrl,
   shouldUseSsl,
-} from '../routes/admin.js';
+} from '../lib/organization-deletion.js';
 
 describe('admin organizations fallback helpers', () => {
   it('detects Supabase invalid API key errors', () => {

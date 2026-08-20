@@ -1,5 +1,33 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-20] Correção de entregabilidade de e-mail (rSPAM / MailBaby)
+
+### Problema
+
+- E-mail de boas-vindas (cadastro de conta) foi rejeitado pelo filtro de saída do servidor de e-mail do domínio (`relay.mailbaby.net` / OutboundSpamProtection), score 22.49.
+- Relatório `mailinfo` apontou como principais causas: SPF com `PERMERROR` (dois registros SPF em `wootech.com.br`), `MIME_HTML_ONLY`, HELO `[127.0.0.1]`, e reputação nova da conta `mb16209`.
+
+### Mudanças no código
+
+- `server/services/email/emailService.js`:
+  - `createSmtpTransport` agora usa `name: process.env.SMTP_HELO_NAME` (EHLO correto em vez de `[127.0.0.1]`).
+  - `sendEmail` e `sendSystemEmail` enviam `text/plain` derivado do HTML (`htmlToText`), eliminando `MIME_HTML_ONLY`.
+  - Headers de envio adicionados: `X-Mailer: IMOBZY` e `X-Entity-Ref-ID`.
+- `server/services/emailService.js` (legado): mesmo ajuste de HELO name no transporter.
+- `.env`, `.env.local` e `.env.production.template`: novo `SMTP_HELO_NAME=mail.wootech.com.br`.
+
+### Pendências externas (DNS — não resolvido pelo código)
+
+1. Consolidar os dois registros SPF de `wootech.com.br` em um único:
+   `v=spf1 a mx ip4:51.161.84.29 ip4:162.250.125.14 include:spf.cloudns.link ~all`
+2. Aquecer a conta `mb16209` (reputação nova); evitar e-mails de teste curtos.
+3. Após SPF válido, considerar DMARC `p=quarantine`.
+
+### Evidências
+
+- Sintaxe validada com `node --check` nos dois services.
+- `type-check` sem erros novos (único erro é pré-existente: `@/hooks/usePanelBase` em `views/AICentral.tsx`).
+
 ## [2026-07-28] Execução da auditoria funcional — Onda 0
 
 ### Inventário e infraestrutura
@@ -385,3 +413,26 @@ Cinco endpoints estavam falhando no console:
 - Build Vite de produção: passou.
 - ESLint relacionado: 0 erros.
 - Deploy não executado; a implantação das novas imagens permanece pendente.
+
+## [2026-08-20] Correção de 500 no DELETE de Clientes Diretos (Mega Admin)
+
+### Causa raiz
+
+- `DELETE /api/mega/direct-clients/:id` (`server/routes/mega-admin.js`) excluía a organização diretamente, mas várias tabelas referenciam `organizations(id)` sem `ON DELETE CASCADE` (ex.: `profiles`, criado para todo cliente direto). O banco rejeitava a exclusão com FK violation → 500.
+- Latente no mesmo handler: `PUT /direct-clients/:id` e `PUT /resellers/:id` usavam `.select().single()` e lançavam 500 com `PGRST116` quando o update casava 0 linhas (o `if (!data)` de 404 era código morto).
+
+### Correção
+
+- Criado `server/lib/organization-deletion.js` com helpers compartilhados: `unlinkKnownOrganizationReferences`, `deleteOrganizationsWithDirectDb` (fallback transacional via Postgres direto que percorre todas as FKs), `isForeignKeyError`, `getDirectDatabaseUrl`, `normalizeDirectDatabaseUrl`, `shouldUseSsl`.
+- `server/routes/admin.js` passou a importar esses helpers do módulo compartilhado (removida duplicação local).
+- `server/routes/mega-admin.js`: DELETE de cliente direto agora valida UUID, desvincula dependências (`profiles`, storage, calls, domains) e, em FK error, usa o fallback `deleteOrganizationsWithDirectDb`. PUT de direct-clients e resellers trata `PGRST116` como 404.
+- Corrigido `organizationId: organization.id` → `org.id` nos POSTs de reseller e cliente direto (e-mail de boas-vindas nunca era enviado — variável indefinida).
+- `server/__tests__/adminOrganizationsFallback.test.ts` atualizado para importar `normalizeDirectDatabaseUrl`/`shouldUseSsl` do módulo compartilhado.
+
+### Verificação
+
+- `node --check` OK nos 3 arquivos alterados.
+- `npx vitest run --pool=threads server/__tests__/adminOrganizationsFallback.test.ts` → 3/3 passaram (pool forks padrão falha neste ambiente por timeout do worker, pré-existente).
+- `npm run type-check` sem erros.
+- ESLint do arquivo de teste sem erros.
+- Sem commit/push/deploy.

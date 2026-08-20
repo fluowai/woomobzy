@@ -1,5 +1,13 @@
 # Verificação
 
+## 2026-08-20 — Fix de 500 no DELETE de Cliente Direto (Mega Admin)
+
+- `node --check` OK em `server/lib/organization-deletion.js`, `server/routes/mega-admin.js` e `server/routes/admin.js`.
+- `npx vitest run --pool=threads server/__tests__/adminOrganizationsFallback.test.ts`: 3/3 passaram. Obs.: o pool padrão (forks) falha neste ambiente por timeout do worker (pré-existente, não relacionado à mudança).
+- `npm run type-check`: sem erros.
+- `npx eslint server/__tests__/adminOrganizationsFallback.test.ts`: sem erros.
+- Validação funcional (DELETE de cliente real) depende de rodar em homologação; nenhum commit/push/deploy foi executado.
+
 ## 2026-07-28 — Auditoria funcional, execução da Onda 0
 
 - `npm run audit:matrix`: 143 rotas; 49 Urbanas, 48 Rurais, 13 Super Admin, 13 Mega Admin e 20 públicas/compartilhadas.

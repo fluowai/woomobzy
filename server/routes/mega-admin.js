@@ -2,6 +2,11 @@ import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 import { verifyMegaAdmin } from '../middleware/auth.js';
 import { getSupabaseServer } from '../lib/supabase-server.js';
+import {
+  deleteOrganizationsWithDirectDb,
+  isForeignKeyError,
+  unlinkKnownOrganizationReferences,
+} from '../lib/organization-deletion.js';
 import { assertValidDomain, normalizeDomain } from '../domainService.js';
 import { sendWelcomeEmail } from '../services/email/emailService.js';
 
@@ -176,7 +181,7 @@ router.post('/resellers', verifyMegaAdmin, async (req, res) => {
           email: String(owner_email).toLowerCase().trim(),
           name: owner_name || name,
           password: finalPassword,
-          organizationId: organization.id
+          organizationId: org.id
         });
       } catch (err) {
         console.warn('[MegaAdmin] Erro enviando bem-vindo reseller:', err.message);
@@ -262,7 +267,7 @@ router.put('/resellers/:id', verifyMegaAdmin, async (req, res) => {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error && error.code !== 'PGRST116') throw error;
     if (!data) {
       return res.status(404).json({ error: 'Reseller não encontrado' });
     }
@@ -400,7 +405,7 @@ router.post('/direct-clients', verifyMegaAdmin, async (req, res) => {
           email: String(owner_email).toLowerCase().trim(),
           name: owner_name || name,
           password: finalPassword,
-          organizationId: organization.id
+          organizationId: org.id
         });
       } catch (err) {
         console.warn('[MegaAdmin] Erro enviando bem-vindo cliente direto:', err.message);
@@ -477,7 +482,7 @@ router.put('/direct-clients/:id', verifyMegaAdmin, async (req, res) => {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error && error.code !== 'PGRST116') throw error;
     if (!data) return res.status(404).json({ error: 'Cliente não encontrado' });
 
     res.json({ success: true, client: data });
@@ -492,6 +497,14 @@ router.delete('/direct-clients/:id', verifyMegaAdmin, async (req, res) => {
   try {
     const { id } = req.params;
 
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        id
+      )
+    ) {
+      return res.status(400).json({ error: 'ID inválido' });
+    }
+
     const { data: org } = await supabase
       .from('organizations')
       .select('id, name')
@@ -502,11 +515,32 @@ router.delete('/direct-clients/:id', verifyMegaAdmin, async (req, res) => {
 
     if (!org) return res.status(404).json({ error: 'Cliente não encontrado' });
 
+    // Desvincula dependências conhecidas (profiles, storage, calls, domains...)
+    // para evitar violação de FK que gerava 500 ao excluir o cliente.
+    await unlinkKnownOrganizationReferences([id]);
+
     const { error: deleteOrgError } = await supabase
       .from('organizations')
       .delete()
       .eq('id', id);
-    if (deleteOrgError) throw deleteOrgError;
+
+    if (deleteOrgError) {
+      if (isForeignKeyError(deleteOrgError)) {
+        const directDelete = await deleteOrganizationsWithDirectDb([id]);
+        if (!directDelete.error) {
+          return res.json({
+            success: true,
+            deleted: directDelete.deleted,
+            mode: 'direct-db',
+          });
+        }
+        console.warn(
+          '[MegaAdmin] Direct DB delete fallback failed:',
+          directDelete.error.message
+        );
+      }
+      throw deleteOrgError;
+    }
 
     res.json({ success: true, message: 'Cliente excluído com sucesso' });
   } catch (error) {

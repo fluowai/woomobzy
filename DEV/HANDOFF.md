@@ -1,5 +1,13 @@
 # Handoff
 
+## 2026-08-20 — Fix de 500 ao excluir Cliente Direto (Mega Admin)
+
+- `DELETE /api/mega/direct-clients/:id` agora desvincula dependências e usa fallback transacional (`server/lib/organization-deletion.js`) quando há FK sem cascade, retornando 200 em vez de 500.
+- `PUT /direct-clients/:id` e `PUT /resellers/:id` agora devolvem 404 (PGRST116) em vez de 500 quando o registro não corresponde a um cliente/reseller.
+- E-mail de boas-vindas de resellers/clientes diretos corrigido (`org.id` no lugar de variável indefinida).
+- Cobertura: type-check e 3/3 testes do fallback passaram. Deploy pendente de validação em homologação com um cliente direto real.
+- Nenhum commit, push ou deploy foi executado.
+
 ## 2026-07-28 — Execução da Onda 0
 
 - Inventário atual: `DEV/TESTS/FUNCTIONAL_AUDIT_MATRIX.md`, gerado por `npm run audit:matrix`.

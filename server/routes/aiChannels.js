@@ -11,11 +11,11 @@ import { logger } from '../utils/logger.js';
 const router = express.Router();
 
 const getOrgId = async (req) => {
-  return req.headers['x-organization-id'] || req.query.organization_id;
+  return req.orgId || req.headers['x-organization-id'] || req.query.organization_id;
 };
 
 const getUserId = async (req) => {
-  return req.headers['x-user-id'] || req.query.user_id;
+  return req.authUserId || req.headers['x-user-id'] || req.query.user_id;
 };
 
 /**

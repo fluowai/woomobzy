@@ -14,9 +14,8 @@ const router = express.Router();
 
 // Middleware to get organization_id from authenticated user
 const getOrgId = async (req) => {
-  // In production, extract from JWT/session
-  // For now, get from header or query
-  return req.headers['x-organization-id'] || req.query.organization_id;
+  // req.orgId é a fonte da verdade (definida pelo verifyAuth + requireTenant)
+  return req.orgId || req.headers['x-organization-id'] || req.query.organization_id;
 };
 
 /**
@@ -351,7 +350,7 @@ router.post('/:id/architect', async (req, res) => {
 
     // Create agents from architecture
     const createdAgents = [];
-    for (const agentSpec of architecture.agents) {
+    for (const agentSpec of architecture.operation.agents || []) {
       const { data: agent } = await supabase
         .from('ai_agents')
         .insert({
@@ -386,7 +385,7 @@ router.post('/:id/architect', async (req, res) => {
             handoff_config: { handoffs: agentSpec.handoffs },
             memory_config: agentSpec.memoryConfig,
             workflow_config: agentSpec.workflowConfig,
-            created_by: req.headers['x-user-id']
+            created_by: req.authUserId || req.headers['x-user-id']
           })
           .select()
           .single();
@@ -427,7 +426,7 @@ router.post('/:id/architect', async (req, res) => {
     }
 
     // Create handoffs
-    for (const agentSpec of architecture.agents) {
+    for (const agentSpec of architecture.operation.agents || []) {
       for (const handoff of agentSpec.handoffs || []) {
         const toAgent = createdAgents.find(a => a.role === handoff.toAgentRole);
         if (toAgent) {

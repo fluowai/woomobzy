@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft, Bot, Brain, MessageSquare, Users, Target, CalendarDays,
@@ -9,6 +9,8 @@ import {
   GitFork, TestTube2, Database, Rocket
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIPath } from '@/src/hooks/usePanelBase';
+import { getOperation, getOperationMetrics, updateOperation } from '../services/aiWorkforce';
 
 const operation = {
   id: 'op-001',
@@ -87,36 +89,111 @@ const operation = {
 
 const AIOperationDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const aiPath = useAIPath();
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState<'overview' | 'agents' | 'conversations' | 'tests' | 'channels' | 'history' | 'logs'>('overview');
   const [pausing, setPausing] = useState(false);
   const [aiStatus, setAiStatus] = useState('ACTIVE');
+  const [loading, setLoading] = useState(true);
+  const [opData, setOpData] = useState(operation);
+
+  useEffect(() => {
+    loadData();
+  }, [id]);
+
+  const loadData = async () => {
+    if (!id) return;
+    setLoading(true);
+    try {
+      const op = await getOperation(id);
+      const m = await getOperationMetrics(id, '30d');
+
+      const agents = (op.agents || []).map((a, i) => ({
+        id: a.id,
+        name: a.name,
+        type: a.type,
+        status: a.status === 'PUBLISHED' ? 'ACTIVE' : a.status,
+        conversations: (a.metrics as any)?.conversations || 0,
+        resolution: `${Math.round(Number((a.metrics as any)?.resolution_rate || 0))}%`,
+        score: (a.metrics as any)?.score || 0,
+        model: (a.versions?.[0] as any)?.model || 'gemini-1.5-pro',
+        color: i === 0 ? 'bg-slate-950' : ['bg-emerald-600', 'bg-blue-600', 'bg-amber-500', 'bg-purple-600'][(i - 1) % 4]
+      }));
+
+      setOpData(prev => ({
+        ...prev,
+        id: op.id,
+        name: op.name,
+        segment: op.segment,
+        description: (op.architecture as any)?.description || prev.description,
+        status: op.status,
+        aiStatus: op.status === 'PUBLISHED' ? 'ACTIVE' : op.status,
+        agents: agents.length > 0 ? agents : prev.agents,
+        metrics: {
+          conversations: m.totals.conversations,
+          leads: m.totals.handoffs,
+          visits: Math.round(m.totals.conversations * 0.05),
+          contacts: m.totals.agents,
+          handoffs: m.totals.handoffs,
+          resolutionRate: `${m.agents.length > 0 ? Math.round(m.agents.reduce((s, a) => s + Number(a.successRate), 0) / m.agents.length) : 0}%`,
+          avgResponseTime: `${Math.round(m.totals.avgLatency / 1000)}s`,
+          noAnswer: '0%',
+          followUps: 0,
+          newAgents: agents.length,
+          score: op.health_score || 0,
+          messages: m.totals.totalTokens
+        }
+      }));
+      setAiStatus(op.status === 'PUBLISHED' ? 'ACTIVE' : op.status);
+    } catch (error: any) {
+      toast.error('Erro ao carregar operação: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleStatus = async () => {
     setPausing(true);
     try {
-      await new Promise(r => setTimeout(r, 800));
-      setAiStatus(aiStatus === 'ACTIVE' ? 'PAUSED' : 'ACTIVE');
+      const nextStatus = aiStatus === 'ACTIVE' ? 'PAUSED' : 'PUBLISHED';
+      if (id) {
+        await updateOperation(id, { status: nextStatus });
+      }
+      setAiStatus(nextStatus === 'PUBLISHED' ? 'ACTIVE' : 'PAUSED');
+      setOpData(prev => ({ ...prev, status: nextStatus }));
       toast.success(aiStatus === 'ACTIVE' ? 'Operação pausada' : 'Operação ativada');
+    } catch (error: any) {
+      toast.error('Erro ao alterar status: ' + error.message);
     } finally {
       setPausing(false);
     }
   };
 
-  const maxLeads = Math.max(...operation.weekly.map(w => w.leads));
+  const maxLeads = Math.max(...opData.weekly.map(w => w.leads));
+
+  if (loading) {
+    return (
+      <div className="min-h-[600px] bg-[#F5F7FB] -m-3 sm:-m-4 md:-m-6 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-slate-500">
+          <Bot className="h-12 w-12 text-emerald-600 animate-pulse" />
+          <div className="font-bold text-lg">Carregando operação...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full bg-[#F5F7FB] -m-3 sm:-m-4 md:-m-6 text-slate-950">
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/92 backdrop-blur-xl">
         <div className="h-16 px-4 lg:px-7 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link to="/ai" className="h-9 w-9 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">
+            <Link to={aiPath('')} className="h-9 w-9 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">
               <ArrowLeft size={18} />
             </Link>
             <div>
-              <div className="text-sm font-bold">{operation.name}</div>
+              <div className="text-sm font-bold">{opData.name}</div>
               <div className="text-[11px] text-slate-500 flex items-center gap-2">
-                <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-bold">URBAN_REAL_ESTATE</span>
+                <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-bold">{opData.segment}</span>
                 <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${aiStatus === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
                   {aiStatus === 'ACTIVE' ? 'AI ATIVA' : 'AI PAUSADA'}
                 </span>
@@ -129,10 +206,10 @@ const AIOperationDashboard: React.FC = () => {
               {pausing ? <Loader2 size={14} className="animate-spin" /> : aiStatus === 'ACTIVE' ? <Pause size={14} /> : <Play size={14} />}
               {aiStatus === 'ACTIVE' ? 'Pausar IA' : 'Ativar IA'}
             </button>
-            <Link to={`/ai/operations/${id}/architecture`} className="h-9 px-4 rounded-lg border border-slate-200 text-xs font-bold flex items-center gap-2 hover:bg-slate-50">
+            <Link to={aiPath(`operations/${id}/architecture`)} className="h-9 px-4 rounded-lg border border-slate-200 text-xs font-bold flex items-center gap-2 hover:bg-slate-50">
               <GitBranch size={14} /> Arquitetura
             </Link>
-            <Link to={`/ai/operations/${id}/agents/test`} className="h-9 px-4 rounded-lg bg-slate-950 text-white text-xs font-bold flex items-center gap-2 hover:bg-slate-800">
+            <Link to={aiPath(`operations/${id}/agents/test`)} className="h-9 px-4 rounded-lg bg-slate-950 text-white text-xs font-bold flex items-center gap-2 hover:bg-slate-800">
               <TestTube2 size={14} /> Sandbox
             </Link>
           </div>
@@ -163,14 +240,14 @@ const AIOperationDashboard: React.FC = () => {
           <>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {[
-                { label: 'Conversas', value: operation.metrics.conversations, icon: MessageSquare, delta: '+18%', color: 'bg-emerald-50 text-emerald-600', up: true },
-                { label: 'Leads', value: operation.metrics.leads, icon: UserPlus, delta: '+22%', color: 'bg-blue-50 text-blue-600', up: true },
-                { label: 'Visitas', value: operation.metrics.visits, icon: CalendarDays, delta: '+14%', color: 'bg-amber-50 text-amber-600', up: true },
-                { label: 'Handoffs', value: operation.metrics.handoffs, icon: Hand, delta: '-5%', color: 'bg-purple-50 text-purple-600', up: false },
-                { label: 'Taxa de resolução', value: operation.metrics.resolutionRate, icon: CheckCircle2, delta: '+2%', color: 'bg-emerald-50 text-emerald-600', up: true },
-                { label: 'Tempo resposta', value: operation.metrics.avgResponseTime, icon: Timer, delta: '-12%', color: 'bg-cyan-50 text-cyan-600', up: true },
-                { label: 'Leads sem resposta', value: operation.metrics.noAnswer, icon: AlertTriangle, delta: '-18%', color: 'bg-red-50 text-red-600', up: true },
-                { label: 'Score de publicação', value: `${operation.metrics.score}/100`, icon: Star, delta: '+3', color: 'bg-violet-50 text-violet-600', up: true }
+                { label: 'Conversas', value: opData.metrics.conversations, icon: MessageSquare, delta: '+18%', color: 'bg-emerald-50 text-emerald-600', up: true },
+                { label: 'Leads', value: opData.metrics.leads, icon: UserPlus, delta: '+22%', color: 'bg-blue-50 text-blue-600', up: true },
+                { label: 'Visitas', value: opData.metrics.visits, icon: CalendarDays, delta: '+14%', color: 'bg-amber-50 text-amber-600', up: true },
+                { label: 'Handoffs', value: opData.metrics.handoffs, icon: Hand, delta: '-5%', color: 'bg-purple-50 text-purple-600', up: false },
+                { label: 'Taxa de resolução', value: opData.metrics.resolutionRate, icon: CheckCircle2, delta: '+2%', color: 'bg-emerald-50 text-emerald-600', up: true },
+                { label: 'Tempo resposta', value: opData.metrics.avgResponseTime, icon: Timer, delta: '-12%', color: 'bg-cyan-50 text-cyan-600', up: true },
+                { label: 'Leads sem resposta', value: opData.metrics.noAnswer, icon: AlertTriangle, delta: '-18%', color: 'bg-red-50 text-red-600', up: true },
+                { label: 'Score de publicação', value: `${opData.metrics.score}/100`, icon: Star, delta: '+3', color: 'bg-violet-50 text-violet-600', up: true }
               ].map((m, i) => (
                 <div key={i} className="rounded-xl border border-slate-200 bg-white p-4">
                   <div className={`h-9 w-9 rounded-lg ${m.color} flex items-center justify-center mb-3`}>
@@ -196,7 +273,7 @@ const AIOperationDashboard: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-end justify-between gap-1 h-40">
-                  {operation.weekly.map((w, i) => (
+                  {opData.weekly.map((w, i) => (
                     <div key={i} className="flex-1 flex flex-col items-center gap-2">
                       <div className="relative w-full flex items-end justify-center gap-1 h-32">
                         <div className="w-2.5 rounded-t bg-emerald-600" style={{ height: `${(w.conversations / 61) * 100}%` }} />
@@ -221,7 +298,7 @@ const AIOperationDashboard: React.FC = () => {
                   <div className="text-[11px] font-bold text-slate-500 mt-2">Aprovado · publicado</div>
                 </div>
                 <div className="space-y-2">
-                  {Object.entries(operation.scoreBreakdown).map(([k, v]) => (
+                  {Object.entries(opData.scoreBreakdown).map(([k, v]) => (
                     <div key={k}>
                       <div className="flex justify-between text-[11px] font-bold mb-1">
                         <span className="text-slate-500 capitalize">{k.replace(/([A-Z])/g, ' $1')}</span>
@@ -243,7 +320,7 @@ const AIOperationDashboard: React.FC = () => {
                   <button className="text-[11px] font-bold text-emerald-700 hover:underline">Ver todos</button>
                 </div>
                 <div className="space-y-3">
-                  {operation.insights.map((ins, i) => (
+                  {opData.insights.map((ins, i) => (
                     <div key={i} className="flex gap-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition">
                       <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${ins.type === 'alert' ? 'bg-red-50 text-red-500' : ins.type === 'info' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'}`}>
                         <ins.icon size={16} />
@@ -271,7 +348,7 @@ const AIOperationDashboard: React.FC = () => {
                     <button className="text-[11px] font-bold text-emerald-700 hover:underline">Ver todos</button>
                   </div>
                   <div className="space-y-3">
-                    {operation.recentHandoffs.map((h, i) => (
+                    {opData.recentHandoffs.map((h, i) => (
                       <div key={i} className="flex gap-3">
                         <div className="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 shrink-0">
                           {h.lead.split(' ').map(p => p[0]).join('').slice(0, 2)}
@@ -298,7 +375,7 @@ const AIOperationDashboard: React.FC = () => {
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-50 text-red-600">3</span>
                   </div>
                   <div className="space-y-3">
-                    {operation.noAnswers.map((n, i) => (
+                    {opData.noAnswers.map((n, i) => (
                       <div key={i} className="flex items-center gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="text-xs font-bold text-slate-950 truncate">{n.lead}</div>
@@ -323,10 +400,10 @@ const AIOperationDashboard: React.FC = () => {
           <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
             <div className="px-5 py-4 flex items-center justify-between">
               <div>
-                <h3 className="font-bold text-slate-950 text-sm">Equipe de IA ({operation.agents.length} agentes)</h3>
+                <h3 className="font-bold text-slate-950 text-sm">Equipe de IA ({opData.agents.length} agentes)</h3>
                 <p className="text-xs text-slate-500 mt-0.5">Arquitetura gerada pela WooTech IA</p>
               </div>
-              <Link to={`/ai/operations/${id}/architecture`} className="h-9 px-4 rounded-lg border border-slate-200 text-xs font-bold flex items-center gap-2 hover:bg-slate-50">
+              <Link to={aiPath(`operations/${id}/architecture`)} className="h-9 px-4 rounded-lg border border-slate-200 text-xs font-bold flex items-center gap-2 hover:bg-slate-50">
                 <GitBranch size={14} /> Ver arquitetura
               </Link>
             </div>
@@ -344,7 +421,7 @@ const AIOperationDashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {operation.agents.map((a, i) => (
+                {opData.agents.map((a, i) => (
                   <tr key={i} className="hover:bg-slate-50/60">
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
@@ -384,7 +461,7 @@ const AIOperationDashboard: React.FC = () => {
             <div className="rounded-xl border border-slate-200 bg-white p-5">
               <h3 className="font-bold text-slate-950 text-sm mb-4">Amostra de conversa</h3>
               <div className="space-y-3">
-                {operation.conversationSample.map((m, i) => (
+                {opData.conversationSample.map((m, i) => (
                   <div key={i} className={`flex ${m.type === 'out' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[80%] rounded-xl px-4 py-3 text-sm ${m.type === 'out' ? 'bg-emerald-600 text-white rounded-br-sm' : 'bg-slate-100 text-slate-700 rounded-bl-sm'}`}>
                       <div className="text-[10px] font-bold opacity-70 mb-1">{m.agent} · {m.type === 'out' ? 'Recebida' : 'Enviada'}</div>
@@ -396,8 +473,8 @@ const AIOperationDashboard: React.FC = () => {
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-5">
               <h3 className="font-bold text-slate-950 text-sm mb-4">Distribuição por agente</h3>
-              {operation.agents.map((a, i) => {
-                const pct = Math.round((a.conversations / operation.metrics.conversations) * 100);
+              {opData.agents.map((a, i) => {
+                const pct = Math.round((a.conversations / opData.metrics.conversations) * 100);
                 return (
                   <div key={i} className="mb-3">
                     <div className="flex justify-between text-xs font-bold mb-1">
@@ -466,7 +543,7 @@ const AIOperationDashboard: React.FC = () => {
 
         {activeTab === 'channels' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {operation.channels.map((ch, i) => (
+            {opData.channels.map((ch, i) => (
               <div key={i} className="rounded-xl border border-slate-200 bg-white p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="h-10 w-10 rounded-lg bg-emerald-50 flex items-center justify-center">

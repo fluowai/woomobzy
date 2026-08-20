@@ -65,6 +65,7 @@ const MIGRATIONS = [
   'migrations/20260725_reseller_infrastructure.sql',
   'migrations/20260820_ai_workforce_builder.sql',
   'migrations/20260821_ai_workforce_builder_compat.sql',
+  'migrations/20260822_ai_execution_logs.sql',
 ];
 
 async function executeMigrations() {

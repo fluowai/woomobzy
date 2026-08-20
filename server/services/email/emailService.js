@@ -70,6 +70,24 @@ function textPreview(html = '', text = '') {
   return source.replace(/\s+/g, ' ').trim().slice(0, 180);
 }
 
+function htmlToText(html = '') {
+  return String(html || '')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|h[1-6]|li|tr)>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n\s*\n+/g, '\n\n')
+    .trim();
+}
+
 function addressesToArray(addresses) {
   if (!addresses) return [];
   const list = Array.isArray(addresses) ? addresses : addresses.value || [];
@@ -288,6 +306,7 @@ function createSmtpTransport(account, password) {
     port: config.smtp_port,
     secure: config.smtp_secure,
     requireTLS: !config.smtp_secure,
+    name: process.env.SMTP_HELO_NAME || undefined,
     auth: {
       user: config.email,
       pass: password,
@@ -542,6 +561,7 @@ export async function sendEmail({
   }
 
   const cleanHtml = sanitizeEmailHtml(html);
+  const cleanText = htmlToText(cleanHtml);
   const transport = createSmtpTransport(
     account,
     decryptEmailSecret(account.encrypted_password)
@@ -550,9 +570,14 @@ export async function sendEmail({
     from: account.email,
     to: cleanTo,
     subject: String(subject || '(sem assunto)').trim(),
+    text: cleanText,
     html: cleanHtml,
     inReplyTo: inReplyTo || undefined,
     references: references?.length ? references : undefined,
+    headers: {
+      'X-Mailer': 'IMOBZY',
+      'X-Entity-Ref-ID': `imobzy-${Date.now()}`,
+    },
   });
 
   const messageId =
@@ -659,6 +684,7 @@ export async function sendSystemEmail({
   if (!cleanTo.length) throw new Error('Informe ao menos um destinatario.');
 
   const cleanHtml = sanitizeEmailHtml(html);
+  const cleanText = htmlToText(cleanHtml);
   let transport;
   let senderEmail = fromEmail;
 
@@ -683,6 +709,7 @@ export async function sendSystemEmail({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT || 465),
       secure: Number(process.env.SMTP_PORT) === 465,
+      name: process.env.SMTP_HELO_NAME || undefined,
       auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
     });
     senderEmail = process.env.SMTP_USER || fromEmail;
@@ -692,8 +719,13 @@ export async function sendSystemEmail({
     from: `"${fromName}" <${senderEmail}>`,
     to: cleanTo,
     subject: String(subject || '(sem assunto)').trim(),
+    text: cleanText,
     html: cleanHtml,
     replyTo: replyTo || undefined,
+    headers: {
+      'X-Mailer': 'IMOBZY',
+      'X-Entity-Ref-ID': `imobzy-${Date.now()}`,
+    },
   });
 }
 

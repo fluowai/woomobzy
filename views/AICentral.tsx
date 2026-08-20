@@ -33,10 +33,15 @@ import {
   Sparkles,
   Search
 } from 'lucide-react';
-import { callApi } from '../src/lib/api';
 import { logger } from '@/utils/logger';
 import { COMMERCIAL_PRODUCT_NAME } from '@/utils/branding';
 import { toast } from 'sonner';
+import { useAIPath } from '@/src/hooks/usePanelBase';
+import {
+  listOperations,
+  getOperation,
+  getOperationMetrics,
+} from '../services/aiWorkforce';
 
 // ============================================================
 // TYPES
@@ -322,7 +327,9 @@ const InsightCard: React.FC<{ insight: AIInsight }> = ({ insight }) => {
 
 const AICentral: React.FC = () => {
   const navigate = useNavigate();
+  const aiPath = useAIPath();
   const [operations, setOperations] = useState<AIOperation[]>([]);
+  const [rawAgents, setRawAgents] = useState<Array<Record<string, unknown>>>([]);
   const [metrics, setMetrics] = useState<OperationMetrics | null>(null);
   const [insights, setInsights] = useState<AIInsight[]>([]);
   const [loading, setLoading] = useState(true);
@@ -363,57 +370,58 @@ const AICentral: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      await new Promise(r => setTimeout(r, 500));
-      
-      const mockOperations: AIOperation[] = [
-        {
-          id: 'op-1',
-          name: 'Operação Comercial Urbana',
-          segment: 'URBAN_REAL_ESTATE',
-          status: 'PUBLISHED',
-          health_score: 96,
-          last_tested_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          published_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-          created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          agents_count: 5,
-          active_agents_count: 5
+
+      const apiOperations = await listOperations();
+
+      const mapped: AIOperation[] = apiOperations.map(op => ({
+        id: op.id,
+        name: op.name,
+        segment: op.segment,
+        status: op.status,
+        health_score: op.health_score ?? 0,
+        last_tested_at: op.last_tested_at,
+        published_at: op.published_at,
+        created_at: op.created_at,
+        agents_count: op.agents_count ?? 0,
+        active_agents_count: op.active_agents_count ?? 0
+      }));
+
+      setOperations(mapped);
+
+      if (mapped.length > 0) {
+        const primary = mapped.find(o => o.status === 'PUBLISHED' || o.status === 'ACTIVE') || mapped[0];
+        const m = await getOperationMetrics(primary.id, '30d');
+        setMetrics({
+          agents_active: m.totals.published,
+          conversations_today: m.totals.conversations,
+          leads_qualified: m.totals.handoffs,
+          visits_scheduled: Math.round(m.totals.conversations * 0.05),
+          handoffs: m.totals.handoffs,
+          resolution_rate: Math.round(
+            m.agents.length > 0
+              ? m.agents.reduce((sum, a) => sum + Number(a.successRate), 0) / m.agents.length
+              : 0
+          ),
+          issues_detected: m.agents.filter(a => ['CRITICAL', 'ATTENTION'].includes(a.health)).length,
+          avg_score: mapped[0]?.health_score ?? 0
+        });
+
+        try {
+          const detail = await getOperation(primary.id);
+          setRawAgents(detail.agents || []);
+        } catch (e) {
+          logger.warn('[AICentral] Detail load failed', { error: e });
         }
-      ];
-      
-      setOperations(mockOperations);
-      
-      setMetrics({
-        agents_active: 5,
-        conversations_today: 283,
-        leads_qualified: 72,
-        visits_scheduled: 14,
-        handoffs: 31,
-        resolution_rate: 78,
-        issues_detected: 2,
-        avg_score: 96
-      });
-      
+      }
+
       setInsights([
         {
-          type: 'optimization',
-          title: 'Otimização de qualificação detectada',
-          description: 'O agente SDR Vendas pode melhorar a taxa de qualificação em 12% ajustando a ordem das perguntas de orçamento.',
-          action: { label: 'Ver detalhes', href: '/ai/operations/op-1/agents/sdr-vendas' }
-        },
-        {
-          type: 'warning',
-          title: 'Aumento de handoffs no SDR Locação',
-          description: 'Nas últimas 24h, o agente de locação realizou 18% mais handoffs que a média. Verifique se há problema na qualificação.',
-          action: { label: 'Investigar', href: '/ai/operations/op-1/agents/sdr-locacao/logs' }
-        },
-        {
           type: 'info',
-          title: 'Nova versão do Agent Architect disponível',
-          description: 'A versão 2.1 do Agent Architect inclui melhorias para segmentos rurais e loteadoras.',
-          action: { label: 'Atualizar', href: '/ai/operations/new' }
+          title: 'Agent Architect ativo',
+          description: 'Crie uma nova operação e a IA desenha sua equipe, gera prompts, ferramentas e planos de teste automaticamente.',
+          action: { label: 'Criar operação', href: aiPath('operations/new') }
         }
       ]);
-      
     } catch (error) {
       logger.error('[AICentral] Load error', { error });
       toast.error('Erro ao carregar Central de IA');
@@ -423,19 +431,19 @@ const AICentral: React.FC = () => {
   };
 
   const handleCreateOperation = () => {
-    navigate('/ai/operations/new');
+    navigate(aiPath('operations/new'));
   };
 
   const handleViewOperation = (operationId: string) => {
-    navigate(`/ai/operations/${operationId}`);
+    navigate(aiPath(`operations/${operationId}`));
   };
 
   const handleViewAgent = (operationId: string, agentId: string) => {
-    navigate(`/ai/operations/${operationId}/agents/${agentId}`);
+    navigate(aiPath(`operations/${operationId}/agents/${agentId}`));
   };
 
   const handleTestAgent = (operationId: string, agentId: string) => {
-    navigate(`/ai/operations/${operationId}/agents/${agentId}/test`);
+    navigate(aiPath(`operations/${operationId}/agents/${agentId}/test`));
   };
 
   const primaryOperation = useMemo(() => 
@@ -443,58 +451,29 @@ const AICentral: React.FC = () => {
     [operations]
   );
 
-  const mockAgents: AgentSummary[] = useMemo(() => [
-    {
-      id: 'sdr-vendas',
-      name: 'SDR Vendas',
-      role: 'SDR Vendas',
-      type: 'SPECIALIST',
-      status: 'PUBLISHED',
-      health_status: 'EXCELLENT',
-      channels: ['whatsapp', 'instagram'],
-      metrics: { conversations: 1234, qualification_rate: 78, resolution_rate: 82, handoffs: 234, score: 97 }
-    },
-    {
-      id: 'sdr-locacao',
-      name: 'SDR Locação',
-      role: 'SDR Locação',
-      type: 'SPECIALIST',
-      status: 'PUBLISHED',
-      health_status: 'GOOD',
-      channels: ['whatsapp'],
-      metrics: { conversations: 892, qualification_rate: 72, resolution_rate: 75, handoffs: 156, score: 94 }
-    },
-    {
-      id: 'especialista-imoveis',
-      name: 'Especialista Imóveis',
-      role: 'Especialista Imóveis',
-      type: 'WORKER',
-      status: 'PUBLISHED',
-      health_status: 'EXCELLENT',
-      channels: ['whatsapp', 'webchat'],
-      metrics: { conversations: 2100, qualification_rate: 0, resolution_rate: 95, handoffs: 0, score: 96 }
-    },
-    {
-      id: 'agenda',
-      name: 'Agenda e Handoff',
-      role: 'Agenda',
-      type: 'WORKER',
-      status: 'PUBLISHED',
-      health_status: 'GOOD',
-      channels: ['whatsapp'],
-      metrics: { conversations: 567, qualification_rate: 0, resolution_rate: 98, handoffs: 423, score: 98 }
-    },
-    {
-      id: 'followup',
-      name: 'Follow-up Automatizado',
-      role: 'Follow-up',
-      type: 'FOLLOW_UP',
-      status: 'PUBLISHED',
-      health_status: 'EXCELLENT',
-      channels: ['whatsapp', 'email'],
-      metrics: { conversations: 3421, qualification_rate: 0, resolution_rate: 65, handoffs: 89, score: 93 }
-    }
-  ], []);
+  const teamAgents: AgentSummary[] = useMemo(() => {
+    if (!primaryOperation) return [];
+    return rawAgents.map((a) => {
+      const channelConfig = (a.channel_config || {}) as Record<string, unknown>;
+      const metricsRaw = (a.metrics || {}) as Record<string, unknown>;
+      return {
+        id: String(a.id),
+        name: String(a.name),
+        role: String(a.role || ''),
+        type: String(a.type || 'SPECIALIST'),
+        status: String(a.status || 'DRAFT'),
+        health_status: String(a.health_status || 'UNKNOWN'),
+        channels: Object.keys(channelConfig),
+        metrics: {
+          conversations: Number(metricsRaw.conversations || 0),
+          qualification_rate: Math.round(Number(metricsRaw.qualification_rate || 0)),
+          resolution_rate: Math.round(Number(metricsRaw.resolution_rate || 0)),
+          handoffs: Number(metricsRaw.handoffs || 0),
+          score: Number(metricsRaw.score || 0)
+        }
+      };
+    });
+  }, [primaryOperation, rawAgents]);
 
   if (loading) {
     return (
@@ -666,7 +645,7 @@ const AICentral: React.FC = () => {
                           Ver operação
                         </button>
                         <button
-                          onClick={() => navigate(`/ai/operations/${primaryOperation.id}/architecture`)}
+                          onClick={() => navigate(aiPath(`operations/${primaryOperation.id}/architecture`))}
                           className="h-11 px-5 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
                         >
                           <GitBranch size={18} />
@@ -685,10 +664,10 @@ const AICentral: React.FC = () => {
                     <div className="border-t border-slate-100 px-5 lg:px-6 py-5">
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-bold text-slate-950">Sua equipe de IA</h3>
-                        <span className="text-sm text-slate-500">{mockAgents.length} agentes ativos</span>
+                        <span className="text-sm text-slate-500">{teamAgents.length} agentes ativos</span>
                       </div>
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                        {mockAgents.map(agent => (
+                        {teamAgents.map(agent => (
                           <AgentCard
                             key={agent.id}
                             agent={agent}
@@ -728,7 +707,7 @@ const AICentral: React.FC = () => {
                 <h2 className="text-lg font-bold text-slate-950 mb-4">Ações rápidas</h2>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <Link
-                    to="/ai/operations/new"
+                    to={aiPath('operations/new')}
                     className="group rounded-xl border border-slate-200 bg-white p-5 hover:shadow-md hover:border-emerald-200 transition"
                   >
                     <div className="h-12 w-12 rounded-lg bg-emerald-50 flex items-center justify-center mb-3 group-hover:bg-emerald-100 transition">
@@ -738,7 +717,7 @@ const AICentral: React.FC = () => {
                     <p className="text-sm text-slate-500">Descreva seu negócio e a IA cria sua equipe</p>
                   </Link>
                   <Link
-                    to="/ai/knowledge"
+                    to={aiPath('knowledge')}
                     className="group rounded-xl border border-slate-200 bg-white p-5 hover:shadow-md hover:border-blue-200 transition"
                   >
                     <div className="h-12 w-12 rounded-lg bg-blue-50 flex items-center justify-center mb-3 group-hover:bg-blue-100 transition">
@@ -748,7 +727,7 @@ const AICentral: React.FC = () => {
                     <p className="text-sm text-slate-500">Gerencie documentos, FAQs e políticas</p>
                   </Link>
                   <Link
-                    to="/ai/history"
+                    to={aiPath('history')}
                     className="group rounded-xl border border-slate-200 bg-white p-5 hover:shadow-md hover:border-purple-200 transition"
                   >
                     <div className="h-12 w-12 rounded-lg bg-purple-50 flex items-center justify-center mb-3 group-hover:bg-purple-100 transition">
@@ -758,7 +737,7 @@ const AICentral: React.FC = () => {
                     <p className="text-sm text-slate-500">Revise atendimentos e métricas detalhadas</p>
                   </Link>
                   <Link
-                    to="/ai/logs"
+                    to={aiPath('logs')}
                     className="group rounded-xl border border-slate-200 bg-white p-5 hover:shadow-md hover:border-slate-200 transition"
                   >
                     <div className="h-12 w-12 rounded-lg bg-slate-100 flex items-center justify-center mb-3 group-hover:bg-slate-200 transition">
@@ -817,7 +796,7 @@ const AICentral: React.FC = () => {
                             Ver
                           </button>
                           <button
-                            onClick={() => navigate(`/ai/operations/${op.id}/architecture`)}
+                            onClick={() => navigate(aiPath(`operations/${op.id}/architecture`))}
                             className="h-10 px-4 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
                           >
                             <GitBranch size={16} />
@@ -912,7 +891,7 @@ const AICentral: React.FC = () => {
                               Ver
                             </button>
                             <button
-                              onClick={() => navigate(`/ai/operations/${op.id}/architecture`)}
+                              onClick={() => navigate(aiPath(`operations/${op.id}/architecture`))}
                               className="h-9 px-3 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 hover:bg-slate-50"
                             >
                               Arquitetura

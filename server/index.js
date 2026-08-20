@@ -389,6 +389,13 @@ app.use('/api/storage', verifyAuth, requireTenant, storageRoutes);
 app.get('/api/tenant/resolve', (req, res) => tenantHandler(req, res));
 app.get('/api/tenant/current', (req, res) => tenantHandler(req, res));
 
+// Plataforma: IP de origem para configuração de DNS por clientes autenticados.
+// Mantido no servidor (nunca no bundle público) para evitar exposição do IP.
+app.get('/api/platform/ip', verifyAuth, (req, res) => {
+  const ip = process.env.PLATFORM_IP || '';
+  return res.status(200).json({ ip });
+});
+
 // System Status & Health
 app.get('/api/system-status', async (req, res) => {
   try {

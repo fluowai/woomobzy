@@ -16,7 +16,8 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { callApi } from '../../src/lib/api';
-import { PLATFORM_IP } from '../../utils/platform';
+import { PLATFORM_IP_UNSET } from '../../utils/platform';
+import { usePlatformIp } from '../../utils/usePlatformIp';
 
 interface DomainData {
   name: string;
@@ -50,6 +51,7 @@ interface DomainData {
 
 const DomainSettings: React.FC = () => {
   const { settings } = useSettings();
+  const platformIp = usePlatformIp() ?? PLATFORM_IP_UNSET;
 
   const [domain, setDomain] = useState('');
   const [loading, setLoading] = useState(false);
@@ -182,7 +184,7 @@ const DomainSettings: React.FC = () => {
         dnsVerified: data.domain.dnsVerified || false,
         sslVerified: data.domain.sslVerified || false,
         dnsRecords: data.domain.dnsRecords,
-        expectedIp: data.domain.dnsRecords?.value || PLATFORM_IP,
+        expectedIp: data.domain.dnsRecords?.value || platformIp,
         addresses: [],
         wikiUrl: '/ajuda/dns',
         provisioned: true,
@@ -281,7 +283,7 @@ const DomainSettings: React.FC = () => {
               </div>
               <p className="text-xs text-gray-500">
                 O dominio deve apontar para o IP da plataforma:
-                <b> {PLATFORM_IP}</b>.
+                <b> {platformIp}</b>.
               </p>
             </div>
           ) : (
@@ -483,7 +485,7 @@ const DomainSettings: React.FC = () => {
                         IP esperado
                       </div>
                       <code className="mt-1 block font-mono text-sm font-bold text-indigo-700">
-                        {currentDomain.expectedIp || PLATFORM_IP}
+                        {currentDomain.expectedIp || platformIp}
                       </code>
                     </div>
                     <div className="rounded border border-blue-200 bg-white p-3">

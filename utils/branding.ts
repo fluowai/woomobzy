@@ -14,7 +14,6 @@ export const PUBLIC_APP_URL = getRuntimeEnv(
   'VITE_PUBLIC_APP_URL',
   PANEL_URL
 ).replace(/\/$/, '');
-export const PLATFORM_IP = getRuntimeEnv('VITE_PLATFORM_IP', '207.58.153.219');
 
 export const PANEL_HOST = extractHostname(PANEL_URL);
 export const PUBLIC_APP_HOST = extractHostname(PUBLIC_APP_URL);

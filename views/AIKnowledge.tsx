@@ -5,6 +5,7 @@ import {
   Sparkles, Loader2, Database, Globe, Check, AlertTriangle, FolderOpen
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIPath } from '@/src/hooks/usePanelBase';
 
 const sources = [
   { id: 1, name: 'Tabela de preços 2026.xlsx', type: 'Tabela de preços', status: 'SINCRONIZADO', pages: 24, updated: 'há 2h', color: 'bg-emerald-50 text-emerald-600', size: '1,2 MB' },
@@ -17,6 +18,7 @@ const sources = [
 const categories = ['Todos', 'Tabela de preços', 'Documento', 'Site', 'FAQ'];
 
 const AIKnowledge: React.FC = () => {
+  const aiPath = useAIPath();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('Todos');
   const [loading, setLoading] = useState(false);
@@ -49,7 +51,7 @@ const AIKnowledge: React.FC = () => {
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/92 backdrop-blur-xl">
         <div className="h-16 px-4 lg:px-7 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link to="/ai" className="h-9 w-9 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">
+            <Link to={aiPath('')} className="h-9 w-9 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">
               <ArrowLeft size={18} />
             </Link>
             <div>

@@ -1,4 +1,4 @@
-version: "3.8"
+﻿version: "3.8"
 
 services:
   frontend:
@@ -11,7 +11,6 @@ services:
       VITE_SUPABASE_ANON_KEY: "${VITE_SUPABASE_ANON_KEY}"
       VITE_PANEL_URL: "https://imob.wootech.com.br"
       VITE_PUBLIC_APP_URL: "https://imob.wootech.com.br"
-      VITE_PLATFORM_IP: "207.58.153.219"
     networks:
       - wootech1
       - imobfluow_internal
@@ -30,6 +29,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3002
+      PLATFORM_IP: "207.58.153.219"
       WHATSAPP_PROVIDER: "whatsmeow"
       WHATSAPP_WEBHOOK_URL: "http://api:3002"
       ALLOWED_ORIGINS: "https://imob.wootech.com.br,https://imobfluow.consultio.com.br"

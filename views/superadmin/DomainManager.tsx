@@ -11,7 +11,8 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { callApi } from '../../src/lib/api';
-import { PLATFORM_IP } from '../../utils/platform';
+import { PLATFORM_IP_UNSET } from '../../utils/platform';
+import { usePlatformIp } from '../../utils/usePlatformIp';
 import { toast } from 'sonner';
 
 
@@ -35,6 +36,7 @@ interface Organization {
 }
 
 const DomainManager: React.FC = () => {
+  const platformIp = usePlatformIp() ?? PLATFORM_IP_UNSET;
   const [domains, setDomains] = useState<DomainEntry[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,7 +109,7 @@ const DomainManager: React.FC = () => {
       });
 
       toast.success(
-        `Dominio ${newDomain} salvo. Oriente o cliente a apontar o registro A para ${PLATFORM_IP}.`
+        `Dominio ${newDomain} salvo. Oriente o cliente a apontar o registro A para ${platformIp}.`
       );
       setNewDomain('');
       setSelectedOrgId('');
@@ -164,7 +166,7 @@ const DomainManager: React.FC = () => {
         toast.info(`✅ ${domain}: DNS Configurado Corretamente!`);
       } else {
         toast.info(
-          `${domain}: DNS pendente ou incorreto.\nVerifique se o registro A aponta para ${PLATFORM_IP}.`
+          `${domain}: DNS pendente ou incorreto.\nVerifique se o registro A aponta para ${platformIp}.`
         );
       }
     } catch (e) {
@@ -293,7 +295,7 @@ const DomainManager: React.FC = () => {
           <p>
             <strong>Nota:</strong> Cada organização pode ter apenas 1 domínio
             personalizado. O sistema atualizará automaticamente o banco de dados
-            e o registro A deve apontar para <strong>{PLATFORM_IP}</strong>.
+            e o registro A deve apontar para <strong>{platformIp}</strong>.
           </p>
         </div>
       </div>

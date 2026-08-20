@@ -7,7 +7,6 @@ type RuntimeConfig = {
   VITE_SUPABASE_ANON_KEY?: string;
   VITE_PANEL_URL?: string;
   VITE_PUBLIC_APP_URL?: string;
-  VITE_PLATFORM_IP?: string;
 };
 
 const getRuntimeConfig = (): RuntimeConfig => {

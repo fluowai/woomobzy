@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeft, Bot, Brain, Sparkles, Settings, RefreshCw, Pause, Play,
@@ -6,6 +6,8 @@ import {
   TestTube2, FileText, Database, Shield, Zap, GitBranch
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIPath } from '@/src/hooks/usePanelBase';
+import { getAgent } from '../services/aiWorkforce';
 
 const agentInfo = {
   id: 'sdr-vendas',
@@ -42,10 +44,31 @@ const agentInfo = {
 
 const AIAgentDetail: React.FC = () => {
   const { id, agentId } = useParams();
+  const aiPath = useAIPath();
   const [tab, setTab] = useState<'overview' | 'prompt' | 'tools' | 'memory' | 'tests' | 'versions'>('overview');
   const [status, setStatus] = useState('ATIVO');
   const [busy, setBusy] = useState(false);
   const [promptOpen, setPromptOpen] = useState(true);
+  const [agent, setAgent] = useState(agentInfo);
+
+  useEffect(() => {
+    if (!agentId) return;
+    getAgent(agentId)
+      .then((a: any) => {
+        setAgent(prev => ({
+          ...prev,
+          id: a.id || prev.id,
+          name: a.name || prev.name,
+          type: a.type || prev.type,
+          description: a.description || prev.description,
+          model: a.versions?.[0]?.model || prev.model,
+          version: a.versions?.[0]?.version || prev.version,
+          status: a.status === 'PUBLISHED' ? 'ATIVO' : a.status
+        }));
+        setStatus(a.status === 'PUBLISHED' ? 'ATIVO' : (a.status === 'PAUSED' ? 'PAUSADO' : 'ATIVO'));
+      })
+      .catch(() => {});
+  }, [agentId]);
 
   const toggleStatus = async () => {
     setBusy(true);
@@ -69,7 +92,7 @@ const AIAgentDetail: React.FC = () => {
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/92 backdrop-blur-xl">
         <div className="h-16 px-4 lg:px-7 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link to={`/ai/operations/${id}`} className="h-9 w-9 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">
+            <Link to={aiPath(`operations/${id}`)} className="h-9 w-9 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">
               <ArrowLeft size={18} />
             </Link>
             <div className="flex items-center gap-3">
@@ -77,11 +100,11 @@ const AIAgentDetail: React.FC = () => {
                 <Bot size={18} />
               </div>
               <div>
-                <div className="text-sm font-bold">{agentInfo.name}</div>
+                <div className="text-sm font-bold">{agent.name}</div>
                 <div className="text-[11px] text-slate-500 flex items-center gap-2">
-                  <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px] font-bold">{agentInfo.type}</span>
+                  <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px] font-bold">{agent.type}</span>
                   <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${status === 'ATIVO' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{status === 'ATIVO' ? 'ATIVO' : 'PAUSADO'}</span>
-                  <span className="font-mono text-[10px]">{agentInfo.version}</span>
+                  <span className="font-mono text-[10px]">{agent.version}</span>
                 </div>
               </div>
             </div>
@@ -92,7 +115,7 @@ const AIAgentDetail: React.FC = () => {
               {busy ? <Loader2 size={14} className="animate-spin" /> : status === 'ATIVO' ? <Pause size={14} /> : <Play size={14} />}
               {status === 'ATIVO' ? 'Pausar' : 'Ativar'}
             </button>
-            <Link to={`/ai/operations/${id}/agents/test`} className="h-9 px-4 rounded-lg bg-slate-950 text-white text-xs font-bold flex items-center gap-2 hover:bg-slate-800">
+            <Link to={aiPath(`operations/${id}/agents/test`)} className="h-9 px-4 rounded-lg bg-slate-950 text-white text-xs font-bold flex items-center gap-2 hover:bg-slate-800">
               <MessageSquare size={14} /> Testar no sandbox
             </Link>
           </div>
@@ -115,10 +138,10 @@ const AIAgentDetail: React.FC = () => {
           <>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {[
-                { label: 'Conversas', value: agentInfo.conversations, icon: MessageSquare, color: 'bg-emerald-50 text-emerald-600' },
-                { label: 'Taxa de resolução', value: agentInfo.resolution, icon: CheckCircle2, color: 'bg-blue-50 text-blue-600' },
-                { label: 'Handoffs', value: agentInfo.handoffs, icon: GitBranch, color: 'bg-purple-50 text-purple-600' },
-                { label: 'Score de publicação', value: `${agentInfo.score}/100`, icon: Star, color: 'bg-amber-50 text-amber-600' }
+                { label: 'Conversas', value: agent.conversations, icon: MessageSquare, color: 'bg-emerald-50 text-emerald-600' },
+                { label: 'Taxa de resolução', value: agent.resolution, icon: CheckCircle2, color: 'bg-blue-50 text-blue-600' },
+                { label: 'Handoffs', value: agent.handoffs, icon: GitBranch, color: 'bg-purple-50 text-purple-600' },
+                { label: 'Score de publicação', value: `${agent.score}/100`, icon: Star, color: 'bg-amber-50 text-amber-600' }
               ].map((m, i) => (
                 <div key={i} className="rounded-xl border border-slate-200 bg-white p-4">
                   <div className={`h-9 w-9 rounded-lg ${m.color} flex items-center justify-center mb-3`}>
@@ -133,14 +156,14 @@ const AIAgentDetail: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
               <div className="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-5">
                 <h3 className="font-bold text-slate-950 text-sm mb-1">Sobre o agente</h3>
-                <p className="text-xs text-slate-500 leading-relaxed mb-4">{agentInfo.description}</p>
+                <p className="text-xs text-slate-500 leading-relaxed mb-4">{agent.description}</p>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    ['Modelo', agentInfo.model],
-                    ['Temperatura', String(agentInfo.temperature)],
-                    ['Versão publicada', agentInfo.version],
-                    ['Publicado em', agentInfo.publishedAt],
-                    ['Tipo', agentInfo.type],
+                    ['Modelo', agent.model],
+                    ['Temperatura', String(agent.temperature)],
+                    ['Versão publicada', agent.version],
+                    ['Publicado em', agent.publishedAt],
+                    ['Tipo', agent.type],
                     ['Memória', '4 camadas ativas']
                   ].map(([k, v], i) => (
                     <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
@@ -159,7 +182,7 @@ const AIAgentDetail: React.FC = () => {
                   <div className="text-[11px] font-bold text-slate-500 mt-2">Aprovado para publicação</div>
                 </div>
                 <div className="space-y-2">
-                  {Object.entries(agentInfo.metrics).map(([k, v]) => (
+                  {Object.entries(agent.metrics).map(([k, v]) => (
                     <div key={k}>
                       <div className="flex justify-between text-[11px] font-bold mb-1">
                         <span className="text-slate-500 capitalize">{k.replace(/([A-Z])/g, ' $1')}</span>
@@ -220,9 +243,9 @@ TOM: amigável, profissional, direto. Responda em português brasileiro.`}
         {tab === 'tools' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <h3 className="font-bold text-slate-950 text-sm mb-4">Ferramentas habilitadas ({agentInfo.tools.length})</h3>
+              <h3 className="font-bold text-slate-950 text-sm mb-4">Ferramentas habilitadas ({agent.tools.length})</h3>
               <div className="space-y-2">
-                {agentInfo.tools.map((t, i) => (
+                {agent.tools.map((t, i) => (
                   <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
                     <div className="flex items-center gap-2">
                       <Database size={14} className="text-emerald-600" />
@@ -236,7 +259,7 @@ TOM: amigável, profissional, direto. Responda em português brasileiro.`}
             <div className="rounded-xl border border-slate-200 bg-white p-5">
               <h3 className="font-bold text-slate-950 text-sm mb-4">Permissões (menor privilégio)</h3>
               <div className="space-y-2">
-                {agentInfo.permissions.map((p, i) => (
+                {agent.permissions.map((p, i) => (
                   <div key={i} className="flex items-center gap-2 p-3 rounded-lg bg-slate-50">
                     <Shield size={14} className="text-blue-600" />
                     <span className="text-sm font-bold text-slate-700">{p}</span>
@@ -255,7 +278,7 @@ TOM: amigável, profissional, direto. Responda em português brasileiro.`}
           <div className="rounded-xl border border-slate-200 bg-white p-5">
             <h3 className="font-bold text-slate-950 text-sm mb-4">Camadas de memória</h3>
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
-              {agentInfo.memoryLayers.map((m, i) => (
+              {agent.memoryLayers.map((m, i) => (
                 <div key={i} className="rounded-xl border border-slate-100 p-4">
                   <div className="h-9 w-9 rounded-lg bg-emerald-50 flex items-center justify-center mb-2">
                     <Brain className="text-emerald-600" size={16} />
@@ -332,7 +355,7 @@ TOM: amigável, profissional, direto. Responda em português brasileiro.`}
               <button className="h-9 px-4 rounded-lg border border-slate-200 text-xs font-bold hover:bg-slate-50">+ Criar nova versão</button>
             </div>
             <div className="divide-y divide-slate-50">
-              {agentInfo.versions.map((v, i) => (
+              {agent.versions.map((v, i) => (
                 <div key={i} className="p-5 flex items-center gap-4 hover:bg-slate-50/60">
                   <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${v.status === 'PUBLICADO' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
                     <GitBranch size={18} />

@@ -41,6 +41,7 @@ import {
   listOperations,
   getOperation,
   getOperationMetrics,
+  type AIAgent,
 } from '../services/aiWorkforce';
 
 // ============================================================
@@ -329,7 +330,7 @@ const AICentral: React.FC = () => {
   const navigate = useNavigate();
   const aiPath = useAIPath();
   const [operations, setOperations] = useState<AIOperation[]>([]);
-  const [rawAgents, setRawAgents] = useState<Array<Record<string, unknown>>>([]);
+  const [rawAgents, setRawAgents] = useState<AIAgent[]>([]);
   const [metrics, setMetrics] = useState<OperationMetrics | null>(null);
   const [insights, setInsights] = useState<AIInsight[]>([]);
   const [loading, setLoading] = useState(true);
@@ -453,26 +454,22 @@ const AICentral: React.FC = () => {
 
   const teamAgents: AgentSummary[] = useMemo(() => {
     if (!primaryOperation) return [];
-    return rawAgents.map((a) => {
-      const channelConfig = (a.channel_config || {}) as Record<string, unknown>;
-      const metricsRaw = (a.metrics || {}) as Record<string, unknown>;
-      return {
-        id: String(a.id),
-        name: String(a.name),
-        role: String(a.role || ''),
-        type: String(a.type || 'SPECIALIST'),
-        status: String(a.status || 'DRAFT'),
-        health_status: String(a.health_status || 'UNKNOWN'),
-        channels: Object.keys(channelConfig),
-        metrics: {
-          conversations: Number(metricsRaw.conversations || 0),
-          qualification_rate: Math.round(Number(metricsRaw.qualification_rate || 0)),
-          resolution_rate: Math.round(Number(metricsRaw.resolution_rate || 0)),
-          handoffs: Number(metricsRaw.handoffs || 0),
-          score: Number(metricsRaw.score || 0)
-        }
-      };
-    });
+    return rawAgents.map((a) => ({
+      id: a.id,
+      name: a.name,
+      role: a.role || '',
+      type: a.type || 'SPECIALIST',
+      status: a.status || 'DRAFT',
+      health_status: a.health_status || 'UNKNOWN',
+      channels: Object.keys(a.channel_config || {}),
+      metrics: {
+        conversations: Number((a.metrics as any)?.conversations || 0),
+        qualification_rate: Math.round(Number((a.metrics as any)?.qualification_rate || 0)),
+        resolution_rate: Math.round(Number((a.metrics as any)?.resolution_rate || 0)),
+        handoffs: Number((a.metrics as any)?.handoffs || 0),
+        score: Number((a.metrics as any)?.score || 0)
+      }
+    }));
   }, [primaryOperation, rawAgents]);
 
   if (loading) {

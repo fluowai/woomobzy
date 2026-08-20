@@ -232,8 +232,16 @@ export class AgentArchitect {
     
     const apiKey = settings?.global_gemini_key || process.env.GEMINI_API_KEY;
     
-    if (!apiKey) {
-      throw new Error('Gemini API key not configured for Agent Architect');
+    this.initialized = true;
+    
+    // Check for valid API key (not a dummy key)
+    const hasValidKey = apiKey && !apiKey.startsWith('AIzaSy-') && apiKey.length > 20;
+    
+    if (!hasValidKey) {
+      logger.warn('[AgentArchitect] No valid Gemini API key configured - running in development mode without AI generation');
+      this.genAI = null;
+      this.model = null;
+      return;
     }
     
     this.genAI = new GoogleGenerativeAI(apiKey);
@@ -248,7 +256,6 @@ export class AgentArchitect {
       }
     });
     
-    this.initialized = true;
     logger.info('[AgentArchitect] Initialized with Gemini 1.5 Pro');
   }
 
@@ -263,7 +270,28 @@ export class AgentArchitect {
       segment: input.segment,
       objectivesCount: input.objectives?.length
     });
-
+    
+    // If no valid Gemini API key, return a basic mock architecture for development
+    if (!this.model) {
+      logger.warn('[AgentArchitect] No Gemini model available - returning development mock architecture');
+      return {
+        operation: {
+          id: input.tenant?.id || 'dev',
+          name: input.tenant?.name || 'Dev Operation',
+          segment: input.segment || 'URBAN_REAL_ESTATE',
+          business_model: input.businessModel || {},
+          objectives: input.objectives || [],
+          status: 'DRAFT',
+          architecture: {
+            agents: [],
+            workflows: [],
+            testPlan: []
+          }
+        },
+        testPlan: []
+      };
+    }
+    
     // Build comprehensive prompt
     const prompt = this.buildArchitectPrompt(input);
     

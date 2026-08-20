@@ -10,6 +10,7 @@ import {
 } from '../../services/email/emailService.js';
 
 const router = Router();
+const isProduction = process.env.NODE_ENV === 'production';
 const supabase = new Proxy(
   {},
   {
@@ -107,7 +108,9 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
     console.error('[Settings] Erro ao carregar configuracoes:', error);
     return res.status(500).json({
       success: false,
-      error: error.message || 'Erro ao carregar configuracoes.',
+      error: isProduction
+        ? 'Erro ao carregar configuracoes.'
+        : error.message || 'Erro ao carregar configuracoes.',
     });
   }
 });
@@ -156,7 +159,9 @@ router.put('/', verifyAdmin, requireTenant, async (req, res) => {
     console.error('[Settings] Erro ao salvar configuracoes:', error);
     return res.status(500).json({
       success: false,
-      error: error.message || 'Erro ao salvar configuracoes.',
+      error: isProduction
+        ? 'Erro ao salvar configuracoes.'
+        : error.message || 'Erro ao salvar configuracoes.',
     });
   }
 });

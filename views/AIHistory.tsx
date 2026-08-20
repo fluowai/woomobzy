@@ -4,6 +4,7 @@ import {
   ArrowLeft, Bot, Brain, Rocket, RefreshCw, Zap, GitBranch, Pause, CheckCircle2,
   MessageSquare, Search, Shield
 } from 'lucide-react';
+import { useAIPath } from '@/src/hooks/usePanelBase';
 
 const events = [
   { icon: Rocket, color: 'bg-emerald-50 text-emerald-600', title: 'Operação publicada', desc: 'Operação Comercial Urbana publicada em 3 canais', agent: 'WooTech IA', time: 'há 3 semanas' },
@@ -19,6 +20,7 @@ const events = [
 const types = ['Todos', 'Publicação', 'Atualização', 'Otimização', 'Canal', 'Testes', 'Handoff'];
 
 const AIHistory: React.FC = () => {
+  const aiPath = useAIPath();
   const [filter, setFilter] = useState('Todos');
   const [query, setQuery] = useState('');
 
@@ -32,7 +34,7 @@ const AIHistory: React.FC = () => {
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/92 backdrop-blur-xl">
         <div className="h-16 px-4 lg:px-7 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link to="/ai" className="h-9 w-9 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">
+            <Link to={aiPath('')} className="h-9 w-9 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">
               <ArrowLeft size={18} />
             </Link>
             <div>

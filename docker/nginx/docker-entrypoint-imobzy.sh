@@ -68,8 +68,7 @@ window.__IMOBZY_CONFIG__ = {
   VITE_SUPABASE_URL: "${supabase_url}",
   VITE_SUPABASE_ANON_KEY: "${supabase_anon_key}",
   VITE_PANEL_URL: "${VITE_PANEL_URL:-}",
-  VITE_PUBLIC_APP_URL: "${VITE_PUBLIC_APP_URL:-https://imob.wootech.com.br}",
-  VITE_PLATFORM_IP: "${VITE_PLATFORM_IP:-207.58.153.219}"
+  VITE_PUBLIC_APP_URL: "${VITE_PUBLIC_APP_URL:-https://imob.wootech.com.br}"
 };
 EOF
 

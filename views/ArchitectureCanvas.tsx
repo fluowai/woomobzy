@@ -8,6 +8,7 @@ import {
   Share2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIPath } from '@/src/hooks/usePanelBase';
 
 const architecture = {
   name: 'Operação Comercial Urbana',
@@ -42,6 +43,7 @@ const architecture = {
 
 const ArchitectureCanvas: React.FC = () => {
   const { id } = useParams();
+  const aiPath = useAIPath();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<'canvas' | 'agents' | 'workflows' | 'guardrails'>('canvas');
@@ -72,7 +74,7 @@ const ArchitectureCanvas: React.FC = () => {
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/92 backdrop-blur-xl">
         <div className="h-16 px-4 lg:px-7 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link to={`/ai/operations/${id}`} className="h-9 w-9 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">
+            <Link to={aiPath(`operations/${id}`)} className="h-9 w-9 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">
               <ArrowLeft size={18} />
             </Link>
             <div>
@@ -98,7 +100,7 @@ const ArchitectureCanvas: React.FC = () => {
             <button className="h-9 px-4 rounded-lg border border-slate-200 text-xs font-bold flex items-center gap-2 hover:bg-slate-50">
               <RefreshCw size={14} /> Regenerar com IA
             </button>
-            <Link to={`/ai/operations/${id}/agents/test`} className="h-9 px-4 rounded-lg bg-emerald-600 text-white text-xs font-bold flex items-center gap-2 hover:bg-emerald-700">
+            <Link to={aiPath(`operations/${id}/agents/test`)} className="h-9 px-4 rounded-lg bg-emerald-600 text-white text-xs font-bold flex items-center gap-2 hover:bg-emerald-700">
               <TestTube2 size={14} /> Testar
             </Link>
           </div>

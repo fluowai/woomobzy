@@ -20,8 +20,9 @@ import { toast } from 'sonner';
 import {
   getTenantBaseUrl,
   getTenantSiteUrl,
-  PLATFORM_IP,
+  PLATFORM_IP_UNSET,
 } from '../../utils/platform';
+import { usePlatformIp } from '../../utils/usePlatformIp';
 
 interface Organization {
   id: string;
@@ -47,6 +48,7 @@ interface Plan {
 
 const TenantManager: React.FC = () => {
   const { impersonateOrganization } = useAuth();
+  const platformIp = usePlatformIp() ?? PLATFORM_IP_UNSET;
   const [tenants, setTenants] = useState<Organization[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -740,7 +742,7 @@ const TenantManager: React.FC = () => {
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Aponte o registro A do dominio para o IP da plataforma:{' '}
-                  {PLATFORM_IP}.
+                  {platformIp}.
                 </p>
               </div>
 

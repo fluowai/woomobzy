@@ -7,6 +7,8 @@ import {
   ChevronDown, GitBranch, Bug, Wand2, Target, BarChart3
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIPath } from '@/src/hooks/usePanelBase';
+import { sendAgentMessage } from '../services/aiWorkforce';
 
 type Message = {
   id: number;
@@ -63,6 +65,7 @@ const initialMessages: Message[] = [
 
 const SandboxChat: React.FC = () => {
   const { id } = useParams();
+  const aiPath = useAIPath();
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -76,25 +79,46 @@ const SandboxChat: React.FC = () => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!input.trim()) return;
     const userMsg: Message = { id: Date.now(), role: 'user', content: input, time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) };
     setMessages(m => [...m, userMsg]);
     setInput('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      const reply: Message = {
-        id: Date.now() + 1, role: 'agent', agent: 'SDR Vendas',
-        content: 'Ótima pergunta! Vou verificar os dados disponíveis para te dar uma resposta precisa. Deixa eu consultar o sistema...',
-        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        tools: [{ name: 'properties.search', status: 'success', detail: '2 imóveis encontrados' }, { name: 'crm.leads.update', status: 'success', detail: 'Preferências registradas' }],
-        slots: [{ label: 'Preferência', value: input.slice(0, 40) }]
-      };
+    try {
+      let reply: Message;
+      if (id && id !== 'draft') {
+        const result = await sendAgentMessage(id, {
+          channel: 'sandbox',
+          message: input,
+          agentId: activeAgent
+        });
+        reply = {
+          id: Date.now() + 1, role: 'agent', agent: activeAgentObj?.name || 'SDR Vendas',
+          content: result.response || 'Processei sua mensagem com sucesso.',
+          time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          tools: (result.toolCalls || []).map((t: string) => ({ name: t, status: 'success' as const, detail: undefined })),
+          slots: result.usage ? [{ label: 'Latência', value: `${result.latencyMs}ms` }] : []
+        };
+      } else {
+        await new Promise(r => setTimeout(r, 1600));
+        reply = {
+          id: Date.now() + 1, role: 'agent', agent: 'SDR Vendas',
+          content: 'Ótima pergunta! Vou verificar os dados disponíveis para te dar uma resposta precisa. Deixa eu consultar o sistema...',
+          time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          tools: [{ name: 'properties.search', status: 'success', detail: '2 imóveis encontrados' }, { name: 'crm.leads.update', status: 'success', detail: 'Preferências registradas' }],
+          slots: [{ label: 'Preferência', value: input.slice(0, 40) }]
+        };
+      }
       setMessages(m => [...m, reply]);
       setIsTyping(false);
       setTraceOpen(reply.id);
-    }, 1600);
+    } catch (error: any) {
+      setIsTyping(false);
+      toast.error('Erro no sandbox: ' + error.message);
+      setMessages(m => [...m, { id: Date.now() + 2, role: 'agent', agent: 'Sistema', content: 'Não foi possível processar a mensagem. Verifique se a operação está ativa.', time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) }]);
+    }
   };
 
   const resetConversation = () => {
@@ -110,7 +134,7 @@ const SandboxChat: React.FC = () => {
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/92 backdrop-blur-xl">
         <div className="h-16 px-4 lg:px-7 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link to="/ai" className="h-9 w-9 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">
+            <Link to={aiPath(id && id !== 'draft' ? `operations/${id}` : '')} className="h-9 w-9 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">
               <ArrowLeft size={18} />
             </Link>
             <div>

@@ -5,6 +5,7 @@ import {
   AlertTriangle, CheckCircle2, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIPath } from '@/src/hooks/usePanelBase';
 
 const logs = [
   { id: 1, time: '19/08 21:32:04', agent: 'Orquestrador', event: 'mensagem_recebida', detail: 'Lead Maria Souza · WhatsApp', status: 'SUCCESS', latency: '180ms' },
@@ -22,6 +23,7 @@ const logs = [
 const eventTypes = ['Todos', 'SUCCESS', 'INFO', 'BLOCKED'];
 
 const AILogs: React.FC = () => {
+  const aiPath = useAIPath();
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('Todos');
   const [refreshing, setRefreshing] = useState(false);
@@ -53,7 +55,7 @@ const AILogs: React.FC = () => {
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/92 backdrop-blur-xl">
         <div className="h-16 px-4 lg:px-7 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link to="/ai" className="h-9 w-9 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">
+            <Link to={aiPath('')} className="h-9 w-9 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">
               <ArrowLeft size={18} />
             </Link>
             <div>

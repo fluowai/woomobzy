@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeft, Bot, Brain, MessageSquare, Users, Target, CalendarDays,
   Phone, Star, RefreshCw, Settings, Play, Pause, Zap, Clock, CheckCircle2,
@@ -88,7 +88,6 @@ const operation = {
 };
 
 const AIOperationDashboard: React.FC = () => {
-  const navigate = useNavigate();
   const aiPath = useAIPath();
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState<'overview' | 'agents' | 'conversations' | 'tests' | 'channels' | 'history' | 'logs'>('overview');

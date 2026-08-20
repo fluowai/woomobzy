@@ -1,10 +1,11 @@
 import express from 'express';
 import { z } from 'zod';
-import { rateLimit } from 'express-rate-limit';
 import { getSupabaseServer } from '../lib/supabase-server.js';
 import { PUBLIC_APP_URL } from '../lib/platform-config.js';
+import { registerLimiter } from '../middleware/rateLimit.js';
 
 const router = express.Router();
+const isProduction = process.env.NODE_ENV === 'production';
 const supabase = new Proxy(
   {},
   {
@@ -15,13 +16,6 @@ const supabase = new Proxy(
     },
   }
 );
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: {
-    error: 'Muitas tentativas de onboarding. Tente novamente em 15 minutos.',
-  },
-});
 
 const onboardingSchema = z.object({
   email: z.string().email(),
@@ -52,7 +46,7 @@ const onboardingSchema = z.object({
   region: z.string().optional().nullable().or(z.literal('')),
 });
 
-router.post('/', authLimiter, async (req, res) => {
+router.post('/', registerLimiter, async (req, res) => {
   console.log('[Onboarding] Request received', {
     email: maskEmail(req.body?.email),
     profileType: req.body?.profileType,
@@ -153,9 +147,11 @@ router.post('/', authLimiter, async (req, res) => {
         .single();
 
       if (orgError)
-        return res
-          .status(400)
-          .json({ error: `Erro ao criar organização: ${orgError.message}` });
+        return res.status(400).json({
+          error: isProduction
+            ? 'Erro ao criar organização.'
+            : `Erro ao criar organização: ${orgError.message}`,
+        });
       organization = orgData;
     }
 
@@ -201,7 +197,11 @@ router.post('/', authLimiter, async (req, res) => {
     });
   } catch (error) {
     console.error('Onboarding critical error:', error);
-    res.status(500).json({ error: 'Erro no onboarding: ' + error.message });
+    res.status(500).json({
+      error: isProduction
+        ? 'Erro no onboarding.'
+        : 'Erro no onboarding: ' + error.message,
+    });
   }
 });
 

@@ -1,4 +1,4 @@
-name: imobzy-local
+﻿name: imobzy-local
 
 services:
   frontend:
@@ -17,7 +17,6 @@ services:
       VITE_WHATSAPP_WS_URL: /api/whatsapp/ws
       VITE_PUBLIC_APP_URL: http://localhost:3006
       VITE_PANEL_URL: http://localhost:3006
-      VITE_PLATFORM_IP: 127.0.0.1
       VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
       VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
     ports:
@@ -48,6 +47,7 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3002
+      PLATFORM_IP: "127.0.0.1"
       WHATSAPP_PROVIDER: whatsmeow
       WHATSAPP_API_URL: http://whatsapp-service:3100
       WHATSMEOW_URL: http://whatsapp-service:3100

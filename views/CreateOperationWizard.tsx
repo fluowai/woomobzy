@@ -7,6 +7,8 @@ import {
   Wand2, ChevronDown, ChevronUp, Play as PlayIcon
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAIPath } from '@/src/hooks/usePanelBase';
+import { createOperation, runArchitect as runArchitectApi, publishOperation } from '../services/aiWorkforce';
 
 const steps = [
   { id: 'business', label: 'Negócio', icon: Building2 },
@@ -50,21 +52,23 @@ const segmentData: Record<string, { operations: string[]; goals: string[] }> = {
   LAND_DEVELOPER: { operations: landDeveloperOperations, goals: landDeveloperGoals },
 };
 
-const mockArchitecture = {
+type ArchitectureDraft = {
   operation: {
-    name: 'Operação Comercial Urbana',
-    description: 'Equipe de IA para pré-atendimento, qualificação e agendamento de uma imobiliária urbana que trabalha com venda e locação.',
-    globalGuardrails: { dataTruthPolicy: 'STRICT', promptInjectionProtection: true, tenantIsolation: true, auditLogging: true }
-  },
-  agents: [
-    { id: 'orchestrator', name: 'Orquestrador', type: 'ORCHESTRATOR', role: 'Orquestrador de Conversas', description: 'Identifica intenção e direciona a conversa para o agente correto.', tools: [], model: 'gemini-1.5-pro' },
-    { id: 'sdr-vendas', name: 'SDR Vendas', type: 'SPECIALIST', role: 'SDR de Vendas', description: 'Qualifica potenciais compradores de imóveis urbanos.', tools: ['crm.leads.read', 'crm.leads.update', 'properties.search', 'calendar.availability', 'calendar.create'], model: 'gemini-1.5-pro' },
-    { id: 'sdr-locacao', name: 'SDR Locação', type: 'SPECIALIST', role: 'SDR de Locação', description: 'Qualifica interessados em aluguel de imóveis.', tools: ['crm.leads.read', 'properties.search', 'calendar.availability'], model: 'gemini-1.5-pro' },
-    { id: 'especialista', name: 'Especialista de Imóveis', type: 'WORKER', role: 'Especialista de Imóveis', description: 'Pesquisa e compara imóveis conforme perfil do lead.', tools: ['properties.search', 'properties.read', 'properties.availability'], model: 'gemini-1.5-flash' },
-    { id: 'agenda', name: 'Agenda e Handoff', type: 'WORKER', role: 'Agenda e Handoff', description: 'Agenda visitas e direciona para humanos quando necessário.', tools: ['calendar.availability', 'calendar.create', 'crm.leads.update'], model: 'gemini-1.5-flash' }
-  ],
-  workflows: [{ name: 'Novo Lead', triggerType: 'NEW_LEAD', steps: [{ stepType: 'AGENT_ACTION' }] }],
-  testPlan: []
+    name: string;
+    description: string;
+    globalGuardrails: Record<string, unknown>;
+  };
+  agents: Array<{
+    id: string;
+    name: string;
+    type: string;
+    role?: string;
+    description?: string;
+    tools: string[];
+    model?: string;
+  }>;
+  workflows: Array<Record<string, unknown>>;
+  testPlan: Array<Record<string, unknown>>;
 };
 
 const mockTestScores = {
@@ -80,9 +84,11 @@ const mockTestScores = {
 
 const CreateOperationWizard: React.FC = () => {
   const navigate = useNavigate();
+  const aiPath = useAIPath();
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [operationId, setOperationId] = useState<string | null>(null);
   const [draft, setDraft] = useState({
     name: '',
     segment: 'URBAN_REAL_ESTATE',
@@ -91,7 +97,7 @@ const CreateOperationWizard: React.FC = () => {
     sameForBoth: 'separate',
     additional: '',
     businessModel: {} as Record<string, unknown>,
-    architecture: null as typeof mockArchitecture | null,
+    architecture: null as ArchitectureDraft | null,
     selectedChannels: {} as Record<string, string[]>,
     testsRun: false
   });
@@ -127,11 +133,48 @@ const CreateOperationWizard: React.FC = () => {
     });
   };
 
+  const ensureOperation = async (): Promise<string> => {
+    if (operationId) return operationId;
+    const created = await createOperation({
+      name: draft.name || `Operação ${draft.segment}`,
+      segment: draft.segment,
+      businessModel: {
+        operations: draft.operations,
+        sameForBoth: draft.sameForBoth,
+        additional: draft.additional
+      },
+      objectives: draft.goals
+    });
+    setOperationId(created.id);
+    return created.id;
+  };
+
   const runArchitect = async () => {
     setLoading(true);
     try {
-      await new Promise(r => setTimeout(r, 1800));
-      setDraft(d => ({ ...d, architecture: mockArchitecture }));
+      const id = await ensureOperation();
+      const result = await runArchitectApi(id);
+      setDraft(d => ({
+        ...d,
+        architecture: {
+          operation: {
+            name: result.architecture.name,
+            description: result.architecture.description,
+            globalGuardrails: result.architecture.globalGuardrails || {}
+          },
+          agents: (result.agents || []).map(a => ({
+            id: a.id,
+            name: a.name,
+            type: a.type,
+            role: a.role,
+            description: a.description || '',
+            tools: (a.tools || []).map((t: any) => t?.name || t?.id || String(t)),
+            model: (a.versions?.[0] as any)?.model || 'gemini-1.5-pro'
+          })),
+          workflows: result.architecture.workflows || [],
+          testPlan: result.testPlan || []
+        }
+      }));
       toast.success('Arquitetura gerada pela WooTech IA!');
     } catch (error: any) {
       toast.error('Erro ao gerar arquitetura: ' + error.message);
@@ -143,9 +186,9 @@ const CreateOperationWizard: React.FC = () => {
   const runTests = async () => {
     setTestRunning(true);
     try {
-      await new Promise(r => setTimeout(r, 2500));
+      await ensureOperation();
       setDraft(d => ({ ...d, testsRun: true }));
-      toast.success('Testes concluídos! Score 97/100');
+      toast.success('Testes marcados como concluídos. Operação criada.');
     } catch (error: any) {
       toast.error('Erro ao executar testes: ' + error.message);
     } finally {
@@ -156,9 +199,10 @@ const CreateOperationWizard: React.FC = () => {
   const publish = async () => {
     setLoading(true);
     try {
-      await new Promise(r => setTimeout(r, 1500));
+      const id = await ensureOperation();
+      await publishOperation(id, 0);
       toast.success('Operação publicada com sucesso!');
-      navigate('/ai');
+      navigate(aiPath(`operations/${id}`));
     } catch (error: any) {
       toast.error('Erro ao publicar: ' + error.message);
     } finally {
@@ -394,7 +438,7 @@ const CreateOperationWizard: React.FC = () => {
               <h4 className="font-bold text-slate-950">Sandbox de conversação</h4>
             </div>
             <p className="text-sm text-slate-500 mb-4">Converse com seus agentes antes de publicar.</p>
-            <button onClick={() => navigate(`/ai/operations/draft/agents/test`)}
+            <button onClick={() => navigate(aiPath(`operations/${operationId || 'draft'}/agents/test`))}
               className="w-full h-11 rounded-lg border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50">
               Abrir sandbox
             </button>
@@ -556,7 +600,7 @@ const CreateOperationWizard: React.FC = () => {
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/92 backdrop-blur-xl">
         <div className="h-16 px-4 lg:px-7 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link to="/ai" className="h-9 w-9 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">
+            <Link to={aiPath('')} className="h-9 w-9 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">
               <ArrowLeft size={18} />
             </Link>
             <div>

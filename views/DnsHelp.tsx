@@ -7,10 +7,12 @@ import {
   Mail,
   Server,
 } from 'lucide-react';
-import { PLATFORM_IP } from '../utils/platform';
+import { PLATFORM_IP_UNSET } from '../utils/platform';
+import { usePlatformIp } from '../utils/usePlatformIp';
 import { COMMERCIAL_PRODUCT_NAME } from '../utils/branding';
 
 const DnsHelp: React.FC = () => {
+  const platformIp = usePlatformIp() ?? PLATFORM_IP_UNSET;
   const copy = (value: string) => navigator.clipboard?.writeText(value);
 
   return (
@@ -39,11 +41,11 @@ const DnsHelp: React.FC = () => {
           </h2>
           <div className="flex flex-col gap-3 rounded-lg bg-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
             <code className="font-mono text-lg font-bold text-slate-950">
-              {PLATFORM_IP}
+              {platformIp}
             </code>
             <button
               type="button"
-              onClick={() => copy(PLATFORM_IP)}
+              onClick={() => copy(platformIp)}
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 py-2 text-sm font-bold text-white"
             >
               <Copy size={15} /> Copiar IP
@@ -69,13 +71,13 @@ const DnsHelp: React.FC = () => {
                 <tr>
                   <td className="px-4 py-3 font-mono">@ ou dominio raiz</td>
                   <td className="px-4 py-3 font-mono">A</td>
-                  <td className="px-4 py-3 font-mono">{PLATFORM_IP}</td>
+                  <td className="px-4 py-3 font-mono">{platformIp}</td>
                   <td className="px-4 py-3">Abre exemplo.com.br</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-3 font-mono">www</td>
                   <td className="px-4 py-3 font-mono">A</td>
-                  <td className="px-4 py-3 font-mono">{PLATFORM_IP}</td>
+                  <td className="px-4 py-3 font-mono">{platformIp}</td>
                   <td className="px-4 py-3">Abre www.exemplo.com.br</td>
                 </tr>
               </tbody>
@@ -106,7 +108,7 @@ const DnsHelp: React.FC = () => {
               estiver correto
             </h3>
             <p className="text-sm text-slate-600">
-              O DNS checker vai mostrar o IP encontrado como {PLATFORM_IP}.
+              O DNS checker vai mostrar o IP encontrado como {platformIp}.
               Depois disso o certificado SSL pode levar alguns minutos para
               ficar pronto no servidor.
             </p>

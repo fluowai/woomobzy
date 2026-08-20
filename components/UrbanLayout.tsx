@@ -131,8 +131,7 @@ const UrbanLayout: React.FC = () => {
 
   const growthItems: MenuItem[] = [
     { icon: Globe, label: 'Meu Site', path: '/urban/site' },
-    { icon: Bot, label: 'Agentes IA', path: '/urban/ai-agents' },
-    { icon: Bot, label: 'WooTech AI', path: '/urban/wootech-ai' },
+    { icon: Bot, label: 'Central de IA', path: '/urban/ai' },
     {
       icon: LayoutTemplate,
       label: 'Landing Pages',

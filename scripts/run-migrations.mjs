@@ -63,6 +63,8 @@ const MIGRATIONS = [
   'migrations/20260604_email_center.sql',
   'migrations/20260725_add_indexes_reseller.sql',
   'migrations/20260725_reseller_infrastructure.sql',
+  'migrations/20260820_ai_workforce_builder.sql',
+  'migrations/20260821_ai_workforce_builder_compat.sql',
 ];
 
 async function executeMigrations() {

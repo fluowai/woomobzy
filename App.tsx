@@ -47,8 +47,19 @@ const PropertyManagement = lazy(() => import('./views/PropertyManagement'));
 const PropertyEditor = lazy(() => import('./views/PropertyEditor'));
 const LandingPageEditor = lazy(() => import('./views/LandingPageEditor'));
 const AIAssistant = lazy(() => import('./views/AIAssistant'));
-const AIAgents = lazy(() => import('./views/AIAgents'));
-const WooTechAI = lazy(() => import('./views/WooTechAI'));
+const AICentral = lazy(() => import('./views/AICentral'));
+const CreateOperationWizard = lazy(
+  () => import('./views/CreateOperationWizard')
+);
+const AIOperationDashboard = lazy(
+  () => import('./views/AIOperationDashboard')
+);
+const SandboxChat = lazy(() => import('./views/SandboxChat'));
+const ArchitectureCanvas = lazy(() => import('./views/ArchitectureCanvas'));
+const AIKnowledge = lazy(() => import('./views/AIKnowledge'));
+const AIHistory = lazy(() => import('./views/AIHistory'));
+const AILogs = lazy(() => import('./views/AILogs'));
+const AIAgentDetail = lazy(() => import('./views/AIAgentDetail'));
 const ConsultingQualificacao = lazy(
   () => import('./views/ConsultingQualificacao')
 );
@@ -323,8 +334,28 @@ const AppContent: React.FC = () => {
               element={<Navigate to="/rural/site" replace />}
             />
             <Route path="ai-assistant" element={<AIAssistant />} />
-            <Route path="ai-agents" element={<AIAgents />} />
-            <Route path="wootech-ai" element={<WooTechAI />} />
+            <Route path="ai" element={<AICentral />} />
+            <Route path="ai/operations/new" element={<CreateOperationWizard />} />
+            <Route path="ai/operations/:id" element={<AIOperationDashboard />} />
+            <Route
+              path="ai/operations/:id/architecture"
+              element={<ArchitectureCanvas />}
+            />
+            <Route
+              path="ai/operations/:id/agents/test"
+              element={<SandboxChat />}
+            />
+            <Route
+              path="ai/operations/:id/agents/:agentId"
+              element={<AIAgentDetail />}
+            />
+            <Route
+              path="ai/operations/:id/agents/:agentId/test"
+              element={<SandboxChat />}
+            />
+            <Route path="ai/knowledge" element={<AIKnowledge />} />
+            <Route path="ai/history" element={<AIHistory />} />
+            <Route path="ai/logs" element={<AILogs />} />
             <Route path="contracts" element={<LegalContracts />} />
             <Route path="financial" element={<FinanceiroRural />} />
             <Route path="financeiro-advanced" element={<Locacao />} />
@@ -407,8 +438,28 @@ const AppContent: React.FC = () => {
               element={<Navigate to="/urban/site" replace />}
             />
             <Route path="ai-assistant" element={<AIAssistant />} />
-            <Route path="ai-agents" element={<AIAgents />} />
-            <Route path="wootech-ai" element={<WooTechAI />} />
+            <Route path="ai" element={<AICentral />} />
+            <Route path="ai/operations/new" element={<CreateOperationWizard />} />
+            <Route path="ai/operations/:id" element={<AIOperationDashboard />} />
+            <Route
+              path="ai/operations/:id/architecture"
+              element={<ArchitectureCanvas />}
+            />
+            <Route
+              path="ai/operations/:id/agents/test"
+              element={<SandboxChat />}
+            />
+            <Route
+              path="ai/operations/:id/agents/:agentId"
+              element={<AIAgentDetail />}
+            />
+            <Route
+              path="ai/operations/:id/agents/:agentId/test"
+              element={<SandboxChat />}
+            />
+            <Route path="ai/knowledge" element={<AIKnowledge />} />
+            <Route path="ai/history" element={<AIHistory />} />
+            <Route path="ai/logs" element={<AILogs />} />
             <Route path="contracts" element={<LegalContracts />} />
             <Route path="whatsapp" element={<WhatsAppDashboard />} />
             <Route path="whatsapp/campaigns" element={<CampaignManager />} />

@@ -295,7 +295,17 @@ Formato:
     const audioData =
       message.type === 'audio' ? await this._downloadMediaForAI(message) : null;
 
-    // Step 1: Executar Agente Autonomo (ReAct/Function Calling) caso existam ferramentas ativas
+    // Step 1: Save user message to conversation memory FIRST so the autonomous
+    // agent sees it in the history context (fixes repeated questions).
+    await this._saveConversationMemory(
+      organizationId,
+      agent?.id,
+      normalizedPhone,
+      'user',
+      content
+    );
+
+    // Step 2: Executar Agente Autonomo (ReAct/Function Calling) caso existam ferramentas ativas
     let autonomousReply = null;
     if (agent && agent.tools && agent.tools.length > 0) {
       try {
@@ -306,7 +316,7 @@ Formato:
           8
         );
 
-        // Determina o lead id (se ja existe na base)
+        // Determina o lead id e dados conhecidos (se ja existe na base)
         const existingLeadForTools = await this._findLeadByNormalizedPhone(
           supabase,
           organizationId,
@@ -319,6 +329,7 @@ Formato:
           agent,
           history,
           leadId: existingLeadForTools?.id || null,
+          leadData: existingLeadForTools || null,
         });
       } catch (err) {
         console.error(
@@ -350,14 +361,6 @@ Formato:
       text: content,
       messageType: message.type,
     });
-
-    await this._saveConversationMemory(
-      organizationId,
-      agent?.id,
-      normalizedPhone,
-      'user',
-      content
-    );
 
     const existingLead = await this._findLeadByNormalizedPhone(
       supabase,

@@ -371,6 +371,7 @@ export class AgentOrchestrator {
     agent,
     history,
     leadId,
+    leadData = null,
   }) {
     const model = await this._ensureModel(agent?.tools || []);
     if (!model) {
@@ -393,11 +394,26 @@ Nome: ${agent?.name || 'Agente'}
 Personalidade: ${agent?.personality || 'Profissional e prestativo'}
 Instrucoes: ${agent?.instructions || 'Ajude o cliente a encontrar imoveis e agendar visitas.'}
 
+CONTROLE DE CONVERSA (evite repeticoes):
+- Trackeie o estado da conversa: saudacao → coleta de nome → definicao de meta (comprar/vender/alugar) → tipo de imovel → cidade/bairro → orcamento → prazo → visita.
+- NUNCA repita uma pergunta que ja foi feita ou respondida no histórico.
+- Se o cliente responder com uma palavra que parece um nome (ex: "PAULO", "Maria") apos voce pedir o nome, reconheca como o nome dele e prossiga para a proxima etapa.
+- Se o cliente disser "apartamento para morar com minha familia comprar", entenda: tipo=apartamento, operacao=comprar.
+- Mantenha o tom humano, acolhedor e evite frases roboticas como "Entendi seu interesse. Qual seu nome?".
+
+DADOS CONHECIDOS DO LEAD:
+- Nome: ${leadData?.name || '(nao coletado ainda)'}
+- Telefone: ${leadData?.phone || '(nao informado)'}
+- Status atual: ${leadData?.status || 'Novo'}
+- Classificacao: ${leadData?.classification || 'nao definida'}
+- Orçamento conhecido: ${leadData?.budget ? `R$ ${leadData.budget}` : '(nao informado)'}
+Use esses dados para NAO perguntar coisas ja sabidas.
+
 Voce possui acesso a ferramentas (Tools) no sistema IMOBZY.
 - Use "buscar_imoveis" para verificar disponibilidade antes de oferecer algo.
 - Use "agendar_visita" apenas quando o cliente confirmar o dia e o horario.
 - Sempre responda de forma natural e amigavel ao cliente no WhatsApp, resumindo o resultado da ferramenta.
-        `,
+            `,
           },
         ],
       },

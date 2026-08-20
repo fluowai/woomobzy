@@ -95,8 +95,7 @@ const RuralLayout: React.FC = () => {
     },
     { icon: FileQuestion, label: 'Quiz', path: '/rural/quiz' },
     { icon: Zap, label: 'Matchmaking 360', path: '/rural/matchmaking' },
-    { icon: Bot, label: 'Agentes IA', path: '/rural/ai-agents' },
-    { icon: Bot, label: 'WooTech AI', path: '/rural/wootech-ai' },
+    { icon: Bot, label: 'Central de IA', path: '/rural/ai' },
 
     { icon: PieChart, label: 'Relatórios', path: '/rural/reports' },
   ];

@@ -439,6 +439,35 @@ app.get('/health', (req, res) =>
 );
 app.get('/', (req, res) => res.send(`${PLATFORM_COMMERCIAL_NAME} API Online`));
 
+// --- Instagram Service Proxy ---
+// Forward /api/instagram/* to the Instagram service on port 3200
+app.use('/api/instagram', (req, res) => {
+  const http = require('http');
+  const url = new URL(req.url, {
+    protocol: 'http:',
+    host: 'localhost:3200',
+    pathname: req.originalUrl
+  });
+
+  const proxyReq = http.request({
+    hostname: 'localhost',
+    port: 3200,
+    path: url.pathname + url.search,
+    method: req.method,
+    headers: req.headers
+  }, (proxyRes) => {
+    res.writeHead(proxyRes.statusCode, proxyRes.headers);
+    proxyRes.pipe(res, { end: true });
+  });
+
+  proxyReq.on('error', (proxyErr) => {
+    console.error('[Instagram Proxy Error]:', proxyErr.message);
+    res.status(502).json({ error: 'Instagram service unavailable' });
+  });
+
+  req.pipe(proxyReq);
+});
+
 // --- Server Startup ---
 const PORT = process.env.PORT || 3002;
 

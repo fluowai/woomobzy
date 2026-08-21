@@ -428,14 +428,18 @@ const CreateOperationWizard: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <select
                       value={draft.selectedAIModel}
-                      onChange={(e) => setDraft(d => ({ ...d, selectedAIModel: e.target.value as AIModel }))}
+                      onChange={(e) => {
+                        const model = e.target.value as AIModel;
+                        const provider = providerOptions.find(p => p.models.includes(model))?.value || 'gemini';
+                        setDraft(d => ({ ...d, selectedAIModel: model, selectedAIProvider: provider as AIProvider }));
+                      }}
                       className="px-3 py-1 rounded-lg border border-slate-300 text-sm font-medium focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none"
                     >
                       {providerOptions.map(opt => (
-                        <option key={opt.value} value={opt.value}>
+                        <optgroup key={opt.value} label={opt.label}>
                           {opt.models.map(m => <option key={m} value={m}>{m}</option>)}
-                        </option>
-                      ))
+                        </optgroup>
+                      ))}
                     </select>
                     <span className="text-[10px] text-slate-500">({providerOptions.find(p => p.value === draft.selectedAIProvider)?.label || 'IA'})</span>
                   </div>

@@ -5,9 +5,9 @@
  * including agents, tools, permissions, guardrails, handoffs, workflows, and test plans.
  */
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { logger } from '../../utils/logger.js';
+import { LLMOrchestrator } from './llmProvider.js';
 
 // ============================================================
 // TYPES & INTERFACES
@@ -215,86 +215,60 @@ CASOS DE EXCEÇÃO
 
 export class AgentArchitect {
   constructor() {
-    this.genAI = null;
-    this.model = null;
+    this.llmOrchestrator = new LLMOrchestrator();
     this.initialized = false;
+    this.providerOverride = null;
+    this.modelName = null;
+    this.isMockMode = false;
   }
 
-  async initialize(providerOverride) {
+  async initialize(providerOverride, modelOverride) {
     if (this.initialized) return;
     
-    const supabase = getSupabaseServer();
-    
-    // Determine which key to use: provider override > saas_settings > env
-    let apiKey = null;
-    let modelName = 'gemini-1.5-pro';
-    
-    if (providerOverride) {
-      // Use the selected provider's key from saas_settings
-      const providerMap = {
-        'openai': { key: 'global_openai_key', model: 'gpt-4o-mini' },
-        'anthropic': { key: 'global_anthropic_key', model: 'claude-3-5-sonnet-20241022' },
-        'gemini': { key: 'global_gemini_key', model: 'gemini-1.5-pro' },
-        'groq': { key: 'global_groq_key', model: 'llama-3.1-8b-instant' },
-        'openrouter': { key: 'global_openrouter_key', model: 'gpt-4o-mini' }
-      };
-      
-      const providerInfo = providerMap[providerOverride];
-      if (providerInfo) {
-        const { data: settings } = await supabase
-          .from('saas_settings')
-          .select(providerInfo.key)
-          .single()
-          .catch(() => ({ data: null }));
-        apiKey = settings?.[providerInfo.key];
-        modelName = providerInfo.model;
-      }
-    }
-    
-    // If no provider override, fall back to checking Gemini key (original behavior)
-    if (!apiKey) {
-      const { data: settings } = await supabase
-        .from('saas_settings')
-        .select('global_gemini_key')
-        .single()
-        .catch(() => ({ data: null }));
-      
-      apiKey = settings?.global_gemini_key || process.env.GEMINI_API_KEY;
-      modelName = 'gemini-1.5-pro';
-    }
-    
+    await this.llmOrchestrator.initialize();
     this.initialized = true;
     
-    // Check for valid API key (not a dummy key)
-    const hasValidKey = apiKey && !apiKey.startsWith('AIzaSy-') && apiKey.length > 20;
+    let modelName = modelOverride;
     
-    if (!hasValidKey) {
-      logger.warn('[AgentArchitect] No valid API key configured - running in development mode without AI generation');
-      this.genAI = null;
-      this.model = null;
-      return;
+    if (providerOverride) {
+      if (!modelName) {
+        const providerMap = {
+          'openai': { model: 'gpt-4o-mini' },
+          'anthropic': { model: 'claude-3-5-sonnet-20241022' },
+          'gemini': { model: 'gemini-1.5-pro' },
+          'groq': { model: 'llama-3.1-8b-instant' },
+          'openrouter': { model: 'gpt-4o-mini' }
+        };
+        modelName = providerMap[providerOverride]?.model || 'gemini-1.5-pro';
+      }
+    } else {
+      providerOverride = 'gemini';
+      modelName = modelName || 'gemini-1.5-pro';
     }
     
-    this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({
-      model: modelName,
-      generationConfig: {
-        temperature: 0.3,
-        topP: 0.9,
-        topK: 40,
-        maxOutputTokens: 8192,
-        responseMimeType: 'application/json'
-      }
-    });
+    this.providerOverride = providerOverride;
+    this.modelName = modelName;
     
-    logger.info('[AgentArchitect] Initialized with', { provider: providerOverride, model: modelName });
+    const availableProviders = this.llmOrchestrator.getAvailableProviders();
+    if (availableProviders.length === 0) {
+      logger.warn('[AgentArchitect] No LLM providers available - running in development mode without AI generation');
+      this.isMockMode = true;
+    } else {
+      if (!availableProviders.includes(this.providerOverride)) {
+        logger.warn(`[AgentArchitect] Provider ${this.providerOverride} not available, falling back to ${availableProviders[0]}`);
+        this.providerOverride = availableProviders[0];
+      }
+      this.isMockMode = false;
+    }
+    
+    logger.info('[AgentArchitect] Initialized with', { provider: this.providerOverride, model: this.modelName });
   }
 
   /**
    * Main entry point - designs complete agent architecture
    */
-  async designArchitecture(input, providerOverride) {
-    await this.initialize(providerOverride);
+  async designArchitecture(input, providerOverride, modelOverride) {
+    await this.initialize(providerOverride, modelOverride);
     
     logger.info('[AgentArchitect] Designing architecture', {
       tenant: input.tenant?.id,
@@ -302,9 +276,9 @@ export class AgentArchitect {
       objectivesCount: input.objectives?.length
     });
     
-    // If no valid Gemini API key, return a basic mock architecture for development
-    if (!this.model) {
-      logger.warn('[AgentArchitect] No Gemini model available - returning development mock architecture');
+    // If no valid provider available, return a basic mock architecture for development
+    if (this.isMockMode) {
+      logger.warn('[AgentArchitect] No LLM model available - returning development mock architecture');
       return {
         operation: {
           id: input.tenant?.id || 'dev',
@@ -565,20 +539,36 @@ REGRAS OBRIGATÓRIAS:
    * Generate with JSON schema validation
    */
   async generateWithSchema(prompt, schema) {
-    const chat = this.model.startChat({
-      systemInstruction: {
-        parts: [{ text: 'Você é um arquiteto de IA. Responda APENAS com JSON válido conforme o schema. Sem markdown, sem explicações.' }]
-      }
-    });
+    const messages = [
+      { role: 'system', content: 'Você é um arquiteto de IA. Responda APENAS com JSON válido conforme o schema. Sem markdown, sem explicações.' },
+      { role: 'user', content: prompt }
+    ];
     
-    const result = await chat.sendMessage(prompt);
-    const text = result.response.text();
+    const config = {
+      jsonMode: true,
+      temperature: 0.3,
+      maxTokens: 8192,
+      topP: 0.9
+    };
     
     try {
+      let response;
+      if (this.providerOverride && this.llmOrchestrator.providers.has(this.providerOverride)) {
+        const provider = this.llmOrchestrator.providers.get(this.providerOverride);
+        config.model = this.modelName;
+        response = await provider.chat(messages, config);
+      } else {
+        response = await this.llmOrchestrator.chat(messages, 'agent_architect', config);
+      }
+      
+      let text = response.content;
+      // Clean up markdown code blocks if the model didn't respect jsonMode perfectly
+      text = text.replace(/```json\n?/gi, '').replace(/```\n?/g, '').trim();
+      
       return JSON.parse(text);
     } catch (e) {
-      logger.error('[AgentArchitect] Failed to parse JSON', { error: e.message, text: text.substring(0, 500) });
-      throw new Error('Agent Architect returned invalid JSON');
+      logger.error('[AgentArchitect] Failed to generate or parse JSON', { error: e.message });
+      throw new Error('Agent Architect returned invalid JSON or failed');
     }
   }
 

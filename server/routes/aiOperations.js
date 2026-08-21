@@ -264,6 +264,7 @@ router.post('/:id/architect', async (req, res) => {
     const organizationId = await getOrgId(req);
     const { id } = req.params;
     const selectedProvider = req.body?.provider || req.query?.provider;
+    const selectedModel = req.body?.model || req.query?.model;
 
     const supabase = getSupabaseServer();
     
@@ -337,7 +338,7 @@ router.post('/:id/architect', async (req, res) => {
 
     // Call Agent Architect
     const architect = await getAgentArchitect();
-    const architecture = await architect.designArchitecture(architectInput, selectedProvider);
+    const architecture = await architect.designArchitecture(architectInput, selectedProvider, selectedModel);
 
     // Save architecture to operation
     await supabase

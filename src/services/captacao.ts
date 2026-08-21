@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/src/lib/supabase';
 import { logger } from '@/utils/logger';
 
 export type CaptacaoStatus = 'mapeado' | 'contato' | 'avaliacao' | 'aprovacao' | 'captado';

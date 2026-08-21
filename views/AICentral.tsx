@@ -592,7 +592,7 @@ const AICentral: React.FC = () => {
 
               {/* Key Metrics */}
               {metrics && (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
                   <MetricCard label="Agentes ativos" value={metrics.agents_active} icon={Bot} color="emerald" />
                   <MetricCard label="Conversas hoje" value={metrics.conversations_today} icon={MessageSquare} color="blue" trend="+12%" trendLabel="vs ontem" />
                   <MetricCard label="Leads qualificados" value={metrics.leads_qualified} icon={Target} color="purple" trend="+8%" trendLabel="vs ontem" />

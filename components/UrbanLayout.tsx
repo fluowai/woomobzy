@@ -84,6 +84,7 @@ const UrbanLayout: React.FC = () => {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/urban' },
     { icon: MessageSquare, label: 'Mensagens', path: '/urban/whatsapp' },
     { icon: Mail, label: 'Email', path: '/urban/email' },
+    { icon: Building2, label: 'Funil Captação', path: '/urban/captacao' },
     { icon: LayoutGrid, label: 'Funil / CRM', path: '/urban/kanban' },
     { icon: Calendar, label: 'Minha Agenda', path: '/urban/agenda' },
     { icon: Users, label: 'CRM Leads', path: '/urban/crm' },

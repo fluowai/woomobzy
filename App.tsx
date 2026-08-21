@@ -130,6 +130,7 @@ const FinancialHub = lazy(() => import('./views/urban/FinancialHub'));
 const ClubeImobzy = lazy(() => import('./views/urban/ClubeImobzy'));
 const GestaoDocumentos = lazy(() => import('./views/urban/GestaoDocumentos'));
 const ConexoesUrbano = lazy(() => import('./views/urban/ConexoesUrbano'));
+const CaptacaoFunil = lazy(() => import('./views/urban/CaptacaoFunil'));
 
 // Super Admin
 const SuperAdminLayout = lazy(
@@ -403,6 +404,7 @@ const AppContent: React.FC = () => {
             <Route path="cobranca" element={<Cobranca />} />
             <Route path="simulador" element={<Simulator360 />} />
             <Route path="exportador" element={<ExportadorPortais />} />
+            <Route path="captacao" element={<CaptacaoFunil />} />
             <Route path="crm" element={<CRMLeads />} />
             <Route path="clients" element={<ClientsManager />} />
             <Route path="kanban" element={<KanbanBoard />} />

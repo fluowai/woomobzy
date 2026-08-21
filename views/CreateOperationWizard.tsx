@@ -10,6 +10,17 @@ import { toast } from 'sonner';
 import { useAIPath } from '@/src/hooks/usePanelBase';
 import { createOperation, runArchitect as runArchitectApi, publishOperation } from '../services/aiWorkforce';
 
+type AIProvider = 'openai' | 'anthropic' | 'gemini' | 'groq' | 'openrouter';
+type AIModel = 'gpt-4o-mini' | 'gpt-4o' | 'claude-3-5-sonnet-20241022' | 'gemini-1.5-pro' | 'gemini-1.5-flash' | 'llama-3.1-8b-instant';
+
+const providerOptions = [
+  { value: 'openai' as AIProvider, label: 'OpenAI', models: ['gpt-4o-mini', 'gpt-4o'], default: 'gpt-4o-mini', icon: 'Bot' },
+  { value: 'anthropic' as AIProvider, label: 'Anthropic', models: ['claude-3-5-sonnet-20241022'], default: 'claude-3-5-sonnet-20241022', icon: 'Shield' },
+  { value: 'gemini' as AIProvider, label: 'Google Gemini', models: ['gemini-1.5-pro', 'gemini-1.5-flash'], default: 'gemini-1.5-pro', icon: 'Sparkles' },
+  { value: 'groq' as AIProvider, label: 'Groq', models: ['llama-3.1-8b-instant'], default: 'llama-3.1-8b-instant', icon: 'Zap' },
+  { value: 'openrouter' as AIProvider, label: 'OpenRouter', models: ['gpt-4o-mini'], default: 'gpt-4o-mini', icon: 'Router' }
+];
+
 const steps = [
   { id: 'business', label: 'Negócio', icon: Building2 },
   { id: 'operation', label: 'Operação', icon: MessageSquare },
@@ -99,7 +110,9 @@ const CreateOperationWizard: React.FC = () => {
     businessModel: {} as Record<string, unknown>,
     architecture: null as ArchitectureDraft | null,
     selectedChannels: {} as Record<string, string[]>,
-    testsRun: false
+    testsRun: false,
+    selectedAIProvider: 'gemini' as AIProvider,
+    selectedAIModel: 'gemini-1.5-pro' as AIModel
   });
   const [testRunning, setTestRunning] = useState(false);
 
@@ -153,7 +166,7 @@ const CreateOperationWizard: React.FC = () => {
     setLoading(true);
     try {
       const id = await ensureOperation();
-      const result = await runArchitectApi(id);
+      const result = await runArchitectApi(id, { provider: draft.selectedAIProvider, model: draft.selectedAIModel });
       setDraft(d => ({
         ...d,
         architecture: {
@@ -169,7 +182,7 @@ const CreateOperationWizard: React.FC = () => {
             role: a.role,
             description: a.description || '',
             tools: (a.tools || []).map((t: any) => t?.name || t?.id || String(t)),
-            model: (a.versions?.[0] as any)?.model || 'gemini-1.5-pro'
+            model: (a.versions?.[0] as any)?.model || draft.selectedAIModel
           })),
           workflows: result.architecture.workflows || [],
           testPlan: result.testPlan || []
@@ -411,7 +424,24 @@ const CreateOperationWizard: React.FC = () => {
             {['Prompt estruturado', 'Ferramentas', 'Permissões', 'Conhecimento', 'Regras', 'Memória', 'Handoff', 'Modelo', 'Temperatura', 'Limites'].map(t => (
               <div key={t} className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
                 <span className="text-sm font-bold text-slate-700">{t}</span>
-                <span className="text-xs text-slate-400">Auto-configurado pela IA</span>
+                {t === 'Modelo' ? (
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={draft.selectedAIModel}
+                      onChange={(e) => setDraft(d => ({ ...d, selectedAIModel: e.target.value as AIModel }))}
+                      className="px-3 py-1 rounded-lg border border-slate-300 text-sm font-medium focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none"
+                    >
+                      {providerOptions.map(opt => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.models.map(m => <option key={m} value={m}>{m}</option>)}
+                        </option>
+                      ))
+                    </select>
+                    <span className="text-[10px] text-slate-500">({providerOptions.find(p => p.value === draft.selectedAIProvider)?.label || 'IA'})</span>
+                  </div>
+                ) : (
+                  <span className="text-xs text-slate-400">Auto-configurado pela IA</span>
+                )}
               </div>
             ))}
           </div>

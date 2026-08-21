@@ -220,17 +220,48 @@ export class AgentArchitect {
     this.initialized = false;
   }
 
-  async initialize() {
+  async initialize(providerOverride) {
     if (this.initialized) return;
     
     const supabase = getSupabaseServer();
-    const { data: settings } = await supabase
-      .from('saas_settings')
-      .select('global_gemini_key')
-      .single()
-      .catch(() => ({ data: null }));
     
-    const apiKey = settings?.global_gemini_key || process.env.GEMINI_API_KEY;
+    // Determine which key to use: provider override > saas_settings > env
+    let apiKey = null;
+    let modelName = 'gemini-1.5-pro';
+    
+    if (providerOverride) {
+      // Use the selected provider's key from saas_settings
+      const providerMap = {
+        'openai': { key: 'global_openai_key', model: 'gpt-4o-mini' },
+        'anthropic': { key: 'global_anthropic_key', model: 'claude-3-5-sonnet-20241022' },
+        'gemini': { key: 'global_gemini_key', model: 'gemini-1.5-pro' },
+        'groq': { key: 'global_groq_key', model: 'llama-3.1-8b-instant' },
+        'openrouter': { key: 'global_openrouter_key', model: 'gpt-4o-mini' }
+      };
+      
+      const providerInfo = providerMap[providerOverride];
+      if (providerInfo) {
+        const { data: settings } = await supabase
+          .from('saas_settings')
+          .select(providerInfo.key)
+          .single()
+          .catch(() => ({ data: null }));
+        apiKey = settings?.[providerInfo.key];
+        modelName = providerInfo.model;
+      }
+    }
+    
+    // If no provider override, fall back to checking Gemini key (original behavior)
+    if (!apiKey) {
+      const { data: settings } = await supabase
+        .from('saas_settings')
+        .select('global_gemini_key')
+        .single()
+        .catch(() => ({ data: null }));
+      
+      apiKey = settings?.global_gemini_key || process.env.GEMINI_API_KEY;
+      modelName = 'gemini-1.5-pro';
+    }
     
     this.initialized = true;
     
@@ -238,7 +269,7 @@ export class AgentArchitect {
     const hasValidKey = apiKey && !apiKey.startsWith('AIzaSy-') && apiKey.length > 20;
     
     if (!hasValidKey) {
-      logger.warn('[AgentArchitect] No valid Gemini API key configured - running in development mode without AI generation');
+      logger.warn('[AgentArchitect] No valid API key configured - running in development mode without AI generation');
       this.genAI = null;
       this.model = null;
       return;
@@ -246,7 +277,7 @@ export class AgentArchitect {
     
     this.genAI = new GoogleGenerativeAI(apiKey);
     this.model = this.genAI.getGenerativeModel({
-      model: 'gemini-1.5-pro',
+      model: modelName,
       generationConfig: {
         temperature: 0.3,
         topP: 0.9,
@@ -256,14 +287,14 @@ export class AgentArchitect {
       }
     });
     
-    logger.info('[AgentArchitect] Initialized with Gemini 1.5 Pro');
+    logger.info('[AgentArchitect] Initialized with', { provider: providerOverride, model: modelName });
   }
 
   /**
    * Main entry point - designs complete agent architecture
    */
-  async designArchitecture(input) {
-    await this.initialize();
+  async designArchitecture(input, providerOverride) {
+    await this.initialize(providerOverride);
     
     logger.info('[AgentArchitect] Designing architecture', {
       tenant: input.tenant?.id,

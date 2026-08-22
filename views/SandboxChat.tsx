@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIPath } from '@/src/hooks/usePanelBase';
-import { sendAgentMessage } from '../services/aiWorkforce';
+import { getOperation, sendAgentMessage, type AIAgent } from '../services/aiWorkforce';
 
 type Message = {
   id: number;
@@ -67,6 +67,7 @@ const SandboxChat: React.FC = () => {
   const { id } = useParams();
   const aiPath = useAIPath();
   const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [operationAgents, setOperationAgents] = useState<AIAgent[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [autoPaused, setAutoPaused] = useState(false);
@@ -78,6 +79,43 @@ const SandboxChat: React.FC = () => {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadOperationAgents = async () => {
+      if (!id || id === 'draft') {
+        setOperationAgents([]);
+        setActiveAgent('orchestrator');
+        return;
+      }
+
+      try {
+        const operation = await getOperation(id);
+        const loadedAgents = operation.agents || [];
+        if (!mounted) return;
+
+        setOperationAgents(loadedAgents);
+        if (loadedAgents.length > 0) {
+          setActiveAgent(current =>
+            loadedAgents.some(agent => agent.id === current)
+              ? current
+              : loadedAgents[0].id
+          );
+        }
+      } catch (error: any) {
+        if (!mounted) return;
+        setOperationAgents([]);
+        toast.error('Erro ao carregar agentes da operação: ' + error.message);
+      }
+    };
+
+    loadOperationAgents();
+
+    return () => {
+      mounted = false;
+    };
+  }, [id]);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -127,7 +165,17 @@ const SandboxChat: React.FC = () => {
     toast.success('Conversa reiniciada');
   };
 
-  const activeAgentObj = agents.find(a => a.id === activeAgent)!;
+  const sandboxAgents = operationAgents.length > 0
+    ? operationAgents.map((agent, index) => ({
+      id: agent.id,
+      name: agent.name,
+      type: agent.type,
+      color: index === 0 ? 'bg-slate-950' : index === 1 ? 'bg-emerald-600' : index === 2 ? 'bg-purple-600' : 'bg-blue-600',
+      model: String((agent.versions?.[0] as any)?.model || (agent.versions?.[0] as any)?.model_name || 'IA'),
+      status: agent.status || 'ATIVO'
+    }))
+    : agents;
+  const activeAgentObj = sandboxAgents.find(a => a.id === activeAgent) || sandboxAgents[0];
 
   return (
     <div className="min-h-full bg-[#F5F7FB] -m-3 sm:-m-4 md:-m-6 text-slate-950 flex flex-col">
@@ -214,7 +262,7 @@ const SandboxChat: React.FC = () => {
                 <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[85%] ${m.role === 'user' ? '' : 'flex gap-2'}`}>
                     {m.role === 'agent' && (
-                      <div className={`h-7 w-7 rounded-lg ${agents.find(a => a.name === m.agent)?.color || 'bg-emerald-600'} flex items-center justify-center text-white shrink-0 mt-1`}>
+                  <div className={`h-7 w-7 rounded-lg ${sandboxAgents.find(a => a.name === m.agent)?.color || 'bg-emerald-600'} flex items-center justify-center text-white shrink-0 mt-1`}>
                         <Bot size={13} />
                       </div>
                     )}
@@ -306,7 +354,7 @@ const SandboxChat: React.FC = () => {
               <span className="text-[10px] font-bold text-slate-400">TESTE</span>
             </div>
             <div className="p-2 space-y-1">
-              {agents.map(a => (
+              {sandboxAgents.map(a => (
                 <button key={a.id} onClick={() => setActiveAgent(a.id)}
                   className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition ${activeAgent === a.id ? 'bg-slate-100' : 'hover:bg-slate-50'}`}>
                   <div className={`h-8 w-8 rounded-lg ${a.color} flex items-center justify-center text-white shrink-0`}>

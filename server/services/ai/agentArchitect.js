@@ -276,32 +276,18 @@ export class AgentArchitect {
       objectivesCount: input.objectives?.length
     });
     
-    // If no valid provider available, return a basic mock architecture for development
-    if (this.isMockMode) {
-      logger.warn('[AgentArchitect] No LLM model available - returning development mock architecture');
-      return this.buildFallbackArchitecture(input);
-    }
-    
+    let result;
     try {
+      // If no valid provider available, force fallback
+      if (this.isMockMode) {
+        throw new Error('No LLM model available - forcing mock mode');
+      }
+      
       // Build comprehensive prompt
       const prompt = this.buildArchitectPrompt(input);
       
       // Generate with structured output
-      const result = await this.generateWithSchema(prompt, this.getOutputSchema());
-      
-      // Validate and enrich
-      const architecture = this.validateAndEnrich(result, input);
-      
-      // Generate test plan
-      architecture.testPlan = await this.generateTestPlan(architecture, input);
-      
-      logger.info('[AgentArchitect] Architecture designed', {
-        agentsCount: architecture.agents.length,
-        workflowsCount: architecture.workflows.length,
-        testCasesCount: architecture.testPlan.length
-      });
-      
-      return architecture;
+      result = await this.generateWithSchema(prompt, this.getOutputSchema());
     } catch (error) {
       logger.error('[AgentArchitect] Design failed, falling back to mock architecture', {
         error: error.message,
@@ -309,8 +295,22 @@ export class AgentArchitect {
         segment: input.segment
       });
       
-      return this.buildFallbackArchitecture(input);
+      result = this.buildFallbackArchitecture(input);
     }
+    
+    // Validate and enrich (applies defaults and missing blocks for both LLM and fallback results)
+    const architecture = this.validateAndEnrich(result, input);
+    
+    // Generate test plan
+    architecture.testPlan = await this.generateTestPlan(architecture, input);
+    
+    logger.info('[AgentArchitect] Architecture designed', {
+      agentsCount: architecture.operation.agents.length,
+      workflowsCount: architecture.operation.workflows.length,
+      testCasesCount: architecture.testPlan.length
+    });
+    
+    return architecture;
   }
 
   buildFallbackArchitecture(input) {
@@ -722,6 +722,7 @@ REGRAS OBRIGATÓRIAS:
       };
       
       // Ensure prompt blocks have all required types
+      if (!agent.promptBlocks) agent.promptBlocks = [];
       const requiredBlocks = ['IDENTITY', 'OBJECTIVE', 'CONTEXT', 'PERSONALITY', 'PROCESS', 'RULES', 'EXCEPTIONS', 'EXAMPLES'];
       const existingBlocks = agent.promptBlocks.map(b => b.blockType);
       requiredBlocks.forEach(blockType => {

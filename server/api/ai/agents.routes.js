@@ -681,23 +681,50 @@ router.post('/agents/conversations/:id/message', verifyAuth, requireTenant, asyn
       });
     }
 
-    // Get agent with active version
-    const { data: agent, error: agentError } = await supabase
+    // Get agent and resolve its active version explicitly.
+    const { data: agent } = await supabase
       .from('ai_agents')
-      .select('*, ai_agent_versions!inner(*)')
+      .select('*')
       .eq('id', currentAgentId)
       .eq('organization_id', req.orgId)
       .single();
 
-    if (!agent || !agent.ai_agent_versions) {
+    if (!agent) {
       return res.status(404).json({
         success: false,
-        error: 'Agente ou versao nao encontrada',
-        code: 'AI_AGENT_OR_VERSION_NOT_FOUND',
+        error: 'Agente nao encontrado',
+        code: 'AI_AGENT_NOT_FOUND',
       });
     }
 
-    const version = agent.ai_agent_versions;
+    let version = null;
+    if (agent.active_version_id) {
+      const { data: activeVersion } = await supabase
+        .from('ai_agent_versions')
+        .select('*')
+        .eq('id', agent.active_version_id)
+        .eq('agent_id', agent.id)
+        .single();
+      version = activeVersion;
+    }
+
+    if (!version) {
+      const { data: latestVersions } = await supabase
+        .from('ai_agent_versions')
+        .select('*')
+        .eq('agent_id', agent.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      version = latestVersions?.[0] || null;
+    }
+
+    if (!version) {
+      return res.status(404).json({
+        success: false,
+        error: 'Versao do agente nao encontrada',
+        code: 'AI_AGENT_OR_VERSION_NOT_FOUND',
+      });
+    }
 
     // Pre-generation guard check
     const preCheck = await guard.preGenerationCheck(version, message, state);

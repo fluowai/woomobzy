@@ -158,7 +158,7 @@ router.get('/:id', async (req, res) => {
       (agents || []).map(async (agent) => {
         const { data: versions } = await supabase
           .from('ai_agent_versions')
-          .select('id, version, score, published_at, created_at')
+          .select('id, version, model, model_config, score, published_at, created_at')
           .eq('agent_id', agent.id)
           .order('created_at', { ascending: false });
         

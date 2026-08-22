@@ -62,7 +62,7 @@ const DomainManager: React.FC = () => {
         .select('id, name, custom_domain')
         .order('name');
         
-      if (profile?.role !== 'superadmin' && profile?.organization_id) {
+      if (profile?.organization?.slug !== 'super-admin-org' && profile?.organization_id) {
         query = query.or(`id.eq.${profile.organization_id},parent_id.eq.${profile.organization_id}`);
       }
 

@@ -30,11 +30,11 @@ const SuperAdminDashboard: React.FC = () => {
 
   const fetchStats = async () => {
     try {
-      const isReseller = profile?.organization?.is_reseller;
+      const shouldFilter = profile?.organization?.slug !== 'super-admin-org';
       const orgId = profile?.organization_id;
 
       const baseFilter = (query: any) => {
-        if (isReseller && orgId) {
+        if (shouldFilter && orgId) {
           return query.eq('parent_id', orgId);
         }
         return query;
@@ -76,7 +76,7 @@ const SuperAdminDashboard: React.FC = () => {
         .select('plan_id')
         .eq('status', 'active')
         .eq('is_reseller', false);
-      if (isReseller && orgId) {
+      if (shouldFilter && orgId) {
         orgsQuery = orgsQuery.eq('parent_id', orgId);
       }
       const { data: orgsData } = await orgsQuery;

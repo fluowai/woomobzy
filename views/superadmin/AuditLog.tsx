@@ -9,6 +9,7 @@ import {
   Eye,
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
+import { useAuth } from '../../context/AuthContext';
 
 interface AuditEntry {
   id: string;
@@ -24,6 +25,7 @@ interface AuditEntry {
 }
 
 const AuditLog: React.FC = () => {
+  const { profile } = useAuth();
   const [logs, setLogs] = useState<AuditEntry[]>([]);
   const [filter, setFilter] = useState('');
   const [actionFilter, setActionFilter] = useState('');
@@ -33,16 +35,25 @@ const AuditLog: React.FC = () => {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const { data } = await supabase
-        .from('audit_log')
-        .select('*')
+      let query = supabase.from('audit_log').select('*');
+
+      if (profile?.organization?.slug !== 'super-admin-org' && profile?.organization_id) {
+        const { data: childOrgs } = await supabase
+          .from('organizations')
+          .select('id')
+          .eq('parent_id', profile.organization_id);
+        const allowedOrgIds = [profile.organization_id, ...(childOrgs?.map((o: any) => o.id) || [])];
+        query = query.in('organization_id', allowedOrgIds);
+      }
+
+      const { data } = await query
         .order('created_at', { ascending: false })
         .limit(100);
       setLogs(data || []);
       setLoading(false);
     };
     load();
-  }, []);
+  }, [profile]);
 
   const actionColors: Record<string, string> = {
     create: 'bg-emerald-100 text-emerald-700',

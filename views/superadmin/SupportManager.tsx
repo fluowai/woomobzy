@@ -15,6 +15,7 @@ import {
   Building2,
   Send,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface Ticket {
   id: string;
@@ -40,6 +41,7 @@ interface Message {
 }
 
 const SupportManager: React.FC = () => {
+  const { profile } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -125,6 +127,15 @@ const SupportManager: React.FC = () => {
     try {
       setLoading(true);
       let query = supabase.from('support_tickets').select('*');
+
+      if (profile?.organization?.slug !== 'super-admin-org' && profile?.organization_id) {
+        const { data: childOrgs } = await supabase
+          .from('organizations')
+          .select('id')
+          .eq('parent_id', profile.organization_id);
+        const allowedOrgIds = [profile.organization_id, ...(childOrgs?.map((o: any) => o.id) || [])];
+        query = query.in('organization_id', allowedOrgIds);
+      }
 
       if (filter !== 'all') {
         query = query.eq('status', filter);

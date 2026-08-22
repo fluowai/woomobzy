@@ -10,6 +10,7 @@ import {
   Eye,
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
+import { useAuth } from '../../context/AuthContext';
 
 interface Tenant {
   id: string;
@@ -32,19 +33,25 @@ const planPrices: Record<string, number> = {
 };
 
 const BillingManager: React.FC = () => {
+  const { profile } = useAuth();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [filter, setFilter] = useState('');
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase
+      let query = supabase
         .from('organizations')
-        .select('*, plans ( name, price_monthly )')
-        .order('created_at', { ascending: false });
+        .select('*, plans ( name, price_monthly )');
+        
+      if (profile?.organization?.slug !== 'super-admin-org' && profile?.organization_id) {
+        query = query.eq('parent_id', profile.organization_id);
+      }
+
+      const { data } = await query.order('created_at', { ascending: false });
       setTenants((data as any) || []);
     };
     load();
-  }, []);
+  }, [profile]);
 
   const filteredTenants = tenants.filter((t) =>
     t.name?.toLowerCase().includes(filter.toLowerCase())

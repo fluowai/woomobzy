@@ -14,6 +14,7 @@ import {
   UserCheck,
   ShieldAlert,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface StaffProfile {
   id: string;
@@ -24,6 +25,7 @@ interface StaffProfile {
 }
 
 const TeamManager: React.FC = () => {
+  const { profile } = useAuth();
   const [staff, setStaff] = useState<StaffProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -38,11 +40,16 @@ const TeamManager: React.FC = () => {
   const fetchStaff = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('profiles')
         .select('*, full_name:name')
-        .eq('role', 'superadmin')
-        .order('created_at', { ascending: false });
+        .eq('role', 'superadmin');
+
+      if (profile?.organization?.slug !== 'super-admin-org' && profile?.organization_id) {
+        query = query.eq('organization_id', profile.organization_id);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
       setStaff(data || []);

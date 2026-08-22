@@ -194,11 +194,16 @@ export class AgentOrchestrator {
     }
 
     const supabase = getSupabaseServer();
-    const { data: saasSettings } = await supabase
-      .from('saas_settings')
-      .select('global_gemini_key')
-      .single()
-      .catch(() => ({ data: null }));
+    let saasSettings = null;
+    try {
+      const res = await supabase
+        .from('saas_settings')
+        .select('global_gemini_key')
+        .single();
+      saasSettings = res.data;
+    } catch (err) {
+      // ignore
+    }
 
     const finalKey = saasSettings?.global_gemini_key;
     if (!finalKey) throw new Error('API Key nao configurada');

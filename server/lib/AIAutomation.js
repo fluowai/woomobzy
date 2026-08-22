@@ -52,11 +52,16 @@ export class AIAutomationEngine {
           .maybeSingle()
       : { data: null };
 
-    const { data: saasSettings } = await supabase
-      .from('saas_settings')
-      .select('global_gemini_key')
-      .single()
-      .catch(() => ({ data: null }));
+    let saasSettings = null;
+    try {
+      const res = await supabase
+        .from('saas_settings')
+        .select('global_gemini_key')
+        .single();
+      saasSettings = res.data;
+    } catch (err) {
+      // ignore
+    }
 
     const dbKey =
       settings?.integrations?.gemini?.apiKey ||

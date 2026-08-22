@@ -585,11 +585,16 @@ export class LLMOrchestrator {
     if (this.initialized) return;
     
     const supabase = getSupabaseServer();
-    const { data: settings } = await supabase
-      .from('saas_settings')
-      .select('global_openai_key, global_anthropic_key, global_gemini_key, global_groq_key, global_openrouter_key')
-      .single()
-      .catch(() => ({ data: {} }));
+    let settings = null;
+    try {
+      const res = await supabase
+        .from('saas_settings')
+        .select('global_openai_key, global_anthropic_key, global_gemini_key, global_groq_key, global_openrouter_key')
+        .single();
+      settings = res.data;
+    } catch (err) {
+      // ignore
+    }
     
     const keys = {
       openai: settings?.global_openai_key || process.env.OPENAI_API_KEY,

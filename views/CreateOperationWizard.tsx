@@ -325,6 +325,25 @@ const CreateOperationWizard: React.FC = () => {
           <p className="text-slate-500 max-w-lg mx-auto mb-6 text-sm">
             Com base nas informações fornecidas, a IA criará automaticamente a arquitetura de agentes: quantos agentes, funções, prompts, ferramentas, permissões e workflows.
           </p>
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <span className="text-sm font-medium text-slate-700">Modelo para geração:</span>
+            <select
+              value={draft.selectedAIModel}
+              onChange={(e) => {
+                const model = e.target.value as AIModel;
+                const provider = providerOptions.find(p => p.models.includes(model))?.value || 'gemini';
+                setDraft(d => ({ ...d, selectedAIModel: model, selectedAIProvider: provider as AIProvider }));
+              }}
+              className="px-3 py-2 rounded-lg border border-slate-300 text-sm font-medium focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none"
+              disabled={loading}
+            >
+              {providerOptions.map(opt => (
+                <optgroup key={opt.value} label={opt.label}>
+                  {opt.models.map(m => <option key={m} value={m}>{m}</option>)}
+                </optgroup>
+              ))}
+            </select>
+          </div>
           <button onClick={runArchitect} disabled={loading}
             className="h-12 px-6 rounded-xl bg-slate-950 text-white font-bold text-sm flex items-center gap-2 mx-auto hover:bg-slate-800 disabled:opacity-50">
             {loading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}

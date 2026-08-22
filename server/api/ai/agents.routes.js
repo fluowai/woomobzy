@@ -592,7 +592,7 @@ router.post('/agents/:id/versions/:version/rollback', verifyAuth, requireTenant,
 // CONVERSATION HANDLING
 // ============================================================
 
-router.post('/conversations/state', verifyAuth, requireTenant, async (req, res) => {
+router.post('/agents/conversations/state', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { conversationId, channel, instanceId, leadId } = req.body;
 
@@ -619,7 +619,7 @@ router.post('/conversations/state', verifyAuth, requireTenant, async (req, res) 
   }
 });
 
-router.post('/conversations/state/update', verifyAuth, requireTenant, async (req, res) => {
+router.post('/agents/conversations/state/update', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { conversationId, ...updates } = req.body;
 
@@ -642,7 +642,7 @@ router.post('/conversations/state/update', verifyAuth, requireTenant, async (req
   }
 });
 
-router.post('/conversations/:id/message', verifyAuth, requireTenant, async (req, res) => {
+router.post('/agents/conversations/:id/message', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { id: conversationId } = req.params;
     const { message, channel, instanceId, agentId } = req.body;
@@ -852,7 +852,7 @@ router.post('/conversations/:id/message', verifyAuth, requireTenant, async (req,
   }
 });
 
-router.post('/conversations/:id/handoff', verifyAuth, requireTenant, async (req, res) => {
+router.post('/agents/conversations/:id/handoff', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { id: conversationId } = req.params;
     const { fromAgentId, toAgentId, reason, summary, channel } = req.body;
@@ -876,7 +876,7 @@ router.post('/conversations/:id/handoff', verifyAuth, requireTenant, async (req,
   }
 });
 
-router.post('/conversations/:id/pause', verifyAuth, requireTenant, async (req, res) => {
+router.post('/agents/conversations/:id/pause', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { id: conversationId } = req.params;
 
@@ -889,7 +889,7 @@ router.post('/conversations/:id/pause', verifyAuth, requireTenant, async (req, r
   }
 });
 
-router.post('/conversations/:id/resume', verifyAuth, requireTenant, async (req, res) => {
+router.post('/agents/conversations/:id/resume', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { id: conversationId } = req.params;
 
@@ -1054,7 +1054,7 @@ router.post('/test/red-team', verifyAuth, requireTenant, async (req, res) => {
   }
 });
 
-router.post('/test/full', verifyAuth, requireTenant, async (req, res) => {
+router.post('/agents/test/full', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { agent } = req.body;
 

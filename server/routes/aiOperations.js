@@ -411,7 +411,7 @@ router.post('/:id/architect', async (req, res) => {
             .eq('id', agent.id);
         }
 
-        createdAgents.push({ ...agent, version });
+        createdAgents.push({ ...agent, version, specId: agentSpec.id });
       }
     }
 
@@ -429,12 +429,15 @@ router.post('/:id/architect', async (req, res) => {
 
     // Create handoffs
     for (const agentSpec of architecture.operation.agents || []) {
+      const fromAgent = createdAgents.find(a => a.specId === agentSpec.id || a.role === agentSpec.role);
+      if (!fromAgent) continue;
+
       for (const handoff of agentSpec.handoffs || []) {
         const toAgent = createdAgents.find(a => a.role === handoff.toAgentRole);
         if (toAgent) {
           await supabase.from('ai_handoffs').insert({
             organization_id: organizationId,
-            from_agent_id: agentSpec.id,
+            from_agent_id: fromAgent.id,
             to_agent_id: toAgent.id,
             trigger_type: handoff.trigger,
             conditions: handoff.conditions,

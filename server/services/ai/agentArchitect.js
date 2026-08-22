@@ -223,10 +223,10 @@ export class AgentArchitect {
   }
 
   async initialize(providerOverride, modelOverride) {
-    if (this.initialized) return;
-    
-    await this.llmOrchestrator.initialize();
-    this.initialized = true;
+    if (!this.initialized) {
+      await this.llmOrchestrator.initialize();
+      this.initialized = true;
+    }
     
     let modelName = modelOverride;
     
@@ -279,22 +279,7 @@ export class AgentArchitect {
     // If no valid provider available, return a basic mock architecture for development
     if (this.isMockMode) {
       logger.warn('[AgentArchitect] No LLM model available - returning development mock architecture');
-      return {
-        operation: {
-          id: input.tenant?.id || 'dev',
-          name: input.tenant?.name || 'Dev Operation',
-          segment: input.segment || 'URBAN_REAL_ESTATE',
-          business_model: input.businessModel || {},
-          objectives: input.objectives || [],
-          status: 'DRAFT',
-          architecture: {
-            agents: [],
-            workflows: [],
-            testPlan: []
-          }
-        },
-        testPlan: []
-      };
+      return this.buildFallbackArchitecture(input);
     }
     
     try {
@@ -324,24 +309,148 @@ export class AgentArchitect {
         segment: input.segment
       });
       
-      // Return mock architecture instead of throwing 500
-      return {
-        operation: {
-          id: input.tenant?.id || 'dev',
-          name: input.tenant?.name || 'Dev Operation',
-          segment: input.segment || 'URBAN_REAL_ESTATE',
-          business_model: input.businessModel || {},
-          objectives: input.objectives || [],
-          status: 'DRAFT',
-          architecture: {
-            agents: [],
-            workflows: [],
-            testPlan: []
-          }
-        },
-        testPlan: []
-      };
+      return this.buildFallbackArchitecture(input);
     }
+  }
+
+  buildFallbackArchitecture(input) {
+    const segment = input.segment || 'URBAN_REAL_ESTATE';
+    const operationLabel = this.getSegmentOperationLabel(segment);
+    const selectedModel = this.modelName || 'gemini-1.5-pro';
+    const availableToolNames = input.availableTools?.map(t => t.name).filter(Boolean) || [];
+    const defaultTools = this.pickTools(availableToolNames, ['crm.leads.create', 'crm.leads.update', 'properties.search', 'calendar.availability', 'calendar.create']);
+    const searchTools = this.pickTools(availableToolNames, ['properties.search', 'properties.read', 'crm.leads.update', 'calendar.availability']);
+    const scheduleTools = this.pickTools(availableToolNames, ['calendar.availability', 'calendar.create', 'crm.activities.create', 'crm.leads.update']);
+    const objectives = input.objectives?.length ? input.objectives : ['Qualificação', 'Busca de imóveis', 'Agendamento'];
+
+    const agents = [
+      {
+        id: 'orchestrator',
+        name: 'Orquestrador de Atendimento',
+        type: 'ORCHESTRATOR',
+        role: 'Orquestrador',
+        description: `Identifica a intenção do lead, mantém o contexto e direciona para o especialista certo em ${operationLabel}.`,
+        tools: defaultTools,
+        permissions: this.buildPermissions(defaultTools),
+        handoffs: [
+          {
+            toAgentRole: 'Especialista Comercial',
+            trigger: 'lead_qualified_or_property_interest',
+            conditions: { hasIntent: true },
+            preserveContext: true,
+            summaryTemplate: 'Resumo do lead, objetivo, orçamento, localização e próximos passos.'
+          }
+        ]
+      },
+      {
+        id: 'commercial_specialist',
+        name: 'Especialista Comercial',
+        type: 'SPECIALIST',
+        role: 'Especialista Comercial',
+        description: `Qualifica leads, entende necessidades e recomenda próximos passos para: ${objectives.join(', ')}.`,
+        tools: searchTools,
+        permissions: this.buildPermissions(searchTools),
+        handoffs: [
+          {
+            toAgentRole: 'Agenda e Handoff',
+            trigger: 'visit_or_human_handoff_requested',
+            conditions: { wantsVisit: true },
+            preserveContext: true,
+            summaryTemplate: 'Preferências do lead, imóveis de interesse e horários solicitados.'
+          }
+        ]
+      },
+      {
+        id: 'schedule_worker',
+        name: 'Agenda e Handoff',
+        type: 'WORKER',
+        role: 'Agenda e Handoff',
+        description: 'Confere disponibilidade, agenda visitas e prepara transferência para atendimento humano quando necessário.',
+        tools: scheduleTools,
+        permissions: this.buildPermissions(scheduleTools),
+        handoffs: []
+      }
+    ].map((agent) => ({
+      ...agent,
+      promptBlocks: this.buildDefaultPromptBlocks(agent, input),
+      guardrails: {},
+      memoryConfig: {},
+      model: selectedModel,
+      modelConfig: { temperature: 0.4, maxTokens: 4096, topP: 0.9 },
+      workflowConfig: {}
+    }));
+
+    const architecture = {
+      operation: {
+        name: `Equipe IA - ${operationLabel}`,
+        description: `Arquitetura inicial para automatizar ${objectives.join(', ')} com agentes especializados.`,
+        agents,
+        workflows: [
+          {
+            name: 'Atendimento e qualificação de lead',
+            description: 'Recebe contato, qualifica intenção, consulta dados reais e agenda próximo passo.',
+            triggerType: 'NEW_MESSAGE',
+            triggerConfig: { channels: input.channelsAvailable?.map(c => c.type) || ['whatsapp'] },
+            steps: [
+              { stepType: 'AGENT_ACTION', config: { agentRole: 'Orquestrador', action: 'detect_intent' } },
+              { stepType: 'HANDOFF', config: { toAgentRole: 'Especialista Comercial' } },
+              { stepType: 'AGENT_ACTION', config: { agentRole: 'Especialista Comercial', action: 'qualify_and_search' } },
+              { stepType: 'HANDOFF', config: { toAgentRole: 'Agenda e Handoff' } }
+            ]
+          }
+        ],
+        globalGuardrails: {}
+      }
+    };
+
+    const enriched = this.validateAndEnrich(architecture, input);
+    enriched.testPlan = this.generateFallbackTestPlan(enriched, input);
+    return enriched;
+  }
+
+  getSegmentOperationLabel(segment) {
+    const labels = {
+      URBAN_REAL_ESTATE: 'Imobiliária Urbana',
+      RURAL_REAL_ESTATE: 'Imobiliária Rural',
+      DEVELOPER: 'Incorporadora',
+      BUILDER: 'Construtora',
+      LAND_DEVELOPER: 'Loteadora'
+    };
+    return labels[segment] || 'Operação Imobiliária';
+  }
+
+  pickTools(availableToolNames, preferredTools) {
+    const picked = preferredTools.filter(tool => availableToolNames.includes(tool));
+    if (picked.length >= 2) return picked;
+    return [...new Set([...picked, ...availableToolNames])].slice(0, 8);
+  }
+
+  buildPermissions(tools) {
+    return (tools || []).map(tool => ({
+      resource: tool,
+      actions: ['read', 'execute'],
+      conditions: { tenantScoped: true }
+    }));
+  }
+
+  buildDefaultPromptBlocks(agent, input) {
+    const blockTypes = ['IDENTITY', 'OBJECTIVE', 'CONTEXT', 'PERSONALITY', 'PROCESS', 'RULES', 'EXCEPTIONS', 'EXAMPLES'];
+    return blockTypes.map((blockType, index) => ({
+      blockType,
+      content: this.getDefaultBlockContent(blockType, agent, input),
+      priority: index
+    }));
+  }
+
+  generateFallbackTestPlan(architecture, input) {
+    const testCases = [];
+    for (const agent of architecture.operation.agents) {
+      testCases.push(this.generateTestCaseForCategory('HAPPY_PATH', agent, input));
+      testCases.push(this.generateTestCaseForCategory('REPEATED_QUESTIONS', agent, input));
+      testCases.push(this.generateTestCaseForCategory('PROMPT_INJECTION', agent, input));
+      testCases.push(this.generateTestCaseForCategory('HUMAN_REQUEST', agent, input));
+    }
+    return testCases;
   }
 
   /**
@@ -577,6 +686,9 @@ REGRAS OBRIGATÓRIAS:
    */
   validateAndEnrich(architecture, input) {
     const { operation } = architecture;
+    if (!operation?.agents || !Array.isArray(operation.agents)) {
+      throw new Error('Architecture must include an agents array');
+    }
     
     // Ensure orchestrator exists
     const hasOrchestrator = operation.agents.some(a => a.type === 'ORCHESTRATOR');
@@ -590,7 +702,7 @@ REGRAS OBRIGATÓRIAS:
       if (!agent.id) agent.id = `agent_${idx + 1}`;
       
       // Default model config
-      agent.model = agent.model || 'gemini-1.5-pro';
+      agent.model = this.modelName || agent.model || 'gemini-1.5-pro';
       agent.modelConfig = {
         temperature: 0.4,
         maxTokens: 4096,

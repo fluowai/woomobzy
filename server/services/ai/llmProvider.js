@@ -797,7 +797,8 @@ class CostTracker {
   }
   
   startFlushTimer() {
-    setInterval(() => this.flush(), this.flushInterval);
+    const timer = setInterval(() => this.flush(), this.flushInterval);
+    timer.unref?.();
   }
   
   async record(entry) {

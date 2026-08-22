@@ -1,5 +1,27 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-22] Correção do Agent Architect com Groq
+
+### Causa raiz
+
+- `AgentArchitect` é singleton e retornava cedo quando já estava inicializado; uma seleção posterior de Groq/modelo no wizard podia ser ignorada.
+- Quando a geração do provider falhava ou retornava JSON inválido, o fallback devolvia uma estrutura vazia/incompatível (`operation.architecture.agents`), então o endpoint não criava agentes.
+- A criação de handoffs usava o ID temporário vindo da IA como `from_agent_id`, em vez do UUID real salvo em `ai_agents`, podendo quebrar a criação após inserir agentes.
+
+### Correção
+
+- `server/services/ai/agentArchitect.js`: seleção de provider/modelo agora é reaplicada por chamada, agentes passam a herdar o modelo selecionado e o fallback cria uma equipe mínima funcional com orquestrador, especialista comercial, agenda/handoff, prompts, workflows e plano de testes.
+- `server/routes/aiOperations.js`: handoffs agora usam o agente real criado no banco, resolvido por `specId`/`role`.
+- `server/services/ai/llmProvider.js`: timer do `CostTracker` agora usa `unref()` para não prender processos de teste.
+- `server/__tests__/agentArchitect.test.ts`: cobertura para troca de provider no singleton e fallback com modelo Groq.
+
+### Verificação
+
+- `npx.cmd vitest run server/__tests__/agentArchitect.test.ts --pool=threads --maxWorkers=1` → 2/2 passaram. O pool padrão de forks voltou a travar ao iniciar worker neste ambiente.
+- `npm run type-check` passou.
+- `npm run build` passou.
+- Sem commit/push/deploy.
+
 ## [2026-08-20] Correção de entregabilidade de e-mail (rSPAM / MailBaby)
 
 ### Problema

@@ -14,6 +14,7 @@ import { callApi } from '../../src/lib/api';
 import { PLATFORM_IP_UNSET } from '../../utils/platform';
 import { usePlatformIp } from '../../utils/usePlatformIp';
 import { toast } from 'sonner';
+import { useAuth } from '../../context/AuthContext';
 
 
 // Real Domain Interface
@@ -40,6 +41,7 @@ const DomainManager: React.FC = () => {
   const [domains, setDomains] = useState<DomainEntry[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
+  const { profile } = useAuth();
 
   // Add Form State
   const [newDomain, setNewDomain] = useState('');
@@ -55,10 +57,16 @@ const DomainManager: React.FC = () => {
     setLoading(true);
     try {
       // 1. Fetch Organizations
-      const { data: orgs, error } = await supabase
+      let query = supabase
         .from('organizations')
         .select('id, name, custom_domain')
         .order('name');
+        
+      if (profile?.role !== 'superadmin' && profile?.organization_id) {
+        query = query.or(`id.eq.${profile.organization_id},parent_id.eq.${profile.organization_id}`);
+      }
+
+      const { data: orgs, error } = await query;
 
       if (error) throw error;
 

@@ -102,6 +102,9 @@ const SandboxChat: React.FC = () => {
               ? current
               : loadedAgents[0].id
           );
+        } else {
+          setOperationAgents([]);
+          setActiveAgent('orchestrator');
         }
       } catch (error: any) {
         if (!mounted) return;
@@ -126,7 +129,7 @@ const SandboxChat: React.FC = () => {
 
     try {
       let reply: Message;
-      if (id && id !== 'draft') {
+      if (id && id !== 'draft' && operationAgents.length > 0) {
         const result = await sendAgentMessage(id, {
           channel: 'sandbox',
           message: input,

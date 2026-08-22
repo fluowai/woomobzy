@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIPath } from '@/src/hooks/usePanelBase';
-import { createOperation, runArchitect as runArchitectApi, publishOperation } from '../services/aiWorkforce';
+import { createOperation, runArchitect as runArchitectApi, publishOperation, updateAgentPrompt } from '../services/aiWorkforce';
 
 type AIProvider = 'openai' | 'anthropic' | 'gemini' | 'groq' | 'openrouter';
 type AIModel = 'gpt-4o-mini' | 'gpt-4o' | 'claude-3-5-sonnet-20241022' | 'gemini-1.5-pro' | 'gemini-1.5-flash' | 'llama-3.1-8b-instant';
@@ -100,6 +100,8 @@ const CreateOperationWizard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [operationId, setOperationId] = useState<string | null>(null);
+  const [editingAgent, setEditingAgent] = useState<{ id: string, name: string, promptText: string } | null>(null);
+  const [isSavingPrompt, setIsSavingPrompt] = useState(false);
   const [draft, setDraft] = useState({
     name: '',
     segment: 'URBAN_REAL_ESTATE',
@@ -182,7 +184,8 @@ const CreateOperationWizard: React.FC = () => {
             role: a.role,
             description: a.description || '',
             tools: (a.tools || []).map((t: any) => t?.name || t?.id || String(t)),
-            model: (a.versions?.[0] as any)?.model || draft.selectedAIModel
+            model: (a.versions?.[0] as any)?.model || draft.selectedAIModel,
+            promptText: (a.versions?.[0] as any)?.prompt?.full || (a.versions?.[0] as any)?.prompt?.text || ''
           })),
           workflows: result.architecture.workflows || [],
           testPlan: result.testPlan || []
@@ -368,14 +371,22 @@ const CreateOperationWizard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {draft.architecture.agents.map((agent, idx) => (
             <div key={agent.id} className="rounded-xl border border-slate-200 bg-white p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className={`h-9 w-9 rounded-lg flex items-center justify-center text-white ${idx === 0 ? 'bg-slate-950' : 'bg-emerald-600'}`}>
-                  {idx === 0 ? <Brain size={18} /> : <Bot size={18} />}
+              <div className="flex items-center gap-3 mb-3 justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`h-9 w-9 rounded-lg flex items-center justify-center text-white ${idx === 0 ? 'bg-slate-950' : 'bg-emerald-600'}`}>
+                    {idx === 0 ? <Brain size={18} /> : <Bot size={18} />}
+                  </div>
+                  <div>
+                    <div className="font-bold text-slate-950 text-sm">{agent.name}</div>
+                    <div className="text-[11px] text-slate-500">{agent.type}</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="font-bold text-slate-950 text-sm">{agent.name}</div>
-                  <div className="text-[11px] text-slate-500">{agent.type}</div>
-                </div>
+                <button 
+                  onClick={() => setEditingAgent({ id: agent.id, name: agent.name, promptText: (agent as any).promptText || '' })}
+                  className="text-[11px] font-bold text-slate-500 hover:text-slate-950 border border-slate-200 px-2 py-1 rounded-lg hover:bg-slate-50 transition"
+                >
+                  Editar Prompt
+                </button>
               </div>
               <p className="text-xs text-slate-600 mb-3">{agent.description}</p>
               {agent.tools.length > 0 && (
@@ -723,6 +734,58 @@ const CreateOperationWizard: React.FC = () => {
           </section>
         </div>
       </div>
+      
+      {editingAgent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-lg text-slate-950">Editar Prompt - {editingAgent.name}</h3>
+                <p className="text-xs text-slate-500">Altere o prompt do agente usando formatação Markdown.</p>
+              </div>
+              <button onClick={() => !isSavingPrompt && setEditingAgent(null)} className="p-1 hover:bg-slate-100 text-slate-500 rounded-lg">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-4 flex-1 overflow-hidden flex flex-col bg-slate-50">
+              <textarea 
+                value={editingAgent.promptText}
+                onChange={e => setEditingAgent({ ...editingAgent, promptText: e.target.value })}
+                className="w-full flex-1 p-4 border border-slate-200 rounded-lg font-mono text-[13px] text-slate-800 resize-none focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 shadow-inner"
+                spellCheck={false}
+              />
+            </div>
+            <div className="p-4 border-t border-slate-200 flex justify-end gap-3 bg-white rounded-b-xl">
+              <button onClick={() => setEditingAgent(null)} disabled={isSavingPrompt} className="h-10 px-4 font-bold text-sm text-slate-600 hover:bg-slate-100 rounded-lg disabled:opacity-50 transition">Cancelar</button>
+              <button 
+                onClick={async () => {
+                  setIsSavingPrompt(true);
+                  try {
+                    await updateAgentPrompt(editingAgent.id, editingAgent.promptText);
+                    setDraft(d => ({
+                      ...d,
+                      architecture: {
+                        ...d.architecture,
+                        agents: d.architecture.agents.map(a => a.id === editingAgent.id ? { ...a, promptText: editingAgent.promptText } : a)
+                      }
+                    }));
+                    toast.success('Prompt atualizado com sucesso!');
+                    setEditingAgent(null);
+                  } catch (e: any) {
+                    toast.error('Erro ao atualizar prompt: ' + e.message);
+                  } finally {
+                    setIsSavingPrompt(false);
+                  }
+                }} 
+                disabled={isSavingPrompt}
+                className="h-10 px-5 font-bold text-sm text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg flex items-center gap-2 disabled:opacity-50 transition shadow-sm"
+              >
+                {isSavingPrompt ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />} Salvar Prompt
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -274,6 +274,63 @@ router.patch('/agents/:id', verifyAuth, requireTenant, async (req, res) => {
   }
 });
 
+router.patch('/agents/:id/prompt', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const supabase = getSupabaseServer();
+    const { id } = req.params;
+    const { promptText } = req.body;
+
+    if (!promptText) {
+      return res.status(400).json({
+        success: false,
+        error: 'promptText é obrigatório',
+        code: 'AI_AGENT_PROMPT_REQUIRED',
+      });
+    }
+
+    // Ensure the agent exists and has an active version
+    const { data: agent, error: agentError } = await supabase
+      .from('ai_agents')
+      .select('active_version_id')
+      .eq('id', id)
+      .eq('organization_id', req.orgId)
+      .single();
+
+    if (agentError || !agent || !agent.active_version_id) {
+      return res.status(404).json({
+        success: false,
+        error: 'Agente ou versão ativa não encontrada',
+        code: 'AI_AGENT_VERSION_NOT_FOUND',
+      });
+    }
+
+    // Get the current version to preserve any other prompt keys (like blocks)
+    const { data: version, error: versionError } = await supabase
+      .from('ai_agent_versions')
+      .select('prompt')
+      .eq('id', agent.active_version_id)
+      .single();
+
+    if (versionError) throw versionError;
+
+    const existingPrompt = version?.prompt || {};
+    
+    // Update the prompt object in the version
+    const { error: updateError } = await supabase
+      .from('ai_agent_versions')
+      .update({
+        prompt: { ...existingPrompt, full: promptText }
+      })
+      .eq('id', agent.active_version_id);
+
+    if (updateError) throw updateError;
+
+    res.json({ success: true });
+  } catch (error) {
+    handleRouteError(res, error, 'AGENT_PROMPT_UPDATE');
+  }
+});
+
 router.delete('/agents/:id', verifyAuth, requireTenant, async (req, res) => {
   try {
     const supabase = getSupabaseServer();

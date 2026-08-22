@@ -101,7 +101,10 @@ const AIOperationDashboard: React.FC = () => {
   }, [id]);
 
   const loadData = async () => {
-    if (!id) return;
+    if (!id) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const op = await getOperation(id);

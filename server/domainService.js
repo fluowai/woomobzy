@@ -137,13 +137,25 @@ export function getDomainConfigPath(domainName) {
 }
 
 async function resolveDomainAddresses(domain) {
-  const lookupResults = await withTimeout(
-    dns.lookup(domain, { all: true, family: 4 }),
-    8000,
-    'DNS_LOOKUP_TIMEOUT'
-  );
+  try {
+    const lookupResults = await withTimeout(
+      dns.lookup(domain, { all: true, family: 4 }),
+      8000,
+      'DNS_LOOKUP_TIMEOUT'
+    );
 
-  return [...new Set(lookupResults.map((result) => result.address))];
+    return [...new Set(lookupResults.map((result) => result.address))];
+  } catch (error) {
+    console.error(`[DomainService] Erro ao resolver DNS para ${domain}:`, error.message);
+    // Fallback: tentar com um único lookup
+    try {
+      const singleResult = await dns.lookup(domain, { family: 4 });
+      return [singleResult.address];
+    } catch (fallbackError) {
+      console.error(`[DomainService] Fallback DNS falhou para ${domain}:`, fallbackError.message);
+      return [];
+    }
+  }
 }
 
 async function checkDnsRecord(domain) {
@@ -158,8 +170,10 @@ async function checkDnsRecord(domain) {
       addresses,
       expectedIp: PLATFORM_PUBLIC_IPS[0] || PLATFORM_PUBLIC_IP,
       expectedIps: PLATFORM_PUBLIC_IPS,
+      error: addresses.length === 0 ? 'DNS_RESOLUTION_FAILED' : null,
     };
   } catch (error) {
+    console.error(`[DomainService] Erro ao verificar DNS para ${domain}:`, error.message);
     return {
       verified: false,
       addresses: [],

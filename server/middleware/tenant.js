@@ -79,28 +79,66 @@ export const requireTenant = async (req, res, next) => {
   try {
     const supabase = getSupabaseServer();
     let tenantLookupError = null;
-    const organization = await tenantCache.getOrLoad(req.orgId, async () => {
-      const { data, error } = await supabase
-        .from('organizations')
-        .select('id')
-        .eq('id', req.orgId)
-        .maybeSingle();
-      tenantLookupError = error;
-      return data || undefined;
-    });
-
-    if (tenantLookupError || !organization) {
-      console.error(
-        `[TenantMiddleware] Tenant inexistente bloqueado: ${req.orgId} em ${req.method} ${req.path}`
-      );
-      return res.status(403).json({
-        error: 'Organizacao nao encontrada ou tenant invalido.',
-        code: 'INVALID_TENANT',
+    
+    try {
+      const organization = await tenantCache.getOrLoad(req.orgId, async () => {
+        try {
+          const { data, error } = await supabase
+            .from('organizations')
+            .select('id, status')
+            .eq('id', req.orgId)
+            .maybeSingle();
+          tenantLookupError = error;
+          
+          if (error) {
+            console.error('[TenantMiddleware] Erro ao consultar organizacao:', error.message);
+            throw error;
+          }
+          
+          if (!data) {
+            console.error(
+              `[TenantMiddleware] Tenant inexistente bloqueado: ${req.orgId} em ${req.method} ${req.path}`
+            );
+            return undefined;
+          }
+          
+          return data;
+        } catch (cacheError) {
+          tenantLookupError = cacheError;
+          throw cacheError;
+        }
       });
-    }
 
-    req.orgId = organization.id;
-    req.tenantValidated = true;
+      if (tenantLookupError || !organization) {
+        console.error(
+          `[TenantMiddleware] Tenant inexistente bloqueado: ${req.orgId} em ${req.method} ${req.path}`
+        );
+        return res.status(403).json({
+          error: 'Organizacao nao encontrada ou tenant invalido.',
+          code: 'INVALID_TENANT',
+        });
+      }
+
+      // Verificar status da organizacao
+      if (organization.status && organization.status.toLowerCase() !== 'active') {
+        return res.status(403).json({
+          error: 'Organizacao esta inativa.',
+          code: 'TENANT_INACTIVE',
+        });
+      }
+
+      req.orgId = organization.id;
+      req.tenantValidated = true;
+    } catch (validationError) {
+      if (validationError.code === 'PGRST204' || validationError.message?.includes('does not exist')) {
+        console.error('[TenantMiddleware] Tabela nao encontrada:', validationError.message);
+        return res.status(404).json({
+          error: 'Recurso nao encontrado.',
+          code: 'RESOURCE_NOT_FOUND',
+        });
+      }
+      throw validationError;
+    }
   } catch (error) {
     console.error('[TenantMiddleware] Erro ao validar tenant:', error.message);
     return res.status(500).json({

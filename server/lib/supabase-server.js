@@ -34,39 +34,44 @@ function getSupabaseUrl() {
  * @returns {import('@supabase/supabase-js').SupabaseClient}
  */
 export function getSupabaseServer() {
-  // 1. Tenta pegar o client do tenant (se estivermos dentro de uma requisição com BYOB)
-  const store = tenantContext.getStore();
-  if (store && store.supabaseClient) {
-    return store.supabaseClient;
+  try {
+    // 1. Tenta pegar o client do tenant (se estivermos dentro de uma requisição com BYOB)
+    const store = tenantContext.getStore();
+    if (store && store.supabaseClient) {
+      return store.supabaseClient;
+    }
+
+    // 2. Fallback: Retorna o client Master
+    if (_client) return _client;
+
+    const url = getSupabaseUrl();
+    const key = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+
+    if (!url || !key) {
+      const missing = [];
+      if (!url) missing.push('VITE_SUPABASE_URL');
+      if (!key) missing.push('SUPABASE_SERVICE_ROLE_KEY');
+
+      throw new Error(
+        `❌ Variáveis de ambiente obrigatórias não encontradas: ${missing.join(', ')}.\n` +
+          '   → Em produção: configure no ambiente do servidor (SaaS/Docker).\n' +
+          '   → Em desenvolvimento: verifique o arquivo .env na raiz.\n'
+      );
+    }
+
+    // Sanity check: chaves JWT do Supabase costumam ser longas e começar com 'ey'
+    if (key.length < 50) {
+      console.warn(
+        '[Supabase] ⚠️ Alerta: SUPABASE_SERVICE_ROLE_KEY parece curta demais ou inválida.'
+      );
+    }
+
+    _client = createClient(url, key);
+    return _client;
+  } catch (error) {
+    console.error('[Supabase] Erro crítico ao criar cliente:', error.message);
+    throw new Error('Serviço de banco de dados indisponível. Verifique as variáveis de ambiente: ' + error.message);
   }
-
-  // 2. Fallback: Retorna o client Master
-  if (_client) return _client;
-
-  const url = getSupabaseUrl();
-  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
-
-  if (!url || !key) {
-    const missing = [];
-    if (!url) missing.push('VITE_SUPABASE_URL');
-    if (!key) missing.push('SUPABASE_SERVICE_ROLE_KEY');
-
-    throw new Error(
-      `❌ Variáveis de ambiente obrigatórias não encontradas: ${missing.join(', ')}.\n` +
-        '   → Em produção: configure no ambiente do servidor (SaaS/Docker).\n' +
-        '   → Em desenvolvimento: verifique o arquivo .env na raiz.\n'
-    );
-  }
-
-  // Sanity check: chaves JWT do Supabase costumam ser longas e começar com 'ey'
-  if (key.length < 50) {
-    console.warn(
-      '[Supabase] ⚠️ Alerta: SUPABASE_SERVICE_ROLE_KEY parece curta demais ou inválida.'
-    );
-  }
-
-  _client = createClient(url, key);
-  return _client;
 }
 
 /**
@@ -75,27 +80,32 @@ export function getSupabaseServer() {
  * separadamente das sessões emitidas pelo Supabase Auth.
  */
 export function getSupabaseAuthServer() {
-  if (_authClient) return _authClient;
+  try {
+    if (_authClient) return _authClient;
 
-  const url = getSupabaseUrl();
-  const key = (
-    process.env.VITE_SUPABASE_ANON_KEY ||
-    process.env.SUPABASE_ANON_KEY ||
-    ''
-  ).trim();
+    const url = getSupabaseUrl();
+    const key = (
+      process.env.VITE_SUPABASE_ANON_KEY ||
+      process.env.SUPABASE_ANON_KEY ||
+      ''
+    ).trim();
 
-  if (!url || !key) {
-    throw new Error(
-      'Variáveis de autenticação obrigatórias não configuradas. ' +
-        'Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.'
-    );
+    if (!url || !key) {
+      throw new Error(
+        'Variáveis de autenticação obrigatórias não configuradas. ' +
+          'Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.'
+      );
+    }
+
+    _authClient = createClient(url, key, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+    return _authClient;
+  } catch (error) {
+    console.error('[Supabase Auth] Erro crítico ao criar cliente de autenticação:', error.message);
+    throw new Error('Serviço de autenticação indisponível. Verifique VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY: ' + error.message);
   }
-
-  _authClient = createClient(url, key, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
-  return _authClient;
 }

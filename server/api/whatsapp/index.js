@@ -57,6 +57,12 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     'https://www.okaimoveis.com.br',
     ...envAllowedOrigins,
   ]);
+  
+  // Verificar se o serviço WhatsApp está configurado
+  const isWhatsAppConfigured = () => {
+    const serviceToken = process.env.WHATSAPP_SERVICE_TOKEN || process.env.WHATSAPP_INTERNAL_TOKEN;
+    return !!(target && serviceToken && (isProduction || !isProduction));
+  };
 
   const applyCorsHeaders = (req, res) => {
     const origin = req.headers.origin;
@@ -97,8 +103,32 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
         const result = await aiEngine.handleWhatsAppMessage(req.body);
         res.json({ success: true, result });
       } catch (err) {
-        console.error('[WhatsApp AI Automation Error]', err.message);
-        res.status(500).json({ error: 'Erro ao processar mensagem WhatsApp' });
+        console.error('[WhatsApp AI Automation Error]', {
+          message: err.message,
+          stack: err.stack?.split('\n').slice(0, 5).join('\n'),
+          body: req.body,
+        });
+        
+        let statusCode = 500;
+        let errorCode = 'WHATSAPP_AI_ERROR';
+        let errorMessage = 'Erro ao processar mensagem WhatsApp';
+        
+        if (err.message?.includes('API key') || err.message?.includes('invalid')) {
+          statusCode = 401;
+          errorCode = 'WHATSAPP_AI_UNAUTHORIZED';
+          errorMessage = 'Chave de API do GemINI invalida ou nao configurada';
+        } else if (err.message?.includes('rate limit') || err.message?.includes('quota')) {
+          statusCode = 429;
+          errorCode = 'WHATSAPP_AI_RATE_LIMIT';
+          errorMessage = 'Limite de requisicoes de AI excedido';
+        }
+        
+        res.status(statusCode).json({
+          success: false,
+          error: errorMessage,
+          code: errorCode,
+          details: isProduction ? undefined : err.message,
+        });
       }
     }
   );
@@ -120,10 +150,31 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
         );
         res.json({ success: true, result });
       } catch (err) {
-        console.error('[WhatsApp AI Import Error]', err.message);
-        res
-          .status(500)
-          .json({ error: 'Erro ao analisar conversas importadas' });
+        console.error('[WhatsApp AI Import Error]', {
+          message: err.message,
+          stack: err.stack?.split('\n').slice(0, 5).join('\n'),
+        });
+        
+        let statusCode = 500;
+        let errorCode = 'WHATSAPP_IMPORT_AI_ERROR';
+        let errorMessage = 'Erro ao analisar conversas importadas';
+        
+        if (err.message?.includes('API key') || err.message?.includes('invalid')) {
+          statusCode = 401;
+          errorCode = 'WHATSAPP_IMPORT_AI_UNAUTHORIZED';
+          errorMessage = 'Chave de API invalida';
+        } else if (err.message?.includes('rate limit')) {
+          statusCode = 429;
+          errorCode = 'WHATSAPP_IMPORT_AI_RATE_LIMIT';
+          errorMessage = 'Limite de requisicoes excedido';
+        }
+        
+        res.status(statusCode).json({
+          success: false,
+          error: errorMessage,
+          code: errorCode,
+          details: isProduction ? undefined : err.message,
+        });
       }
     }
   );
@@ -133,12 +184,18 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
     '[WhatsApp] Montando WhatsMeow provider (WooAPI 1) em /api/whatsapp'
   );
 
+  // Verificar configuração antes de criar proxy
+  if (!isWhatsAppConfigured()) {
+    console.warn('[WhatsApp] Servico nao esta completamente configurado. Proxy sera criado mas pode falhar.');
+    console.warn('[WhatsApp] Verifique: WHATSMEOW_URL, WHATSAPP_SERVICE_TOKEN, WHATSAPP_INTERNAL_TOKEN');
+  }
+
   const proxy = createProxyMiddleware({
     target,
     changeOrigin: true,
     ws: false,
-    proxyTimeout: 5000,
-    timeout: 5000,
+    proxyTimeout: 30000,
+    timeout: 30000,
     pathRewrite: rewriteWhatsAppPath,
     on: {
       proxyReq: (proxyReq, req) => {
@@ -192,13 +249,45 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
         );
       },
       error: (err, req, res) => {
-        console.error('[WhatsApp Proxy Error]', err.message);
+        console.error('[WhatsApp Proxy Error]', {
+          message: err.message,
+          code: err.code,
+          target: target,
+          path: req.path,
+          method: req.method,
+        });
+        
         if (res && typeof res.status === 'function') {
           applyCorsHeaders(req, res);
-          res.status(502).json({
-            error: 'Servico WhatsApp Indisponivel',
-            code: 'WHATSAPP_SERVICE_UNREACHABLE',
-            message: 'Servico temporariamente indisponivel.',
+          
+          // Classificar erro
+          let statusCode = 502;
+          let errorCode = 'WHATSAPP_SERVICE_UNREACHABLE';
+          let errorMessage = 'Servico WhatsApp temporariamente indisponivel';
+          
+          if (err.code === 'ECONNREFUSED') {
+            statusCode = 503;
+            errorCode = 'WHATSAPP_SERVICE_DOWN';
+            errorMessage = 'Servico WhatsApp esta offline. Verifique se o container esta rodando.';
+          } else if (err.code === 'ETIMEDOUT') {
+            statusCode = 504;
+            errorCode = 'WHATSAPP_SERVICE_TIMEOUT';
+            errorMessage = 'Timeout ao conectar ao servico WhatsApp.';
+          } else if (err.message?.includes('ECONNRESET')) {
+            statusCode = 502;
+            errorCode = 'WHATSAPP_CONNECTION_RESET';
+            errorMessage = 'Conexao com WhatsApp foi resetada.';
+          }
+          
+          res.status(statusCode).json({
+            success: false,
+            error: errorMessage,
+            code: errorCode,
+            details: isProduction ? undefined : {
+              target: target,
+              error: err.message,
+              stack: err.stack?.split('\n').slice(0, 5).join('\n'),
+            },
           });
         } else if (res && typeof res.destroy === 'function') {
           res.destroy();
@@ -534,6 +623,8 @@ async function retryWhatsAppMedia(req, res) {
       .json({ error: error.message || 'Erro ao solicitar retry da midia.' });
   }
 }
+
+export { checkWhatsAppService };
 
 function getWsTokenFromUrl(rawUrl) {
   try {

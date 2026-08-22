@@ -27,6 +27,7 @@ import importRoutes from './routes/import.js';
 import publicRoutes from './routes/public.js';
 import onboardingRoutes from './routes/onboarding.js';
 import domainRoutes from './routes/domains.js';
+import healthRoutes from './routes/health.js';
 import crmRoutes from './api/crm/index.js';
 import crmClientsRoutes from './api/crm/clients/index.js';
 import propertyRoutes from './api/properties/index.js';
@@ -83,15 +84,46 @@ const REQUIRED_ENV_VARS = [
   'VITE_SUPABASE_ANON_KEY',
   'SUPABASE_SERVICE_ROLE_KEY',
 ];
+
+// Variáveis críticas para produção
+const CRITICAL_PROD_VARS = [
+  'WHATSAPP_SERVICE_TOKEN',
+  'WHATSAPP_INTERNAL_TOKEN',
+  'WHATSAPP_WS_JWT_SECRET',
+  'WHATSMEOW_URL',
+  'MEDIA_STORAGE_PROVIDER',
+  'MINIO_ENDPOINT',
+  'MINIO_PUBLIC_URL',
+  'MINIO_ACCESS_KEY',
+  'MINIO_SECRET_KEY',
+];
+
 const missingVars = REQUIRED_ENV_VARS.filter((v) => !process.env[v]?.trim());
 
 if (missingVars.length > 0) {
   console.error(
-    '\n ERRO CRITICO: Variaveis de ambiente obrigatorias nao encontradas:'
+    '\n❌ ERRO CRITICO: Variaveis de ambiente obrigatorias nao encontradas:'
   );
-  missingVars.forEach((v) => console.error(`   ${v}`));
-  console.error('\n -> Em producao Docker: adicione no stack/env do servico');
-  console.error(' -> Em desenvolvimento: verifique o arquivo .env na raiz\n');
+  missingVars.forEach((v) => console.error(`   - ${v}`));
+  console.error('\n💡 Solucao:');
+  console.error('   -> Em producao Docker: adicione no stack/env do servico');
+  console.error('   -> Em desenvolvimento: verifique o arquivo .env na raiz\n');
+  if (process.env.NODE_ENV === 'production') {
+    console.error('\n🚨 Servidor sera encerrado por falta de configuracao critica!\n');
+    process.exit(1);
+  }
+}
+
+// Avisos para variáveis críticas em produção
+if (process.env.NODE_ENV === 'production') {
+  const missingCritical = CRITICAL_PROD_VARS.filter((v) => !process.env[v]?.trim());
+  if (missingCritical.length > 0) {
+    console.warn(
+      '\n⚠️  AVISO: Variaveis de ambiente criticas para producao nao configuradas:'
+    );
+    missingCritical.forEach((v) => console.warn(`   - ${v}`));
+    console.warn('\n💡 Solucao: Configure todas as variaveis no ambiente de producao\n');
+  }
 }
 
 const app = express();
@@ -260,68 +292,75 @@ export function invalidateTenantCache(domain) {
   if (domain) tenantConfigCache.delete(domain);
 }
 
-app.use(async (req, res, next) => {
-  // Rotas de API sempre usam o client master — BYOB é apenas para páginas públicas
-  if (req.path.startsWith('/api/')) {
-    return next();
-  }
-
-  const tenantDomain = req.headers['x-tenant-domain'] || req.hostname;
-
-  // Se for o domínio master, ou rotas internas, não precisa de BYOB
-  if (
-    !tenantDomain ||
-    tenantDomain.includes('localhost') ||
-    tenantDomain.includes('imobzy.com.br') ||
-    tenantDomain.includes('vercel.app')
-  ) {
-    return next();
-  }
-
-  // Tenta achar no cache com TTL
-  let tenantClient = getCache(tenantDomain);
-
-  if (!tenantClient) {
-    try {
-      const masterClient = getSupabaseServer();
-      const { data, error } = await masterClient
-        .from('public_tenant_discovery')
-        .select('supabase_url, supabase_anon_key')
-        .eq('domain', tenantDomain)
-        .single();
-
-      if (!error && data && data.supabase_url && data.supabase_anon_key) {
-        const { data: adminData } = await masterClient
-          .from('reseller_infrastructure')
-          .select('supabase_url, supabase_service_role_key')
-          .eq('domain', tenantDomain)
-          .eq('is_active', true)
-          .single();
-
-        if (adminData && adminData.supabase_service_role_key) {
-          tenantClient = createClient(
-            adminData.supabase_url,
-            adminData.supabase_service_role_key
-          );
-          setCacheWithTTL(tenantDomain, tenantClient);
-          console.log(`🔌 BYOB: Server client resolved for ${tenantDomain}`);
-        } else {
-          console.warn(`⚠️ BYOB: No service_role_key for ${tenantDomain}, using master client`);
-        }
-      }
-    } catch (err) {
-      console.error(`❌ BYOB Middleware Error for ${tenantDomain}:`, err.message);
-    }
-  }
-
-  if (tenantClient) {
-    return tenantContext.run({ supabaseClient: tenantClient }, next);
-  }
-
-  // Fallback explícito: log e continua com master client
-  console.warn(`⚠️ BYOB: Tenant client not resolved for ${tenantDomain}, falling back to master`);
-  next();
-});
+// BYOB Middleware - TEMPORARIAMENTE DESABILITADO PARA TESTE
+// app.use(async (req, res, next) => {
+//   process.stderr.write(`[BYOB] Requisicao: ${req.method} ${req.path}\n`);
+//   
+//   // Rotas de API sempre usam o client master — BYOB é apenas para páginas públicas
+//   if (req.path.startsWith('/api/')) {
+//     return next();
+//   }
+//
+//   const tenantDomain = req.headers['x-tenant-domain'] || req.hostname;
+//
+//   // Se for o domínio master, ou rotas internas, não precisa de BYOB
+//   if (
+//     !tenantDomain ||
+//     tenantDomain.includes('localhost') ||
+//     tenantDomain.includes('imobzy.com.br') ||
+//     tenantDomain.includes('vercel.app')
+//   ) {
+//     return next();
+//   }
+//
+//   // Tenta achar no cache com TTL
+//   let tenantClient = getCache(tenantDomain);
+//
+//   if (!tenantClient) {
+//     try {
+//       const masterClient = getSupabaseServer();
+//       const { data, error } = await masterClient
+//         .from('public_tenant_discovery')
+//         .select('supabase_url, supabase_anon_key')
+//         .eq('domain', tenantDomain)
+//         .single();
+//
+//       if (!error && data && data.supabase_url && data.supabase_anon_key) {
+//         const { data: adminData } = await masterClient
+//           .from('reseller_infrastructure')
+//           .select('supabase_url, supabase_service_role_key')
+//           .eq('domain', tenantDomain)
+//           .eq('is_active', true)
+//           .single();
+//
+//         if (adminData && adminData.supabase_service_role_key) {
+//           tenantClient = createClient(
+//             adminData.supabase_url,
+//             adminData.supabase_service_role_key
+//           );
+//           setCacheWithTTL(tenantDomain, tenantClient);
+//           console.log(`🔌 BYOB: Server client resolved for ${tenantDomain}`);
+//         } else {
+//           console.warn(`⚠️ BYOB: No service_role_key for ${tenantDomain}, using master client`);
+//         }
+//       }
+//     } catch (err) {
+//       console.error(`❌ BYOB Middleware Error for ${tenantDomain}:`, err.message);
+//       next(); // CHAMA next() em caso de erro
+//     }
+//   }
+//
+//   if (tenantClient) {
+//     return tenantContext.run({ supabaseClient: tenantClient }, next);
+//   }
+//
+//   // Fallback explícito: log e continua com master client
+//   if (req.path.startsWith('/health/')) {
+//     console.log(`[BYOB] Chamei next() para: ${req.path}`);
+//   }
+//   console.warn(`⚠️ BYOB: Tenant client not resolved for ${tenantDomain}, falling back to master`);
+//   next();
+// });
 
 // --- Supabase Client (lazy, via shared singleton) ---
 // Nota: não criamos o client aqui para evitar crash se env vars estiverem ausentes.
@@ -355,6 +394,15 @@ app.use('/api/valuation', valuationRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/external-data', externalDataRoutes);
 app.use('/api/quiz', quizRoutes);
+// console.error('[INIT] Registrando healthRoutes...');
+// app.use('/health', healthRoutes);
+// console.error('[INIT] healthRoutes registrado.');
+
+// Teste: rota simples
+app.get('/test-health', (req, res) => {
+  console.error('[TEST] /test-health chamado');
+  res.json({ test: 'ok' });
+});
 app.use('/api/jarvis', jarvisRoutes);
 app.use('/api/account', accountRoutes);
 app.use('/api/whatsapp-proxy', whatsappProxyRoutes);
@@ -434,9 +482,6 @@ app.get('/api/system-status', async (req, res) => {
 });
 
 */
-app.get('/health', (req, res) =>
-  res.json({ status: 'ok', uptime: process.uptime() })
-);
 app.get('/', (req, res) => res.send(`${PLATFORM_COMMERCIAL_NAME} API Online`));
 
 // --- Instagram Service Proxy ---

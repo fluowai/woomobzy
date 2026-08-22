@@ -65,9 +65,14 @@ export const verifyAuth = async (req, res, next) => {
     // Em algumas bases antigas houve usuarios recriados no Supabase Auth,
     // mantendo o perfil pelo e-mail antigo. Nesses casos, resolvemos por e-mail.
     const profileCacheKey = `${user.id}:${String(user.email || '').toLowerCase()}`;
-    const profile = await profileCache.getOrLoad(profileCacheKey, () =>
-      resolveProfileForUser(supabase, user)
-    );
+    const profile = await profileCache.getOrLoad(profileCacheKey, async () => {
+      try {
+        return await resolveProfileForUser(supabase, user);
+      } catch (err) {
+        console.error('[Auth] Erro ao resolver perfil do usuário:', err.message);
+        throw err;
+      }
+    });
 
     if (!profile) {
       console.warn('[Auth] Perfil de usuario nao encontrado', {
@@ -389,25 +394,36 @@ function maskEmail(email = '') {
 }
 
 async function resolveAuthenticatedUser(supabaseAuth, token) {
-  const tokenKey = createHash('sha256').update(token).digest('hex');
-  let authError = null;
-  const authenticated = await authenticatedUserCache.getOrLoad(
-    tokenKey,
-    async () => {
-      const result = await supabaseAuth.auth.getUser(token);
-      authError = result.error;
-      if (result.error || !result.data.user) return undefined;
-      return {
-        user: result.data.user,
-        impersonation: null,
-        authError: null,
-      };
-    }
-  );
+  try {
+    const tokenKey = createHash('sha256').update(token).digest('hex');
+    let authError = null;
+    const authenticated = await authenticatedUserCache.getOrLoad(
+      tokenKey,
+      async () => {
+        try {
+          const result = await supabaseAuth.auth.getUser(token);
+          authError = result.error;
+          if (result.error || !result.data.user) return undefined;
+          return {
+            user: result.data.user,
+            impersonation: null,
+            authError: null,
+          };
+        } catch (err) {
+          authError = err;
+          console.error('[Auth] Erro ao validar token com Supabase Auth:', err.message);
+          return undefined;
+        }
+      }
+    );
 
-  if (authenticated) return authenticated;
+    if (authenticated) return authenticated;
 
-  return { user: null, impersonation: null, authError };
+    return { user: null, impersonation: null, authError };
+  } catch (error) {
+    console.error('[Auth] Erro crítico ao resolver usuário autenticado:', error.message);
+    return { user: null, impersonation: null, authError: error };
+  }
 }
 
 export async function resolveProfileForUser(supabase, user) {

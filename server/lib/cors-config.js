@@ -41,21 +41,43 @@ async function isAllowedCustomOrigin(
     const cached = customOriginCache.get(hostname);
     if (cached && cached.expiresAt > Date.now()) return cached.allowed;
 
-    const supabase = getSupabaseServer();
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('custom_domain', hostname)
-      .maybeSingle();
+    // Adicionar timeout de 3 segundos para consultas ao Supabase
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('CORS lookup timeout')), 3000);
+    });
 
-    let allowed = !!org;
-    if (!allowed) {
-      const { data: domainEntry } = await supabase
-        .from('domains')
-        .select('organization_id')
-        .eq('domain', hostname)
+    let allowed = false;
+    try {
+      const supabase = getSupabaseServer();
+      const orgPromise = supabase
+        .from('organizations')
+        .select('id')
+        .eq('custom_domain', hostname)
         .maybeSingle();
-      allowed = !!domainEntry;
+
+      const { data: org } = await Promise.race([
+        orgPromise,
+        timeoutPromise
+      ]);
+
+      allowed = !!org;
+      if (!allowed) {
+        const domainPromise = supabase
+          .from('domains')
+          .select('organization_id')
+          .eq('domain', hostname)
+          .maybeSingle();
+        
+        const { data: domainEntry } = await Promise.race([
+          domainPromise,
+          timeoutPromise
+        ]);
+        allowed = !!domainEntry;
+      }
+    } catch (lookupError) {
+      console.error('[CORS] Erro ou timeout ao verificar origem:', lookupError.message);
+      // Em caso de timeout ou erro, permitir apenas se for desenvolvimento
+      return false;
     }
 
     customOriginCache.set(hostname, {
@@ -65,7 +87,7 @@ async function isAllowedCustomOrigin(
 
     return allowed;
   } catch (error) {
-    console.error('CORS custom origin lookup failed:', error.message);
+    console.error('[CORS] Erro ao validar origem customizada:', error.message);
     return false;
   }
 }

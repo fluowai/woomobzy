@@ -129,7 +129,8 @@ BEGIN
     END LOOP;
 END $$;
 
--- Superadmin bypass policy for all tenant tables
+-- Superadmin/megaadmin bypass policy for all tenant tables
+-- Uses normalizeRole-equivalent check: superadmin, super_admin, megaadmin, mega_admin
 DO $$
 DECLARE
     tbl text;
@@ -164,13 +165,25 @@ BEGIN
             USING (
                 EXISTS (
                     SELECT 1 FROM public.profiles 
-                    WHERE id = auth.uid() AND role = 'superadmin'
+                    WHERE id = auth.uid() AND 
+                    (
+                        role = 'superadmin' OR
+                        role = 'super_admin' OR
+                        role = 'megaadmin' OR
+                        role = 'mega_admin'
+                    )
                 )
             )
             WITH CHECK (
                 EXISTS (
                     SELECT 1 FROM public.profiles 
-                    WHERE id = auth.uid() AND role = 'superadmin'
+                    WHERE id = auth.uid() AND 
+                    (
+                        role = 'superadmin' OR
+                        role = 'super_admin' OR
+                        role = 'megaadmin' OR
+                        role = 'mega_admin'
+                    )
                 )
             );
         $policy$, tbl);

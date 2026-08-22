@@ -21,7 +21,10 @@ const PUBLIC_PATHS = [
 const isMegaAdmin = (profile: any) => {
   const role = String(profile?.role || '').toLowerCase();
   return (
-    (role === 'superadmin' || role === 'super_admin') &&
+    (role === 'superadmin' ||
+      role === 'super_admin' ||
+      role === 'megaadmin' ||
+      role === 'mega_admin') &&
     !profile?.organization?.is_reseller
   );
 };

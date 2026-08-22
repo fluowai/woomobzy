@@ -547,7 +547,7 @@ REGRAS OBRIGATÓRIAS:
     const config = {
       jsonMode: true,
       temperature: 0.3,
-      maxTokens: 8192,
+      maxTokens: 4096,
       topP: 0.9
     };
     

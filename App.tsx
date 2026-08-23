@@ -21,10 +21,11 @@ import MegaAdminGuard from './components/MegaAdminGuard';
 import SubscriptionGuard from './components/SubscriptionGuard';
 import PanelGuard from './components/PanelGuard';
 import { Toaster } from 'sonner';
+import { getAuthenticatedPanelPath } from './src/lib/panelNavigation';
 
 // Context
 import { SettingsProvider, useSettings } from './context/SettingsContext';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { TextsProvider } from './context/TextsContext';
 import { PlansProvider } from './context/PlansContext';
 
@@ -35,6 +36,23 @@ import SystemSalesPage from './views/SystemSalesPage';
 import Login from './views/Login';
 import Onboarding from './views/Onboarding';
 import SetupWhitelabel from './views/SetupWhitelabel';
+
+const HomeRoute: React.FC = () => {
+  const { user, profile, isImpersonating, loading } = useAuth();
+
+  if (loading) return <FullScreenSpinner />;
+
+  if (user && profile) {
+    return (
+      <Navigate
+        to={getAuthenticatedPanelPath(profile, isImpersonating)}
+        replace
+      />
+    );
+  }
+
+  return <SystemSalesPage />;
+};
 
 // Lazy Loaded Views
 const Register = lazy(() => import('./views/Register'));
@@ -216,7 +234,7 @@ const AppContent: React.FC = () => {
       <SuperAdminGuard>
         <Routes>
           {/* ====== PUBLIC ROUTES ====== */}
-          <Route path="/" element={<SystemSalesPage />} />
+          <Route path="/" element={<HomeRoute />} />
           <Route path="/vendas" element={<SystemSalesPage />} />
           <Route path="/consultoria" element={<SystemSalesPage />} />
           <Route

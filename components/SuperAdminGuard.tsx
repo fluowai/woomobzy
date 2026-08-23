@@ -1,6 +1,11 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import {
+  getTenantPanelPath,
+  isMegaAdminProfile,
+  isPlatformAdminRole,
+} from '../src/lib/panelNavigation';
 import FullScreenSpinner from './FullScreenSpinner';
 
 const PUBLIC_PATHS = [
@@ -34,19 +39,12 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
   if (loading) return <FullScreenSpinner />;
 
   const role = (profile?.role || '').toLowerCase();
-  
-  const isSuperAdmin = (
-    role === 'superadmin' ||
-    role === 'super_admin' ||
-    role === 'megaadmin' ||
-    role === 'mega_admin'
-  );
+  const isSuperAdmin = isPlatformAdminRole(role);
 
   if (isSuperAdmin && !isImpersonating) {
     const path = location.pathname;
     const isCurrentPathPublic = isPublicPath(path);
-
-    const isMegaAdmin = !profile?.organization?.is_reseller;
+    const isMegaAdmin = isMegaAdminProfile(profile);
 
     if (isMegaAdmin) {
       if (
@@ -67,11 +65,10 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
         return <Navigate to="/superadmin" replace />;
       }
     }
-  } else if (profile && !['superadmin', 'super_admin', 'megaadmin', 'mega_admin'].includes(role || '') && !isImpersonating) {
+  } else if (profile && !isPlatformAdminRole(role) && !isImpersonating) {
     const path = location.pathname;
     if (path.startsWith('/megaadmin') || path.startsWith('/superadmin')) {
-      const niche = profile?.organization?.niche;
-      const target = niche === 'rural' ? '/rural' : '/urban';
+      const target = getTenantPanelPath(profile);
       return <Navigate to={target} replace />;
     }
   }

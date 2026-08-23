@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
+import { getAuthenticatedPanelPath } from '../src/lib/panelNavigation';
 import { COMMERCIAL_PRODUCT_NAME } from '../utils/branding';
 import {
   AlertCircle,
@@ -45,7 +46,13 @@ const Login: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const { signIn, user, profile, loading: authLoading } = useAuth();
+  const {
+    signIn,
+    user,
+    profile,
+    isImpersonating,
+    loading: authLoading,
+  } = useAuth();
   const { settings } = useSettings();
 
   const displayProductName = settings?.agencyName || COMMERCIAL_PRODUCT_NAME;
@@ -87,18 +94,12 @@ const Login: React.FC = () => {
   }
 
   if (user && profile) {
-    const role = profile.role?.toLowerCase();
-    
-    if (role === 'superadmin' || role === 'super_admin') {
-      const isMegaAdmin = !profile.organization?.is_reseller;
-      return <Navigate to={isMegaAdmin ? "/megaadmin" : "/superadmin"} replace />;
-    }
-    
-    if (profile.organization?.niche === 'rural') {
-      return <Navigate to="/rural" replace />;
-    } else if (profile.organization_id) {
-      return <Navigate to="/urban" replace />;
-    }
+    return (
+      <Navigate
+        to={getAuthenticatedPanelPath(profile, isImpersonating)}
+        replace
+      />
+    );
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

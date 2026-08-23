@@ -166,6 +166,19 @@ async function ensureManageableOrganizations(req, organizationIds) {
   };
 }
 
+function normalizeProfileRow(profile) {
+  if (!profile) return null;
+  return {
+    ...profile,
+    full_name: profile.full_name || profile.name || '',
+    approved: profile.approved !== false,
+  };
+}
+
+function getOwnProfileOrgId(req) {
+  return req.orgId || req.realOrgId || null;
+}
+
 function normalizeNiche(niche, ...signals) {
   const normalized = String(niche || '')
     .toLowerCase()
@@ -1426,6 +1439,153 @@ async function createOrganizationWithTransaction({ payload, normalizedCustomDoma
 }
 
 // --- 👥 User Management (Tenant Isolated) ---
+
+router.get('/users', verifyAdmin, requireTenant, async (req, res) => {
+  try {
+    const organizationId = getOwnProfileOrgId(req);
+    if (!organizationId) {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, email, name, full_name, role, approved, created_at, organization_id')
+        .eq('id', req.user?.id || '')
+        .maybeSingle();
+      if (error) throw error;
+      return res.json({
+        success: true,
+        users: data ? [normalizeProfileRow(data)] : [],
+      });
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, email, name, full_name, role, approved, created_at, organization_id')
+      .eq('organization_id', organizationId)
+      .neq('role', 'superadmin')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      users: (data || []).map(normalizeProfileRow),
+    });
+  } catch (error) {
+    console.error('[Admin] Error listing scoped users:', error.message);
+    res.status(500).json({ error: 'Erro ao listar usuarios' });
+  }
+});
+
+router.patch('/users/:id', verifyAdmin, requireTenant, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const organizationId = getOwnProfileOrgId(req);
+    const payload = {};
+
+    if (req.body?.approved !== undefined) {
+      payload.approved = Boolean(req.body.approved);
+    }
+
+    if (req.body?.role !== undefined) {
+      const role = String(req.body.role || '').toLowerCase().trim();
+      if (!['admin', 'broker', 'gerente', 'assistente', 'user'].includes(role)) {
+        return res.status(400).json({ error: 'Nivel de acesso invalido' });
+      }
+      payload.role = role;
+    }
+
+    if (Object.keys(payload).length === 0) {
+      return res.status(400).json({ error: 'Nada para atualizar' });
+    }
+
+    let query = supabase
+      .from('profiles')
+      .update({ ...payload, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .neq('role', 'superadmin');
+
+    if (organizationId) {
+      query = query.eq('organization_id', organizationId);
+    } else {
+      query = query.eq('id', req.user?.id || '');
+    }
+
+    const { data, error } = await query
+      .select('id, email, name, full_name, role, approved, created_at, organization_id')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
+      return res.status(404).json({ error: 'Usuario nao encontrado' });
+    }
+
+    res.json({ success: true, user: normalizeProfileRow(data) });
+  } catch (error) {
+    console.error('[Admin] Error updating scoped user:', error.message);
+    res.status(500).json({ error: 'Erro ao atualizar usuario' });
+  }
+});
+
+router.get('/team', verifySuperAdmin, async (req, res) => {
+  try {
+    const organizationId = getOwnProfileOrgId(req);
+    let query = supabase
+      .from('profiles')
+      .select('id, email, name, full_name, role, created_at, organization_id')
+      .eq('role', 'superadmin');
+
+    if (organizationId) {
+      query = query.eq('organization_id', organizationId);
+    } else {
+      query = query.eq('id', req.user?.id || '');
+    }
+
+    const { data, error } = await query.order('created_at', {
+      ascending: false,
+    });
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      staff: (data || []).map(normalizeProfileRow),
+    });
+  } catch (error) {
+    console.error('[Admin] Error listing scoped team:', error.message);
+    res.status(500).json({ error: 'Erro ao listar equipe' });
+  }
+});
+
+router.patch('/team/:id/demote', verifySuperAdmin, async (req, res) => {
+  try {
+    const organizationId = getOwnProfileOrgId(req);
+    let query = supabase
+      .from('profiles')
+      .update({ role: 'broker', updated_at: new Date().toISOString() })
+      .eq('id', req.params.id)
+      .eq('role', 'superadmin');
+
+    if (organizationId) {
+      query = query.eq('organization_id', organizationId);
+    } else {
+      query = query.eq('id', req.user?.id || '');
+    }
+
+    const { data, error } = await query
+      .select('id, email, name, full_name, role, created_at, organization_id')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
+      return res.status(404).json({ error: 'Membro nao encontrado' });
+    }
+
+    clearProfileCache(data.id, data.email);
+    res.json({ success: true, user: normalizeProfileRow(data) });
+  } catch (error) {
+    console.error('[Admin] Error demoting scoped team member:', error.message);
+    res.status(500).json({ error: 'Erro ao remover acesso' });
+  }
+});
 
 router.put(
   '/users/:id/password',

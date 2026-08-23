@@ -1,5 +1,18 @@
 # Verificação
 
+## 2026-08-23 — Hotfix de recursão RLS em profiles
+
+- Sintoma em produção: `GET /rest/v1/profiles?...id=eq.df587a67...` retornou 500 com `42P17 infinite recursion detected in policy for relation "profiles"`.
+- Causa confirmada por inspeção: policy `profiles_select_same_org_or_reseller_or_mega` chamava helpers que consultam `public.profiles`, criando recursão na própria tabela.
+- Criada migration `migrations/20260823_fix_profiles_rls_recursion.sql` para remover policies recursivas de `profiles` e recriar `profiles_select_own`/`profiles_update_self` sem subqueries.
+- `UserManagement` e `TeamManager` deixaram de consultar `profiles` diretamente no browser; agora usam `/api/admin/users` e `/api/admin/team`, ambos escopados no backend.
+- `node --check server/routes/admin.js`: passou.
+- `npm run type-check`: passou.
+- `npx vitest run --pool=threads --maxWorkers=1 server/__tests__/adminOrganizationsFallback.test.ts`: 5/5 passaram. Sem `--maxWorkers=1`, o worker do Vitest voltou a expirar antes dos testes.
+- `npm run build`: passou.
+- `git diff --check`: passou.
+- Pendência operacional: aplicar `migrations/20260823_fix_profiles_rls_recursion.sql`, subir nova imagem Docker/Portainer e retestar login + tela de usuários com mega admin, revenda A e revenda B.
+
 ## 2026-08-23 — Correção crítica de isolamento Super Admin / Revenda
 
 - `node --check server/routes/admin.js`: passou.

@@ -1,5 +1,15 @@
 # Handoff
 
+## 2026-08-23 — Hotfix de recursão RLS em profiles
+
+- Após aplicar `20260823_fix_reseller_tenant_isolation.sql`, o login que consulta `public.profiles` começou a falhar com HTTP 500 / `42P17 infinite recursion detected in policy for relation "profiles"`.
+- Causa: policy de SELECT em `profiles` chamava helpers que também leem `profiles`; isso recursiona na própria tabela.
+- Criada migration `migrations/20260823_fix_profiles_rls_recursion.sql`: remove policies recursivas (`profiles_select_same_org_or_reseller_or_mega`, `profiles_update_same_reseller_team`, legadas) e recria apenas `profiles_select_own` e `profiles_update_self`, ambas sem subqueries.
+- Decisão implementada: leitura/edição administrativa cross-user em `profiles` agora passa por backend service-role com escopo explícito, não por RLS direta no browser.
+- Novas rotas: `GET/PATCH /api/admin/users` para usuários do tenant atual e `GET/PATCH /api/admin/team` para equipe Super Admin da própria organização.
+- `views/admin/UserManagement.tsx` e `views/superadmin/TeamManager.tsx` deixaram de consultar `profiles` diretamente.
+- Próximo passo imediato: aplicar a migration no Supabase, subir nova imagem Docker/Portainer e retestar o profile bootstrap do usuário `df587a67-d525-4e01-9ff6-c82ba596fb13` + isolamento da tela de usuários.
+
 ## 2026-08-23 — Correção crítica de isolamento Super Admin / Revenda
 
 - Backend de `/api/admin/organizations` agora calcula escopo `mega`/`reseller`/`tenant` uma vez e reaplica em listagem, criação, edição, exclusão unitária, exclusão em lote, vínculo de perfil e modo suporte.

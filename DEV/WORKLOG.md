@@ -1,5 +1,25 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-23] Hotfix de recursão RLS em profiles
+
+### Causa raiz
+
+- A migration de isolamento de revenda criou uma policy de SELECT em `public.profiles` que chamava helpers (`is_superadmin`, `is_reseller_admin`, `get_my_org_id`) dependentes da própria tabela `profiles`.
+- Quando o frontend executava o bootstrap de autenticação (`SELECT id,email,name,role,... FROM profiles WHERE id = auth.uid()`), o Postgres aplicava a policy, que consultava `profiles` de novo, causando `42P17 infinite recursion detected in policy for relation "profiles"`.
+
+### Correção
+
+- Criada `migrations/20260823_fix_profiles_rls_recursion.sql`.
+- Removidas policies recursivas/legadas de `profiles`.
+- Criadas policies mínimas e não-recursivas: `profiles_select_own` e `profiles_update_self`.
+- A leitura/edição administrativa de perfis de outros usuários passou para o backend com service role e escopo explícito.
+- `UserManagement` agora usa `/api/admin/users`; `TeamManager` agora usa `/api/admin/team`.
+
+### Verificação
+
+- `node --check server/routes/admin.js`, type-check, build, `git diff --check` e Vitest direcionado com worker único passaram.
+- Reteste funcional depende de aplicar a migration, subir a nova imagem Docker/Portainer e refazer login/refresh do usuário afetado.
+
 ## [2026-08-22] Correção do Agent Architect com Groq
 
 ### Causa raiz

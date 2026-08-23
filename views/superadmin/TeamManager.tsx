@@ -1,7 +1,7 @@
 import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { supabase } from '../../services/supabase';
+import { callApi } from '../../src/lib/api';
 import {
   Users,
   UserPlus,
@@ -10,11 +10,9 @@ import {
   Calendar,
   Trash2,
   Search,
-  MoreHorizontal,
   UserCheck,
   ShieldAlert,
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
 
 interface StaffProfile {
   id: string;
@@ -25,7 +23,6 @@ interface StaffProfile {
 }
 
 const TeamManager: React.FC = () => {
-  const { profile } = useAuth();
   const [staff, setStaff] = useState<StaffProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -40,23 +37,8 @@ const TeamManager: React.FC = () => {
   const fetchStaff = async () => {
     try {
       setLoading(true);
-      const isMegaAdmin =
-        profile?.role === 'superadmin' && !profile?.organization?.is_reseller;
-      let query = supabase
-        .from('profiles')
-        .select('*, full_name:name')
-        .eq('role', 'superadmin');
-
-      if (!isMegaAdmin && profile?.organization_id) {
-        query = query.eq('organization_id', profile.organization_id);
-      } else if (!isMegaAdmin) {
-        query = query.eq('id', profile?.id || '');
-      }
-
-      const { data, error } = await query.order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setStaff(data || []);
+      const data = await callApi('/api/admin/team');
+      setStaff(data.staff || []);
     } catch (err) {
       logger.error('Error fetching staff:', err);
     } finally {
@@ -79,7 +61,7 @@ const TeamManager: React.FC = () => {
       setIsInviteModalOpen(false);
       setInviteEmail('');
       setInviteName('');
-    } catch (err) {
+    } catch {
       toast.error('Erro ao enviar convite.');
     }
   };
@@ -90,25 +72,10 @@ const TeamManager: React.FC = () => {
 
     try {
       // Demote to broker instead of deleting
-      const isMegaAdmin =
-        profile?.role === 'superadmin' && !profile?.organization?.is_reseller;
-      let query = supabase
-        .from('profiles')
-        .update({ role: 'broker' })
-        .eq('id', id);
-
-      if (!isMegaAdmin && profile?.organization_id) {
-        query = query.eq('organization_id', profile.organization_id);
-      } else if (!isMegaAdmin) {
-        query = query.eq('id', profile?.id || '');
-      }
-
-      const { error } = await query;
-
-      if (error) throw error;
+      await callApi(`/api/admin/team/${id}/demote`, { method: 'PATCH' });
       fetchStaff();
       toast.success('Acesso removido com sucesso.');
-    } catch (err) {
+    } catch {
       toast.error('Erro ao remover acesso.');
     }
   };

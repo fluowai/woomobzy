@@ -1,7 +1,5 @@
 import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../services/supabase';
-import { useAuth } from '../../context/AuthContext';
 import { callApi } from '../../src/lib/api';
 import { toast } from 'sonner';
 
@@ -31,8 +29,6 @@ interface UserProfile {
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
-  const { profile, isImpersonating } = useAuth();
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
   const [processing, setProcessing] = useState<string | null>(null);
 
@@ -47,46 +43,11 @@ const UserManagement: React.FC = () => {
   }, []);
 
   const fetchUsers = async () => {
-    setLoading(true);
     try {
-      let query = supabase
-        .from('profiles')
-        .select('*, full_name:name')
-        .order('created_at', { ascending: false });
-
-      // Filtragem por Organização (Privacidade)
-      const shouldScopeToOrganization =
-        profile?.role !== 'superadmin' ||
-        isImpersonating ||
-        profile?.organization?.is_reseller;
-
-      if (shouldScopeToOrganization) {
-        if (profile?.organization_id) {
-          query = query.eq('organization_id', profile.organization_id);
-          // Ocultar membros que são superadmins ou donos do sistema
-          query = query.neq('role', 'superadmin');
-          query = query.not(
-            'email',
-            'in',
-            '("admin@imobzy.com","fluowai@gmail.com")'
-          );
-        } else {
-          // Segurança máxima: se não tem org_id, só vê a si mesmo
-          query = query.eq('id', profile?.id);
-        }
-      } else {
-        // Superadmin vê tudo, mas talvez queira filtrar por org se estiver simulando
-        // (Isso pode ser expandido depois)
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      setUsers(data || []);
+      const data = await callApi('/api/admin/users');
+      setUsers(data.users || []);
     } catch (error) {
       logger.error('Error fetching users:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -96,15 +57,15 @@ const UserManagement: React.FC = () => {
   ) => {
     setProcessing(userId);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', userId);
-
-      if (error) throw error;
+      const data = await callApi(`/api/admin/users/${userId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates),
+      });
 
       // Optimistic update
-      setUsers(users.map((u) => (u.id === userId ? { ...u, ...updates } : u)));
+      setUsers(
+        users.map((u) => (u.id === userId ? { ...u, ...data.user } : u))
+      );
     } catch (error) {
       logger.error('Error updating user:', error);
       toast.error('Erro ao atualizar usuário.');

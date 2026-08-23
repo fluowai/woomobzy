@@ -1,5 +1,16 @@
 # Handoff
 
+## 2026-08-23 — Correção crítica de isolamento Super Admin / Revenda
+
+- Backend de `/api/admin/organizations` agora calcula escopo `mega`/`reseller`/`tenant` uma vez e reaplica em listagem, criação, edição, exclusão unitária, exclusão em lote, vínculo de perfil e modo suporte.
+- Revenda só gerencia organizações filhas com `parent_id = req.realOrgId` e `is_reseller = false`; mega admin real segue com escopo global.
+- Fallback de listagem via token e fallback direto via Postgres agora respeitam o mesmo escopo.
+- Frontend: `views/admin/UserManagement.tsx` filtra usuários pelo tenant em modo suporte; `views/superadmin/TeamManager.tsx` limita revendas à própria equipe.
+- Migration pronta: `migrations/20260823_fix_reseller_tenant_isolation.sql` redefine `public.is_superadmin()` como mega admin real, cria helpers de revenda e recria policies de `organizations`, `profiles` e `superadmin_bypass`.
+- Verificação local passou: node check, Vitest direcionado 5/5, type-check, build, lint com código zero e `git diff --check`.
+- Nenhum commit, push, deploy ou migration em banco foi executado.
+- Próximo passo obrigatório: aplicar a migration em homologação e testar negativo/positivo com mega admin, duas revendas e imobiliárias/leads/usuários separados.
+
 ## 2026-08-20 — Fix de 500 ao excluir Cliente Direto (Mega Admin)
 
 - `DELETE /api/mega/direct-clients/:id` agora desvincula dependências e usa fallback transacional (`server/lib/organization-deletion.js`) quando há FK sem cascade, retornando 200 em vez de 500.

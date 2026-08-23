@@ -31,7 +31,7 @@ interface UserProfile {
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
-  const { profile } = useAuth();
+  const { profile, isImpersonating } = useAuth();
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
   const [processing, setProcessing] = useState<string | null>(null);
@@ -55,7 +55,12 @@ const UserManagement: React.FC = () => {
         .order('created_at', { ascending: false });
 
       // Filtragem por Organização (Privacidade)
-      if (profile?.role !== 'superadmin') {
+      const shouldScopeToOrganization =
+        profile?.role !== 'superadmin' ||
+        isImpersonating ||
+        profile?.organization?.is_reseller;
+
+      if (shouldScopeToOrganization) {
         if (profile?.organization_id) {
           query = query.eq('organization_id', profile.organization_id);
           // Ocultar membros que são superadmins ou donos do sistema

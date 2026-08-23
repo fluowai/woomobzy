@@ -81,6 +81,91 @@ const storageHandler = (fn) => async (req, res) => {
   }
 };
 
+async function getSuperAdminOrganizationScope(req) {
+  if (req.userRole !== 'superadmin') {
+    return { kind: 'tenant', organizationId: req.orgId || req.realOrgId };
+  }
+
+  if (!req.realOrgId) {
+    return { kind: 'mega', organizationId: null };
+  }
+
+  const { data: org, error } = await supabase
+    .from('organizations')
+    .select('id, is_reseller')
+    .eq('id', req.realOrgId)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  return org?.is_reseller
+    ? { kind: 'reseller', organizationId: req.realOrgId }
+    : { kind: 'mega', organizationId: req.realOrgId };
+}
+
+function scopeOrganizationsQuery(query, scope) {
+  if (scope.kind === 'reseller') {
+    return query.eq('parent_id', scope.organizationId).eq('is_reseller', false);
+  }
+
+  if (scope.kind === 'tenant') {
+    return query.eq('id', scope.organizationId);
+  }
+
+  return query;
+}
+
+export function assertManageableOrganization(scope, organization) {
+  if (!organization) return false;
+  if (scope.kind === 'mega') return true;
+  if (scope.kind === 'tenant') return organization.id === scope.organizationId;
+
+  return (
+    organization.parent_id === scope.organizationId &&
+    organization.is_reseller !== true
+  );
+}
+
+async function getManageableOrganization(req, organizationId) {
+  const scope = await getSuperAdminOrganizationScope(req);
+  const { data: organization, error } = await supabase
+    .from('organizations')
+    .select('id, name, custom_domain, parent_id, is_reseller')
+    .eq('id', organizationId)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  if (!assertManageableOrganization(scope, organization)) {
+    return { scope, organization: null };
+  }
+
+  return { scope, organization };
+}
+
+async function ensureManageableOrganizations(req, organizationIds) {
+  const scope = await getSuperAdminOrganizationScope(req);
+  if (scope.kind === 'mega') return { scope, organizationIds };
+
+  const { data, error } = await supabase
+    .from('organizations')
+    .select('id, parent_id, is_reseller')
+    .in('id', organizationIds);
+
+  if (error) throw error;
+
+  const allowedIds = new Set(
+    (data || [])
+      .filter((organization) => assertManageableOrganization(scope, organization))
+      .map((organization) => organization.id)
+  );
+
+  return {
+    scope,
+    organizationIds: organizationIds.filter((id) => allowedIds.has(id)),
+  };
+}
+
 function normalizeNiche(niche, ...signals) {
   const normalized = String(niche || '')
     .toLowerCase()
@@ -589,13 +674,10 @@ async function handleCreateImpersonationSession(
   }
 
   try {
-    const { data: org, error } = await supabase
-      .from('organizations')
-      .select('id, name')
-      .eq('id', organizationId)
-      .maybeSingle();
-
-    if (error) throw error;
+    const { organization: org } = await getManageableOrganization(
+      req,
+      organizationId
+    );
     if (!org) {
       return res.status(404).json({ error: 'Organizacao nao encontrada' });
     }
@@ -656,24 +738,14 @@ router.get('/organizations', verifySuperAdmin, async (req, res) => {
       `[Admin] 🏢 Fetching organizations for superadmin: ${req.user?.email}`
     );
 
-    // If user is a reseller, only show their child organizations
+    const scope = await getSuperAdminOrganizationScope(req);
     let query = supabase
       .from('organizations')
       .select(
         'id, name, slug, custom_domain, owner_name, owner_email, status, plan_id, niche, subscription_status, trial_ends_at, created_at, updated_at'
       );
 
-    if (req.realOrgId) {
-      const { data: org } = await supabase
-        .from('organizations')
-        .select('is_reseller')
-        .eq('id', req.realOrgId)
-        .maybeSingle();
-
-      if (org?.is_reseller) {
-        query = query.eq('parent_id', req.realOrgId);
-      }
-    }
+    query = scopeOrganizationsQuery(query, scope);
 
     const { data, error } = await query.order('created_at', {
       ascending: false,
@@ -686,7 +758,10 @@ router.get('/organizations', verifySuperAdmin, async (req, res) => {
         error
       );
       if (isInvalidSupabaseApiKeyError(error)) {
-        const userTokenFallback = await queryOrganizationsWithUserToken(req);
+        const userTokenFallback = await queryOrganizationsWithUserToken(
+          req,
+          scope
+        );
         if (!userTokenFallback.error) {
           return res.json({
             success: true,
@@ -698,7 +773,7 @@ router.get('/organizations', verifySuperAdmin, async (req, res) => {
           userTokenFallback.error
         );
 
-        const directDbFallback = await queryOrganizationsWithDirectDb();
+        const directDbFallback = await queryOrganizationsWithDirectDb(scope);
         if (!directDbFallback.error) {
           return res.json({
             success: true,
@@ -753,10 +828,12 @@ router.post('/organizations', verifySuperAdmin, async (req, res) => {
     const normalizedCustomDomain = normalizeOptionalCustomDomain(custom_domain);
     await assertCustomDomainAvailable(normalizedCustomDomain);
 
+    const scope = await getSuperAdminOrganizationScope(req);
     const payload = {
       name,
       slug: slug || null,
       status: status || 'active',
+      is_reseller: false,
       custom_domain: normalizedCustomDomain,
       niche: normalizeNiche(
         niche,
@@ -774,17 +851,8 @@ router.post('/organizations', verifySuperAdmin, async (req, res) => {
       payload.selected_plan_at = new Date().toISOString();
     }
 
-    // If user is a reseller, set parent_id to their organization
-    if (req.realOrgId) {
-      const { data: org } = await supabase
-        .from('organizations')
-        .select('is_reseller')
-        .eq('id', req.realOrgId)
-        .maybeSingle();
-
-      if (org?.is_reseller) {
-        payload.parent_id = req.realOrgId;
-      }
+    if (scope.kind === 'reseller') {
+      payload.parent_id = scope.organizationId;
     }
 
     // Use transactional creation via direct DB if available, else Supabase
@@ -860,23 +928,17 @@ router.put('/organizations/:id', verifySuperAdmin, async (req, res) => {
       password,
       niche,
     } = req.body;
+    const { scope, organization: manageableOrganization } =
+      await getManageableOrganization(req, id);
+    if (!manageableOrganization) {
+      return res.status(404).json({ error: 'Imobiliaria nao encontrada' });
+    }
+
     let previousOrganization = null;
     let normalizedCustomDomain;
 
     if (custom_domain !== undefined) {
-      const { data: existingOrganization, error: existingError } =
-        await supabase
-          .from('organizations')
-          .select('id, custom_domain')
-          .eq('id', id)
-          .maybeSingle();
-
-      if (existingError) throw existingError;
-      if (!existingOrganization) {
-        return res.status(404).json({ error: 'Imobiliaria nao encontrada' });
-      }
-
-      previousOrganization = existingOrganization;
+      previousOrganization = manageableOrganization;
       normalizedCustomDomain = normalizeOptionalCustomDomain(custom_domain);
       await assertCustomDomainAvailable(normalizedCustomDomain, id);
     }
@@ -905,10 +967,13 @@ router.put('/organizations/:id', verifySuperAdmin, async (req, res) => {
     if (owner_name !== undefined) payload.owner_name = owner_name;
     if (owner_email !== undefined) payload.owner_email = owner_email;
 
-    const { data: organization, error: updateError } = await supabase
+    let updateQuery = supabase
       .from('organizations')
       .update(payload)
-      .eq('id', id)
+      .eq('id', id);
+    updateQuery = scopeOrganizationsQuery(updateQuery, scope);
+
+    const { data: organization, error: updateError } = await updateQuery
       .select()
       .single();
 
@@ -980,17 +1045,29 @@ router.post(
           .json({ error: 'Lista de imobiliarias contem IDs invalidos.' });
       }
 
-      await unlinkKnownOrganizationReferences(ids);
+      const { organizationIds: manageableIds } =
+        await ensureManageableOrganizations(req, ids);
+
+      if (manageableIds.length !== ids.length) {
+        return res.status(403).json({
+          error:
+            'Uma ou mais imobiliarias selecionadas nao pertencem ao seu escopo de acesso.',
+        });
+      }
+
+      await unlinkKnownOrganizationReferences(manageableIds);
 
       const { data, error } = await supabase
         .from('organizations')
         .delete()
-        .in('id', ids)
+        .in('id', manageableIds)
         .select('id');
 
       if (error) {
         if (isForeignKeyError(error)) {
-          const directDelete = await deleteOrganizationsWithDirectDb(ids);
+          const directDelete = await deleteOrganizationsWithDirectDb(
+            manageableIds
+          );
           if (!directDelete.error) {
             return res.json({
               success: true,
@@ -1019,16 +1096,20 @@ router.post(
   }
 );
 
-function queryOrganizations(client) {
-  return client
+function queryOrganizations(client, scope) {
+  const query = client
     .from('organizations')
     .select(
       'id, name, slug, custom_domain, owner_name, owner_email, status, plan_id, niche, subscription_status, trial_ends_at, created_at, updated_at'
-    )
-    .order('created_at', { ascending: false, nullsFirst: false });
+    );
+
+  return scopeOrganizationsQuery(query, scope).order('created_at', {
+    ascending: false,
+    nullsFirst: false,
+  });
 }
 
-async function queryOrganizationsWithUserToken(req) {
+async function queryOrganizationsWithUserToken(req, scope) {
   const token = getBearerToken(req);
   const url = (
     process.env.VITE_SUPABASE_URL ||
@@ -1062,7 +1143,7 @@ async function queryOrganizationsWithUserToken(req) {
     },
   });
 
-  return queryOrganizations(userScopedSupabase);
+  return queryOrganizations(userScopedSupabase, scope);
 }
 
 function getBearerToken(req) {
@@ -1099,7 +1180,7 @@ function sendSupabaseServiceKeyError(res, errors = {}) {
   return res.status(503).json(response);
 }
 
-export async function queryOrganizationsWithDirectDb() {
+export async function queryOrganizationsWithDirectDb(scope = { kind: 'mega' }) {
   const rawConnectionString = getDirectDatabaseUrl();
   const connectionString = normalizeDirectDatabaseUrl(rawConnectionString);
   if (!connectionString) {
@@ -1122,7 +1203,9 @@ export async function queryOrganizationsWithDirectDb() {
   });
 
   try {
-    const result = await pool.query(`
+    const scopedToReseller = scope.kind === 'reseller' && scope.organizationId;
+    const result = await pool.query(
+      `
       SELECT
         o.id,
         o.name,
@@ -1147,8 +1230,11 @@ export async function queryOrganizationsWithDirectDb() {
         THEN (to_jsonb(o)->>'plan_id')::uuid
         ELSE NULL
       END
+      WHERE ($1::uuid IS NULL OR (o.parent_id = $1::uuid AND COALESCE(o.is_reseller, false) = false))
       ORDER BY o.created_at DESC NULLS LAST
-    `);
+    `,
+      [scopedToReseller ? scope.organizationId : null]
+    );
 
     return { data: result.rows, error: null };
   } catch (error) {
@@ -1161,10 +1247,18 @@ export async function queryOrganizationsWithDirectDb() {
 router.delete('/organizations/:id', verifySuperAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { data, error } = await supabase
+    const { scope, organization } = await getManageableOrganization(req, id);
+    if (!organization) {
+      return res.status(404).json({ error: 'Imobiliaria nao encontrada' });
+    }
+
+    let deleteQuery = supabase
       .from('organizations')
       .delete()
-      .eq('id', id)
+      .eq('id', id);
+    deleteQuery = scopeOrganizationsQuery(deleteQuery, scope);
+
+    const { data, error } = await deleteQuery
       .select('id')
       .maybeSingle();
 
@@ -1189,13 +1283,12 @@ router.post('/link-profile', verifySuperAdmin, async (req, res) => {
         .json({ error: 'email e organization_id sao obrigatorios' });
     }
 
-    const { data: org, error: orgError } = await supabase
-      .from('organizations')
-      .select('id, name')
-      .eq('id', organization_id)
-      .maybeSingle();
+    const { scope, organization: org } = await getManageableOrganization(
+      req,
+      organization_id
+    );
 
-    if (orgError || !org) {
+    if (!org) {
       return res.status(404).json({ error: 'Organizacao nao encontrada' });
     }
 
@@ -1215,6 +1308,13 @@ router.post('/link-profile', verifySuperAdmin, async (req, res) => {
       return res.json({
         success: true,
         message: `Perfil de ${email} ja esta vinculado a ${org.name}.`,
+      });
+    }
+
+    if (scope.kind !== 'mega' && profile.organization_id) {
+      return res.status(403).json({
+        error:
+          'Nao autorizado: o perfil ja pertence a outra organizacao fora do seu escopo.',
       });
     }
 

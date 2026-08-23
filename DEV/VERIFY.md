@@ -1,5 +1,15 @@
 # Verificação
 
+## 2026-08-23 — Correção crítica de isolamento Super Admin / Revenda
+
+- `node --check server/routes/admin.js`: passou.
+- `npx vitest run --pool=threads server/__tests__/adminOrganizationsFallback.test.ts`: 5/5 passaram.
+- `npm run type-check`: passou sem erros.
+- `npm run build`: passou.
+- `npm run lint`: código zero, 0 erros e 716 warnings preexistentes/de dívida técnica.
+- `git diff --check`: passou.
+- Pendência operacional: aplicar e validar `migrations/20260823_fix_reseller_tenant_isolation.sql` em homologação/produção com contas reais de mega admin, revenda A, revenda B e imobiliárias filhas.
+
 ## 2026-08-20 — Fix de 500 no DELETE de Cliente Direto (Mega Admin)
 
 - `node --check` OK em `server/lib/organization-deletion.js`, `server/routes/mega-admin.js` e `server/routes/admin.js`.

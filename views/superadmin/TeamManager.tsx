@@ -40,13 +40,17 @@ const TeamManager: React.FC = () => {
   const fetchStaff = async () => {
     try {
       setLoading(true);
+      const isMegaAdmin =
+        profile?.role === 'superadmin' && !profile?.organization?.is_reseller;
       let query = supabase
         .from('profiles')
         .select('*, full_name:name')
         .eq('role', 'superadmin');
 
-      if (profile?.organization?.slug !== 'super-admin-org' && profile?.organization_id) {
+      if (!isMegaAdmin && profile?.organization_id) {
         query = query.eq('organization_id', profile.organization_id);
+      } else if (!isMegaAdmin) {
+        query = query.eq('id', profile?.id || '');
       }
 
       const { data, error } = await query.order('created_at', { ascending: false });
@@ -86,10 +90,20 @@ const TeamManager: React.FC = () => {
 
     try {
       // Demote to broker instead of deleting
-      const { error } = await supabase
+      const isMegaAdmin =
+        profile?.role === 'superadmin' && !profile?.organization?.is_reseller;
+      let query = supabase
         .from('profiles')
         .update({ role: 'broker' })
         .eq('id', id);
+
+      if (!isMegaAdmin && profile?.organization_id) {
+        query = query.eq('organization_id', profile.organization_id);
+      } else if (!isMegaAdmin) {
+        query = query.eq('id', profile?.id || '');
+      }
+
+      const { error } = await query;
 
       if (error) throw error;
       fetchStaff();

@@ -379,6 +379,34 @@ Cinco endpoints estavam falhando no console:
 
 ---
 
+## [2026-08-23] Correção crítica de isolamento Super Admin / Revenda
+
+### Causa raiz
+
+- O backend tratava qualquer `role = superadmin` como administrador global em partes do fluxo, incluindo modo suporte, edição e exclusão de organizações.
+- O endpoint `/api/admin/organizations` filtrava a listagem principal para revendas, mas fallbacks por token/DB e ações por ID não reaplicavam o mesmo escopo.
+- Políticas RLS antigas usavam `role = 'superadmin'` como bypass global, permitindo que uma revenda fosse tratada como mega admin em tabelas de tenant.
+- Telas de equipe/usuários tinham consultas diretas em `profiles` com lógica “superadmin vê tudo”.
+
+### Correção
+
+- Criado escopo central no backend: `mega`, `reseller` e `tenant`.
+- Revenda agora só lista, cria, edita, exclui, vincula perfil e inicia modo suporte para organizações filhas (`parent_id = organization_id da revenda`, `is_reseller = false`).
+- Fallbacks de listagem por token e Postgres direto passaram a receber o mesmo escopo.
+- Gestão de usuários em modo suporte passou a filtrar pelo `organization_id` impersonado.
+- Gestão de equipe Super Admin passou a limitar revendas à própria organização.
+- Criada migration `migrations/20260823_fix_reseller_tenant_isolation.sql` redefinindo o bypass global RLS para mega admin real e recriando policies de `organizations`, `profiles` e `superadmin_bypass`.
+
+### Verificação
+
+- `node --check server/routes/admin.js`: passou.
+- `npx vitest run --pool=threads server/__tests__/adminOrganizationsFallback.test.ts`: 5/5 passaram.
+- `npm run type-check`: passou.
+- `npm run build`: passou.
+- `npm run lint`: código zero; 716 warnings preexistentes/de dívida técnica.
+- `git diff --check`: passou.
+- Migration criada, mas não aplicada em produção/homologação nesta sessão.
+
 ## [2026-07-28] Recuperação do QR Code do WhatsMeow
 
 ### Causa raiz

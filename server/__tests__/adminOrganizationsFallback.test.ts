@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { isInvalidSupabaseApiKeyError } from '../routes/admin.js';
+import {
+  assertManageableOrganization,
+  isInvalidSupabaseApiKeyError,
+} from '../routes/admin.js';
 import {
   normalizeDirectDatabaseUrl,
   shouldUseSsl,
@@ -38,5 +41,44 @@ describe('admin organizations fallback helpers', () => {
     expect(shouldUseSsl('postgresql://user:pass@localhost:5432/postgres')).toBe(
       false
     );
+  });
+
+  it('scopes reseller admins to their own child organizations only', () => {
+    const scope = { kind: 'reseller', organizationId: 'reseller-1' };
+
+    expect(
+      assertManageableOrganization(scope, {
+        id: 'child-1',
+        parent_id: 'reseller-1',
+        is_reseller: false,
+      })
+    ).toBe(true);
+    expect(
+      assertManageableOrganization(scope, {
+        id: 'child-2',
+        parent_id: 'reseller-2',
+        is_reseller: false,
+      })
+    ).toBe(false);
+    expect(
+      assertManageableOrganization(scope, {
+        id: 'reseller-1',
+        parent_id: null,
+        is_reseller: true,
+      })
+    ).toBe(false);
+  });
+
+  it('allows mega admins to manage global organizations', () => {
+    expect(
+      assertManageableOrganization(
+        { kind: 'mega', organizationId: null },
+        {
+          id: 'any-org',
+          parent_id: 'any-reseller',
+          is_reseller: true,
+        }
+      )
+    ).toBe(true);
   });
 });

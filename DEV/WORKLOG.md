@@ -1,5 +1,42 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-08-23] Agentes de IA com prompt editável e conexão de canais
+
+### Correção
+
+- A tela de detalhe do agente agora carrega o prompt real da versão ativa, permite edição em textarea, mostra checklist de conversa profissional e salva via endpoint existente.
+- Criada aba de canais no detalhe do agente para conectar WhatsApp, Instagram ou Webchat por regra ativa de atendimento, preservando bloqueio quando houver humano ativo.
+- A aba `Agentes` do painel da operação ganhou orientação operacional e ações por agente: editar, canal e testar.
+- O backend passou a retornar versões no `GET /api/ai/agents/:id` e a criar uma versão inicial quando o agente ainda não tem `active_version_id`.
+
+### Verificação
+
+- `node --check server/api/ai/agents.routes.js`: passou.
+- `git diff --check`: passou.
+- `npm run type-check`, `npx tsc --noEmit --pretty false`, `npm run build` e ESLint focado ficaram inconclusivos por execução prolongada sem saída; os processos foram interrompidos.
+
+## [2026-08-23] Redirecionamento direto para painel por perfil
+
+### Diagnóstico
+
+- A rota raiz `/` renderizava sempre a vitrine `SystemSalesPage`, mesmo quando já existia sessão autenticada.
+- Isso fazia o usuário cair no painel/site geral e depender de clicar novamente em `Entrar no painel`.
+- A lógica de destino estava duplicada entre `Login`, `NicheRedirect`, `SuperAdminGuard` e `MegaAdminGuard`, com risco de decisões divergentes para rural, urbano, revenda e mega admin.
+
+### Correção
+
+- Criado `src/lib/panelNavigation.ts` como fonte única para resolver destino autenticado.
+- `/` agora usa `HomeRoute`: usuário logado com perfil vai direto para `/rural`, `/urban`, `/superadmin`, `/megaadmin` ou `/onboarding` conforme perfil/organização.
+- `Login`, `NicheRedirect`, `SuperAdminGuard`, `MegaAdminGuard` e `PanelGuard` passaram a reutilizar a mesma regra.
+- `MegaAdminGuard` deixou de mandar acessos inválidos para `/`, evitando retorno à vitrine pública.
+
+### Verificação
+
+- `npm run build`: passou.
+- ESLint direcionado nos arquivos alterados: passou sem saída de erro.
+- `git diff --check`: passou.
+- `npm run type-check` foi interrompido após ficar sem saída por tempo prolongado; o build Vite validou o bundle de produção.
+
 ## [2026-08-23] Hotfix de recursão RLS em profiles
 
 ### Causa raiz
@@ -506,3 +543,32 @@ Cinco endpoints estavam falhando no console:
 - `npm run type-check` sem erros.
 - ESLint do arquivo de teste sem erros.
 - Sem commit/push/deploy.
+## [2026-08-23] Auditoria da migração Lalbero CVCRM
+
+### Diagnóstico
+
+- Confirmado no Supabase que a organização Lalbero (`391d8df5-7297-42bd-a443-1aca77b1f0a1`) tem 4.867 leads migrados.
+- Todos os 4.867 leads estavam com `status = "Em Atendimento"`, que não pertence às etapas oficiais do Kanban (`Novo`, `Qualificação`, `Visita`, `Simulação`, `Documentação`, `Fechado`, `Perdido`, `Pessoal`).
+- O Kanban carrega 50 leads por etapa inicialmente; portanto, uma coluna customizada ou consulta nessa etapa exibe só o primeiro lote.
+- `lead_activities` e `chat_messages` estavam com 0 registros para a organização, confirmando que o histórico de atendimento não foi migrado.
+
+### Correção preparada
+
+- `scripts/migrateCvcrmLeads.js` foi refeito para usar variáveis de ambiente, rodar em dry-run por padrão, auditar dados, reorganizar status do Kanban e importar interações do endpoint CVDW de leads/interações.
+- Dry-run de reorganização calculou: `Novo` 4.790, `Qualificação` 47, `Perdido` 28, `Fechado` 1, `Simulação` 1.
+- Nenhuma escrita em banco foi executada nesta etapa.
+
+## [2026-08-23] Finaliza��o da Importa��o do Hist�rico CV CRM
+
+### Diagn�stico
+- O endpoint legado /v1/cvdw/leads/interacoes utilizado no script retornava 403 Forbidden devido a restri��es de permiss�o na chave da API para a Lalbero.
+- Tentativas de acessar os m�dulos empreendimentos e usuarios retornaram 405 Method Not Allowed, confirmando que a chave de API tem escopo restrito a leads comerciais.
+
+### Corre��o
+- O script scripts/migrateCvcrmLeads.js foi atualizado para consumir o endpoint comercial correto: /v1/comercial/leads/interacoes.
+- A importa��o do hist�rico foi orquestrada com sucesso: 85 intera��es do hist�rico (conversas, observa��es, liga��es) mapeadas e vinculadas aos leads no Kanban como atividades (tabela lead_activities).
+
+### Verifica��o
+- Migra��o rodou em dry-run primeiramente (50 records), retornando 100% de match sem duplicatas.
+- Execu��o oficial processou os 85 leads cruzando seus externalIds, gravando de forma �ntegra o tipo, timestamp e os metadados brutos do CV CRM.
+

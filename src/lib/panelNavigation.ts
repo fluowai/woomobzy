@@ -58,8 +58,14 @@ export function getAuthenticatedPanelPath(
 ) {
   if (!profile) return '/login';
 
-  if (isPlatformAdminRole(profile.role) && !isImpersonating) {
-    return isMegaAdminProfile(profile) ? '/megaadmin' : '/superadmin';
+  // Se o destino (real ou impersonado) for uma revenda, vai pro painel Super Admin
+  if (profile.organization?.is_reseller) {
+    return '/superadmin';
+  }
+
+  // Se for admin da plataforma na conta original e não for revenda, é Mega Admin
+  if (isMegaAdminProfile(profile) && !isImpersonating) {
+    return '/megaadmin';
   }
 
   if (!profile.organization_id && !isPlatformAdminRole(profile.role)) {

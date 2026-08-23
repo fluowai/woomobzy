@@ -572,3 +572,14 @@ Cinco endpoints estavam falhando no console:
 - Migração rodou em dry-run primeiramente (50 records), retornando 100% de match sem duplicatas.
 - Execução oficial processou os 85 leads cruzando seus externalIds, gravando de forma íntegra o tipo, timestamp e os metadados brutos do CV CRM.
 
+
+## [2026-08-23] Correção do Roteamento de Revendas (Impersonation)
+
+### Diagnóstico
+- Ao acessar uma Revenda (ex: delarazi) usando o modo suporte (impersonation) a partir da conta Mega Admin, o sistema estava redirecionando erroneamente para o painel de inquilinos (/urban).
+- Isso acontecia porque a lógica em getAuthenticatedPanelPath pulava a regra de Super Admin quando isImpersonating era verdadeiro.
+
+### Correção
+- Adicionada regra explícita no roteador global (src/lib/panelNavigation.ts) para que qualquer contexto (real ou impersonado) cuja organização alvo seja uma Revenda (is_reseller = true) resolva obrigatoriamente para a rota /superadmin.
+- O Mega Admin continua indo para /megaadmin ao logar na sua própria conta, e inquilinos normais continuam caindo em /urban ou /rural.
+

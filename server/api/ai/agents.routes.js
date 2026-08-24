@@ -217,7 +217,24 @@ router.get('/agents/:id', verifyAuth, requireTenant, async (req, res) => {
       throw error || new Error('Agent not found');
     }
 
-    res.json({ success: true, agent: hydrateAgent(agent) });
+    let versions = [];
+    try {
+      const { data: agentVersions, error: versionsError } = await supabase
+        .from('ai_agent_versions')
+        .select('*')
+        .eq('agent_id', id)
+        .order('created_at', { ascending: false });
+
+      if (versionsError && !isMissingRelationError(versionsError)) {
+        throw versionsError;
+      }
+
+      versions = agentVersions || [];
+    } catch (versionError) {
+      logger.warn('[AIAgents] Failed to load agent versions', { error: versionError.message });
+    }
+
+    res.json({ success: true, agent: hydrateAgent({ ...agent, versions }) });
   } catch (error) {
     handleRouteError(res, error, 'AGENT_GET');
   }
@@ -291,17 +308,66 @@ router.patch('/agents/:id/prompt', verifyAuth, requireTenant, async (req, res) =
     // Ensure the agent exists and has an active version
     const { data: agent, error: agentError } = await supabase
       .from('ai_agents')
-      .select('active_version_id')
+      .select('*')
       .eq('id', id)
       .eq('organization_id', req.orgId)
       .single();
 
-    if (agentError || !agent || !agent.active_version_id) {
+    if (agentError || !agent) {
       return res.status(404).json({
         success: false,
-        error: 'Agente ou versão ativa não encontrada',
-        code: 'AI_AGENT_VERSION_NOT_FOUND',
+        error: 'Agente nao encontrado',
+        code: 'AI_AGENT_NOT_FOUND',
       });
+    }
+
+    if (!agent.active_version_id) {
+      try {
+        const { data: version, error: createVersionError } = await supabase
+          .from('ai_agent_versions')
+          .insert({
+            agent_id: id,
+            version: '1.0',
+            prompt: { full: promptText },
+            model: 'gemini-1.5-pro',
+            model_config: { temperature: 0.4, maxTokens: 4096, topP: 0.9 },
+            tools: agent.tools || [],
+            permissions: [],
+            guardrails: {},
+            handoff_config: agent.handoff_rules || {},
+            memory_config: {},
+            workflow_config: {},
+            created_by: req.user.id
+          })
+          .select()
+          .single();
+
+        if (createVersionError) throw createVersionError;
+
+        await supabase
+          .from('ai_agents')
+          .update({
+            active_version_id: version.id,
+            instructions: promptText,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', id)
+          .eq('organization_id', req.orgId);
+
+        return res.json({ success: true, version });
+      } catch (versionCreateError) {
+        if (isMissingRelationError(versionCreateError)) {
+          const { error: legacyUpdateError } = await supabase
+            .from('ai_agents')
+            .update({ instructions: promptText, updated_at: new Date().toISOString() })
+            .eq('id', id)
+            .eq('organization_id', req.orgId);
+
+          if (legacyUpdateError) throw legacyUpdateError;
+          return res.json({ success: true, legacy: true });
+        }
+        throw versionCreateError;
+      }
     }
 
     // Get the current version to preserve any other prompt keys (like blocks)
@@ -324,6 +390,15 @@ router.patch('/agents/:id/prompt', verifyAuth, requireTenant, async (req, res) =
       .eq('id', agent.active_version_id);
 
     if (updateError) throw updateError;
+
+    await supabase
+      .from('ai_agents')
+      .update({
+        instructions: promptText,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .eq('organization_id', req.orgId);
 
     res.json({ success: true });
   } catch (error) {
@@ -806,6 +881,16 @@ router.post('/agents/conversations/:id/message', verifyAuth, requireTenant, asyn
         content: m.content
       }))
     ];
+
+    // Check if LLM is available before processing
+    const llmProvider = llm.getProviderForTask('conversation');
+    if (!llmProvider) {
+      return res.status(500).json({
+        success: false,
+        error: 'Nenhum provedor LLM configurado. Adicione chaves de API no painel de configurações.',
+        code: 'AI_LLM_NOT_CONFIGURED',
+      });
+    }
 
     // Call LLM with tools - with timeout
     const controller = new AbortController();

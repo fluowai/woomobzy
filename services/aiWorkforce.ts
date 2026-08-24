@@ -53,6 +53,16 @@ export interface AIAgent {
   redTeamIssues?: Array<Record<string, unknown>>;
 }
 
+export interface AIChannelRulePayload {
+  agent_id: string;
+  channel_type: 'whatsapp' | 'instagram' | 'webchat' | string;
+  instance_id?: string | null;
+  activation_rules?: Record<string, unknown>;
+  blocking_rules?: Record<string, unknown>;
+  schedule?: Record<string, unknown>;
+  priority?: number;
+}
+
 export interface OperationMetrics {
   period: string;
   agents: Array<{
@@ -168,6 +178,17 @@ export const getAgent = async (id: string): Promise<AIAgent> => {
   return data.agent;
 };
 
+export const updateAgent = async (
+  id: string,
+  updates: Partial<AIAgent>
+): Promise<AIAgent> => {
+  const data = await callApi(`/api/ai/agents/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+  return data.agent;
+};
+
 export const updateAgentPrompt = async (id: string, promptText: string): Promise<void> => {
   await callApi(`/api/ai/agents/${id}/prompt`, {
     method: 'PATCH',
@@ -221,4 +242,14 @@ export const listChannelRules = async (): Promise<{
   availableInstances: { whatsapp: unknown[]; instagram: unknown[] };
 }> => {
   return callApi('/api/ai/channels/rules');
+};
+
+export const createChannelRule = async (
+  payload: AIChannelRulePayload
+): Promise<Record<string, unknown>> => {
+  const data = await callApi('/api/ai/channels/rules', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  return data.rule;
 };

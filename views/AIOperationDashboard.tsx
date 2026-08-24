@@ -6,7 +6,7 @@ import {
   AlertTriangle, BarChart3, Loader2, Radio, GitBranch, Sparkles, ListChecks,
   ThumbsUp, TrendingUp, Wallet, Home, FileText, Search, Share2, Shield,
   ArrowUp, ArrowDown, MessageCircle, UserPlus, Timer, Hand, Search as SearchIcon,
-  GitFork, TestTube2, Database, Rocket
+  GitFork, TestTube2, Database, Rocket, Pencil, Link2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIPath } from '@/src/hooks/usePanelBase';
@@ -399,11 +399,34 @@ const AIOperationDashboard: React.FC = () => {
         )}
 
         {activeTab === 'agents' && (
+          <div className="space-y-5">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex gap-3">
+                <div className="h-10 w-10 rounded-lg bg-white text-emerald-600 flex items-center justify-center border border-emerald-100">
+                  <Settings size={18} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-950 text-sm">Configuração profissional dos agentes</h3>
+                  <p className="text-xs text-slate-600 mt-1 max-w-3xl">
+                    Edite o prompt, tom de voz, regras de handoff e conecte o agente ao WhatsApp ou outro canal antes de publicar a operação.
+                  </p>
+                </div>
+              </div>
+              <Link
+                to={aiPath(`operations/${id}/agents/${opData.agents[0]?.id || 'test'}`)}
+                className="h-9 px-4 rounded-lg bg-slate-950 text-white text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-800"
+              >
+                <Pencil size={14} /> Abrir editor
+              </Link>
+            </div>
+          </div>
+
           <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
             <div className="px-5 py-4 flex items-center justify-between">
               <div>
                 <h3 className="font-bold text-slate-950 text-sm">Equipe de IA ({opData.agents.length} agentes)</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Arquitetura gerada pela WooTech IA</p>
+                <p className="text-xs text-slate-500 mt-0.5">Arquitetura gerada pela WooTech IA · prompts e canais editáveis</p>
               </div>
               <Link to={aiPath(`operations/${id}/architecture`)} className="h-9 px-4 rounded-lg border border-slate-200 text-xs font-bold flex items-center gap-2 hover:bg-slate-50">
                 <GitBranch size={14} /> Ver arquitetura
@@ -430,7 +453,9 @@ const AIOperationDashboard: React.FC = () => {
                         <div className={`h-8 w-8 rounded-lg ${a.color} flex items-center justify-center text-white`}>
                           {a.type === 'ORCHESTRATOR' ? <Brain size={15} /> : <Bot size={15} />}
                         </div>
-                        <span className="font-bold text-slate-950 text-sm">{a.name}</span>
+                        <Link to={aiPath(`operations/${id}/agents/${a.id}`)} className="font-bold text-slate-950 text-sm hover:text-emerald-700">
+                          {a.name}
+                        </Link>
                       </div>
                     </td>
                     <td className="px-5 py-3"><span className="text-[11px] font-bold px-2 py-1 rounded bg-slate-100 text-slate-600">{a.type}</span></td>
@@ -447,14 +472,32 @@ const AIOperationDashboard: React.FC = () => {
                     <td className="px-5 py-3 text-xs text-slate-500 font-mono">{a.model}</td>
                     <td className="px-5 py-3"><span className="text-[11px] font-bold px-2 py-1 rounded bg-emerald-50 text-emerald-700">ATIVO</span></td>
                     <td className="px-5 py-3">
-                      <button className="h-8 px-3 rounded-lg border border-slate-200 text-[11px] font-bold text-slate-600 hover:bg-slate-50">
-                        Testar
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Link
+                          to={aiPath(`operations/${id}/agents/${a.id}`)}
+                          className="h-8 px-3 rounded-lg border border-slate-200 text-[11px] font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-1.5"
+                        >
+                          <Pencil size={12} /> Editar
+                        </Link>
+                        <Link
+                          to={aiPath(`operations/${id}/agents/${a.id}?tab=channels`)}
+                          className="h-8 px-3 rounded-lg border border-emerald-200 bg-emerald-50 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 flex items-center gap-1.5"
+                        >
+                          <Link2 size={12} /> Canal
+                        </Link>
+                        <Link
+                          to={aiPath(`operations/${id}/agents/${a.id}/test`)}
+                          className="h-8 px-3 rounded-lg bg-slate-950 text-[11px] font-bold text-white hover:bg-slate-800 flex items-center gap-1.5"
+                        >
+                          <TestTube2 size={12} /> Testar
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
           </div>
         )}
 

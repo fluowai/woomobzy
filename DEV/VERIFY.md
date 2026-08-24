@@ -1,5 +1,34 @@
 # Verificação
 
+## 2026-08-23 — Agentes de IA com prompt editável e conexão de canais
+
+- `node --check server/api/ai/agents.routes.js`: passou.
+- `git diff --check`: passou.
+- `npm run type-check`: inconclusivo; processo ficou sem saída por tempo prolongado e foi interrompido.
+- `npx tsc --noEmit --pretty false`: inconclusivo; processo ficou sem saída por tempo prolongado e foi interrompido.
+- `npm run build`: inconclusivo; Vite iniciou `transforming...`, ficou sem saída por tempo prolongado e foi interrompido.
+- `npx eslint --quiet views\AIAgentDetail.tsx views\AIOperationDashboard.tsx services\aiWorkforce.ts`: inconclusivo; processo ficou sem saída por tempo prolongado e foi interrompido.
+
+## 2026-08-23 — Redirecionamento direto para painel por perfil
+
+- Rota `/` alterada para redirecionar usuários autenticados via `HomeRoute`.
+- Helper central criado em `src/lib/panelNavigation.ts` para resolver `/rural`, `/urban`, `/superadmin`, `/megaadmin` e `/onboarding`.
+- `Login`, `NicheRedirect`, `SuperAdminGuard`, `MegaAdminGuard` e `PanelGuard` alinhados à mesma regra.
+- `npm run build`: passou; bundle de produção gerado em `dist/`.
+- `npx eslint App.tsx components\NicheRedirect.tsx components\PanelGuard.tsx components\SuperAdminGuard.tsx components\MegaAdminGuard.tsx views\Login.tsx src\lib\panelNavigation.ts`: passou sem erros.
+- `git diff --check`: passou.
+- `npm run type-check`: inconclusivo nesta rodada; processo ficou sem saída por tempo prolongado e foi interrompido.
+
+## 2026-08-23 — Auditoria da migração Lalbero CVCRM
+
+- Consulta service-role read-only: `leads` da organização `391d8df5-7297-42bd-a443-1aca77b1f0a1` retornou 4.867 registros.
+- Contagem por status: `Em Atendimento` = 4.867; etapas oficiais do Kanban = 0.
+- Contagem de histórico: `lead_activities` = 0 e `chat_messages` = 0 para a organização.
+- Dry-run `node --env-file=.env scripts\migrateCvcrmLeads.js --audit`: passou e confirmou distribuição original por situação CVCRM.
+- Dry-run `node --env-file=.env scripts\migrateCvcrmLeads.js --reorganize`: passou e calculou distribuição alvo (`Novo` 4.790, `Qualificação` 47, `Perdido` 28, `Fechado` 1, `Simulação` 1).
+- `node --check scripts\migrateCvcrmLeads.js`: passou.
+- Pendência: configurar `CVCRM_EMAIL` e `CVCRM_TOKEN` no ambiente para importar interações pelo endpoint oficial `/api/v1/cvdw/leads/interacoes`; nenhuma escrita em banco foi executada.
+
 ## 2026-08-23 — Hotfix de recursão RLS em profiles
 
 - Sintoma em produção: `GET /rest/v1/profiles?...id=eq.df587a67...` retornou 500 com `42P17 infinite recursion detected in policy for relation "profiles"`.

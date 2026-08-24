@@ -658,7 +658,7 @@ export class LLMOrchestrator {
       };
     }
     
-    throw new Error('No LLM providers available');
+    return null;
   }
   
   /**
@@ -667,7 +667,13 @@ export class LLMOrchestrator {
   async chat(messages, taskType = 'conversation', config = {}) {
     await this.initialize();
     
-    const { provider, model, isFallback } = this.getProviderForTask(taskType);
+    const result = this.getProviderForTask(taskType);
+    
+    if (!result) {
+      throw new Error('Nenhum provedor LLM configurado. Configure chaves de API (Gemini, OpenAI, Anthropic, Groq ou OpenRouter) no painel de configurações.');
+    }
+    
+    const { provider, model, isFallback } = result;
     const finalConfig = { ...config, model };
     
     logger.info('[LLMOrchestrator] Chat request', { 

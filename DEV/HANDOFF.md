@@ -1,5 +1,39 @@
 # Handoff
 
+## 2026-08-23 — Agentes de IA com prompt editável e conexão de canais
+
+- A aba de agentes da operação agora orienta a configuração profissional e leva diretamente para editar, conectar canal ou testar cada agente.
+- `views/AIAgentDetail.tsx` passou a ter editor de prompt editável, checklist de conversa profissional, salvamento via `/api/ai/agents/:id/prompt` e aba `Canais`.
+- A aba `Canais` permite criar regra para WhatsApp, Instagram ou Webchat, com bloqueio quando houver humano ativo.
+- `server/api/ai/agents.routes.js` agora devolve versões do agente no `GET /agents/:id` e salva prompt em `ai_agent_versions`; quando não há versão ativa, cria uma versão inicial ou cai para `instructions` no schema legado.
+- `services/aiWorkforce.ts` ganhou chamadas para atualizar agente e criar regra de canal.
+- Verificação concluída: `node --check server/api/ai/agents.routes.js` e `git diff --check` passaram.
+- Verificação inconclusiva: `npm run type-check`, `npx tsc --noEmit`, `npm run build` e ESLint focado ficaram sem saída por tempo prolongado e foram interrompidos; não houve erro exibido antes da interrupção.
+
+## 2026-08-23 — Redirecionamento direto para painel por perfil
+
+- A rota `/` não exibe mais a vitrine para quem já está autenticado e com perfil carregado; agora redireciona diretamente para o painel correto.
+- Regra central: `src/lib/panelNavigation.ts`.
+- Destinos:
+  - Mega admin real: `/megaadmin`.
+  - Revenda/Super Admin sem impersonação: `/superadmin`.
+  - Conta rural ou impersonação rural: `/rural`.
+  - Conta urbana/traditional: `/urban`.
+  - Conta sem organização: `/onboarding`.
+- Build de produção e ESLint direcionado passaram.
+- Ainda precisa subir nova imagem Docker/Portainer para produção refletir o novo bundle.
+
+## 2026-08-23 — Migração Lalbero CVCRM
+
+- A migração de cadastro não está limitada a 50: existem 4.867 leads no Supabase para a organização Lalbero (`391d8df5-7297-42bd-a443-1aca77b1f0a1`).
+- O problema visual/operacional é o status: todos estão em `Em Atendimento`, enquanto as colunas oficiais do Kanban usam outros IDs. O Kanban carrega 50 por etapa inicialmente e possui paginação por botão.
+- Não há histórico importado: `lead_activities = 0` e `chat_messages = 0` para Lalbero.
+- `scripts/migrateCvcrmLeads.js` foi refeito para dry-run por padrão, sem credenciais hardcoded, com modos `--audit`, `--reorganize`, `--leads` e `--interactions`.
+- Dry-run de reorganização alvo: `Novo` 4.790, `Qualificação` 47, `Perdido` 28, `Fechado` 1, `Simulação` 1.
+- Para aplicar a organização do Kanban: `node --env-file=.env scripts\migrateCvcrmLeads.js --reorganize --apply`.
+- Para importar histórico, configurar `CVCRM_EMAIL` e `CVCRM_TOKEN` no ambiente e rodar primeiro dry-run: `node --env-file=.env scripts\migrateCvcrmLeads.js --interactions --limit=50`; depois aplicar com `--apply` se a amostra estiver correta.
+- Nenhuma escrita em banco foi executada nesta investigação.
+
 ## 2026-08-23 — Hotfix de recursão RLS em profiles
 
 - Após aplicar `20260823_fix_reseller_tenant_isolation.sql`, o login que consulta `public.profiles` começou a falhar com HTTP 500 / `42P17 infinite recursion detected in policy for relation "profiles"`.

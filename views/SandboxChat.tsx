@@ -129,36 +129,35 @@ const SandboxChat: React.FC = () => {
 
     try {
       let reply: Message;
-      if (id && id !== 'draft' && operationAgents.length > 0) {
-        const result = await sendAgentMessage(id, {
-          channel: 'sandbox',
-          message: input,
-          agentId: activeAgent
-        });
-        reply = {
-          id: Date.now() + 1, role: 'agent', agent: activeAgentObj?.name || 'SDR Vendas',
-          content: result.response || 'Processei sua mensagem com sucesso.',
-          time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-          tools: (result.toolCalls || []).map((t: string) => ({ name: t, status: 'success' as const, detail: undefined })),
-          slots: result.usage ? [{ label: 'Latência', value: `${result.latencyMs}ms` }] : []
-        };
-      } else {
-        await new Promise(r => setTimeout(r, 1600));
-        reply = {
-          id: Date.now() + 1, role: 'agent', agent: 'SDR Vendas',
-          content: 'Ótima pergunta! Vou verificar os dados disponíveis para te dar uma resposta precisa. Deixa eu consultar o sistema...',
-          time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-          tools: [{ name: 'properties.search', status: 'success', detail: '2 imóveis encontrados' }, { name: 'crm.leads.update', status: 'success', detail: 'Preferências registradas' }],
-          slots: [{ label: 'Preferência', value: input.slice(0, 40) }]
-        };
-      }
+      const conversationId = `sandbox-${id || 'draft'}-${activeAgent}`;
+      
+      const result = await sendAgentMessage(conversationId, {
+        channel: 'sandbox',
+        message: input,
+        agentId: activeAgent
+      });
+      
+      reply = {
+        id: Date.now() + 1, 
+        role: 'agent', 
+        agent: activeAgentObj?.name || 'SDR Vendas',
+        content: result.response || 'Processei sua mensagem com sucesso.',
+        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        tools: (result.toolCalls || []).map((t: any) => ({ 
+          name: typeof t === 'string' ? t : t.name, 
+          status: 'success' as const, 
+          detail: undefined 
+        })),
+        slots: result.usage ? [{ label: 'Latência', value: `${result.latencyMs}ms` }] : []
+      };
+
       setMessages(m => [...m, reply]);
       setIsTyping(false);
       setTraceOpen(reply.id);
     } catch (error: any) {
       setIsTyping(false);
       toast.error('Erro no sandbox: ' + error.message);
-      setMessages(m => [...m, { id: Date.now() + 2, role: 'agent', agent: 'Sistema', content: 'Não foi possível processar a mensagem. Verifique se a operação está ativa.', time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) }]);
+      setMessages(m => [...m, { id: Date.now() + 2, role: 'agent', agent: 'Sistema', content: 'Não foi possível processar a mensagem. Verifique a configuração do agente.', time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) }]);
     }
   };
 

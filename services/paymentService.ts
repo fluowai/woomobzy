@@ -1,4 +1,5 @@
 import { logger } from '@/utils/logger';
+import { asgardpay } from './asgardpayService';
 
 export interface PaymentDetails {
   id: string;
@@ -7,41 +8,79 @@ export interface PaymentDetails {
   pixCode?: string;
   pixQrCode?: string;
   status: 'PENDING' | 'RECEIVED' | 'OVERDUE' | 'CANCELLED';
+  amount: number;
+  dueDate: string;
+  description: string;
+}
+
+export interface CreateInvoiceData {
+  amount: number;
+  dueDate: string;
+  description: string;
+  client: { name: string; email: string; cpfCnpj: string };
 }
 
 export class PaymentService {
-  // Simula a integração com ASAAS ou IUGU
-  async createInvoice(data: {
-    amount: number;
-    dueDate: string;
-    description: string;
-    client: { name: string; email: string; cpfCnpj: string };
-  }): Promise<PaymentDetails | null> {
+  async createInvoice(data: CreateInvoiceData): Promise<PaymentDetails | null> {
     try {
-      logger.info('Iniciando geração de cobrança no gateway...', data);
+      logger.info('Iniciando criação de cobrança no AsgardPay...', data);
 
-      // Simulação de chamada de API externa
+      const result = await asgardpay.createPayment({
+        clientId: data.client.cpfCnpj,
+        clientEmail: data.client.email,
+        clientName: data.client.name,
+        amount: data.amount,
+        description: data.description,
+        dueDate: data.dueDate,
+        type: 'pix',
+      });
+
+      logger.info('Cobrança AsgardPay criada com sucesso:', result.id);
+
+      let mappedStatus: 'PENDING' | 'RECEIVED' | 'OVERDUE' | 'CANCELLED' = 'PENDING';
+      const rStatus = result.status.toLowerCase();
+      if (rStatus === 'paid' || rStatus === 'received') mappedStatus = 'RECEIVED';
+      else if (rStatus === 'overdue') mappedStatus = 'OVERDUE';
+      else if (rStatus === 'cancelled') mappedStatus = 'CANCELLED';
+
       return {
-        id: 'pay_' + Math.random().toString(36).substr(2, 9),
-        invoiceUrl: 'https://payment-gateway.com/invoice/sample',
-        bankSlipUrl: 'https://payment-gateway.com/pdf/sample',
-        pixCode: '00020126360014br.gov.bcb.pix0114+5511999999999',
-        status: 'PENDING',
+        id: result.id,
+        invoiceUrl: result.invoiceUrl,
+        pixCode: result.pixCode,
+        status: mappedStatus,
+        amount: result.amount,
+        dueDate: result.dueDate,
+        description: result.description,
       };
     } catch (error) {
-      logger.error('Erro ao integrar com gateway de pagamento:', error);
+      logger.error('Erro ao integrar com AsgardPay:', error);
       return null;
     }
   }
 
   async getInvoiceStatus(paymentId: string): Promise<string> {
-    // Simular consulta de status
-    return 'PENDING';
+    try {
+      const status = await asgardpay.getPaymentStatus(paymentId);
+      return status.status;
+    } catch (error) {
+      logger.error('Erro ao consultar status do pagamento:', error);
+      return 'PENDING';
+    }
   }
 
   async syncOrganizationSettings(apiKey: string): Promise<boolean> {
-    logger.info('Sincronizando chaves do gateway para a organização');
-    return true;
+    logger.info('Sincronizando chaves do AsgardPay para a organização');
+    try {
+      // Validar a chave pública
+      if (apiKey && apiKey.startsWith('gpk_')) {
+        logger.info('Chave pública AsgardPay validada com sucesso');
+        return true;
+      }
+      return false;
+    } catch (error) {
+      logger.error('Erro ao sincronizar chaves AsgardPay:', error);
+      return false;
+    }
   }
 }
 

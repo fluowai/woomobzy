@@ -81,31 +81,51 @@ export class ToolRegistry {
     return tools.filter(t => t.category === category);
   }
 
-  /**
-   * Get tools authorized for a specific agent version
-   */
   async getAgentTools(agentVersionId) {
     const supabase = getSupabaseServer();
     
-    const { data, error } = await supabase
-      .from('ai_agent_tools')
-      .select(`
-        config_override,
-        ai_tools (
-          id, name, display_name, category, description,
-          input_schema, output_schema, handler_type, handler_config, requires_approval
-        )
-      `)
-      .eq('agent_version_id', agentVersionId);
+    // 1. Get the tool names from the agent version
+    const { data: versionData, error: versionError } = await supabase
+      .from('ai_agent_versions')
+      .select('tools, ai_agents!ai_agent_versions_agent_id_fkey!inner(organization_id)')
+      .eq('id', agentVersionId)
+      .single();
 
-    if (error) {
-      logger.error('[ToolRegistry] Failed to fetch agent tools', { error: error.message, agentVersionId });
-      throw new Error('Failed to load agent tools');
+    if (versionError) {
+      logger.error('[ToolRegistry] Failed to fetch agent version tools', { error: versionError.message, agentVersionId });
+      throw new Error('Failed to load agent version tools');
     }
 
-    return data?.map(item => ({
-      ...item.ai_tools,
-      configOverride: item.config_override
+    const toolNames = versionData.tools || [];
+    if (!toolNames.length) return [];
+
+    // 2. Fetch the tool definitions from ai_tools
+    // Need to handle both global tools (organization_id is null) and tenant tools
+    const orgId = versionData.ai_agents?.organization_id;
+    
+    const { data: toolsData, error: toolsError } = await supabase
+      .from('ai_tools')
+      .select('id, name, display_name, category, description, input_schema, output_schema, handler_type, handler_config, requires_approval')
+      .in('name', toolNames)
+      .or(`organization_id.is.null${orgId ? `,organization_id.eq.${orgId}` : ''}`);
+
+    if (toolsError) {
+      logger.error('[ToolRegistry] Failed to fetch tool definitions', { error: toolsError.message, toolNames });
+      throw new Error('Failed to load tool definitions');
+    }
+
+    return toolsData?.map(t => ({
+      id: t.id,
+      name: t.name,
+      displayName: t.display_name,
+      category: t.category,
+      description: t.description,
+      inputSchema: t.input_schema,
+      outputSchema: t.output_schema,
+      handlerType: t.handler_type,
+      handlerConfig: t.handler_config,
+      requiresApproval: t.requires_approval,
+      configOverride: {} // We don't have overrides yet since we bypassed ai_agent_tools
     })) || [];
   }
 
@@ -350,7 +370,11 @@ export class PolicyEngine {
       matchLeadProperties,
       calculateLeadScore,
       generateDocument,
-      extractDocumentText
+      extractDocumentText,
+      checkAvailability,
+      scheduleVisit,
+      createFollowup,
+      listPendingFollowups
     } = await import('./toolHandlers.js');
     
     const handlers = {
@@ -359,7 +383,11 @@ export class PolicyEngine {
       match_lead_properties: matchLeadProperties,
       calculate_lead_score: calculateLeadScore,
       generate_document: generateDocument,
-      extract_document_text: extractDocumentText
+      extract_document_text: extractDocumentText,
+      check_availability: checkAvailability,
+      schedule_visit: scheduleVisit,
+      create_followup: createFollowup,
+      list_pending_followups: listPendingFollowups
     };
     
     const handler = handlers[handlerName];

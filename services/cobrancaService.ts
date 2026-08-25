@@ -16,6 +16,8 @@ export interface Billing {
   pix_code?: string;
   contract?: {
     tenant_name?: string;
+    tenant_email?: string;
+    tenant_cpf_cnpj?: string;
     monthly_rent?: number;
     property?: {
       title?: string;

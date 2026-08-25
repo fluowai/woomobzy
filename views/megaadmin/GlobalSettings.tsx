@@ -17,6 +17,8 @@ const GlobalSettings: React.FC = () => {
   const [settings, setSettings] = useState({
     global_openai_key: '',
     global_gemini_key: '',
+    global_asgardpay_public_key: '',
+    global_asgardpay_secret_key: '',
     maintenance_mode: false,
   });
   const [loading, setLoading] = useState(true);
@@ -182,6 +184,60 @@ const GlobalSettings: React.FC = () => {
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none font-mono"
               />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
+            <Key size={20} /> AsgardPay — Gateway de Pagamento
+          </h3>
+          <p className="text-sm text-gray-500 mb-3">
+            Chaves para integração com AsgardPay. A public key será usada no front-end
+            e a secret key no back-end para cobranças de clientes.
+          </p>
+          <div className="grid gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Public Key (Front-end)
+              </label>
+              <input
+                type="password"
+                value={settings.global_asgardpay_public_key || ''}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    global_asgardpay_public_key: e.target.value,
+                  })
+                }
+                placeholder="gpk_ykumdugkhn0fdpkq4fihmje1ylo1wm06fqrsgrkc"
+                autoComplete="off"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none font-mono"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Chave pública para uso no front-end (visível ao admin)
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Secret Key (Back-end)
+              </label>
+              <input
+                type="password"
+                value={settings.global_asgardpay_secret_key || ''}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    global_asgardpay_secret_key: e.target.value,
+                  })
+                }
+                placeholder="gsk_z6J2vTKXsHA1_YimoNgLbdwCsi4XOGFX4Z30ZyZmMcecA"
+                autoComplete="new-password"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none font-mono"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Chave secreta para uso no back-end (nunca exposta no front-end)
+              </p>
             </div>
           </div>
         </div>

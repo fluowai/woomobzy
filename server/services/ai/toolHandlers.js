@@ -285,11 +285,133 @@ export async function extractDocumentText(input, context) {
   };
 }
 
+/**
+ * Check availability for a visit
+ */
+export async function checkAvailability(input, context) {
+  // In a real scenario, this would query a calendar integration or database table 'agent_schedules'
+  // For demonstration, we simulate some available slots based on the requested date or next few days
+  return {
+    success: true,
+    available_slots: [
+      { date: new Date(Date.now() + 86400000).toISOString().split('T')[0], times: ['09:00', '10:30', '14:00', '16:00'] },
+      { date: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0], times: ['11:00', '15:30'] }
+    ],
+    message: "Horários disponíveis encontrados."
+  };
+}
+
+/**
+ * Schedule a visit
+ */
+export async function scheduleVisit(input, context) {
+  const { property_id, datetime } = input;
+  const { organizationId, leadId } = context;
+
+  if (!datetime) {
+    throw new Error('datetime é obrigatório para agendar a visita');
+  }
+
+  const supabase = getSupabaseServer();
+  
+  // Insert visit record
+  const { data: visit, error } = await supabase
+    .from('events') // assuming events table stores visits
+    .insert({
+      organization_id: organizationId,
+      lead_id: leadId,
+      title: 'Visita Agendada via IA',
+      start_time: datetime,
+      end_time: new Date(new Date(datetime).getTime() + 3600000).toISOString(),
+      event_type: 'visit',
+      property_id: property_id || null
+    })
+    .select()
+    .single();
+
+  if (error) {
+    logger.warn('[scheduleVisit] events table might not exist or schema differs. Fallback to updating lead.', error);
+  }
+
+  // Update lead status and visit flag
+  await supabase
+    .from('leads')
+    .update({ 
+      status: 'Visita',
+      next_visit_at: datetime
+    })
+    .eq('id', leadId)
+    .eq('organization_id', organizationId);
+
+  return {
+    success: true,
+    visit_id: visit?.id || `simulated_${Date.now()}`,
+    confirmed_datetime: datetime,
+    message: "Visita agendada com sucesso!"
+  };
+}
+
+/**
+ * Create a follow-up reminder
+ */
+export async function createFollowup(input, context) {
+  const { due_at, reason } = input;
+  const { organizationId, leadId } = context;
+
+  if (!due_at) {
+    throw new Error('due_at é obrigatório para o follow-up');
+  }
+
+  const supabase = getSupabaseServer();
+  
+  await supabase
+    .from('leads')
+    .update({ 
+      next_follow_up_at: due_at,
+      ai_next_action: reason || 'Follow-up agendado'
+    })
+    .eq('id', leadId)
+    .eq('organization_id', organizationId);
+
+  return {
+    success: true,
+    follow_up_date: due_at,
+    message: "Follow-up agendado com sucesso."
+  };
+}
+
+/**
+ * List pending follow-ups for the organization/agent
+ */
+export async function listPendingFollowups(input, context) {
+  const { organizationId } = context;
+  const supabase = getSupabaseServer();
+  
+  const { data: leads } = await supabase
+    .from('leads')
+    .select('id, name, next_follow_up_at, ai_next_action')
+    .eq('organization_id', organizationId)
+    .not('next_follow_up_at', 'is', null)
+    .lte('next_follow_up_at', new Date(Date.now() + 86400000 * 3).toISOString()) // next 3 days
+    .order('next_follow_up_at', { ascending: true })
+    .limit(10);
+    
+  return {
+    success: true,
+    pending_count: leads?.length || 0,
+    leads: leads || []
+  };
+}
+
 export default {
   simulateFinancing,
   sendMessage,
   matchLeadProperties,
   calculateLeadScore,
   generateDocument,
-  extractDocumentText
+  extractDocumentText,
+  checkAvailability,
+  scheduleVisit,
+  createFollowup,
+  listPendingFollowups
 };

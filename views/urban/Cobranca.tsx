@@ -128,8 +128,8 @@ const Cobranca: React.FC = () => {
       description: billing.description || 'Cobrança WooTech Imob',
       client: {
         name: billing.contract?.tenant_name || 'Cliente',
-        email: 'cliente@email.com',
-        cpfCnpj: '000.000.000-00',
+        email: billing.contract?.tenant_email || 'cliente@email.com',
+        cpfCnpj: billing.contract?.tenant_cpf_cnpj || '000.000.000-00',
       },
     });
 

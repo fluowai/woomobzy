@@ -1237,7 +1237,7 @@ router.post('/agents/test/full', verifyAuth, requireTenant, async (req, res) => 
 
     const { runFullTestPipeline } = await import('../services/ai/testOrchestrator.js');
     const report = await runFullTestPipeline(agent, {
-      mode: req.query.mode || process.env.AI_MODE || 'mock'
+      mode: req.query.mode || process.env.AI_MODE
     });
 
     res.json({ success: true, report });

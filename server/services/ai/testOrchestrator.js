@@ -11,6 +11,7 @@ import { runRedTeam } from './redTeam.js';
 import { calculateScore } from './scoringEngine.js';
 import { generateFixes } from './autoFixEngine.js';
 import { logger } from '../../utils/logger.js';
+import { getSupabaseServer } from '../../lib/supabase-server.js';
 
 /**
  * @param {Object} agent - dados do agente (id, name, type, description, tools)
@@ -19,7 +20,28 @@ import { logger } from '../../utils/logger.js';
  * @returns {Promise<Object>} relatório completo de testes
  */
 export async function runFullTestPipeline(agent, options = {}) {
-  const mode = options.mode || process.env.AI_MODE || 'mock';
+  const supabase = getSupabaseServer();
+  let mode = options.mode;
+  
+  // Auto-detect mode: use 'llm' if Groq key is configured in site_settings for this org
+  if (!mode) {
+    try {
+      const { data } = await supabase
+        .from('site_settings')
+        .select('integrations')
+        .single();
+      const groqKey = data?.integrations?.groq?.apiKey;
+      mode = groqKey ? 'llm' : 'mock';
+      logger.info('[testOrchestrator] Auto-detected mode:', mode, '(Groq key:', groqKey ? 'configured' : 'not found', ')');
+    } catch (err) {
+      logger.debug('[testOrchestrator] Could not check site_settings for Groq key', err.message);
+      mode = 'mock';
+    }
+  } else {
+    const existingMode = process.env.AI_MODE || 'mock';
+    mode = options.mode || existingMode;
+  }
+  
   const startedAt = Date.now();
 
   logger.info('[testOrchestrator] Gerando casos de teste para', agent.name);

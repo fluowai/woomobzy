@@ -2,6 +2,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSupabaseServer } from './supabase-server.js';
 import { matchLeadProperties } from '../services/leadPropertyMatcher.js';
 import { AgentOrchestrator } from '../services/ai/agentOrchestrator.js';
+import { getAgentRuntime } from '../services/ai/agentRuntime.js';
+import { normalizePhoneNumber } from '../utils/phoneNormalizer.js';
 
 const ENHANCED_LEAD_COLUMNS = [
   'lead_score',
@@ -314,31 +316,32 @@ Formato:
     let autonomousReply = null;
     if (agent && agent.tools && agent.tools.length > 0) {
       try {
-        const orchestrator = new AgentOrchestrator(this.defaultApiKey);
-        const history = await this._getConversationMemory(
-          organizationId,
-          normalizedPhone,
-          8
-        );
-
-        // Determina o lead id e dados conhecidos (se ja existe na base)
+        const runtime = getAgentRuntime();
         const existingLeadForTools = await this._findLeadByNormalizedPhone(
           supabase,
           organizationId,
           normalizedPhone
         );
 
-        autonomousReply = await orchestrator.processAgentConversation({
-          content,
+        const result = await runtime.processMessage({
           organizationId,
-          agent,
-          history,
+          conversationId: normalizedPhone, // Using phone as conversation identifier for now
+          channel: 'whatsapp',
+          instanceId: payload.instance_id,
           leadId: existingLeadForTools?.id || null,
-          leadData: existingLeadForTools || null,
+          agentId: agent.id,
+          messageContent: content,
+          mediaUrl: message.media_url || null
         });
+
+        if (result.status === 'success' && result.response) {
+          autonomousReply = result.response;
+        } else if (result.status === 'blocked') {
+          autonomousReply = result.response;
+        }
       } catch (err) {
         console.error(
-          '[AIAutomation] Erro ao executar orquestrador de ferramentas:',
+          '[AIAutomation] Erro ao executar agent runtime:',
           err.message
         );
       }
@@ -1304,48 +1307,31 @@ Formato:
     messageType,
     instanceContext = {}
   ) {
-    const preferredTool =
-      messageType === 'audio'
-        ? 'audio-stt'
-        : messageType === 'document'
-          ? 'pdf-reader'
-          : 'whatsapp';
-    const { data, error } = await supabase
-      .from('ai_agents')
-      .select('*')
+    const { data: rules, error: rulesError } = await supabase
+      .from('ai_channel_rules')
+      .select('*, ai_agents(*)')
       .eq('organization_id', organizationId)
+      .eq('channel_type', 'whatsapp')
       .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .limit(10);
+      .order('priority', { ascending: false });
 
-    if (error) {
-      console.warn('[AIAutomation] Agentes nao carregados:', error.message);
+    if (rulesError || !rules || rules.length === 0) {
+      if (rulesError) console.warn('[AIAutomation] Erro ao carregar rules:', rulesError.message);
       return null;
     }
 
-    const candidates = data || [];
-    const toolCandidates = candidates.filter((agent) =>
-      (agent.tools || []).includes(preferredTool)
-    );
-    const exactCandidate = toolCandidates.find(
-      (agent) => this._agentInstanceScope(agent, instanceContext) === 'exact'
-    );
-    const globalCandidate = toolCandidates.find(
-      (agent) => this._agentInstanceScope(agent, instanceContext) === 'global'
-    );
-    const exactFallback = candidates.find(
-      (agent) => this._agentInstanceScope(agent, instanceContext) === 'exact'
-    );
-    const globalFallback = candidates.find(
-      (agent) => this._agentInstanceScope(agent, instanceContext) === 'global'
-    );
-    return (
-      exactCandidate ||
-      globalCandidate ||
-      exactFallback ||
-      globalFallback ||
-      null
-    );
+    // Filtra as regras para encontrar a que bate com o instanceId
+    // ou que seja global (instance_id is null)
+    let matchedRule = rules.find(r => r.instance_id === instanceContext.instanceId);
+    
+    // Se não encontrou regra específica para a instância, tenta a global
+    if (!matchedRule) {
+      matchedRule = rules.find(r => r.instance_id === null);
+    }
+
+    if (!matchedRule || !matchedRule.ai_agents) return null;
+    
+    return matchedRule.ai_agents;
   }
 
   _agentInstanceScope(agent, { instanceId, instanceName } = {}) {

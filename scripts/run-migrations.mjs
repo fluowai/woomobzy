@@ -66,6 +66,7 @@ const MIGRATIONS = [
   'migrations/20260820_ai_workforce_builder.sql',
   'migrations/20260821_ai_workforce_builder_compat.sql',
   'migrations/20260822_ai_execution_logs.sql',
+  'migrations/20260827_add_asgardpay_keys_to_organizations.sql',
 ];
 
 async function executeMigrations() {

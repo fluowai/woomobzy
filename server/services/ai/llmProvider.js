@@ -75,23 +75,34 @@ import { logger } from '../../utils/logger.js';
 const MODEL_ROUTING = {
   // Fast, cheap models for simple tasks
   'intent_detection': { 
-    primary: { provider: 'groq', model: 'llama-3.1-8b-instant' },
+    primary: { provider: 'groq', model: 'qwen/qwen3.6-27b' },
     fallback: [{ provider: 'gemini', model: 'gemini-1.5-flash' }]
   },
   
   // Main conversation - balanced quality/speed
   'conversation': { 
-    primary: { provider: 'gemini', model: 'gemini-1.5-pro' },
+    primary: { provider: 'gemini', model: 'gemini-1.5-pro-latest' },
     fallback: [
       { provider: 'openai', model: 'gpt-4o' },
-      { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' }
+      { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+      { provider: 'groq', model: 'qwen/qwen3.6-27b' }
+    ]
+  },
+
+  // Agent execution
+  'agent': { 
+    primary: { provider: 'gemini', model: 'gemini-1.5-pro-latest' },
+    fallback: [
+      { provider: 'openai', model: 'gpt-4o' },
+      { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+      { provider: 'groq', model: 'qwen/qwen3.6-27b' }
     ]
   },
   
   // Cheap summarization
   'summarization': { 
     primary: { provider: 'openai', model: 'gpt-4o-mini' },
-    fallback: [{ provider: 'groq', model: 'llama-3.1-8b-instant' }]
+    fallback: [{ provider: 'groq', model: 'qwen/qwen3.6-27b' }]
   },
   
   // Complex reasoning - best models
@@ -188,7 +199,14 @@ class OpenAIProvider extends BaseProvider {
       max_tokens: config.maxTokens,
       top_p: config.topP,
       response_format: config.jsonMode ? { type: 'json_object' } : undefined,
-      tools: config.tools,
+      tools: config.tools ? config.tools.map(t => ({
+        type: 'function',
+        function: {
+          name: t.name,
+          description: t.description,
+          parameters: t.parameters || { type: 'object', properties: {} }
+        }
+      })) : undefined,
       tool_choice: config.toolChoice
     };
     
@@ -227,7 +245,15 @@ class OpenAIProvider extends BaseProvider {
       max_tokens: config.maxTokens,
       top_p: config.topP,
       stream: true,
-      tools: config.tools,
+      response_format: config.jsonMode ? { type: 'json_object' } : undefined,
+      tools: config.tools ? config.tools.map(t => ({
+        type: 'function',
+        function: {
+          name: t.name,
+          description: t.description,
+          parameters: t.parameters || { type: 'object', properties: {} }
+        }
+      })) : undefined,
       tool_choice: config.toolChoice
     });
     
@@ -457,7 +483,14 @@ class GroqProvider extends BaseProvider {
       max_tokens: config.maxTokens,
       top_p: config.topP,
       response_format: config.jsonMode ? { type: 'json_object' } : undefined,
-      tools: config.tools,
+      tools: config.tools ? config.tools.map(t => ({
+        type: 'function',
+        function: {
+          name: t.name,
+          description: t.description,
+          parameters: t.parameters || { type: 'object', properties: {} }
+        }
+      })) : undefined,
       tool_choice: config.toolChoice
     });
     
@@ -584,6 +617,27 @@ export class LLMOrchestrator {
   async initialize() {
     if (this.initialized) return;
     
+    // First, try to get keys from site_settings (per-organization)
+    // This allows each SaaS tenant to have their own API keys configured
+    let orgKeys = null;
+    try {
+      const orgRes = await getSupabaseServer()
+        .from('site_settings')
+        .select('integrations')
+        .single();
+      orgKeys = orgRes.data?.integrations || {};
+      // Extract just the apiKey string from each provider config
+      const extractApiKey = (keyConfig) => typeof keyConfig === 'object' ? keyConfig.apiKey : keyConfig;
+      const groqKeyFromOrg = extractApiKey(orgKeys?.groq);
+      
+      // Store the extracted keys for use in the keys object
+      // We'll use these in the keys priority chain below
+    } catch (err) {
+      // ignore - fall back to saas_settings
+      logger.debug('[LLMOrchestrator] No site_settings found, using global config');
+    }
+    
+    // Then, get global saas_settings keys as fallback
     const supabase = getSupabaseServer();
     let settings = null;
     try {
@@ -596,12 +650,16 @@ export class LLMOrchestrator {
       // ignore
     }
     
+    // Priority: site_settings (per-org) > saas_settings (global) > env vars
+    // Extract apiKey from org key configs if they're objects
+    const extractApiKey = (keyConfig) => typeof keyConfig === 'object' ? keyConfig.apiKey : keyConfig;
+    
     const keys = {
-      openai: settings?.global_openai_key || process.env.OPENAI_API_KEY,
-      anthropic: settings?.global_anthropic_key || process.env.ANTHROPIC_API_KEY,
-      gemini: settings?.global_gemini_key || process.env.GEMINI_API_KEY,
-      groq: settings?.global_groq_key || process.env.GROQ_API_KEY,
-      openrouter: settings?.global_openrouter_key || process.env.OPENROUTER_API_KEY
+      openai: extractApiKey(orgKeys?.openai) || settings?.global_openai_key || process.env.OPENAI_API_KEY,
+      anthropic: extractApiKey(orgKeys?.anthropic) || settings?.global_anthropic_key || process.env.ANTHROPIC_API_KEY,
+      gemini: extractApiKey(orgKeys?.gemini) || settings?.global_gemini_key || process.env.GEMINI_API_KEY,
+      groq: extractApiKey(orgKeys?.groq) || settings?.global_groq_key || process.env.GROQ_API_KEY,
+      openrouter: extractApiKey(orgKeys?.openrouter) || settings?.global_openrouter_key || process.env.OPENROUTER_API_KEY
     };
     
     if (keys.openai) this.providers.set('openai', new OpenAIProvider({ apiKey: keys.openai }));

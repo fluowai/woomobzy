@@ -62,6 +62,7 @@ import campaignRoutes from './api/campaigns/index.js';
 import campaignContactsRoutes from './api/campaigns/contacts.js';
 import campaignSerperRoutes from './api/campaigns/serper.js';
 import campaignBlacklistRoutes from './api/campaigns/blacklist.js';
+import asgardpayRoutes from './api/asgardpay/index.js';
 import {
   getPlatformOriginList,
   PLATFORM_COMMERCIAL_NAME,
@@ -251,6 +252,15 @@ const globalLimiter = rateLimit({
 });
 
 app.use(globalLimiter);
+app.use(express.raw({ type: '*/*' }), (req, res, next) => {
+  // Salvar corpo bruto antes do JSON parsing para webhooks
+  if (typeof req.body === 'object' && !(req.body instanceof Buffer)) {
+    req.asgardRawBody = JSON.stringify(req.body);
+  } else if (req.body instanceof Buffer) {
+    req.asgardRawBody = req.body.toString();
+  }
+  next();
+});
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -381,6 +391,7 @@ app.use('/api/rural', ruralRoutes);
 app.use('/api/urban', urbanRoutes);
 app.use('/api/locacao', locacaoRoutes);
 app.use('/api/cobranca', cobrancaRoutes);
+app.use('/api/asgardpay', asgardpayRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/demo', demoRoutes);
 app.use('/api/fluowai-migration', fluowaiMigrationRoutes);

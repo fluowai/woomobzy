@@ -3,7 +3,7 @@ import { verifyAuth } from '../../middleware/auth.js';
 import { verifyMegaAdmin } from '../../middleware/auth.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import logger from '../../utils/logger.js';
-import asgardpay, { AsgardPayService } from '../../services/asgardpayService.js';
+import asgardpay, { AsgardPayService } from '../../../services/asgardpayService.js';
 
 const router = Router();
 

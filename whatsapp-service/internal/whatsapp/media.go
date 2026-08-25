@@ -266,7 +266,7 @@ func (c *Client) publicStorageBaseURL() string {
 			return value
 		}
 	}
-	return "https://nb.consultio.com.br"
+	return "https://mypanel.wootech.com.br"
 }
 
 func isLegacyStorageHost(value string) bool {

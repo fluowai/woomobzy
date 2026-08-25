@@ -606,7 +606,7 @@ function safePublicStorageUrl(value) {
     if (candidate && !isLegacyStorageHost(candidate)) return candidate;
   }
 
-  return 'https://nb.consultio.com.br';
+  return 'https://mypanel.wootech.com.br';
 }
 
 function isLegacyStorageHost(value) {

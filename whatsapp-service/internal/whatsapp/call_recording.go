@@ -243,7 +243,7 @@ func (s *CallRecordingService) publicStorageBaseURL() string {
 			return value
 		}
 	}
-	return "https://nb.consultio.com.br"
+	return "https://mypanel.wootech.com.br"
 }
 
 func (s *CallRecordingService) saveLocal(data []byte, callID, objectKey string, durationSecs int) *RecordingResult {

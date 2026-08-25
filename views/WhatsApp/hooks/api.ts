@@ -18,7 +18,7 @@ const API_BASE = normalizeWhatsAppApiUrl(RAW_WHATSAPP_API_URL);
 const USE_DIRECT_WHATSAPP_API = /^https?:\/\//i.test(API_BASE);
 const LEGACY_STORAGE_HOSTS = ['n.woopanel.com.br'];
 const STORAGE_PUBLIC_URL = normalizeStoragePublicBase(
-  getRuntimeEnv('VITE_MINIO_PUBLIC_URL', 'https://nb.consultio.com.br')
+  getRuntimeEnv('VITE_MINIO_PUBLIC_URL', 'https://mypanel.wootech.com.br')
 );
 export const WS_URL = normalizeWhatsAppWsUrl(
   getRuntimeEnv('VITE_WHATSAPP_WS_URL', DEFAULT_WHATSAPP_WS_PATH)
@@ -392,7 +392,7 @@ function normalizeStorageUrl(value: string): string {
 }
 
 function normalizeStoragePublicBase(value: string): string {
-  const fallback = 'https://nb.consultio.com.br';
+  const fallback = 'https://mypanel.wootech.com.br';
   try {
     const url = new URL(value || fallback);
     if (LEGACY_STORAGE_HOSTS.includes(url.hostname)) return fallback;

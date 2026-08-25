@@ -28,6 +28,8 @@ const KANBAN_CARD_SELECT = `
   campaign,
   property_id,
   created_at,
+  notes,
+  budget,
   properties(title, price, images),
   lead_tags(tag)
 `;

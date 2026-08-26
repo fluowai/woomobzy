@@ -253,16 +253,13 @@ const globalLimiter = rateLimit({
 });
 
 app.use(globalLimiter);
-app.use(express.raw({ type: '*/*' }), (req, res, next) => {
-  // Salvar corpo bruto antes do JSON parsing para webhooks
-  if (typeof req.body === 'object' && !(req.body instanceof Buffer)) {
-    req.asgardRawBody = JSON.stringify(req.body);
-  } else if (req.body instanceof Buffer) {
-    req.asgardRawBody = req.body.toString();
+app.use(express.json({ 
+  limit: '10mb',
+  verify: (req, res, buf) => {
+    // Salvar corpo bruto para webhooks (ex: AsgardPay)
+    req.asgardRawBody = buf.toString();
   }
-  next();
-});
-app.use(express.json({ limit: '10mb' }));
+}));
 app.use(express.urlencoded({ extended: true }));
 
 // Request Logging (apenas em desenvolvimento)

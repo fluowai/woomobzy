@@ -898,7 +898,7 @@ router.post('/agents/conversations/:id/message', verifyAuth, requireTenant, asyn
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds
 
     try {
-      const agentTools = await policyEngine.getAgentTools(version.id);
+      const agentTools = await policyEngine.toolRegistry.getAgentTools(version.id);
       const toolConfig = {
         tools: agentTools.map(t => ({
           name: t.name.replace(/\./g, '_'),

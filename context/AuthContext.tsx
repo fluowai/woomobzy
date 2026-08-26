@@ -359,6 +359,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const impersonateOrganization = async (orgId: string, reason: string) => {
+    if (!orgId) {
+      throw new Error('ID da organizacao e obrigatorio');
+    }
+
     // Basic check for superadmin (will be enforced by RLS/Backend too)
     // We fetch current role again to be sure
     const { data: currentProfile } = await supabase
@@ -490,6 +494,10 @@ function syncActiveOrganization(
 }
 
 async function setUpImpersonationSession(orgId: string, reason: string) {
+  if (!orgId) {
+    throw new Error('ID da organizacao e obrigatorio');
+  }
+
   const {
     data: { session },
   } = await supabase.auth.getSession();

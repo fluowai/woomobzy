@@ -1,11 +1,12 @@
 import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
-import { instanceApi, type Instance } from './hooks/api';
+import { instanceApi, cloudCredentialsApi, type Instance } from './hooks/api';
 import QRCodeModal from './QRCodeModal';
 import { usePlans } from '../../context/PlansContext';
 import {
   X, Plus, Smartphone, Trash2, Power, PowerOff, QrCode,
-  Wifi, WifiOff, Loader2, RefreshCw, AlertCircle, ShieldAlert
+  Wifi, WifiOff, Loader2, RefreshCw, AlertCircle, ShieldAlert,
+  Cloud, Key, CheckCircle
 } from 'lucide-react';
 
 interface InstanceManagerProps {
@@ -23,11 +24,23 @@ const InstanceManager: React.FC<InstanceManagerProps> = ({
 }) => {
   const [instances, setInstances] = useState<Instance[]>(initialInstances);
   const [newName, setNewName] = useState('');
-  const [newProvider, setNewProvider] = useState<'whatsmeow' | 'waha'>('whatsmeow');
+  const [newProvider, setNewProvider] = useState<'whatsmeow' | 'waha' | 'cloudapi'>('whatsmeow');
   const [creating, setCreating] = useState(false);
   const [qrInstance, setQrInstance] = useState<Instance | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Cloud API credential form
+  const [cloudCredInstance, setCloudCredInstance] = useState<Instance | null>(null);
+  const [cloudForm, setCloudForm] = useState({
+    phoneNumberId: '',
+    businessAccountId: '',
+    appId: '',
+    appSecret: '',
+    accessToken: '',
+  });
+  const [savingCreds, setSavingCreds] = useState(false);
+  const [credSuccess, setCredSuccess] = useState(false);
 
   useEffect(() => {
     refreshInstances();
@@ -70,13 +83,47 @@ const InstanceManager: React.FC<InstanceManagerProps> = ({
       const inst = await instanceApi.create(newName.trim(), newProvider);
       setInstances((prev) => [inst, ...prev]);
       setNewName('');
-      onInstanceCreated();
-      // Auto-open QR code
-      setQrInstance(inst);
+
+      if (newProvider === 'cloudapi') {
+        setCloudCredInstance(inst);
+        setCloudForm({ phoneNumberId: '', businessAccountId: '', appId: '', appSecret: '', accessToken: '' });
+        setCredSuccess(false);
+      } else {
+        onInstanceCreated();
+        setQrInstance(inst);
+      }
     } catch (err: any) {
       setError(err.message || 'Erro ao criar instância');
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleSaveCredentials = async () => {
+    if (!cloudCredInstance) return;
+    if (!cloudForm.phoneNumberId || !cloudForm.businessAccountId || !cloudForm.appId || !cloudForm.appSecret || !cloudForm.accessToken) {
+      setError('Preencha todos os campos de credenciais');
+      return;
+    }
+
+    setSavingCreds(true);
+    setError('');
+    try {
+      await cloudCredentialsApi.save({
+        instanceId: cloudCredInstance.id,
+        ...cloudForm,
+      });
+      setCredSuccess(true);
+      setTimeout(() => {
+        setCloudCredInstance(null);
+        setCredSuccess(false);
+        onInstanceCreated();
+        refreshInstances();
+      }, 1500);
+    } catch (err: any) {
+      setError(err.message || 'Erro ao salvar credenciais');
+    } finally {
+      setSavingCreds(false);
     }
   };
 
@@ -93,6 +140,26 @@ const InstanceManager: React.FC<InstanceManagerProps> = ({
   };
 
   const handleConnect = async (inst: Instance) => {
+    if (inst.provider === 'cloudapi') {
+      setCloudCredInstance(inst);
+      setCredSuccess(false);
+      try {
+        const creds = await cloudCredentialsApi.get(inst.id);
+        if (creds?.data) {
+          setCloudForm({
+            phoneNumberId: creds.data.phone_number_id || '',
+            businessAccountId: creds.data.business_account_id || '',
+            appId: creds.data.app_id || '',
+            appSecret: '',
+            accessToken: '',
+          });
+        }
+      } catch {
+        setCloudForm({ phoneNumberId: '', businessAccountId: '', appId: '', appSecret: '', accessToken: '' });
+      }
+      return;
+    }
+
     try {
       await instanceApi.connect(inst.id);
       setQrInstance(inst);
@@ -139,6 +206,17 @@ const InstanceManager: React.FC<InstanceManagerProps> = ({
     }
   };
 
+  const getProviderBadge = (provider?: string) => {
+    if (provider === 'cloudapi') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400">
+          <Cloud size={10} /> Cloud API
+        </span>
+      );
+    }
+    return null;
+  };
+
   return (
     <>
       <div className="modal-overlay" onClick={onClose}>
@@ -164,12 +242,13 @@ const InstanceManager: React.FC<InstanceManagerProps> = ({
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
               <select
                 value={newProvider}
-                onChange={(e) => setNewProvider(e.target.value as 'whatsmeow' | 'waha')}
+                onChange={(e) => setNewProvider(e.target.value as 'whatsmeow' | 'waha' | 'cloudapi')}
                 className="w-full sm:w-auto bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:border-green-500"
                 disabled={creating || isLimitReached}
               >
                 <option value="whatsmeow">WooTech 1 (Estável)</option>
                 <option value="waha">WooTech 2 (BETA)</option>
+                <option value="cloudapi">Meta Cloud API (Oficial)</option>
               </select>
               <div className="flex items-center gap-3 w-full sm:w-auto">
                 <input
@@ -230,6 +309,7 @@ const InstanceManager: React.FC<InstanceManagerProps> = ({
                   <div className="wa-inst-info">
                     <div className="wa-inst-top">
                       <span className="wa-inst-name">{inst.name}</span>
+                      {getProviderBadge(inst.provider)}
                       {getStatusBadge(inst.status)}
                     </div>
                     {inst.phone && (
@@ -241,7 +321,15 @@ const InstanceManager: React.FC<InstanceManagerProps> = ({
                   </div>
 
                   <div className="wa-inst-actions">
-                    {inst.status === 'connected' ? (
+                    {inst.provider === 'cloudapi' ? (
+                      <button
+                        onClick={() => handleConnect(inst)}
+                        className="wa-inst-btn connect"
+                        title="Configurar Credenciais"
+                      >
+                        <Key size={14} />
+                      </button>
+                    ) : inst.status === 'connected' ? (
                       <button
                         onClick={() => handleLogout(inst.id)}
                         className="wa-inst-btn logout"
@@ -290,6 +378,114 @@ const InstanceManager: React.FC<InstanceManagerProps> = ({
             refreshInstances();
           }}
         />
+      )}
+
+      {/* Cloud API Credentials Modal */}
+      {cloudCredInstance && (
+        <div className="modal-overlay" onClick={() => setCloudCredInstance(null)}>
+          <div className="wa-modal max-w-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="wa-modal-header">
+              <div className="wa-modal-title">
+                <Cloud size={22} className="text-blue-500" />
+                <h2>Credenciais Meta Cloud API</h2>
+              </div>
+              <button onClick={() => setCloudCredInstance(null)} className="wa-icon-btn">
+                <X size={20} />
+              </button>
+            </div>
+
+            <p className="text-gray-400 text-sm mb-4">
+              Configure as credenciais da sua aplicação Meta para a instância <strong className="text-white">{cloudCredInstance.name}</strong>.
+            </p>
+
+            {credSuccess ? (
+              <div className="flex items-center gap-2 text-green-400 bg-green-500/10 p-4 rounded-lg">
+                <CheckCircle size={20} />
+                <span>Credenciais salvas com sucesso!</span>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Phone Number ID</label>
+                  <input
+                    type="text"
+                    value={cloudForm.phoneNumberId}
+                    onChange={(e) => setCloudForm({ ...cloudForm, phoneNumberId: e.target.value })}
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 text-sm"
+                    placeholder="Ex: 1234567890"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">WhatsApp Business Account ID</label>
+                  <input
+                    type="text"
+                    value={cloudForm.businessAccountId}
+                    onChange={(e) => setCloudForm({ ...cloudForm, businessAccountId: e.target.value })}
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 text-sm"
+                    placeholder="Ex: 1234567890"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">App ID</label>
+                  <input
+                    type="text"
+                    value={cloudForm.appId}
+                    onChange={(e) => setCloudForm({ ...cloudForm, appId: e.target.value })}
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 text-sm"
+                    placeholder="Ex: 1234567890"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">App Secret</label>
+                  <input
+                    type="password"
+                    value={cloudForm.appSecret}
+                    onChange={(e) => setCloudForm({ ...cloudForm, appSecret: e.target.value })}
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 text-sm"
+                    placeholder="••••••••"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Access Token</label>
+                  <input
+                    type="password"
+                    value={cloudForm.accessToken}
+                    onChange={(e) => setCloudForm({ ...cloudForm, accessToken: e.target.value })}
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 text-sm"
+                    placeholder="••••••••"
+                  />
+                </div>
+
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 text-sm text-blue-300">
+                  <p className="font-medium mb-1">Onde encontrar essas credenciais:</p>
+                  <ul className="list-disc list-inside text-xs text-blue-400/80 space-y-0.5">
+                    <li><strong>Phone Number ID</strong>: Meta Developer Dashboard → WhatsApp → API Setup</li>
+                    <li><strong>WABA ID</strong>: Business Manager → WhatsApp Accounts</li>
+                    <li><strong>App ID / Secret</strong>: Meta Developer Dashboard → App Settings</li>
+                    <li><strong>Access Token</strong>: Business Settings → System Users → Generate Token</li>
+                  </ul>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => setCloudCredInstance(null)}
+                    className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleSaveCredentials}
+                    disabled={savingCreds}
+                    className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                  >
+                    {savingCreds ? <Loader2 className="animate-spin" size={16} /> : <Key size={16} />}
+                    Salvar Credenciais
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </>
   );

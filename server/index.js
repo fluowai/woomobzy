@@ -64,6 +64,8 @@ import campaignContactsRoutes from './api/campaigns/contacts.js';
 import campaignSerperRoutes from './api/campaigns/serper.js';
 import campaignBlacklistRoutes from './api/campaigns/blacklist.js';
 import asgardpayRoutes from './api/asgardpay/index.js';
+import whatsappCloudRoutes from './api/whatsapp-cloud/index.js';
+import connectionBillingRoutes from './api/billing/connections.js';
 import {
   getPlatformOriginList,
   PLATFORM_COMMERCIAL_NAME,
@@ -415,6 +417,8 @@ app.get('/test-health', (req, res) => {
 app.use('/api/jarvis', jarvisRoutes);
 app.use('/api/account', accountRoutes);
 app.use('/api/whatsapp-proxy', whatsappProxyRoutes);
+app.use('/api/whatsapp-cloud', whatsappCloudRoutes);
+app.use('/api/mega/connections', connectionBillingRoutes);
 app.use('/api/cvcrm-bia', cvcrmBiaRoutes);
 app.use('/api/mega', megaAdminRoutes);
 app.use('/api/subscription', subscriptionRoutes);

@@ -58,6 +58,8 @@ const HomeRoute: React.FC = () => {
 const Register = lazy(() => import('./views/Register'));
 const DnsHelp = lazy(() => import('./views/DnsHelp'));
 const ImpersonateCallback = lazy(() => import('./views/ImpersonateCallback'));
+const PrivacyPolicy = lazy(() => import('./views/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('./views/TermsOfService'));
 const PublicLandingPage = lazy(() => import('./views/PublicLandingPage'));
 const RuralDashboard = lazy(() => import('./views/RuralDashboard'));
 const UrbanDashboard = lazy(() => import('./views/UrbanDashboard'));
@@ -186,6 +188,9 @@ const StorageIntelligence = lazy(
 const MarketingManager = lazy(
   () => import('./views/superadmin/MarketingManager')
 );
+const ConnectionCredits = lazy(
+  () => import('./views/superadmin/ConnectionCredits')
+);
 const MegaGlobalSettings = lazy(
   () => import('./views/megaadmin/GlobalSettings')
 );
@@ -199,6 +204,7 @@ const ResellerManager = lazy(() => import('./views/megaadmin/ResellerManager'));
 const DirectClientsManager = lazy(
   () => import('./views/megaadmin/DirectClientsManager')
 );
+const ConnectionManager = lazy(() => import('./views/megaadmin/ConnectionManager'));
 
 // Site Builder
 const SiteManager = lazy(() => import('./views/SiteManager'));
@@ -254,6 +260,8 @@ const AppContent: React.FC = () => {
           <Route path="/portal-locatario" element={<PortalLocatario />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/setup-whitelabel" element={<SetupWhitelabel />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
           <Route path="/:slug/site/*" element={<PublicSite />} />
           <Route path="/site/:slug/*" element={<PublicSite />} />
           <Route path="/sites/:slug/*" element={<PublicSite />} />
@@ -508,6 +516,7 @@ const AppContent: React.FC = () => {
             <Route path="analytics" element={<AnalyticsDashboard />} />
             <Route path="monitoring" element={<PlatformMonitoring />} />
             <Route path="billing" element={<BillingOverview />} />
+            <Route path="connections" element={<ConnectionManager />} />
             <Route path="feature-flags" element={<FeatureFlags />} />
             <Route path="audit-log" element={<MegaAuditLog />} />
             <Route path="importer" element={<SmartImporter />} />
@@ -539,6 +548,7 @@ const AppContent: React.FC = () => {
             <Route path="audit-log" element={<AuditLog />} />
             <Route path="templates" element={<TemplateManager />} />
             <Route path="marketing" element={<MarketingManager />} />
+            <Route path="connection-credits" element={<ConnectionCredits />} />
             {/* O reseller também tem settings, vamos manter a rota por enquanto até adaptarmos */}
             <Route path="settings" element={<GlobalSettings />} />
           </Route>

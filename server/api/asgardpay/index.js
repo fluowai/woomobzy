@@ -223,8 +223,8 @@ router.post(
       if (type === 'payment.paid') {
         const { invoice_id, payment_id, amount, status } = data;
 
-        // Atualizar status no banco
-        const { error } = await supabase
+        // 1. Atualizar billing de aluguel (tabela billing)
+        const { error: billingError } = await supabase
           .from('billing')
           .update({
             status: 'pago',
@@ -233,13 +233,38 @@ router.post(
           })
           .eq('payment_gateway_id', invoice_id);
 
-        if (error) throw error;
+        // 2. Atualizar billing de conexões (tabela connection_billing)
+        const { data: connBilling } = await supabase
+          .from('connection_billing')
+          .select('*')
+          .eq('asgardpay_invoice_id', invoice_id)
+          .single();
+
+        if (connBilling) {
+          const { error: connError } = await supabase
+            .from('connection_billing')
+            .update({
+              status: 'paid',
+              paid_at: new Date().toISOString(),
+              payment_method: 'asgardpay',
+            })
+            .eq('id', connBilling.id);
+
+          if (!connError) {
+            await supabase
+              .from('connection_allocations')
+              .update({ status: 'active' })
+              .eq('from_org_id', connBilling.seller_org_id)
+              .eq('to_org_id', connBilling.buyer_org_id)
+              .eq('status', 'pending');
+          }
+        }
       }
 
       if (type === 'payment.failed') {
         const { invoice_id, error_code, error_message } = data;
 
-        const { error } = await supabase
+        await supabase
           .from('billing')
           .update({
             status: 'cancelado',
@@ -247,7 +272,13 @@ router.post(
           })
           .eq('payment_gateway_id', invoice_id);
 
-        if (error) throw error;
+        await supabase
+          .from('connection_billing')
+          .update({
+            status: 'cancelled',
+            payment_method: `failed: ${error_message}`,
+          })
+          .eq('asgardpay_invoice_id', invoice_id);
       }
 
       res.json({ success: true });

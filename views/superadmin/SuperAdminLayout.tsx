@@ -17,6 +17,7 @@ import {
   Layout,
   DollarSign,
   Megaphone,
+  Plug,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -47,6 +48,7 @@ const SuperAdminLayout: React.FC = () => {
       label: 'Marketing & SEO',
       path: '/superadmin/marketing',
     },
+    { icon: Plug, label: 'Conexões WA', path: '/superadmin/connection-credits' },
     { icon: Settings, label: 'Configurações', path: '/superadmin/settings' },
   ];
 

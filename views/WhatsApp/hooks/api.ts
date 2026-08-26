@@ -408,7 +408,7 @@ export interface Instance {
   tenant_id?: string;
   name: string;
   status: 'connected' | 'disconnected' | 'connecting' | 'qr_pending';
-  provider?: 'whatsmeow' | 'waha';
+  provider?: 'whatsmeow' | 'waha' | 'cloudapi';
   qr_code?: string;
   phone?: string;
   jid?: string;
@@ -638,6 +638,35 @@ export const instanceApi = {
       body: JSON.stringify(options),
       instanceId: id,
     }),
+};
+
+// ---- Cloud API Credentials ----
+export const cloudCredentialsApi = {
+  save: (data: {
+    instanceId: string;
+    phoneNumberId: string;
+    businessAccountId: string;
+    appId: string;
+    appSecret: string;
+    accessToken: string;
+    apiVersion?: string;
+  }) =>
+    apiRequest<{ success: boolean; data: any }>('/whatsapp-cloud/credentials', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  get: (instanceId: string) =>
+    apiRequest<{ success: boolean; data: any }>(`/whatsapp-cloud/credentials/${instanceId}`),
+
+  delete: (instanceId: string) =>
+    apiRequest(`/whatsapp-cloud/credentials/${instanceId}`, { method: 'DELETE' }),
+
+  validate: (data: { phoneNumberId: string; accessToken: string }) =>
+    apiRequest<{ valid: boolean; error?: string; phone?: string; verifiedName?: string }>(
+      '/whatsapp-cloud/credentials/validate',
+      { method: 'POST', body: JSON.stringify(data) }
+    ),
 };
 
 // ---- Chat API ----

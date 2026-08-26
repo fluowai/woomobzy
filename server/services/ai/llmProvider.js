@@ -75,34 +75,34 @@ import { logger } from '../../utils/logger.js';
 const MODEL_ROUTING = {
   // Fast, cheap models for simple tasks
   'intent_detection': { 
-    primary: { provider: 'groq', model: 'qwen/qwen3.6-27b' },
+    primary: { provider: 'groq', model: 'llama-3.1-70b-versatile' },
     fallback: [{ provider: 'gemini', model: 'gemini-1.5-flash' }]
   },
   
   // Main conversation - balanced quality/speed
   'conversation': { 
-    primary: { provider: 'gemini', model: 'gemini-1.5-pro-latest' },
+    primary: { provider: 'gemini', model: 'gemini-1.5-pro' },
     fallback: [
       { provider: 'openai', model: 'gpt-4o' },
       { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
-      { provider: 'groq', model: 'qwen/qwen3.6-27b' }
+      { provider: 'groq', model: 'llama-3.1-70b-versatile' }
     ]
   },
 
   // Agent execution
   'agent': { 
-    primary: { provider: 'gemini', model: 'gemini-1.5-pro-latest' },
+    primary: { provider: 'gemini', model: 'gemini-1.5-pro' },
     fallback: [
       { provider: 'openai', model: 'gpt-4o' },
       { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
-      { provider: 'groq', model: 'qwen/qwen3.6-27b' }
+      { provider: 'groq', model: 'llama-3.1-70b-versatile' }
     ]
   },
   
   // Cheap summarization
   'summarization': { 
     primary: { provider: 'openai', model: 'gpt-4o-mini' },
-    fallback: [{ provider: 'groq', model: 'qwen/qwen3.6-27b' }]
+    fallback: [{ provider: 'groq', model: 'llama-3.1-70b-versatile' }]
   },
   
   // Complex reasoning - best models

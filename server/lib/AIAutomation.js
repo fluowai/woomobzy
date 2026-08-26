@@ -3,7 +3,7 @@ import { getSupabaseServer } from './supabase-server.js';
 import { matchLeadProperties } from '../services/leadPropertyMatcher.js';
 import { AgentOrchestrator } from '../services/ai/agentOrchestrator.js';
 import { getAgentRuntime } from '../services/ai/agentRuntime.js';
-import { normalizePhoneNumber } from '../utils/phoneNormalizer.js';
+
 
 const ENHANCED_LEAD_COLUMNS = [
   'lead_score',

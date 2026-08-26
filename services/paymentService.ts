@@ -1,5 +1,5 @@
 import { logger } from '@/utils/logger';
-import { asgardpay } from './asgardpayService';
+import asgardpay from './asgardpayService';
 
 export interface PaymentDetails {
   id: string;

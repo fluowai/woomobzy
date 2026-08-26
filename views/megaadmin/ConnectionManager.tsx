@@ -43,7 +43,7 @@ const ConnectionManager: React.FC = () => {
   const [billing, setBilling] = useState<Billing[]>([]);
   const [resellers, setResellers] = useState<Reseller[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'pool' | 'billing' | 'allocate'>('pool');
+  const [tab, setTab] = useState<'pool' | 'billing' | 'allocate' | 'social'>('pool');
 
   // Pool config
   const [poolCapacity, setPoolCapacity] = useState(0);
@@ -203,6 +203,7 @@ const ConnectionManager: React.FC = () => {
           { key: 'pool', label: 'Configurar Pool' },
           { key: 'allocate', label: 'Liberar para Revenda' },
           { key: 'billing', label: 'Cobrança' },
+          { key: 'social', label: 'Redes Sociais' },
         ].map((t) => (
           <button
             key={t.key}
@@ -421,6 +422,35 @@ const ConnectionManager: React.FC = () => {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Social Media Tab */}
+      {tab === 'social' && (
+        <div className="bg-gray-900 rounded-xl border border-gray-800 p-6">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h3 className="text-white font-semibold text-lg">Conexões de Redes Sociais</h3>
+              <p className="text-gray-400 text-sm">Autentique-se nas plataformas para permitir agendamento automático.</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 flex flex-col items-center justify-center gap-3 text-center">
+              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                f
+              </div>
+              <div>
+                <h4 className="text-white font-medium">Meta (Facebook / Instagram)</h4>
+                <p className="text-gray-400 text-xs mt-1">Conecte sua conta para publicar imóveis automaticamente no Facebook e Instagram.</p>
+              </div>
+              <button 
+                onClick={() => window.open('/api/social/auth/facebook', '_blank')}
+                className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors w-full"
+              >
+                Conectar Conta Meta
+              </button>
+            </div>
           </div>
         </div>
       )}

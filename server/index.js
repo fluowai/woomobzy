@@ -66,6 +66,8 @@ import campaignBlacklistRoutes from './api/campaigns/blacklist.js';
 import asgardpayRoutes from './api/asgardpay/index.js';
 import whatsappCloudRoutes from './api/whatsapp-cloud/index.js';
 import connectionBillingRoutes from './api/billing/connections.js';
+import socialRoutes from './api/social/index.js';
+import { startSocialWorker } from './workers/social.worker.js';
 import {
   getPlatformOriginList,
   PLATFORM_COMMERCIAL_NAME,
@@ -419,6 +421,7 @@ app.use('/api/account', accountRoutes);
 app.use('/api/whatsapp-proxy', whatsappProxyRoutes);
 app.use('/api/whatsapp-cloud', whatsappCloudRoutes);
 app.use('/api/mega/connections', connectionBillingRoutes);
+app.use('/api/social', verifyAuth, requireTenant, socialRoutes);
 app.use('/api/cvcrm-bia', cvcrmBiaRoutes);
 app.use('/api/mega', megaAdminRoutes);
 app.use('/api/subscription', subscriptionRoutes);
@@ -605,6 +608,11 @@ app.post('/api/send-welcome', sendWelcomeLimiter, async (req, res) => {
 // Configura o Proxy de WhatsApp com Seguranca SaaS (API + WebSockets).
 // O server real e passado para registrar o upgrade do WebSocket.
 setupWhatsAppProxy(app, server, verifyAuth, requireTenant);
+
+// Inicia o agendador de redes sociais (roda a cada 5m)
+if (isProduction) {
+  startSocialWorker();
+}
 
 // 7. TRATAMENTO GLOBAL DE ERROS (deve vir antes do 404 catch-all)
 app.use((err, req, res, next) => {

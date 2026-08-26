@@ -265,7 +265,7 @@ router.patch('/agents/:id', verifyAuth, requireTenant, async (req, res) => {
     if (error) {
       if (isMissingRelationError(error)) {
         const agent = await updateFallbackAgent(supabase, req.orgId, id, payload);
-        if (!agent) {
+        if (!agent) { console.log('>>> AGENT NOT FOUND! currentAgentId:', currentAgentId, 'orgId:', req.orgId); 
           return res.status(404).json({
             success: false,
             error: 'Agente nao encontrado',
@@ -814,12 +814,16 @@ router.post('/agents/conversations/:id/message', verifyAuth, requireTenant, asyn
     }
 
     // Get agent and resolve its active version explicitly.
-    const { data: agent } = await supabase
+    let agentQuery = supabase
       .from('ai_agents')
       .select('*')
-      .eq('id', currentAgentId)
-      .eq('organization_id', req.orgId)
-      .single();
+      .eq('id', currentAgentId);
+
+    if (req.authRole !== 'superadmin') {
+      agentQuery = agentQuery.eq('organization_id', req.orgId);
+    }
+
+    const { data: agent } = await agentQuery.single();
 
     if (!agent) {
       return res.status(404).json({
@@ -840,7 +844,7 @@ router.post('/agents/conversations/:id/message', verifyAuth, requireTenant, asyn
       version = activeVersion;
     }
 
-    if (!version) {
+    if (!version) { console.log('>>> VERSION NOT FOUND! agentId:', agent.id); 
       const { data: latestVersions } = await supabase
         .from('ai_agent_versions')
         .select('*')

@@ -1,4 +1,4 @@
-﻿version: '3.8'
+version: '3.8'
 
 services:
   frontend:
@@ -57,7 +57,7 @@ services:
       WHATSAPP_INTERNAL_TOKEN: '${WHATSAPP_INTERNAL_TOKEN}'
       WHATSAPP_WS_JWT_SECRET: '${WHATSAPP_WS_JWT_SECRET}'
       WHATSAPP_AI_AUTOMATION: 'true'
-      RABBITMQ_URL: '${RABBITMQ_URL}'
+      RABBITMQ_URL: '${RABBITMQ_URL:-amqp://imobzy:ImobzyRabbit@2025!@rabbitmq:5672}'
       MEDIA_STORAGE_PROVIDER: 'minio'
       MINIO_ENDPOINT: '${MINIO_ENDPOINT}'
       MINIO_PUBLIC_URL: '${MINIO_PUBLIC_URL}'
@@ -68,6 +68,9 @@ services:
       TRAEFIK_DYNAMIC_DIR: '/app/traefik/dynamic'
       TRAEFIK_FRONTEND_SERVICE: 'wootech_imob_frontend@docker'
       TRAEFIK_API_SERVICE: 'wootech_imob_api@docker'
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     volumes:
       - imobzy_traefik_dynamic:/app/traefik/dynamic
     networks:
@@ -122,6 +125,9 @@ services:
       MINIO_SECRET_KEY: '${MINIO_SECRET_KEY}'
       MINIO_REGION: '${MINIO_REGION}'
       MINIO_WHATSAPP_BUCKET: '${MINIO_WHATSAPP_BUCKET}'
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     volumes:
       - whatsapp_sessions:/app/.sessions
     networks:
@@ -129,11 +135,14 @@ services:
 
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
+    hostname: rabbitmq-server
     environment:
+      RABBITMQ_ERLANG_COOKIE: '${RABBITMQ_ERLANG_COOKIE:-ImobzyRabbitMQSecretCookie2025XYZ!}'
       RABBITMQ_DEFAULT_USER: 'imobzy'
-      RABBITMQ_DEFAULT_PASS: '${RABBITMQ_DEFAULT_PASS}'
+      RABBITMQ_DEFAULT_PASS: '${RABBITMQ_DEFAULT_PASS:-ImobzyRabbit@2025!}'
+      RABBITMQ_NODENAME: 'rabbit@rabbitmq-server'
     volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+      - rabbitmq_data_v4:/var/lib/rabbitmq/mnesia
     networks:
       - imobfluow_internal
     healthcheck:
@@ -141,7 +150,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 20s
+      start_period: 30s
 
   agro-intelligence:
     image: ghcr.io/fluowai/woomobzy-agro:latest
@@ -150,8 +159,7 @@ services:
 
 volumes:
   whatsapp_sessions:
-
-  rabbitmq_data:
+  rabbitmq_data_v4:
   imobzy_traefik_dynamic:
     external: true
 

@@ -65,14 +65,20 @@ export class AsgardPayService {
     async verifyWebhookSignature(rawBody, signature) {
         if (!signature)
             return false;
-        // Implementar verificação de HMAC-SHA256 da AsgardPay
-        // A AsgardPay envia uma assinatura HMAC-SHA256 no header X-AsgardPay-Signature
-        // que contém o corpo da requisição assinado com a secret key
-        const crypto = require('crypto');
-        const hmac = crypto.createHmac('sha256', this.secretKey);
+        // Verificação HMAC-SHA256 — usa import dinâmico (ESM, sem require)
+        const { createHmac } = await import('node:crypto');
+        const hmac = createHmac('sha256', this.secretKey);
         hmac.update(rawBody);
         const digest = hmac.digest('hex');
         return digest === signature;
     }
 }
-export const asgardpay = new AsgardPayService();
+
+// NOTA: NÃO instanciar aqui. As chaves AsgardPay são configuradas pelo
+// painel front-end e devem ser passadas via options ao criar uma instância:
+//   new AsgardPayService({ publicKey, secretKey })
+// Isso evita crash no startup quando as chaves não estão em variáveis de ambiente.
+
+// Export default = a própria classe, para que `import asgardpay` funcione
+// e `asgardpay.AsgardPayService` também resolva corretamente em index.js.
+export default { AsgardPayService };

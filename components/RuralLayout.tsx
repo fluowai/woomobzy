@@ -72,8 +72,7 @@ const RuralLayout: React.FC = () => {
     { icon: Mail, label: 'Email', path: '/rural/email' },
     { icon: Briefcase, label: 'Funil / CRM', path: '/rural/kanban' },
     { icon: Calendar, label: 'Minha Agenda', path: '/rural/agenda' },
-    { icon: Users, label: 'CRM Leads', path: '/rural/crm' },
-  ];
+    ];
 
   const assetItems: MenuItem[] = [
     { icon: Home, label: 'Imóveis Rurais', path: '/rural/properties' },

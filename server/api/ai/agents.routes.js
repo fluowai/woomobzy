@@ -883,6 +883,7 @@ router.post('/agents/conversations/:id/message', verifyAuth, requireTenant, asyn
     ];
 
     // Check if LLM is available before processing
+    await llm.initialize();
     const llmProvider = llm.getProviderForTask('conversation');
     if (!llmProvider) {
       return res.status(500).json({
@@ -897,8 +898,13 @@ router.post('/agents/conversations/:id/message', verifyAuth, requireTenant, asyn
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds
 
     try {
+      const agentTools = await policyEngine.getAgentTools(version.id);
       const toolConfig = {
-        tools: version.tools,
+        tools: agentTools.map(t => ({
+          name: t.name.replace(/\./g, '_'),
+          description: t.description || `Tool: ${t.name}`,
+          parameters: t.inputSchema || { type: 'object', properties: {} }
+        })),
         toolChoice: 'auto'
       };
 
@@ -916,7 +922,7 @@ router.post('/agents/conversations/:id/message', verifyAuth, requireTenant, asyn
       if (llmResponse.toolCalls && llmResponse.toolCalls.length > 0) {
         for (const toolCall of llmResponse.toolCalls) {
           try {
-            const toolName = toolCall.function?.name;
+            const toolName = toolCall.function?.name ? toolCall.function.name.replace(/_/g, '.') : toolCall.function?.name;
             const toolArgs = JSON.parse(toolCall.function?.arguments || '{}');
 
             const result = await policyEngine.executeToolCall(

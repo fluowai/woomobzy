@@ -1,4 +1,6 @@
 import crypto from 'crypto';
+import { getSupabaseServer } from '../../lib/supabase-server.js';
+import { decrypt } from '../../lib/crypto.js';
 
 /**
  * Meta WhatsApp Cloud API — Data Deletion Callback
@@ -6,6 +8,9 @@ import crypto from 'crypto';
  * When a user requests data deletion via the Meta App Dashboard,
  * Meta POSTs here with signed_request. We extract the user_id,
  * purge associated WhatsApp data, and return the required JSON.
+ *
+ * The APP_SECRET is fetched per-tenant from whatsapp_cloud_credentials,
+ * not from a global env var, since each client has their own Meta app.
  *
  * Docs: https://developers.facebook.com/docs/privacy/data-deletion-callbacks
  */
@@ -23,15 +28,33 @@ export default function dataDeletionRoutes(app, opts, done) {
         return reply.code(400).send({ error: 'Invalid signed_request format' });
       }
 
-      const APP_SECRET = process.env.META_APP_SECRET;
-      if (!APP_SECRET) {
-        req.log.error('META_APP_SECRET not configured — cannot verify data deletion request');
-        return reply.code(500).send({ error: 'Server misconfiguration' });
+      const supabase = getSupabaseServer();
+
+      // Decode payload to extract app_id, then look up the per-tenant APP_SECRET
+      const payloadData = JSON.parse(
+        Buffer.from(encodedPayload.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf-8')
+      );
+
+      const appId = payloadData.app_id;
+      if (!appId) {
+        return reply.code(400).send({ error: 'app_id not found in signed_request' });
       }
 
+      const { data: cred } = await supabase
+        .from('whatsapp_cloud_credentials')
+        .select('app_secret_encrypted, tenant_id')
+        .eq('app_id', appId)
+        .single();
+
+      if (!cred || !cred.app_secret_encrypted) {
+        req.log.warn({ appId }, 'Data deletion: no credentials found for app_id');
+        return reply.code(404).send({ error: 'App not configured' });
+      }
+
+      const appSecret = decrypt(cred.app_secret_encrypted);
       const sig = Buffer.from(encodedSig.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
       const expectedSig = crypto
-        .createHmac('sha256', APP_SECRET)
+        .createHmac('sha256', appSecret)
         .update(encodedPayload)
         .digest();
 
@@ -39,16 +62,12 @@ export default function dataDeletionRoutes(app, opts, done) {
         return reply.code(403).send({ error: 'Invalid signature' });
       }
 
-      const data = JSON.parse(
-        Buffer.from(encodedPayload.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf-8')
-      );
-
-      const userId = data.user_id;
-      req.log.info({ userId }, 'Data deletion request received from Meta');
+      const userId = payloadData.user_id;
+      req.log.info({ userId, appId }, 'Data deletion request received from Meta');
 
       // Purge WhatsApp Cloud credentials and messages for this user
-      if (userId && opts.db) {
-        await purgeWhatsAppData(opts.db, userId, req.log);
+      if (userId) {
+        await purgeWhatsAppData(supabase, userId, req.log);
       }
 
       return reply.send({
@@ -72,15 +91,15 @@ export default function dataDeletionRoutes(app, opts, done) {
   done();
 };
 
-async function purgeWhatsAppData(db, userId, log) {
+async function purgeWhatsAppData(supabase, userId, log) {
   try {
     // Find instances owned by this user and delete cloud credentials
-    const { rows: instances } = await db.query(
-      `SELECT id FROM instances WHERE user_id = $1 OR created_by = $1`,
-      [userId]
-    );
+    const { data: instances } = await supabase
+      .from('whatsapp_instances')
+      .select('id')
+      .or(`user_id.eq.${userId},created_by.eq.${userId}`);
 
-    if (instances.length === 0) {
+    if (!instances || instances.length === 0) {
       log.info({ userId }, 'No instances found for user — nothing to purge');
       return;
     }
@@ -88,16 +107,16 @@ async function purgeWhatsAppData(db, userId, log) {
     const instanceIds = instances.map((i) => i.id);
 
     // Delete cloud credentials
-    await db.query(
-      `DELETE FROM whatsapp_cloud_credentials WHERE instance_id = ANY($1)`,
-      [instanceIds]
-    );
+    await supabase
+      .from('whatsapp_cloud_credentials')
+      .delete()
+      .in('instance_id', instanceIds);
 
     // Delete outbound messages for these instances
-    await db.query(
-      `DELETE FROM whatsapp_messages WHERE instance_id = ANY($1)`,
-      [instanceIds]
-    );
+    await supabase
+      .from('whatsapp_messages')
+      .delete()
+      .in('instance_id', instanceIds);
 
     log.info({ userId, instanceCount: instances.length }, 'WhatsApp data purged for user');
   } catch (err) {

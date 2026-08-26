@@ -16,13 +16,32 @@ function verifyMetaSignature(appSecret, body, signature) {
   }
 }
 
-router.get('/:appId', (req, res) => {
+router.get('/:appId', async (req, res) => {
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
+  const appId = req.params.appId;
 
   if (mode !== 'subscribe') {
     return res.sendStatus(403);
+  }
+
+  try {
+    const supabase = getSupabaseServer();
+    const { data: cred } = await supabase
+      .from('whatsapp_cloud_credentials')
+      .select('webhook_verify_token')
+      .eq('app_id', appId)
+      .eq('is_active', true)
+      .single();
+
+    if (!cred || cred.webhook_verify_token !== token) {
+      logger.warn(`Webhook verify failed: appId=${appId}, token mismatch`);
+      return res.sendStatus(403);
+    }
+  } catch (err) {
+    logger.error('Error verifying webhook token:', err);
+    return res.sendStatus(500);
   }
 
   res.send(challenge);

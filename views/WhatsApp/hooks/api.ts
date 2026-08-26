@@ -650,6 +650,7 @@ export const cloudCredentialsApi = {
     appSecret: string;
     accessToken: string;
     apiVersion?: string;
+    webVerifyToken?: string;
   }) =>
     apiRequest<{ success: boolean; data: any }>('/whatsapp-cloud/credentials', {
       method: 'POST',

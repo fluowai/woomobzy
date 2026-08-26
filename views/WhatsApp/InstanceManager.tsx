@@ -38,6 +38,7 @@ const InstanceManager: React.FC<InstanceManagerProps> = ({
     appId: '',
     appSecret: '',
     accessToken: '',
+    webVerifyToken: '',
   });
   const [savingCreds, setSavingCreds] = useState(false);
   const [credSuccess, setCredSuccess] = useState(false);
@@ -86,7 +87,7 @@ const InstanceManager: React.FC<InstanceManagerProps> = ({
 
       if (newProvider === 'cloudapi') {
         setCloudCredInstance(inst);
-        setCloudForm({ phoneNumberId: '', businessAccountId: '', appId: '', appSecret: '', accessToken: '' });
+        setCloudForm({ phoneNumberId: '', businessAccountId: '', appId: '', appSecret: '', accessToken: '', webVerifyToken: '' });
         setCredSuccess(false);
       } else {
         onInstanceCreated();
@@ -152,10 +153,11 @@ const InstanceManager: React.FC<InstanceManagerProps> = ({
             appId: creds.data.app_id || '',
             appSecret: '',
             accessToken: '',
+            webVerifyToken: creds.data.webhook_verify_token || '',
           });
         }
       } catch {
-        setCloudForm({ phoneNumberId: '', businessAccountId: '', appId: '', appSecret: '', accessToken: '' });
+        setCloudForm({ phoneNumberId: '', businessAccountId: '', appId: '', appSecret: '', accessToken: '', webVerifyToken: '' });
       }
       return;
     }
@@ -455,6 +457,19 @@ const InstanceManager: React.FC<InstanceManagerProps> = ({
                     placeholder="••••••••"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Webhook Verify Token</label>
+                  <input
+                    type="text"
+                    value={cloudForm.webVerifyToken}
+                    onChange={(e) => setCloudForm({ ...cloudForm, webVerifyToken: e.target.value })}
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 text-sm"
+                    placeholder="Token que você definiu no Meta Dashboard"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Defina no Meta Developer Dashboard → WhatsApp → Configuration → Webhook → Verify Token
+                  </p>
+                </div>
 
                 <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 text-sm text-blue-300">
                   <p className="font-medium mb-1">Onde encontrar essas credenciais:</p>
@@ -463,6 +478,7 @@ const InstanceManager: React.FC<InstanceManagerProps> = ({
                     <li><strong>WABA ID</strong>: Business Manager → WhatsApp Accounts</li>
                     <li><strong>App ID / Secret</strong>: Meta Developer Dashboard → App Settings</li>
                     <li><strong>Access Token</strong>: Business Settings → System Users → Generate Token</li>
+                    <li><strong>Webhook Verify Token</strong>: Meta Dashboard → WhatsApp → Configuration → Webhook</li>
                   </ul>
                 </div>
 

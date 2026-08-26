@@ -8,7 +8,7 @@ const router = Router();
 
 router.post('/', async (req, res) => {
   try {
-    const { instanceId, phoneNumberId, businessAccountId, appId, appSecret, accessToken, apiVersion } = req.body;
+    const { instanceId, phoneNumberId, businessAccountId, appId, appSecret, accessToken, apiVersion, webhookVerifyToken } = req.body;
     const tenantId = req.orgId;
 
     if (!instanceId || !phoneNumberId || !businessAccountId || !appId || !appSecret || !accessToken) {
@@ -36,6 +36,7 @@ router.post('/', async (req, res) => {
       app_id: appId,
       app_secret_encrypted: encrypt(appSecret),
       access_token_encrypted: encrypt(accessToken),
+      webhook_verify_token: webhookVerifyToken || null,
       api_version: apiVersion || 'v21.0',
       is_active: true,
     };

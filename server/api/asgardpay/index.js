@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
 import { verifyAuth } from '../../middleware/auth.js';
 import { verifyMegaAdmin } from '../../middleware/auth.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
@@ -185,6 +185,8 @@ router.post(
       // Usar JSON.stringify do corpo parsed para verificação de assinatura
       // Isso funciona se a AsgardPay calcular o HMAC sobre o corpo JSON
       const rawBody = JSON.stringify(webhookEvent);
+
+      const supabase = getSupabaseServer();
 
       // Validar assinatura do webhook
       const isValid = await asgardpay.verifyWebhookSignature(

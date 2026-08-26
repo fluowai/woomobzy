@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import http from 'node:http';
 
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
@@ -498,7 +499,6 @@ app.get('/', (req, res) => res.send(`${PLATFORM_COMMERCIAL_NAME} API Online`));
 // --- Instagram Service Proxy ---
 // Forward /api/instagram/* to the Instagram service on port 3200
 app.use('/api/instagram', (req, res) => {
-  const http = require('http');
   const url = new URL(req.url, {
     protocol: 'http:',
     host: 'localhost:3200',

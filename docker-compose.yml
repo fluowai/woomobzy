@@ -53,8 +53,6 @@ services:
       WHATSAPP_WS_JWT_SECRET: "f8a2c9e1d4b7f3a6e2d8c5b9a1f4e7d2c6b3a9f1e5d8c2b6a4f7e1d3c9b5a8f2"
       WHATSAPP_AI_AUTOMATION: "true"
       RABBITMQ_URL: "amqp://imobzy:Argo%4015077399brsc@rabbitmq-server:5672/"
-      ASGARDPAY_PUBLIC_KEY: "gpk_ykumdugkhn0fdpkq4fihmje1ylo1wm06fqrsgrkc"
-      ASGARDPAY_SECRET_KEY: "gsk_z6J2vTKXsHA1_YimoNgLbdwCsi4XOGFX4Z30ZyZmMcecA"
       MEDIA_STORAGE_PROVIDER: "minio"
       MINIO_ENDPOINT: "https://nb.consultio.com.br"
       MINIO_PUBLIC_URL: "https://nb.consultio.com.br"

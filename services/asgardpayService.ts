@@ -28,29 +28,32 @@ export interface PaymentResponse {
 }
 
 export class AsgardPayService {
-  private publicKey: string;
-  private secretKey: string;
+  private publicKey: string | null;
+  private secretKey: string | null;
   private baseUrl: string;
 
   constructor(options?: { publicKey?: string; secretKey?: string }) {
     const publicKey = options?.publicKey || process.env.ASGARDPAY_PUBLIC_KEY;
     const secretKey = options?.secretKey || process.env.ASGARDPAY_SECRET_KEY;
 
-    if (!publicKey || !secretKey) {
+    this.publicKey = publicKey || null;
+    this.secretKey = secretKey || null;
+    this.baseUrl = 'https://api.asgardpay.com.br/v1';
+  }
+
+  private _assertKeys() {
+    if (!this.publicKey || !this.secretKey) {
       throw new Error(
-        'Chaves AsgardPay não configuradas. Defina ASGARDPAY_PUBLIC_KEY e ASGARDPAY_SECRET_KEY ou passe chaves no options.'
+        'Chaves AsgardPay não configuradas. Cadastre as chaves da organização no painel.'
       );
     }
-
-    this.publicKey = publicKey;
-    this.secretKey = secretKey;
-    this.baseUrl = 'https://api.asgardpay.com.br/v1';
   }
 
   private async apiRequest(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<any> {
+    this._assertKeys();
     const url = `${this.baseUrl}${endpoint}`;
 
     const defaultOptions: RequestInit = {
@@ -128,5 +131,3 @@ export class AsgardPayService {
     return digest === signature;
   }
 }
-
-export const asgardpay = new AsgardPayService();

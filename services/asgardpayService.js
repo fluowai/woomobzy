@@ -4,18 +4,21 @@ class AsgardPayService {
     const publicKey = options?.publicKey || process.env.ASGARDPAY_PUBLIC_KEY;
     const secretKey = options?.secretKey || process.env.ASGARDPAY_SECRET_KEY;
 
-    if (!publicKey || !secretKey) {
-      throw new Error(
-        'Chaves AsgardPay não configuradas. Defina ASGARDPAY_PUBLIC_KEY e ASGARDPAY_SECRET_KEY ou passe chaves no options.'
-      );
-    }
-
-    this.publicKey = publicKey;
-    this.secretKey = secretKey;
+    this.publicKey = publicKey || null;
+    this.secretKey = secretKey || null;
     this.baseUrl = 'https://api.asgardpay.com.br/v1';
   }
 
+  _assertKeys() {
+    if (!this.publicKey || !this.secretKey) {
+      throw new Error(
+        'Chaves AsgardPay não configuradas. Cadastre as chaves da organização no painel.'
+      );
+    }
+  }
+
   async apiRequest(endpoint, options = {}) {
+    this._assertKeys();
     const url = `${this.baseUrl}${endpoint}`;
 
     const defaultOptions = {
@@ -88,12 +91,5 @@ class AsgardPayService {
   }
 }
 
-// Create instance
-const asgardpay = new AsgardPayService();
-
-// Attach class to instance for compatibility
-asgardpay.AsgardPayService = AsgardPayService;
-
-// Export default (the instance) and named export (the class)
-export default asgardpay;
+export default { AsgardPayService };
 export { AsgardPayService };

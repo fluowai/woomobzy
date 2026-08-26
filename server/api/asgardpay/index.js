@@ -3,7 +3,7 @@ import { verifyAuth } from '../../middleware/auth.js';
 import { verifyMegaAdmin } from '../../middleware/auth.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import logger from '../../utils/logger.js';
-import asgardpay, { AsgardPayService } from '../../../services/asgardpayService.js';
+import { AsgardPayService } from '../../../services/asgardpayService.js';
 
 const router = Router();
 
@@ -14,17 +14,21 @@ router.use('/webhook', express.text({ type: '*/*' }));
 async function getOrgAsgardPayKeys(orgId) {
   try {
     const supabase = getSupabaseServer();
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('asgardpay_public_key, asgardpay_secret_key')
-      .eq('id', orgId)
-      .single();
 
-    if (org?.asgardpay_public_key && org?.asgardpay_secret_key) {
-      return {
-        publicKey: org.asgardpay_public_key,
-        secretKey: org.asgardpay_secret_key,
-      };
+    // Se orgId fornecido, buscar chaves da organização
+    if (orgId) {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('asgardpay_public_key, asgardpay_secret_key')
+        .eq('id', orgId)
+        .single();
+
+      if (org?.asgardpay_public_key && org?.asgardpay_secret_key) {
+        return {
+          publicKey: org.asgardpay_public_key,
+          secretKey: org.asgardpay_secret_key,
+        };
+      }
     }
 
     // Fall back to global saas_settings
@@ -86,9 +90,13 @@ router.post(
 
       // Obter chaves AsgardPay da organização (ou global)
       const orgKeys = await getOrgAsgardPayKeys(client.organization_id || '');
-      const asgardpayService = orgKeys
-        ? new asgardpay.AsgardPayService(orgKeys)
-        : new asgardpay.AsgardPayService();
+      if (!orgKeys) {
+        return res.status(400).json({
+          success: false,
+          error: 'Chaves AsgardPay não configuradas para esta organização. Cadastre as chaves no painel.',
+        });
+      }
+      const asgardpayService = new AsgardPayService(orgKeys);
 
       // Criar cobrança no AsgardPay
       const paymentResult = await asgardpayService.createPayment({
@@ -151,9 +159,13 @@ router.get(
       // Obter chaves da organização para consulta de status
       const orgId = req.orgId;
       const orgKeys = orgId ? await getOrgAsgardPayKeys(orgId) : null;
-      const paymentService = orgKeys
-        ? new asgardpay.AsgardPayService(orgKeys)
-        : new asgardpay.AsgardPayService();
+      if (!orgKeys) {
+        return res.status(400).json({
+          success: false,
+          error: 'Chaves AsgardPay não configuradas para esta organização.',
+        });
+      }
+      const paymentService = new AsgardPayService(orgKeys);
 
       const paymentResult = await paymentService.getPaymentStatus(id);
 
@@ -188,8 +200,15 @@ router.post(
 
       const supabase = getSupabaseServer();
 
+      // Buscar chaves globais para validação do webhook
+      const webhookKeys = await getOrgAsgardPayKeys(null);
+      if (!webhookKeys) {
+        return res.status(400).json({ error: 'Chaves AsgardPay não configuradas para validação de webhook.' });
+      }
+      const webhookService = new AsgardPayService(webhookKeys);
+
       // Validar assinatura do webhook
-      const isValid = await asgardpay.verifyWebhookSignature(
+      const isValid = await webhookService.verifyWebhookSignature(
         rawBody,
         webhookSig
       );

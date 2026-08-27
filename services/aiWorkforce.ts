@@ -196,6 +196,13 @@ export const updateAgentPrompt = async (id: string, promptText: string): Promise
   });
 };
 
+export const updateAgentModel = async (id: string, model: string): Promise<void> => {
+  await callApi(`/api/ai/agents/${id}/model`, {
+    method: 'PATCH',
+    body: JSON.stringify({ model }),
+  });
+};
+
 export const runFullTest = async (
   agent: Partial<AIAgent>
 ): Promise<{ success: boolean; report: Record<string, unknown> }> => {

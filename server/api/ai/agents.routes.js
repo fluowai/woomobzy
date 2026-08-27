@@ -406,6 +406,48 @@ router.patch('/agents/:id/prompt', verifyAuth, requireTenant, async (req, res) =
   }
 });
 
+router.patch('/agents/:id/model', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const supabase = getSupabaseServer();
+    const { id } = req.params;
+    const { model } = req.body;
+
+    if (!model) {
+      return res.status(400).json({
+        success: false,
+        error: 'model é obrigatório',
+        code: 'AI_AGENT_MODEL_REQUIRED',
+      });
+    }
+
+    const { data: agent, error: agentError } = await supabase
+      .from('ai_agents')
+      .select('active_version_id')
+      .eq('id', id)
+      .eq('organization_id', req.orgId)
+      .single();
+
+    if (agentError || !agent || !agent.active_version_id) {
+      return res.status(404).json({
+        success: false,
+        error: 'Agente ou versão ativa não encontrada',
+        code: 'AI_AGENT_NOT_FOUND',
+      });
+    }
+
+    const { error: updateError } = await supabase
+      .from('ai_agent_versions')
+      .update({ model })
+      .eq('id', agent.active_version_id);
+
+    if (updateError) throw updateError;
+
+    res.json({ success: true });
+  } catch (error) {
+    handleRouteError(res, error, 'AGENT_MODEL_UPDATE');
+  }
+});
+
 router.delete('/agents/:id', verifyAuth, requireTenant, async (req, res) => {
   try {
     const supabase = getSupabaseServer();

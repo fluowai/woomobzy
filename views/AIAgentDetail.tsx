@@ -15,6 +15,7 @@ import {
   listChannelRules,
   updateAgent,
   updateAgentPrompt,
+  updateAgentModel,
   type ChannelInstances
 } from '../services/aiWorkforce';
 
@@ -359,8 +360,35 @@ const AIAgentDetail: React.FC = () => {
                   </label>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 col-span-2">
+                    <span className="text-xs text-slate-500 font-bold uppercase tracking-[0.12em]">Modelo de IA Ativo</span>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={agent.model}
+                        onChange={async (e) => {
+                          const newModel = e.target.value;
+                          setAgent(prev => ({ ...prev, model: newModel }));
+                          if (agentId) {
+                            try {
+                              await updateAgentModel(agentId, newModel);
+                              toast.success('Modelo atualizado com sucesso');
+                            } catch (err: any) {
+                              toast.error(err?.message || 'Erro ao atualizar modelo');
+                            }
+                          }
+                        }}
+                        className="h-8 rounded border border-slate-200 px-2 text-xs font-semibold outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 bg-white"
+                      >
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                        <option value="gpt-4o">GPT-4o (OpenAI)</option>
+                        <option value="gpt-4o-mini">GPT-4o Mini (OpenAI)</option>
+                        <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                        <option value="llama-3.1-70b-versatile">Llama 3.1 70B (Groq)</option>
+                      </select>
+                    </div>
+                  </div>
                   {[
-                    ['Modelo', agent.model],
                     ['Temperatura', String(agent.temperature)],
                     ['Versão publicada', agent.version],
                     ['Publicado em', agent.publishedAt],

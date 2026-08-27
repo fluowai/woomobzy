@@ -652,14 +652,27 @@ export class LLMOrchestrator {
     
     // Priority: site_settings (per-org) > saas_settings (global) > env vars
     // Extract apiKey from org key configs if they're objects
-    const extractApiKey = (keyConfig) => typeof keyConfig === 'object' ? keyConfig.apiKey : keyConfig;
+    const extractApiKey = (keyConfig) => {
+      if (!keyConfig) return null;
+      let key = typeof keyConfig === 'object' ? keyConfig.apiKey : keyConfig;
+      if (typeof key === 'string') key = key.trim();
+      return (key && key !== '' && key !== 'null' && key !== 'undefined') ? key : null;
+    };
+    
+    const getValidKey = (...keys) => {
+      for (const k of keys) {
+        const val = extractApiKey(k);
+        if (val) return val;
+      }
+      return null;
+    };
     
     const keys = {
-      openai: extractApiKey(orgKeys?.openai) || settings?.global_openai_key || process.env.OPENAI_API_KEY,
-      anthropic: extractApiKey(orgKeys?.anthropic) || settings?.global_anthropic_key || process.env.ANTHROPIC_API_KEY,
-      gemini: extractApiKey(orgKeys?.gemini) || settings?.global_gemini_key || process.env.GEMINI_API_KEY,
-      groq: extractApiKey(orgKeys?.groq) || settings?.global_groq_key || process.env.GROQ_API_KEY,
-      openrouter: extractApiKey(orgKeys?.openrouter) || settings?.global_openrouter_key || process.env.OPENROUTER_API_KEY
+      openai: getValidKey(orgKeys?.openai, settings?.global_openai_key, process.env.OPENAI_API_KEY),
+      anthropic: getValidKey(orgKeys?.anthropic, settings?.global_anthropic_key, process.env.ANTHROPIC_API_KEY),
+      gemini: getValidKey(orgKeys?.gemini, settings?.global_gemini_key, process.env.GEMINI_API_KEY),
+      groq: getValidKey(orgKeys?.groq, settings?.global_groq_key, process.env.GROQ_API_KEY),
+      openrouter: getValidKey(orgKeys?.openrouter, settings?.global_openrouter_key, process.env.OPENROUTER_API_KEY)
     };
     
     if (keys.openai) this.providers.set('openai', new OpenAIProvider({ apiKey: keys.openai }));
@@ -719,19 +732,49 @@ export class LLMOrchestrator {
     return null;
   }
   
+  getProviderForModel(model) {
+    if (model.includes('gpt') || model.includes('o1') || model.includes('text-embedding-3')) return 'openai';
+    if (model.includes('claude')) return 'anthropic';
+    if (model.includes('gemini') || model.includes('text-embedding-004')) return 'gemini';
+    if (model.includes('llama') || model.includes('mixtral') || model.includes('gemma')) return 'groq';
+    return null; // fallback to OpenRouter or default
+  }
+
   /**
    * Main chat method with automatic routing
    */
   async chat(messages, taskType = 'conversation', config = {}) {
     await this.initialize();
     
-    const result = this.getProviderForTask(taskType);
+    let provider, model, isFallback = false;
     
-    if (!result) {
+    if (config.model) {
+      model = config.model;
+      const providerName = this.getProviderForModel(model) || 'openrouter';
+      
+      if (this.providers.has(providerName)) {
+        provider = this.providers.get(providerName);
+      } else {
+        const result = this.getProviderForTask(taskType);
+        if (result) {
+          provider = result.provider;
+          model = result.model;
+          isFallback = true;
+        }
+      }
+    } else {
+      const result = this.getProviderForTask(taskType);
+      if (result) {
+        provider = result.provider;
+        model = result.model;
+        isFallback = result.isFallback;
+      }
+    }
+    
+    if (!provider) {
       throw new Error('Nenhum provedor LLM configurado. Configure chaves de API (Gemini, OpenAI, Anthropic, Groq ou OpenRouter) no painel de configurações.');
     }
     
-    const { provider, model, isFallback } = result;
     const finalConfig = { ...config, model };
     
     logger.info('[LLMOrchestrator] Chat request', { 

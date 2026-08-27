@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { supabase } from '../../lib/supabase.js';
+import { getSupabaseServer } from '../../lib/supabase-server.js';
 import logger from '../../utils/logger.js';
 
 const router = Router();
@@ -13,6 +13,7 @@ router.post('/connect/facebook', async (req, res) => {
             return res.status(400).json({ error: 'Faltando parâmetros obrigatórios' });
         }
 
+        const supabase = getSupabaseServer();
         const { data, error } = await supabase
             .from('social_accounts')
             .upsert(
@@ -48,6 +49,7 @@ router.post('/posts', async (req, res) => {
             return res.status(400).json({ error: 'Faltando parâmetros obrigatórios' });
         }
 
+        const supabase = getSupabaseServer();
         const { data, error } = await supabase
             .from('social_posts')
             .insert([
@@ -79,6 +81,7 @@ router.get('/posts/:org_id', async (req, res) => {
     try {
         const { org_id } = req.params;
         
+        const supabase = getSupabaseServer();
         const { data, error } = await supabase
             .from('social_posts')
             .select('*')

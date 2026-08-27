@@ -23,6 +23,8 @@ import terminationRoutes from './termination.routes.js';
 import dashboardRoutes from './dashboard.routes.js';
 import notificationRoutes from './notification.routes.js';
 import borderoRoutes from './bordero.routes.js';
+import contractRoutes from './contract.routes.js';
+import internalSignatureRoutes from './internalSignature.routes.js';
 
 const router = Router();
 
@@ -36,5 +38,7 @@ router.use('/terminations', terminationRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/bordero', borderoRoutes);
+router.use('/contract', contractRoutes);
+router.use('/internal-signature', internalSignatureRoutes);
 
 export default router;

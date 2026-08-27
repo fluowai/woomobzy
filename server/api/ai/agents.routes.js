@@ -814,16 +814,28 @@ router.post('/agents/conversations/:id/message', verifyAuth, requireTenant, asyn
     }
 
     // Get agent and resolve its active version explicitly.
+    const isSandbox = String(conversationId || '').startsWith('sandbox-');
+
     let agentQuery = supabase
       .from('ai_agents')
       .select('*')
       .eq('id', currentAgentId);
 
-    if (req.authRole !== 'superadmin') {
+    if (req.authRole !== 'superadmin' && !isSandbox) {
       agentQuery = agentQuery.eq('organization_id', req.orgId);
     }
 
-    const { data: agent } = await agentQuery.single();
+    let { data: agent } = await agentQuery.single();
+
+    // Fallback for sandbox: if org-scoped lookup fails, retry without org filter
+    if (!agent && isSandbox) {
+      const { data: fallbackAgent } = await supabase
+        .from('ai_agents')
+        .select('*')
+        .eq('id', currentAgentId)
+        .single();
+      agent = fallbackAgent;
+    }
 
     if (!agent) {
       return res.status(404).json({

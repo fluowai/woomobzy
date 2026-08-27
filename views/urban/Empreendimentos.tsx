@@ -76,6 +76,9 @@ const Empreendimentos: React.FC = () => {
     progress_pct: 0,
     registration_number: '',
     total_area: 0,
+    generate_mockup: false,
+    blocks_count: 1,
+    lots_per_block: 10,
   });
 
   useEffect(() => {
@@ -115,22 +118,63 @@ const Empreendimentos: React.FC = () => {
       return;
     }
 
+    const isTotalUnitsFromMockup = form.generate_mockup ? (form.blocks_count * form.lots_per_block) : form.total_units;
+
     const payload = {
-      ...form,
+      name: form.name,
+      address: form.address,
+      city: form.city,
+      state: form.state,
+      total_units: isTotalUnitsFromMockup,
+      status: form.status,
+      progress_pct: form.progress_pct,
+      registration_number: form.registration_number,
+      total_area: form.total_area,
       organization_id: profile.organization_id,
-      available_units: form.total_units,
+      available_units: isTotalUnitsFromMockup,
     };
-    const { error } = editingId
+    
+    const { data: savedDev, error } = editingId
       ? await supabase
           .from('developments')
           .update(payload)
           .eq('id', editingId)
           .eq('organization_id', profile.organization_id)
-      : await supabase.from('developments').insert(payload);
-    if (error) {
+          .select()
+          .single()
+      : await supabase.from('developments').insert(payload).select().single();
+      
+    if (error || !savedDev) {
       logger.error('Erro ao salvar empreendimento:', error);
       return;
     }
+    
+    if (!editingId && form.generate_mockup) {
+      const lotsToInsert = [];
+      for (let b = 1; b <= form.blocks_count; b++) {
+        const blockName = `Quadra ${String.fromCharCode(64 + b)}`;
+        for (let l = 1; l <= form.lots_per_block; l++) {
+          lotsToInsert.push({
+            organization_id: profile.organization_id,
+            development_id: savedDev.id,
+            block_name: blockName,
+            lot_number: String(l).padStart(2, '0'),
+            area_m2: 250,
+            price: 0,
+            status: 'available',
+          });
+        }
+      }
+      
+      const { error: lotsError } = await supabase.from('urban_lots').insert(lotsToInsert);
+      if (lotsError) {
+        logger.error('Erro ao gerar mockup de lotes:', lotsError);
+        toast.error('O empreendimento foi criado, mas houve erro ao gerar os lotes.');
+      } else {
+        toast.success(`${lotsToInsert.length} lotes gerados com sucesso!`);
+      }
+    }
+    
     setShowModal(false);
     setEditingId(null);
     setForm({
@@ -143,6 +187,9 @@ const Empreendimentos: React.FC = () => {
       progress_pct: 0,
       registration_number: '',
       total_area: 0,
+      generate_mockup: false,
+      blocks_count: 1,
+      lots_per_block: 10,
     });
     load();
   };
@@ -159,6 +206,9 @@ const Empreendimentos: React.FC = () => {
       progress_pct: development.progress_pct || 0,
       registration_number: development.registration_number || '',
       total_area: development.total_area || 0,
+      generate_mockup: false,
+      blocks_count: 1,
+      lots_per_block: 10,
     });
     setShowModal(true);
   };
@@ -483,20 +533,68 @@ const Empreendimentos: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-6">
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
-                    Total de Lotes
+              {!editingId && (
+                <div className="bg-blue-50/50 border border-blue-100 p-6 rounded-2xl">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.generate_mockup}
+                      onChange={(e) => setForm({ ...form, generate_mockup: e.target.checked })}
+                      className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div>
+                      <span className="text-sm font-bold text-slate-900 block">Gerar Mockup Visual de Lotes</span>
+                      <span className="text-xs text-slate-500">Cria os lotes automaticamente no espelho de vendas</span>
+                    </div>
                   </label>
-                  <input
-                    type="number"
-                    value={form.total_units}
-                    onChange={(e) =>
-                      setForm({ ...form, total_units: Number(e.target.value) })
-                    }
-                    className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold outline-none"
-                  />
+
+                  {form.generate_mockup && (
+                    <div className="grid grid-cols-2 gap-4 mt-6">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
+                          Quantidade de Quadras
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={form.blocks_count}
+                          onChange={(e) => setForm({ ...form, blocks_count: Number(e.target.value) })}
+                          className="w-full px-4 py-3 bg-white rounded-xl border border-blue-100 text-sm font-bold outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
+                          Lotes por Quadra
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={form.lots_per_block}
+                          onChange={(e) => setForm({ ...form, lots_per_block: Number(e.target.value) })}
+                          className="w-full px-4 py-3 bg-white rounded-xl border border-blue-100 text-sm font-bold outline-none"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
+              )}
+
+              <div className="grid grid-cols-3 gap-6">
+                {!form.generate_mockup && (
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
+                      Total de Lotes
+                    </label>
+                    <input
+                      type="number"
+                      value={form.total_units}
+                      onChange={(e) =>
+                        setForm({ ...form, total_units: Number(e.target.value) })
+                      }
+                      className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold outline-none"
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
                     Infraestrutura (%)

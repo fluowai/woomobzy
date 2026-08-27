@@ -1471,6 +1471,9 @@ router.get('/users', verifyAdmin, requireTenant, async (req, res) => {
     });
   } catch (error) {
     console.error('[Admin] Error listing scoped users:', error.message);
+    if (isInvalidSupabaseApiKeyError(error)) {
+      return sendSupabaseServiceKeyError(res);
+    }
     res.status(500).json({ error: 'Erro ao listar usuarios' });
   }
 });

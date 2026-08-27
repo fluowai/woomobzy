@@ -119,11 +119,10 @@ const UrbanLayout: React.FC = () => {
   const managementItems: MenuItem[] = [
     { icon: DollarSign, label: 'Financeiro & ERP', path: '/urban/financeiro' },
     {
-      icon: Calculator,
-      label: 'Simulador Financeiro',
-      path: '/urban/simulador',
+      icon: Landmark,
+      label: 'Simulador & Financial Hub',
+      path: '/urban/fintech',
     },
-    { icon: Landmark, label: 'Financial Hub', path: '/urban/fintech' },
     { icon: Trophy, label: 'Clube Imobzy', path: '/urban/clube' },
     { icon: FileText, label: 'Contratos & Jurídico', path: '/urban/contracts' },
     { icon: FileText, label: 'Documentos (GED)', path: '/urban/documentos' },
@@ -143,7 +142,7 @@ const UrbanLayout: React.FC = () => {
 
   const systemItems: MenuItem[] = [
     { icon: LinkIcon, label: 'Conexões', path: '/urban/connections' },
-    { icon: LinkIcon, label: 'Integrações', path: '/urban/integrations' },
+    { icon: Users, label: 'Gestão de Usuários', path: '/urban/users' },
     { icon: Settings, label: 'Configurações', path: '/urban/settings' },
   ];
 

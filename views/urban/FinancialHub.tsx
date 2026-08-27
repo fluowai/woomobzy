@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Landmark,
+import { Landmark,
   Shield,
   Calculator,
   ChevronRight,
@@ -22,6 +21,9 @@ import {
   BadgeCheck,
   RefreshCw,
   Lock,
+  Printer,
+  Trash2,
+  PlusCircle,
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -30,7 +32,7 @@ import { logger } from '@/utils/logger';
 // ──────────────────────────────────────────────────────────────
 // TYPES
 // ──────────────────────────────────────────────────────────────
-type ActiveTab = 'credito' | 'fianca';
+type ActiveTab = 'credito' | 'direto' | 'fianca';
 
 interface CreditSimulation {
   propertyValue: number;
@@ -911,7 +913,372 @@ const FiancaDigital: React.FC<{ orgId: string; userId: string }> = ({
   );
 };
 
+
 // ──────────────────────────────────────────────────────────────
+// SUB-COMPONENT: Financiamento Direto (Simulator360)
+// ──────────────────────────────────────────────────────────────
+interface BalloonPayment {
+  id: string;
+  month: number;
+  amount: number;
+}
+
+const DiretoSimulator: React.FC = () => {
+  const { profile } = useAuth();
+  const [propertyPrice, setPropertyPrice] = useState(250000);
+  const [entryValue, setEntryValue] = useState(25000);
+  const [installmentsCount, setInstallmentsCount] = useState(120);
+  const [interestRate, setInterestRate] = useState(0.8);
+  const [balloons, setBalloons] = useState<BalloonPayment[]>([]);
+  const [totalFinanced, setTotalFinanced] = useState(0);
+  const [monthlyInstallment, setMonthlyInstallment] = useState(0);
+  const [totalCost, setTotalCost] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState('');
+
+  const calculateFinancing = useCallback(() => {
+    const principal = Math.max(propertyPrice - entryValue, 0);
+    const totalBalloons = balloons.reduce((acc, b) => acc + b.amount, 0);
+    const financeablePrincipal = Math.max(principal - totalBalloons, 0);
+
+    const i = interestRate / 100;
+    const n = Math.max(installmentsCount, 1);
+
+    let monthly;
+    if (i === 0) {
+      monthly = financeablePrincipal / n;
+    } else {
+      monthly =
+        (financeablePrincipal * (i * Math.pow(1 + i, n))) /
+        (Math.pow(1 + i, n) - 1);
+    }
+
+    setTotalFinanced(principal);
+    setMonthlyInstallment(monthly);
+    setTotalCost(entryValue + monthly * n + totalBalloons);
+  }, [propertyPrice, entryValue, installmentsCount, interestRate, balloons]);
+
+  useEffect(() => {
+    calculateFinancing();
+  }, [calculateFinancing]);
+
+  const addBalloon = () => {
+    const newBalloon = {
+      id: Math.random().toString(36).substr(2, 9),
+      month: 12,
+      amount: 5000,
+    };
+    setBalloons([...balloons, newBalloon]);
+  };
+
+  const removeBalloon = (id: string) => {
+    setBalloons(balloons.filter((b) => b.id !== id));
+  };
+
+  const updateBalloon = (
+    id: string,
+    field: 'month' | 'amount',
+    value: number
+  ) => {
+    setBalloons(
+      balloons.map((b) => (b.id === id ? { ...b, [field]: value } : b))
+    );
+  };
+
+  const formatCurrency = (val: number) =>
+    val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  const validateSimulation = () => {
+    if (propertyPrice <= 0) return 'Informe um valor de imóvel válido.';
+    if (entryValue < 0 || entryValue > propertyPrice) return 'A entrada deve ficar entre zero e o valor do imóvel.';
+    if (installmentsCount < 1) return 'Informe ao menos uma parcela.';
+    if (interestRate < 0) return 'A taxa de juros não pode ser negativa.';
+    if (
+      balloons.some(
+        (item) =>
+          item.month < 1 || item.month > installmentsCount || item.amount < 0
+      )
+    ) {
+      return 'Revise os meses e valores dos balões.';
+    }
+    return '';
+  };
+
+  const saveSimulation = async (status: 'draft' | 'proposal' = 'draft') => {
+    const validationMessage = validateSimulation();
+    if (validationMessage) {
+      setFeedback(validationMessage);
+      return false;
+    }
+    if (!profile?.organization_id) {
+      setFeedback('Organização não identificada.');
+      return false;
+    }
+
+    setSaving(true);
+    setFeedback('');
+    const { error } = await (supabase as any)
+      .from('urban_financing_simulations')
+      .insert({
+        organization_id: profile.organization_id,
+        created_by: profile.id,
+        title: `Simulação de ${formatCurrency(propertyPrice)}`,
+        property_price: propertyPrice,
+        entry_value: entryValue,
+        installments_count: installmentsCount,
+        monthly_interest_rate: interestRate,
+        balloon_payments: balloons,
+        monthly_installment: monthlyInstallment,
+        total_financed: totalFinanced,
+        total_cost: totalCost,
+        status,
+      });
+    setSaving(false);
+
+    if (error) {
+      setFeedback(`Não foi possível salvar: ${error.message}`);
+      return false;
+    }
+    setFeedback(
+      status === 'proposal'
+        ? 'Proposta registrada no CRM.'
+        : 'Simulação salva no CRM.'
+    );
+    return true;
+  };
+
+  const printProposal = () => {
+    const validationMessage = validateSimulation();
+    if (validationMessage) {
+      setFeedback(validationMessage);
+      return;
+    }
+    window.print();
+  };
+
+  const generateProposal = async () => {
+    const saved = await saveSimulation('proposal');
+    if (saved) window.print();
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div>
+          <h3 className="text-xl font-bold text-slate-900 uppercase italic tracking-tighter leading-none mb-1">
+             <span className="text-blue-600">Financiamento Direto</span>
+          </h3>
+          <p className="text-slate-500 font-medium italic text-sm">
+            Cálculos avançados de parcelamento, balões e projeção de juros (Loteamentos/Incorporadoras).
+          </p>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={printProposal}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-black transition-all"
+          >
+            <Printer size={14} /> Imprimir PDF
+          </button>
+          <button
+            onClick={generateProposal}
+            disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all"
+          >
+            <FileText size={14} /> Gerar Proposta
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-7 bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">
+                Valor do Imóvel / Lote
+              </label>
+              <div className="relative">
+                <DollarSign size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600" />
+                <input
+                  type="number"
+                  value={propertyPrice}
+                  onChange={(e) => setPropertyPrice(Number(e.target.value))}
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/20 outline-none font-bold text-slate-900"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">
+                Valor da Entrada
+              </label>
+              <div className="relative">
+                <DollarSign size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500" />
+                <input
+                  type="number"
+                  value={entryValue}
+                  onChange={(e) => setEntryValue(Number(e.target.value))}
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/20 outline-none font-bold text-slate-900"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">
+                Prazo (Meses)
+              </label>
+              <div className="relative">
+                <Calendar size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600" />
+                <input
+                  type="number"
+                  value={installmentsCount}
+                  onChange={(e) => setInstallmentsCount(Number(e.target.value))}
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/20 outline-none font-bold text-slate-900"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">
+                Taxa de Juros (% a.m.)
+              </label>
+              <div className="relative">
+                <Percent size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
+                <input
+                  type="number"
+                  step="0.01"
+                  value={interestRate}
+                  onChange={(e) => setInterestRate(Number(e.target.value))}
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/20 outline-none font-bold text-slate-900"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-slate-100 pt-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                <RefreshCw size={14} className="text-blue-600" /> Balões / Reforços
+              </h3>
+              <button
+                onClick={addBalloon}
+                className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 uppercase tracking-widest"
+              >
+                <PlusCircle size={14} /> Adicionar
+              </button>
+            </div>
+            {balloons.length === 0 ? (
+              <div className="py-6 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                <p className="text-xs font-bold text-slate-400 italic">
+                  Nenhum balão programado.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {balloons.map((b) => (
+                  <div key={b.id} className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100 group">
+                    <div className="flex-1 grid grid-cols-2 gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">Mês:</span>
+                        <input
+                          type="number"
+                          value={b.month}
+                          onChange={(e) => updateBalloon(b.id, 'month', Number(e.target.value))}
+                          className="w-16 bg-white border border-slate-200 rounded-lg px-2 py-1 text-sm font-bold outline-none focus:border-blue-300"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">Valor:</span>
+                        <input
+                          type="number"
+                          value={b.amount}
+                          onChange={(e) => updateBalloon(b.id, 'amount', Number(e.target.value))}
+                          className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1 text-sm font-bold outline-none focus:border-blue-300"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => removeBalloon(b.id)}
+                      className="p-1.5 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="lg:col-span-5 space-y-4">
+          <div className="bg-slate-900 text-white rounded-3xl p-8 space-y-8 sticky top-10">
+            <div className="space-y-1">
+              <h3 className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">
+                Parcela Mensal Estimada
+              </h3>
+              <p className="text-4xl font-bold tracking-tighter text-white">
+                {formatCurrency(monthlyInstallment)}
+              </p>
+            </div>
+
+            <div className="space-y-4 border-t border-white/10 pt-6">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-white/40 uppercase">Total Financiado</span>
+                <span className="text-sm font-bold text-white">{formatCurrency(totalFinanced)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-white/40 uppercase">Total de Balões</span>
+                <span className="text-sm font-bold text-amber-400">
+                  {formatCurrency(balloons.reduce((acc, b) => acc + b.amount, 0))}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-white/40 uppercase">Total de Juros</span>
+                <span className="text-sm font-bold text-red-400">
+                  {formatCurrency(totalCost - propertyPrice)}
+                </span>
+              </div>
+
+              <div className="bg-white/5 p-4 rounded-2xl mt-4 border border-white/10">
+                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">
+                  VGV Total
+                </p>
+                <p className="text-2xl font-bold text-emerald-400">
+                  {formatCurrency(totalCost)}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-2">
+               <div className="flex items-center gap-2 text-white/60">
+                <TrendingUp size={14} className="text-blue-400" />
+                <p className="text-xs font-medium">Correção sugerida: <strong>IPCA + 0,5%</strong></p>
+              </div>
+              <div className="flex items-center gap-2 text-white/60">
+                <Calculator size={14} className="text-emerald-400" />
+                <p className="text-xs font-medium">Tabela: <strong>PRICE</strong></p>
+              </div>
+            </div>
+
+            {feedback && (
+              <p className="rounded-lg bg-white/10 px-3 py-2 text-xs font-bold text-white/80 text-center">
+                {feedback}
+              </p>
+            )}
+            <button
+              onClick={() => saveSimulation('draft')}
+              disabled={saving}
+              className="w-full py-3.5 bg-blue-600 text-white rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all shadow-lg shadow-blue-500/20"
+            >
+              Salvar no CRM
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+
+// ─
 // MAIN COMPONENT
 // ──────────────────────────────────────────────────────────────
 const FinancialHub: React.FC = () => {
@@ -924,6 +1291,13 @@ const FinancialHub: React.FC = () => {
       label: 'Crédito Imobiliário',
       icon: Landmark,
       desc: 'Simule financiamentos',
+    },
+    
+    {
+      id: 'direto' as ActiveTab,
+      label: 'Parcelamento Direto',
+      icon: Calculator,
+      desc: 'Simule parcelamento com loteadora/incorporadora',
     },
     {
       id: 'fianca' as ActiveTab,
@@ -985,6 +1359,7 @@ const FinancialHub: React.FC = () => {
       {/* Content */}
       {tab === 'credito' && <CreditSimulator orgId={orgId} />}
       {tab === 'fianca' && <FiancaDigital orgId={orgId} userId={userId} />}
+      {tab === 'direto' && <DiretoSimulator />}
     </div>
   );
 };

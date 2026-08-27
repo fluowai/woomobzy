@@ -210,3 +210,27 @@ rm -rf node_modules && npm install
 5. Confirmar se a aba "Canais" aparece e funciona corretamente
 
 Isso garantirá que todas as correções de 500 error e as novas funcionalidades de agente estão operando corretamente no ambiente.
+### Financeiro & ERP e Simulador (Agosto 2026)
+- **FinanceiroUrbano.tsx**: Melhorado layout com Gr�ficos din�micos (Recharts) e Modal para inser��o manual de nova cobran�a.
+- **FinancialHub.tsx**: Unificado com o Simulador 360, agora contendo as abas 'Cr�dito Imobili�rio', 'Parcelamento Direto' (Simulador) e 'Fian�a Aluguel'.
+- **UrbanLayout.tsx e App.tsx**: Menu e rotas limpas, unificando a navegação de simulador pro hub.
+
+## 2026-08-26 — Migrações SQL + Limpeza de Código
+
+### Migrações Executadas (28 no total)
+- Adicionadas 7 migrações faltantes ao `scripts/run-migrations.mjs`: RLS policies, fix organizations, captação leads, fix profiles RLS recursion, fix reseller tenant isolation, chaves Gemini/AI provider.
+- Rodadas todas as 28 migrações via `npm run run-migrations` + execução manual via `exec_sql` RPC.
+- Migrações críticas aplicadas: `20260823_fix_profiles_rls_recursion.sql`, `20260823_fix_reseller_tenant_isolation.sql`.
+- Novas tabelas criadas: `whatsapp_cloud_credentials`, `connection_pool`, `connection_allocations`, `connection_billing`, `social_accounts`, `social_posts`.
+- Colunas novas: signatures (selfie_url, document_url, ip_address, geolocation, whatsapp_validation_code, token_hash), condominiums (cnpj, manager_name, contact_email, contact_phone, zip_code, neighborhood, status), developments (svg_map), organizations (asgardpay_public_key, asgardpay_secret_key).
+
+### Correções TypeScript
+- Removido import de `Simulator360.tsx` deletado em `App.tsx`.
+- Corrigido import de `asgardpayService` em `paymentService.ts`.
+- Corrigido import path de `supabase` em `SocialMediaCalendar.tsx`.
+- Corrigido destructuring de `organization` em `SocialMediaCalendar.tsx`.
+- Adicionado `svg_map?: string` à interface `Development` em `types/development.ts`.
+
+### Verificação
+- `npm run type-check`: passou sem erros.
+- `npm run build`: passou (4070 módulos, 1m31s).

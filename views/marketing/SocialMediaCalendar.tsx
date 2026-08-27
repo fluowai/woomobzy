@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../context/AuthContext';
+import { supabase } from '@/services/supabase';
+import { useAuth } from '@/context/AuthContext';
 import { Calendar, Clock, Plus, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SocialMediaCalendar() {
-    const { user, organization } = useAuth();
+    const { user, profile } = useAuth();
+    const organization = (profile as any)?.organization;
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
 

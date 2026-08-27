@@ -36,6 +36,7 @@ export interface Development {
   infrastructure_status?: number;
   images: string[];
   documents?: string[];
+  svg_map?: string;
   created_at: string;
 }
 

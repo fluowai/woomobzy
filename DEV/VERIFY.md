@@ -1,5 +1,13 @@
 # Verificação
 
+## 2026-08-26 — Migrações SQL + Limpeza de Código
+
+- 28 migrações executadas via `npm run run-migrations` + `exec_sql` RPC manual.
+- Todas as tabelas verificadas acessíveis via Supabase client (whatsapp_cloud_credentials, connection_pool, connection_allocations, connection_billing, social_accounts, social_posts, signatures, condominiums, developments, organizations).
+- `npm run type-check`: passou sem erros (6 erros corrigidos).
+- `npm run build`: passou (4070 módulos, 1m31s, sem warnings críticos).
+- `npm run lint`: sem saída (comportamento pré-existente).
+
 ## 2026-08-23 — Agentes de IA com prompt editável e conexão de canais
 
 - `node --check server/api/ai/agents.routes.js`: passou.

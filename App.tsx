@@ -61,6 +61,11 @@ const ImpersonateCallback = lazy(() => import('./views/ImpersonateCallback'));
 const PrivacyPolicy = lazy(() => import('./views/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./views/TermsOfService'));
 const PublicLandingPage = lazy(() => import('./views/PublicLandingPage'));
+const SignaturePortal = lazy(() =>
+  import('./views/public/SignaturePortal').then((m) => ({
+    default: m.SignaturePortal,
+  }))
+);
 const RuralDashboard = lazy(() => import('./views/RuralDashboard'));
 const UrbanDashboard = lazy(() => import('./views/UrbanDashboard'));
 const PropertyManagement = lazy(() => import('./views/PropertyManagement'));
@@ -71,9 +76,7 @@ const AICentral = lazy(() => import('./views/AICentral'));
 const CreateOperationWizard = lazy(
   () => import('./views/CreateOperationWizard')
 );
-const AIOperationDashboard = lazy(
-  () => import('./views/AIOperationDashboard')
-);
+const AIOperationDashboard = lazy(() => import('./views/AIOperationDashboard'));
 const SandboxChat = lazy(() => import('./views/SandboxChat'));
 const ArchitectureCanvas = lazy(() => import('./views/ArchitectureCanvas'));
 const AIKnowledge = lazy(() => import('./views/AIKnowledge'));
@@ -134,7 +137,7 @@ const RentalsBordero = lazy(() =>
 );
 const ComplianceUrbano = lazy(() => import('./views/urban/ComplianceUrbano'));
 const Cobranca = lazy(() => import('./views/urban/Cobranca'));
-const Simulator360 = lazy(() => import('./views/urban/Simulator360'));
+
 const PortalLocatario = lazy(() => import('./views/urban/PortalLocatario'));
 const ExportadorPortais = lazy(() => import('./views/urban/ExportadorPortais'));
 const PortalProprietarioUrbano = lazy(
@@ -204,7 +207,9 @@ const ResellerManager = lazy(() => import('./views/megaadmin/ResellerManager'));
 const DirectClientsManager = lazy(
   () => import('./views/megaadmin/DirectClientsManager')
 );
-const ConnectionManager = lazy(() => import('./views/megaadmin/ConnectionManager'));
+const ConnectionManager = lazy(
+  () => import('./views/megaadmin/ConnectionManager')
+);
 
 // Site Builder
 const SiteManager = lazy(() => import('./views/SiteManager'));
@@ -262,6 +267,7 @@ const AppContent: React.FC = () => {
           <Route path="/setup-whitelabel" element={<SetupWhitelabel />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/assinatura/:token" element={<SignaturePortal />} />
           <Route path="/:slug/site/*" element={<PublicSite />} />
           <Route path="/site/:slug/*" element={<PublicSite />} />
           <Route path="/sites/:slug/*" element={<PublicSite />} />
@@ -362,8 +368,14 @@ const AppContent: React.FC = () => {
             />
             <Route path="ai-assistant" element={<AIAssistant />} />
             <Route path="ai" element={<AICentral />} />
-            <Route path="ai/operations/new" element={<CreateOperationWizard />} />
-            <Route path="ai/operations/:id" element={<AIOperationDashboard />} />
+            <Route
+              path="ai/operations/new"
+              element={<CreateOperationWizard />}
+            />
+            <Route
+              path="ai/operations/:id"
+              element={<AIOperationDashboard />}
+            />
             <Route
               path="ai/operations/:id/architecture"
               element={<ArchitectureCanvas />}
@@ -428,7 +440,6 @@ const AppContent: React.FC = () => {
 
             <Route path="compliance" element={<ComplianceUrbano />} />
             <Route path="cobranca" element={<Cobranca />} />
-            <Route path="simulador" element={<Simulator360 />} />
             <Route path="exportador" element={<ExportadorPortais />} />
             <Route path="captacao" element={<CaptacaoFunil />} />
             <Route path="crm" element={<CRMLeads />} />
@@ -467,8 +478,14 @@ const AppContent: React.FC = () => {
             />
             <Route path="ai-assistant" element={<AIAssistant />} />
             <Route path="ai" element={<AICentral />} />
-            <Route path="ai/operations/new" element={<CreateOperationWizard />} />
-            <Route path="ai/operations/:id" element={<AIOperationDashboard />} />
+            <Route
+              path="ai/operations/new"
+              element={<CreateOperationWizard />}
+            />
+            <Route
+              path="ai/operations/:id"
+              element={<AIOperationDashboard />}
+            />
             <Route
               path="ai/operations/:id/architecture"
               element={<ArchitectureCanvas />}

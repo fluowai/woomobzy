@@ -8,6 +8,8 @@ import {
   Plus,
   Search,
   User,
+  X,
+  FileText
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -19,6 +21,7 @@ type KeyRecord = {
   status: 'available' | 'checked_out' | 'overdue' | 'lost';
   location?: string;
   responsible_name?: string;
+  notes?: string;
   checked_out_at?: string;
   expected_return_at?: string;
 };
@@ -28,7 +31,7 @@ const statusConfig: Record<
   { label: string; color: string; bg: string; icon: React.ElementType }
 > = {
   available: {
-    label: 'Disponivel',
+    label: 'Disponível',
     color: 'text-green-700',
     bg: 'bg-green-100',
     icon: Home,
@@ -53,11 +56,65 @@ const statusConfig: Record<
   },
 };
 
+const generateDocument = (title: string, content: string) => {
+  const win = window.open('', '_blank');
+  if (!win) return;
+  win.document.write(`
+    <html>
+      <head>
+        <title>${title}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 40px; color: #333; line-height: 1.6; max-width: 800px; margin: 0 auto; }
+          h1 { text-align: center; color: #000; margin-bottom: 40px; text-transform: uppercase; font-size: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+          .content { margin-top: 20px; text-align: justify; }
+          .signature-area { margin-top: 80px; display: flex; justify-content: space-around; }
+          .signature-box { text-align: center; width: 45%; }
+          .line { border-top: 1px solid #000; margin: 0 auto 10px; }
+          p { margin-bottom: 15px; }
+          strong { color: #000; }
+        </style>
+      </head>
+      <body>
+        <h1>${title}</h1>
+        <div class="content">
+          ${content}
+        </div>
+        <div class="signature-area">
+          <div class="signature-box">
+            <div class="line"></div>
+            <p>Assinatura da Imobiliária</p>
+          </div>
+          <div class="signature-box">
+            <div class="line"></div>
+            <p>Assinatura do Responsável</p>
+          </div>
+        </div>
+        <script>
+          window.onload = () => {
+            setTimeout(() => {
+              window.print();
+              window.close();
+            }, 500);
+          }
+        </script>
+      </body>
+    </html>
+  `);
+  win.document.close();
+};
+
 export default function ControleChaves() {
   const { profile } = useAuth();
   const [search, setSearch] = useState('');
   const [keys, setKeys] = useState<KeyRecord[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [modalState, setModalState] = useState<'register' | 'checkout' | 'return' | null>(null);
+  const [selectedKey, setSelectedKey] = useState<KeyRecord | null>(null);
+
+  const [registerForm, setRegisterForm] = useState({ label: '', code: '', location: '' });
+  const [checkoutForm, setCheckoutForm] = useState({ responsible_name: '', document: '', returnHours: 8, notes: '' });
+  const [returnForm, setReturnForm] = useState({ notes: '' });
 
   const loadKeys = async () => {
     if (!profile?.organization_id) return;
@@ -66,7 +123,7 @@ export default function ControleChaves() {
     const { data } = await supabase
       .from('key_control')
       .select(
-        'id,label,code,status,location,responsible_name,checked_out_at,expected_return_at'
+        'id,label,code,status,location,responsible_name,notes,checked_out_at,expected_return_at'
       )
       .eq('organization_id', profile.organization_id)
       .order('created_at', { ascending: false });
@@ -92,7 +149,7 @@ export default function ControleChaves() {
   const stats = useMemo(
     () => [
       {
-        label: 'Disponiveis',
+        label: 'Disponíveis',
         value: keys.filter((item) => item.status === 'available').length,
         color: 'text-green-600',
       },
@@ -110,48 +167,69 @@ export default function ControleChaves() {
     [keys]
   );
 
-  const registerKey = async () => {
-    if (!profile?.organization_id) return;
-    const label = window.prompt('Identificacao do imovel ou chave:')?.trim();
-    if (!label) return;
-    const code = window.prompt('Codigo da chave:')?.trim();
-    if (!code) return;
-    const location = window.prompt('Local onde a chave fica guardada:')?.trim();
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profile?.organization_id || !registerForm.label || !registerForm.code) return;
 
     await supabase.from('key_control').insert({
       organization_id: profile.organization_id,
-      label,
-      code,
-      location: location || null,
+      label: registerForm.label,
+      code: registerForm.code,
+      location: registerForm.location || null,
       status: 'available',
     });
+    
+    setModalState(null);
+    setRegisterForm({ label: '', code: '', location: '' });
     loadKeys();
   };
 
-  const checkoutKey = async (id: string) => {
-    const responsibleName = window
-      .prompt('Nome de quem esta retirando a chave:')
-      ?.trim();
-    if (!responsibleName) return;
-    const returnHours = Number(
-      window.prompt('Prazo para devolucao em horas:', '8') || 8
-    );
+  const handleCheckout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profile?.organization_id || !selectedKey || !checkoutForm.responsible_name) return;
+
+    const checkedOutAt = new Date();
+    const expectedReturnAt = new Date(Date.now() + Math.max(checkoutForm.returnHours, 1) * 60 * 60 * 1000);
+
+    const notesValue = checkoutForm.document 
+      ? `Doc: ${checkoutForm.document}${checkoutForm.notes ? ' | ' + checkoutForm.notes : ''}`
+      : checkoutForm.notes;
+
     await supabase
       .from('key_control')
       .update({
         status: 'checked_out',
-        responsible_name: responsibleName,
-        checked_out_at: new Date().toISOString(),
-        expected_return_at: new Date(
-          Date.now() + Math.max(returnHours, 1) * 60 * 60 * 1000
-        ).toISOString(),
+        responsible_name: checkoutForm.responsible_name,
+        notes: notesValue || null,
+        checked_out_at: checkedOutAt.toISOString(),
+        expected_return_at: expectedReturnAt.toISOString(),
       })
-      .eq('id', id)
-      .eq('organization_id', profile?.organization_id);
+      .eq('id', selectedKey.id)
+      .eq('organization_id', profile.organization_id);
+
+    generateDocument(
+      'Termo de Retirada de Chave',
+      `
+        <p>Eu, <strong>${checkoutForm.responsible_name}</strong>${checkoutForm.document ? `, portador(a) do documento <strong>${checkoutForm.document}</strong>` : ''}, declaro que recebi nesta data a chave referente ao imóvel <strong>${selectedKey.label}</strong> (Código: <strong>${selectedKey.code}</strong>).</p>
+        <p>Comprometo-me a zelar pela chave e devolvê-la no prazo acordado de <strong>${checkoutForm.returnHours} horas</strong>, ou seja, até <strong>${expectedReturnAt.toLocaleString('pt-BR')}</strong>.</p>
+        <p>Estou ciente de que a não devolução no prazo pode acarretar medidas cabíveis.</p>
+        ${checkoutForm.notes ? `<p><strong>Observações:</strong> ${checkoutForm.notes}</p>` : ''}
+        <p style="margin-top: 40px; text-align: right;">Data da retirada: <strong>${checkedOutAt.toLocaleString('pt-BR')}</strong></p>
+      `
+    );
+
+    setModalState(null);
+    setSelectedKey(null);
+    setCheckoutForm({ responsible_name: '', document: '', returnHours: 8, notes: '' });
     loadKeys();
   };
 
-  const returnKey = async (id: string) => {
+  const handleReturn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profile?.organization_id || !selectedKey) return;
+
+    const returnedAt = new Date();
+
     await supabase
       .from('key_control')
       .update({
@@ -159,11 +237,36 @@ export default function ControleChaves() {
         responsible_name: null,
         checked_out_at: null,
         expected_return_at: null,
-        returned_at: new Date().toISOString(),
+        returned_at: returnedAt.toISOString(),
+        notes: returnForm.notes ? `Devolução: ${returnForm.notes}` : null
       })
-      .eq('id', id)
-      .eq('organization_id', profile?.organization_id);
+      .eq('id', selectedKey.id)
+      .eq('organization_id', profile.organization_id);
+
+    generateDocument(
+      'Recibo de Devolução de Chave',
+      `
+        <p>Declaramos para os devidos fins que recebemos de <strong>${selectedKey.responsible_name || 'Responsável'}</strong> a chave referente ao imóvel <strong>${selectedKey.label}</strong> (Código: <strong>${selectedKey.code}</strong>), que havia sido retirada em <strong>${selectedKey.checked_out_at ? new Date(selectedKey.checked_out_at).toLocaleString('pt-BR') : 'data não registrada'}</strong>.</p>
+        <p>A chave foi devolvida e encontra-se novamente disponível.</p>
+        ${returnForm.notes ? `<p><strong>Observações na devolução:</strong> ${returnForm.notes}</p>` : ''}
+        <p style="margin-top: 40px; text-align: right;">Data da devolução: <strong>${returnedAt.toLocaleString('pt-BR')}</strong></p>
+      `
+    );
+
+    setModalState(null);
+    setSelectedKey(null);
+    setReturnForm({ notes: '' });
     loadKeys();
+  };
+
+  const openCheckout = (key: KeyRecord) => {
+    setSelectedKey(key);
+    setModalState('checkout');
+  };
+
+  const openReturn = (key: KeyRecord) => {
+    setSelectedKey(key);
+    setModalState('return');
   };
 
   return (
@@ -175,11 +278,11 @@ export default function ControleChaves() {
             Controle de Chaves
           </h1>
           <p className="body mt-1 text-slate-500">
-            Gerencie localizacao, retirada e devolucao das chaves dos imoveis.
+            Gerencie localização, retirada e devolução das chaves dos imóveis.
           </p>
         </div>
         <button
-          onClick={registerKey}
+          onClick={() => setModalState('register')}
           className="btn btn-primary shadow-lg shadow-primary/25"
         >
           <Plus size={20} /> Registrar Chave
@@ -206,7 +309,7 @@ export default function ControleChaves() {
             />
             <input
               type="text"
-              placeholder="Buscar por imovel ou codigo..."
+              placeholder="Buscar por imóvel ou código..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               className="input-field bg-slate-50 pl-11"
@@ -265,23 +368,21 @@ export default function ControleChaves() {
                         className={`flex items-center gap-1.5 text-xs font-bold ${item.status === 'overdue' ? 'text-red-600' : 'text-slate-500'}`}
                       >
                         <Clock size={12} /> Dev. prevista:{' '}
-                        {new Date(item.expected_return_at).toLocaleString(
-                          'pt-BR'
-                        )}
+                        {new Date(item.expected_return_at).toLocaleString('pt-BR')}
                       </div>
                     )}
                   </div>
                   <div className="flex gap-2">
                     {item.status === 'available' ? (
                       <button
-                        onClick={() => checkoutKey(item.id)}
+                        onClick={() => openCheckout(item)}
                         className="btn h-9 border border-blue-200 bg-blue-50 px-3 text-xs text-blue-700 hover:bg-blue-100"
                       >
                         <ArrowUpRight size={14} /> Retirar
                       </button>
                     ) : (
                       <button
-                        onClick={() => returnKey(item.id)}
+                        onClick={() => openReturn(item)}
                         className="btn h-9 border border-green-200 bg-green-50 px-3 text-xs text-green-700 hover:bg-green-100"
                       >
                         <ArrowDownLeft size={14} /> Devolver
@@ -294,6 +395,170 @@ export default function ControleChaves() {
           )}
         </div>
       </div>
+
+      {modalState === 'register' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl animate-in zoom-in-95">
+            <div className="mb-6 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">Registrar Nova Chave</h3>
+              <button onClick={() => setModalState(null)} className="text-slate-400 hover:text-slate-600">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleRegister} className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-bold text-slate-700">Identificação do Imóvel</label>
+                <input
+                  type="text"
+                  required
+                  value={registerForm.label}
+                  onChange={(e) => setRegisterForm({ ...registerForm, label: e.target.value })}
+                  className="input-field"
+                  placeholder="Ex: Apto 101 - Ed. Solar"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-bold text-slate-700">Código da Chave</label>
+                <input
+                  type="text"
+                  required
+                  value={registerForm.code}
+                  onChange={(e) => setRegisterForm({ ...registerForm, code: e.target.value })}
+                  className="input-field"
+                  placeholder="Ex: CH-001"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-bold text-slate-700">Localização (Opcional)</label>
+                <input
+                  type="text"
+                  value={registerForm.location}
+                  onChange={(e) => setRegisterForm({ ...registerForm, location: e.target.value })}
+                  className="input-field"
+                  placeholder="Ex: Quadro 2, Gancho 5"
+                />
+              </div>
+              <div className="mt-6 flex justify-end gap-3">
+                <button type="button" onClick={() => setModalState(null)} className="btn btn-secondary">
+                  Cancelar
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Registrar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {modalState === 'checkout' && selectedKey && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl animate-in zoom-in-95">
+            <div className="mb-6 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">Retirar Chave</h3>
+              <button onClick={() => setModalState(null)} className="text-slate-400 hover:text-slate-600">
+                <X size={20} />
+              </button>
+            </div>
+            <p className="mb-4 text-sm text-slate-500">
+              Imóvel: <strong>{selectedKey.label}</strong> (Código: {selectedKey.code})
+            </p>
+            <form onSubmit={handleCheckout} className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-bold text-slate-700">Nome do Responsável</label>
+                <input
+                  type="text"
+                  required
+                  value={checkoutForm.responsible_name}
+                  onChange={(e) => setCheckoutForm({ ...checkoutForm, responsible_name: e.target.value })}
+                  className="input-field"
+                  placeholder="Quem está retirando a chave"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-1 block text-sm font-bold text-slate-700">Documento (Opcional)</label>
+                  <input
+                    type="text"
+                    value={checkoutForm.document}
+                    onChange={(e) => setCheckoutForm({ ...checkoutForm, document: e.target.value })}
+                    className="input-field"
+                    placeholder="CPF, RG ou CRECI"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-bold text-slate-700">Prazo (Horas)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={checkoutForm.returnHours}
+                    onChange={(e) => setCheckoutForm({ ...checkoutForm, returnHours: Number(e.target.value) })}
+                    className="input-field"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-bold text-slate-700">Observações (Opcional)</label>
+                <textarea
+                  value={checkoutForm.notes}
+                  onChange={(e) => setCheckoutForm({ ...checkoutForm, notes: e.target.value })}
+                  className="input-field min-h-[80px] resize-none"
+                  placeholder="Detalhes adicionais..."
+                />
+              </div>
+              <div className="mt-6 flex justify-end gap-3">
+                <button type="button" onClick={() => setModalState(null)} className="btn btn-secondary">
+                  Cancelar
+                </button>
+                <button type="submit" className="btn btn-primary bg-blue-600 hover:bg-blue-700">
+                  Confirmar e Gerar Termo
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {modalState === 'return' && selectedKey && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl animate-in zoom-in-95">
+            <div className="mb-6 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">Devolver Chave</h3>
+              <button onClick={() => setModalState(null)} className="text-slate-400 hover:text-slate-600">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="mb-4 rounded-xl bg-slate-50 p-4">
+              <p className="text-sm text-slate-700">
+                Imóvel: <strong>{selectedKey.label}</strong>
+              </p>
+              <p className="text-sm text-slate-700">
+                Responsável: <strong>{selectedKey.responsible_name}</strong>
+              </p>
+            </div>
+            <form onSubmit={handleReturn} className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-bold text-slate-700">Observações de Devolução (Opcional)</label>
+                <textarea
+                  value={returnForm.notes}
+                  onChange={(e) => setReturnForm({ ...returnForm, notes: e.target.value })}
+                  className="input-field min-h-[80px] resize-none"
+                  placeholder="Chave devolvida com defeito, cópia extra entregue, etc..."
+                />
+              </div>
+              <div className="mt-6 flex justify-end gap-3">
+                <button type="button" onClick={() => setModalState(null)} className="btn btn-secondary">
+                  Cancelar
+                </button>
+                <button type="submit" className="btn btn-primary bg-green-600 hover:bg-green-700">
+                  Confirmar e Gerar Recibo
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

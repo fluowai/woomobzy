@@ -1,5 +1,7 @@
 import { logger } from '@/utils/logger';
-import asgardpay from './asgardpayService';
+import { AsgardPayService } from './asgardpayService';
+
+const asgardpay = new AsgardPayService();
 
 export interface PaymentDetails {
   id: string;

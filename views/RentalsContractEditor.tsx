@@ -73,6 +73,27 @@ export function RentalsContractEditor({ leaseId, onClose }: Props) {
     setContractData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleCepChange = async (cep: string) => {
+    handleInputChange('imovel_cep', cep);
+    const cleanCep = cep.replace(/\D/g, '');
+    if (cleanCep.length === 8) {
+      try {
+        const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+        const data = await response.json();
+        if (!data.erro) {
+          setContractData(prev => ({
+            ...prev,
+            imovel_endereco: `${data.logradouro}${data.bairro ? `, ${data.bairro}` : ''}`,
+            imovel_cidade: `${data.localidade}/${data.uf}`
+          }));
+          toast.success('Endereço preenchido automaticamente!');
+        }
+      } catch (error) {
+        console.error('Erro ao buscar CEP:', error);
+      }
+    }
+  };
+
   const handleAiRequest = async () => {
     if (!chatInput.trim() || isAiLoading) return;
 
@@ -160,25 +181,26 @@ Pedido do usuário: "${userText}"
   const handleSaveContract = async () => {
     setIsSaving(true);
     try {
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       
-      const fullText = `
-        CONTRATO DE LOCAÇÃO DE IMÓVEL URBANO
-        
-        LOCADOR: ${contractData.locador_nome}, portador do CPF ${contractData.locador_cpf}.
-        LOCATÁRIO: ${contractData.locatario_nome}, portador do CPF ${contractData.locatario_cpf}.
-        
-        IMÓVEL: ${contractData.imovel_endereco} - ${contractData.imovel_cidade}
-        VALOR: R$ ${contractData.aluguel_valor} com vencimento dia ${contractData.aluguel_vencimento}.
-      `;
+      // Chama API real para gerar contrato e links de assinatura
+      const response = await callApi('api/locacao/contract/generate-and-sign', {
+        method: 'POST',
+        body: JSON.stringify({
+          leaseId,
+          contractData,
+          signatureProvider: 'proprio'
+        })
+      });
 
-      // Simula o salvamento
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      toast.success('Contrato gerado com sucesso e anexado ao fluxo!');
-      if (onClose) onClose();
-    } catch (error) {
-      toast.error('Erro ao salvar o contrato');
+      if (response && response.success) {
+        toast.success('Contrato e links de assinatura gerados com sucesso!');
+        if (onClose) onClose();
+      } else {
+        throw new Error(response?.message || 'Erro desconhecido');
+      }
+    } catch (error: any) {
+      toast.error('Erro ao salvar o contrato: ' + error.message);
     } finally {
       setIsSaving(false);
     }
@@ -524,7 +546,9 @@ Pedido do usuário: "${userText}"
                         <input 
                           type="text" 
                           value={contractData.imovel_cep} 
-                          onChange={(e) => handleInputChange('imovel_cep', e.target.value)}
+                          onChange={(e) => handleCepChange(e.target.value)}
+                          maxLength={9}
+                          placeholder="00000-000"
                           className="text-sm font-semibold text-gray-900 bg-transparent outline-none w-full"
                         />
                       </div>

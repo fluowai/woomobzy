@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Building, TrendingDown, Users, Wrench, Plus, X } from 'lucide-react';
+import { Building, TrendingDown, Users, Wrench, Plus, X, MapPin, Phone, Mail, Hash, UserCircle } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
@@ -10,6 +10,8 @@ type Condominium = {
   name: string;
   residents_count?: number;
   delinquent_units?: number;
+  units_count?: number;
+  manager_name?: string;
 };
 
 type Ticket = {
@@ -49,13 +51,27 @@ const priorityColors: Record<string, string> = {
   Baixa: 'bg-green-500',
 };
 
+const INITIAL_CONDO_FORM = {
+  name: '',
+  units_count: 0,
+  cnpj: '',
+  manager_name: '',
+  contact_email: '',
+  contact_phone: '',
+  zip_code: '',
+  neighborhood: '',
+  address: '',
+  city: '',
+  state: ''
+};
+
 export default function AdmCondominios() {
   const { profile } = useAuth();
   const [condominiums, setCondominiums] = useState<Condominium[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCondoModal, setShowCondoModal] = useState(false);
-  const [condoForm, setCondoForm] = useState({ name: '', total_units: 0 });
+  const [condoForm, setCondoForm] = useState(INITIAL_CONDO_FORM);
 
   const load = useCallback(async () => {
     if (!profile?.organization_id) return;
@@ -65,7 +81,7 @@ export default function AdmCondominios() {
     const [{ data: condoData }, { data: ticketData }] = await Promise.all([
       supabase
         .from('condominiums')
-        .select('id,name,residents_count,delinquent_units')
+        .select('id,name,units_count,residents_count,delinquent_units,manager_name')
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: false }),
       supabase
@@ -125,12 +141,24 @@ export default function AdmCondominios() {
 
   const handleSaveCondo = async () => {
     if (!profile?.organization_id) return;
-    if (!condoForm.name.trim()) return;
+    if (!condoForm.name.trim()) {
+      toast.error('O nome do condomínio é obrigatório.');
+      return;
+    }
 
     const { error } = await supabase.from('condominiums').insert({
       organization_id: profile.organization_id,
       name: condoForm.name.trim(),
-      total_units: condoForm.total_units || 0,
+      units_count: condoForm.units_count || 0,
+      cnpj: condoForm.cnpj.trim() || null,
+      manager_name: condoForm.manager_name.trim() || null,
+      contact_email: condoForm.contact_email.trim() || null,
+      contact_phone: condoForm.contact_phone.trim() || null,
+      zip_code: condoForm.zip_code.trim() || null,
+      neighborhood: condoForm.neighborhood.trim() || null,
+      address: condoForm.address.trim() || null,
+      city: condoForm.city.trim() || null,
+      state: condoForm.state.trim() || null,
       status: 'active',
     });
 
@@ -139,9 +167,18 @@ export default function AdmCondominios() {
       return;
     }
 
+    toast.success('Condomínio cadastrado com sucesso!');
     setShowCondoModal(false);
-    setCondoForm({ name: '', total_units: 0 });
+    setCondoForm(INITIAL_CONDO_FORM);
     load();
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setCondoForm((prev) => ({
+      ...prev,
+      [name]: name === 'units_count' ? Number(value) : value,
+    }));
   };
 
   const stats = useMemo(() => {
@@ -195,17 +232,17 @@ export default function AdmCondominios() {
         <div>
           <h1 className="h1 flex items-center gap-3 text-slate-900">
             <Building className="text-primary" size={32} />
-            Administracao de Condominios
+            Administração de Condomínios
           </h1>
           <p className="body mt-1 text-slate-500">
-            Gerencie condominios, moradores, cobrancas e chamados de manutencao.
+            Gerencie condomínios, moradores, cobranças e chamados de manutenção.
           </p>
         </div>
         <button
           onClick={() => setShowCondoModal(true)}
           className="btn btn-primary flex items-center gap-2 whitespace-nowrap"
         >
-          <Plus size={20} /> Novo Condominio
+          <Plus size={20} /> Novo Condomínio
         </button>
       </div>
 
@@ -229,11 +266,46 @@ export default function AdmCondominios() {
           </div>
         ))}
       </div>
+      
+      {/* Condominios List (new visual addition to overview) */}
+      {condominiums.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {condominiums.map((condo) => (
+            <div key={condo.id} className="card-premium p-5 flex flex-col gap-4 relative overflow-hidden">
+               <div className="flex justify-between items-start">
+                 <div>
+                   <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2">
+                     {condo.name}
+                   </h3>
+                   {condo.manager_name && (
+                     <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
+                       <UserCircle size={14} /> Síndico(a): {condo.manager_name}
+                     </p>
+                   )}
+                 </div>
+                 <span className="bg-blue-50 text-blue-700 text-xs font-bold px-2 py-1 rounded-md">
+                   {condo.units_count} unid.
+                 </span>
+               </div>
+               <div className="flex gap-4 border-t border-slate-100 pt-3">
+                 <div className="flex flex-col">
+                   <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Moradores</span>
+                   <span className="text-sm font-bold text-slate-700">{condo.residents_count || 0}</span>
+                 </div>
+                 <div className="flex flex-col">
+                   <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Inadimplentes</span>
+                   <span className="text-sm font-bold text-red-600">{condo.delinquent_units || 0}</span>
+                 </div>
+               </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="card-premium overflow-hidden">
         <div className="flex items-center justify-between border-b border-slate-100 p-5">
           <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
-            <Wrench size={20} className="text-primary" /> Chamados de Manutencao
+            <Wrench size={20} className="text-primary" /> Chamados de Manutenção
           </h2>
           <button onClick={createTicket} className="btn btn-primary">
             + Novo Chamado
@@ -247,10 +319,10 @@ export default function AdmCondominios() {
                   Prioridade
                 </th>
                 <th className="p-4 text-xs font-bold uppercase tracking-widest text-slate-500">
-                  Condominio / Unidade
+                  Condomínio / Unidade
                 </th>
                 <th className="hidden p-4 text-xs font-bold uppercase tracking-widest text-slate-500 md:table-cell">
-                  Descricao
+                  Descrição
                 </th>
                 <th className="p-4 text-xs font-bold uppercase tracking-widest text-slate-500">
                   Status
@@ -333,19 +405,21 @@ export default function AdmCondominios() {
         </div>
       </div>
 
-      {/* Modal Novo Condomínio */}
+      {/* Modal Novo Condomínio Aprimorado */}
       {showCondoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="relative w-full max-w-md overflow-hidden rounded-[2.5rem] border border-white/20 bg-white p-8 shadow-2xl">
-            <div className="mb-6 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-md animate-in fade-in duration-300 overflow-y-auto">
+          <div className="relative w-full max-w-3xl overflow-hidden rounded-[2.5rem] border border-white/20 bg-white shadow-2xl my-8">
+            
+            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 p-6 md:p-8">
               <div className="flex items-center gap-4">
                 <div className="rounded-2xl bg-blue-600 p-3 text-white shadow-lg">
                   <Building size={24} />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold italic tracking-tighter text-slate-900 uppercase">
+                  <h3 className="text-2xl font-bold tracking-tighter text-slate-900 uppercase">
                     Novo Condomínio
                   </h3>
+                  <p className="text-sm font-medium text-slate-500">Preencha os dados completos para melhor administração</p>
                 </div>
               </div>
               <button
@@ -356,44 +430,193 @@ export default function AdmCondominios() {
               </button>
             </div>
 
-            <div className="space-y-6">
+            <div className="p-6 md:p-8 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+              
+              {/* Seção Principal */}
               <div>
-                <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                  Nome do Condomínio *
-                </label>
-                <input
-                  value={condoForm.name}
-                  onChange={(e) =>
-                    setCondoForm({ ...condoForm, name: e.target.value })
-                  }
-                  className="w-full rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4 text-sm font-bold outline-none transition-all focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/10"
-                  placeholder="Ex: Condomínio das Árvores"
-                />
+                <h4 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <Building size={16} className="text-blue-500" />
+                  Dados Principais
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      Nome do Condomínio *
+                    </label>
+                    <input
+                      name="name"
+                      value={condoForm.name}
+                      onChange={handleChange}
+                      className="w-full rounded-2xl border border-slate-100 bg-slate-50 px-5 py-3.5 text-sm font-bold outline-none transition-all focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/10"
+                      placeholder="Ex: Condomínio Residencial das Árvores"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      CNPJ
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Hash size={16} className="text-slate-400" />
+                      </div>
+                      <input
+                        name="cnpj"
+                        value={condoForm.cnpj}
+                        onChange={handleChange}
+                        className="w-full rounded-2xl border border-slate-100 bg-slate-50 pl-11 pr-5 py-3.5 text-sm font-bold outline-none transition-all focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/10"
+                        placeholder="00.000.000/0000-00"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      Total de Unidades
+                    </label>
+                    <input
+                      name="units_count"
+                      type="number"
+                      value={condoForm.units_count || ''}
+                      onChange={handleChange}
+                      className="w-full rounded-2xl border border-slate-100 bg-slate-50 px-5 py-3.5 text-sm font-bold outline-none transition-all focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/10"
+                      placeholder="Ex: 50"
+                    />
+                  </div>
+                </div>
               </div>
 
+              {/* Seção de Contato / Síndico */}
               <div>
-                <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                  Total de Unidades
-                </label>
-                <input
-                  type="number"
-                  value={condoForm.total_units || ''}
-                  onChange={(e) =>
-                    setCondoForm({
-                      ...condoForm,
-                      total_units: Number(e.target.value),
-                    })
-                  }
-                  className="w-full rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4 text-sm font-bold outline-none transition-all focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/10"
-                  placeholder="Ex: 50"
-                />
+                <h4 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <UserCircle size={16} className="text-blue-500" />
+                  Administração e Contato
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      Nome do Síndico(a) / Responsável
+                    </label>
+                    <input
+                      name="manager_name"
+                      value={condoForm.manager_name}
+                      onChange={handleChange}
+                      className="w-full rounded-2xl border border-slate-100 bg-slate-50 px-5 py-3.5 text-sm font-bold outline-none transition-all focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/10"
+                      placeholder="Nome completo do responsável"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      Email de Contato
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Mail size={16} className="text-slate-400" />
+                      </div>
+                      <input
+                        name="contact_email"
+                        type="email"
+                        value={condoForm.contact_email}
+                        onChange={handleChange}
+                        className="w-full rounded-2xl border border-slate-100 bg-slate-50 pl-11 pr-5 py-3.5 text-sm font-bold outline-none transition-all focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/10"
+                        placeholder="sindico@condominio.com"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      Telefone
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Phone size={16} className="text-slate-400" />
+                      </div>
+                      <input
+                        name="contact_phone"
+                        value={condoForm.contact_phone}
+                        onChange={handleChange}
+                        className="w-full rounded-2xl border border-slate-100 bg-slate-50 pl-11 pr-5 py-3.5 text-sm font-bold outline-none transition-all focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/10"
+                        placeholder="(00) 00000-0000"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              {/* Seção Endereço */}
+              <div>
+                <h4 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <MapPin size={16} className="text-blue-500" />
+                  Localização
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="md:col-span-1">
+                    <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      CEP
+                    </label>
+                    <input
+                      name="zip_code"
+                      value={condoForm.zip_code}
+                      onChange={handleChange}
+                      className="w-full rounded-2xl border border-slate-100 bg-slate-50 px-5 py-3.5 text-sm font-bold outline-none transition-all focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/10"
+                      placeholder="00000-000"
+                    />
+                  </div>
+                  <div className="md:col-span-3">
+                    <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      Endereço (Rua, Número)
+                    </label>
+                    <input
+                      name="address"
+                      value={condoForm.address}
+                      onChange={handleChange}
+                      className="w-full rounded-2xl border border-slate-100 bg-slate-50 px-5 py-3.5 text-sm font-bold outline-none transition-all focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/10"
+                      placeholder="Rua das Flores, 123"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      Bairro
+                    </label>
+                    <input
+                      name="neighborhood"
+                      value={condoForm.neighborhood}
+                      onChange={handleChange}
+                      className="w-full rounded-2xl border border-slate-100 bg-slate-50 px-5 py-3.5 text-sm font-bold outline-none transition-all focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/10"
+                      placeholder="Centro"
+                    />
+                  </div>
+                  <div className="md:col-span-1">
+                    <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      Cidade
+                    </label>
+                    <input
+                      name="city"
+                      value={condoForm.city}
+                      onChange={handleChange}
+                      className="w-full rounded-2xl border border-slate-100 bg-slate-50 px-5 py-3.5 text-sm font-bold outline-none transition-all focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/10"
+                      placeholder="São Paulo"
+                    />
+                  </div>
+                  <div className="md:col-span-1">
+                    <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      UF
+                    </label>
+                    <input
+                      name="state"
+                      value={condoForm.state}
+                      onChange={handleChange}
+                      className="w-full rounded-2xl border border-slate-100 bg-slate-50 px-5 py-3.5 text-sm font-bold outline-none transition-all focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/10"
+                      placeholder="SP"
+                    />
+                  </div>
+                </div>
+              </div>
+
             </div>
 
-            <div className="mt-8 flex gap-4">
+            <div className="border-t border-slate-100 bg-slate-50/50 p-6 md:p-8 flex gap-4">
               <button
                 onClick={() => setShowCondoModal(false)}
-                className="flex-1 rounded-2xl bg-slate-100 py-4 font-bold uppercase tracking-widest text-slate-600 transition-all hover:bg-slate-200"
+                className="flex-1 rounded-2xl bg-white border border-slate-200 py-4 font-bold uppercase tracking-widest text-slate-600 transition-all hover:bg-slate-50"
               >
                 Cancelar
               </button>
@@ -401,7 +624,7 @@ export default function AdmCondominios() {
                 onClick={handleSaveCondo}
                 className="flex-[2] rounded-2xl bg-blue-600 py-4 font-bold uppercase tracking-widest text-white shadow-xl shadow-blue-500/20 transition-all hover:scale-[1.02] hover:bg-blue-700 active:scale-95"
               >
-                Salvar
+                Salvar Condomínio
               </button>
             </div>
           </div>

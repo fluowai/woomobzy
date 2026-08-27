@@ -29,9 +29,9 @@ const LoteamentoDetails: React.FC = () => {
   const [lots, setLots] = useState<Lot[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLot, setSelectedLot] = useState<Lot | null>(null);
-  const [filterStatus, setFilterStatus] = useState<LotStatus | 'Todos'>(
-    'Todos'
-  );
+  const [filterStatus, setFilterStatus] = useState<LotStatus | 'Todos'>('Todos');
+  const [showReserveModal, setShowReserveModal] = useState(false);
+  const [reserveForm, setReserveForm] = useState({ name: '', phone: '' });
 
   const dbStatusToUi = (status: string): LotStatus => {
     const map: Record<string, LotStatus> = {
@@ -98,6 +98,55 @@ const LoteamentoDetails: React.FC = () => {
       toast.error('Erro ao carregar dados do loteamento');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleReserve = async () => {
+    if (!selectedLot || !reserveForm.name) return;
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 48); // 48h from now
+    
+    const { error } = await supabase
+      .from('urban_lots')
+      .update({
+        status: 'reserved',
+        reservation_expires_at: expiresAt.toISOString(),
+        metadata: { ...selectedLot.coordinates, client_name: reserveForm.name, client_phone: reserveForm.phone }
+      })
+      .eq('id', selectedLot.id);
+
+    if (error) {
+      toast.error('Erro ao reservar lote');
+      return;
+    }
+
+    toast.success('Reserva de 48h criada com sucesso! Proposta gerada.');
+    setShowReserveModal(false);
+    loadData(); // reload
+  };
+
+  const handleUploadSVG = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    const { error } = await supabase.from('developments').update({ svg_map: text }).eq('id', id);
+    if (!error) {
+      setDevelopment(prev => prev ? { ...prev, svg_map: text } : null);
+      toast.success('Mapa SVG atualizado com sucesso!');
+    } else {
+      toast.error('Erro ao salvar SVG');
+    }
+  };
+
+  const handleSvgClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as SVGElement;
+    if (target.id) {
+      const normalizedId = target.id.replace(/\s+/g, '').toLowerCase();
+      const lot = lots.find(l => {
+        const lotId = (l.block_id + '-' + l.number).replace(/\s+/g, '').toLowerCase();
+        return lotId === normalizedId || target.id === l.id;
+      });
+      if (lot) setSelectedLot(lot);
     }
   };
 
@@ -276,13 +325,27 @@ const LoteamentoDetails: React.FC = () => {
             )}
 
             <div className="mt-20 p-8 border-2 border-dashed border-slate-200 rounded-[3rem] text-center bg-slate-100/50">
-              <MapIcon size={40} className="mx-auto text-slate-300 mb-4" />
-              <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">
-                Upload de Mapa SVG em breve
-              </p>
-              <p className="text-xs text-slate-400 mt-1">
-                Nesta área você poderá carregar o mapa real do loteamento.
-              </p>
+              {development.svg_map ? (
+                <div 
+                  className="w-full overflow-hidden [&>svg]:w-full [&>svg]:h-auto [&>svg_path]:cursor-pointer [&>svg_polygon]:cursor-pointer hover:[&>svg_path]:fill-blue-200" 
+                  dangerouslySetInnerHTML={{ __html: development.svg_map }} 
+                  onClick={handleSvgClick}
+                />
+              ) : (
+                <>
+                  <MapIcon size={40} className="mx-auto text-slate-300 mb-4" />
+                  <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">
+                    Upload de Mapa SVG
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1 mb-4">
+                    Nesta área você poderá carregar o mapa interativo do loteamento.
+                  </p>
+                  <label className="cursor-pointer inline-flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
+                    <Plus size={16} /> Selecionar Arquivo SVG
+                    <input type="file" accept=".svg" className="hidden" onChange={handleUploadSVG} />
+                  </label>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -357,7 +420,7 @@ const LoteamentoDetails: React.FC = () => {
 
               <section className="space-y-4 pt-4 border-t border-slate-100">
                 <button
-                  onClick={() => toast.info('Geração de reserva em breve')}
+                  onClick={() => setShowReserveModal(true)}
                   className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold uppercase tracking-widest shadow-xl shadow-blue-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
                 >
                   <FileText size={18} /> Gerar Reserva / Simulação
@@ -402,6 +465,30 @@ const LoteamentoDetails: React.FC = () => {
           )}
         </aside>
       </div>
+
+      {showReserveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-md shadow-2xl border border-white/20 relative">
+            <button onClick={() => setShowReserveModal(false)} className="absolute top-6 right-6 p-2 bg-slate-50 text-slate-400 rounded-full hover:bg-slate-100">
+              <XCircle size={20} />
+            </button>
+            <h3 className="text-2xl font-bold text-slate-900 uppercase italic tracking-tighter mb-2">Reserva de 48h</h3>
+            <p className="text-xs text-slate-500 mb-6">Insira os dados do cliente para bloquear este lote ({selectedLot?.block_id} - Lote {selectedLot?.number}) por 48 horas e gerar a proposta comercial.</p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Nome do Cliente</label>
+                <input value={reserveForm.name} onChange={e => setReserveForm({...reserveForm, name: e.target.value})} className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold outline-none" placeholder="Nome Completo" />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">WhatsApp</label>
+                <input value={reserveForm.phone} onChange={e => setReserveForm({...reserveForm, phone: e.target.value})} className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold outline-none" placeholder="(00) 00000-0000" />
+              </div>
+              <button onClick={handleReserve} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold uppercase tracking-widest shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all mt-4">Confirmar Reserva</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

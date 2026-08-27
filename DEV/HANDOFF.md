@@ -1,5 +1,15 @@
 # Handoff
 
+## 2026-08-26 — Migrações SQL completas + código limpo
+
+- 28 migrações SQL executadas com sucesso (incluindo 7 que estavam faltantes no run-migrations.mjs).
+- Migrações críticas de RLS aplicadas: profiles RLS recursion fix + reseller tenant isolation fix.
+- Tabelas novas funcionais: whatsapp_cloud_credentials, connection_pool, connection_allocations, connection_billing, social_accounts, social_posts.
+- Colunas novas funcionais: signatures (selfie, doc, geoloc, whatsapp code), condominiums (7 campos), developments (svg_map), organizations (asgardpay keys).
+- 6 erros TypeScript corrigidos (Simulator360 removido, asgardpayService import, SocialMediaCalendar paths, Development type).
+- `npm run type-check` e `npm run build` passaram.
+- Próximo passo: commit + push + deploy Docker/Portainer.
+
 ## 2026-08-23 — Agentes de IA com prompt editável e conexão de canais
 
 - A aba de agentes da operação agora orienta a configuração profissional e leva diretamente para editar, conectar canal ou testar cada agente.

@@ -18,6 +18,7 @@ import {
 import { getSupabaseServer } from './lib/supabase-server.js';
 import { verifyAuth } from './middleware/auth.js';
 import { requireTenant } from './middleware/tenant.js';
+import webhookRoutes from './routes/webhook.js';
 import { createCorsOptions } from './lib/cors-config.js';
 
 // --- Modular Routes ---
@@ -115,20 +116,26 @@ if (missingVars.length > 0) {
   console.error('   -> Em producao Docker: adicione no stack/env do servico');
   console.error('   -> Em desenvolvimento: verifique o arquivo .env na raiz\n');
   if (process.env.NODE_ENV === 'production') {
-    console.error('\n🚨 Servidor sera encerrado por falta de configuracao critica!\n');
+    console.error(
+      '\n🚨 Servidor sera encerrado por falta de configuracao critica!\n'
+    );
     process.exit(1);
   }
 }
 
 // Avisos para variáveis críticas em produção
 if (process.env.NODE_ENV === 'production') {
-  const missingCritical = CRITICAL_PROD_VARS.filter((v) => !process.env[v]?.trim());
+  const missingCritical = CRITICAL_PROD_VARS.filter(
+    (v) => !process.env[v]?.trim()
+  );
   if (missingCritical.length > 0) {
     console.warn(
       '\n⚠️  AVISO: Variaveis de ambiente criticas para producao nao configuradas:'
     );
     missingCritical.forEach((v) => console.warn(`   - ${v}`));
-    console.warn('\n💡 Solucao: Configure todas as variaveis no ambiente de producao\n');
+    console.warn(
+      '\n💡 Solucao: Configure todas as variaveis no ambiente de producao\n'
+    );
   }
 }
 
@@ -257,13 +264,15 @@ const globalLimiter = rateLimit({
 });
 
 app.use(globalLimiter);
-app.use(express.json({ 
-  limit: '10mb',
-  verify: (req, res, buf) => {
-    // Salvar corpo bruto para webhooks (ex: AsgardPay)
-    req.asgardRawBody = buf.toString();
-  }
-}));
+app.use(
+  express.json({
+    limit: '10mb',
+    verify: (req, res, buf) => {
+      // Salvar corpo bruto para webhooks (ex: AsgardPay)
+      req.asgardRawBody = buf.toString();
+    },
+  })
+);
 app.use(express.urlencoded({ extended: true }));
 
 // Request Logging (apenas em desenvolvimento)
@@ -307,7 +316,7 @@ export function invalidateTenantCache(domain) {
 // BYOB Middleware - TEMPORARIAMENTE DESABILITADO PARA TESTE
 // app.use(async (req, res, next) => {
 //   process.stderr.write(`[BYOB] Requisicao: ${req.method} ${req.path}\n`);
-//   
+//
 //   // Rotas de API sempre usam o client master — BYOB é apenas para páginas públicas
 //   if (req.path.startsWith('/api/')) {
 //     return next();
@@ -393,6 +402,7 @@ app.use('/api/rural', ruralRoutes);
 app.use('/api/urban', urbanRoutes);
 app.use('/api/locacao', locacaoRoutes);
 app.use('/api/cobranca', cobrancaRoutes);
+app.use('/api/webhooks', webhookRoutes);
 app.use('/api/asgardpay', asgardpayRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/demo', demoRoutes);
@@ -506,19 +516,22 @@ app.use('/api/instagram', (req, res) => {
   const url = new URL(req.url, {
     protocol: 'http:',
     host: 'localhost:3200',
-    pathname: req.originalUrl
+    pathname: req.originalUrl,
   });
 
-  const proxyReq = http.request({
-    hostname: 'localhost',
-    port: 3200,
-    path: url.pathname + url.search,
-    method: req.method,
-    headers: req.headers
-  }, (proxyRes) => {
-    res.writeHead(proxyRes.statusCode, proxyRes.headers);
-    proxyRes.pipe(res, { end: true });
-  });
+  const proxyReq = http.request(
+    {
+      hostname: 'localhost',
+      port: 3200,
+      path: url.pathname + url.search,
+      method: req.method,
+      headers: req.headers,
+    },
+    (proxyRes) => {
+      res.writeHead(proxyRes.statusCode, proxyRes.headers);
+      proxyRes.pipe(res, { end: true });
+    }
+  );
 
   proxyReq.on('error', (proxyErr) => {
     console.error('[Instagram Proxy Error]:', proxyErr.message);

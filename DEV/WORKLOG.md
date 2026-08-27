@@ -234,3 +234,13 @@ Isso garantirÃ¡ que todas as correÃ§Ãµes de 500 error e as novas funcionalidades
 ### VerificaÃ§Ã£o
 - `npm run type-check`: passou sem erros.
 - `npm run build`: passou (4070 mÃ³dulos, 1m31s).
+
+### Financeiro Avançado: Contas a Pagar (Agosto 2026)
+- **cobrancaService.ts**: Criada a interface \Expense\ e os métodos \listExpenses\ e \createExpense\.
+- **FinanceiroUrbano.tsx**: Adicionada a aba 'Contas a Pagar', com listagem de despesas, integração com o serviço e estrutura base para controle de custo por imóvel e rateio de comissões/repasses.
+
+### Automação & Split Payment (Agosto 2026)
+- **asaasGateway.js**: Adicionado no backend simulação de Gateway para tratar webhooks (PIX/Boleto).
+- **webhook.js (routes)**: Criado router para injetar webhook (PAYMENT_RECEIVED) e processar o 'Split'.
+- **server/index.js**: Injetado as rotas de webhook (/api/webhooks).
+- **FinanceiroUrbano.tsx**: Criada a aba completa de 'Automação / Gateway' para gestão de régua de cobrança visual e rateio (Split) de comissões/repasses.

@@ -28,6 +28,7 @@ import {
   cobrancaService,
   type Billing,
   type DashboardFinanceiro,
+  type Expense,
 } from '../../services/cobrancaService';
 
 const statusColors: Record<string, string> = {
@@ -57,7 +58,10 @@ const mockDreData = [
 ];
 
 export default function FinanceiroUrbano() {
-  const [tab, setTab] = useState<'cobranca' | 'fluxo' | 'dre'>('cobranca');
+  const [tab, setTab] = useState<'cobranca' | 'despesas' | 'fluxo' | 'dre'>(
+    'cobranca'
+  );
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [dashboard, setDashboard] = useState<DashboardFinanceiro | null>(null);
   const [billings, setBillings] = useState<Billing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,12 +78,14 @@ export default function FinanceiroUrbano() {
 
   const loadData = async () => {
     setLoading(true);
-    const [dashboardData, billingData] = await Promise.all([
+    const [dashboardData, billingData, expensesData] = await Promise.all([
       cobrancaService.getDashboard(),
       cobrancaService.listBillings({ ano: new Date().getFullYear() }),
+      cobrancaService.listExpenses({ ano: new Date().getFullYear() }),
     ]);
     setDashboard(dashboardData);
     setBillings(billingData || []);
+    setExpenses(expensesData || []);
     setLoading(false);
   };
 
@@ -209,9 +215,11 @@ export default function FinanceiroUrbano() {
 
       <div className="flex gap-2 border-b border-slate-200 overflow-x-auto">
         {[
-          { id: 'cobranca', label: 'Cobranças / Boletos', icon: CreditCard },
+          { id: 'cobranca', label: 'Contas a Receber', icon: CreditCard },
+          { id: 'despesas', label: 'Contas a Pagar', icon: TrendingDown },
           { id: 'fluxo', label: 'Fluxo de Caixa', icon: BarChart2 },
           { id: 'dre', label: 'DRE', icon: TrendingUp },
+          { id: 'config', label: 'Automação / Gateway', icon: Settings },
         ].map((item) => (
           <button
             key={item.id}
@@ -330,6 +338,93 @@ export default function FinanceiroUrbano() {
                             Ver Boleto
                           </button>
                         )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {tab === 'despesas' && (
+        <div className="card-premium overflow-hidden">
+          <div className="flex items-center justify-between border-b border-slate-100 p-5">
+            <h2 className="font-bold text-slate-900">
+              Contas a Pagar (Despesas)
+            </h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => toast.info('Modal de nova despesa em breve')}
+                className="btn btn-primary text-sm flex items-center gap-1"
+              >
+                <Plus size={16} /> Nova Despesa
+              </button>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50">
+                  {[
+                    'Fornecedor',
+                    'Categoria',
+                    'Vencimento',
+                    'Valor',
+                    'Status',
+                    'Ação',
+                  ].map((header) => (
+                    <th
+                      key={header}
+                      className="p-4 text-xs font-bold uppercase tracking-widest text-slate-500"
+                    >
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {expenses.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="p-10 text-center text-sm text-slate-400"
+                    >
+                      Nenhuma conta a pagar encontrada.
+                    </td>
+                  </tr>
+                ) : (
+                  expenses.map((expense) => (
+                    <tr
+                      key={expense.id}
+                      className="transition-colors hover:bg-slate-50/50"
+                    >
+                      <td className="p-4 text-sm font-bold text-slate-900">
+                        {expense.provider_name}
+                      </td>
+                      <td className="p-4 text-sm text-slate-600">
+                        {expense.category}
+                      </td>
+                      <td className="p-4 text-sm text-slate-600">
+                        {expense.due_date
+                          ? new Date(expense.due_date).toLocaleDateString(
+                              'pt-BR'
+                            )
+                          : '-'}
+                      </td>
+                      <td className="p-4 font-bold text-slate-900">
+                        {cobrancaService.formatCurrency(expense.amount || 0)}
+                      </td>
+                      <td className="p-4">
+                        <span className="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase bg-amber-100 text-amber-700">
+                          {expense.status}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <button className="text-xs font-bold text-primary hover:underline">
+                          Pagar
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -475,6 +570,148 @@ export default function FinanceiroUrbano() {
       )}
 
       {/* Modal Nova Cobrança */}
+      {tab === 'config' && (
+        <div className="card-premium p-8 space-y-8">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-5">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <Settings className="text-primary" /> Automação e Gateway de
+                Pagamento
+              </h2>
+              <p className="text-sm text-slate-500 mt-1">
+                Configure a régua de cobrança automática e a integração com
+                bancos.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold border border-emerald-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />{' '}
+              Ativo
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-6">
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest border-l-4 border-primary pl-3">
+                Régua de Cobrança
+              </h3>
+
+              <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-4">
+                <label className="flex items-center justify-between cursor-pointer group">
+                  <div>
+                    <p className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors">
+                      Aviso de Vencimento (D-3)
+                    </p>
+                    <p className="text-[10px] text-slate-500 uppercase">
+                      WhatsApp e Email - 3 dias antes
+                    </p>
+                  </div>
+                  <div
+                    className={`w-12 h-6 rounded-full transition-colors p-1 ${isReguaActive ? 'bg-primary' : 'bg-slate-300'}`}
+                    onClick={() => setIsReguaActive(!isReguaActive)}
+                  >
+                    <div
+                      className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${isReguaActive ? 'translate-x-6' : 'translate-x-0'}`}
+                    />
+                  </div>
+                </label>
+
+                <hr className="border-slate-200" />
+
+                <label className="flex items-center justify-between cursor-pointer group">
+                  <div>
+                    <p className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors">
+                      Dia do Vencimento (D-0)
+                    </p>
+                    <p className="text-[10px] text-slate-500 uppercase">
+                      Envio do PIX/Boleto de manhã
+                    </p>
+                  </div>
+                  <div
+                    className={`w-12 h-6 rounded-full transition-colors p-1 ${isReguaActive ? 'bg-primary' : 'bg-slate-300'}`}
+                    onClick={() => setIsReguaActive(!isReguaActive)}
+                  >
+                    <div
+                      className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${isReguaActive ? 'translate-x-6' : 'translate-x-0'}`}
+                    />
+                  </div>
+                </label>
+
+                <hr className="border-slate-200" />
+
+                <label className="flex items-center justify-between cursor-pointer group">
+                  <div>
+                    <p className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors">
+                      Aviso de Atraso (D+3)
+                    </p>
+                    <p className="text-[10px] text-slate-500 uppercase">
+                      Alerta de Juros/Multa
+                    </p>
+                  </div>
+                  <div
+                    className={`w-12 h-6 rounded-full transition-colors p-1 ${isReguaActive ? 'bg-primary' : 'bg-slate-300'}`}
+                    onClick={() => setIsReguaActive(!isReguaActive)}
+                  >
+                    <div
+                      className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${isReguaActive ? 'translate-x-6' : 'translate-x-0'}`}
+                    />
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest border-l-4 border-amber-500 pl-3">
+                Gateway & Split de Repasse
+              </h3>
+
+              <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-4">
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
+                    Gateway Principal
+                  </label>
+                  <select className="mt-1 w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-primary">
+                    <option value="asaas">Asaas (Boleto/Pix)</option>
+                    <option value="cora">Cora Bank (Isento)</option>
+                    <option value="iugu">Iugu</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2 pt-2">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="mt-1 accent-primary"
+                      defaultChecked
+                    />
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">
+                        Ativar Split de Pagamento (Rateio)
+                      </p>
+                      <p className="text-[10px] text-slate-500">
+                        Ao pagar aluguel, descontar comissão da Imobiliária e
+                        gerar 'Conta a Pagar' para Repasse do Proprietário
+                        automaticamente.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="pt-4">
+                  <button
+                    onClick={() =>
+                      toast.success('Configurações do Gateway salvas e ativas!')
+                    }
+                    className="w-full py-3 bg-slate-900 text-white rounded-xl text-sm font-bold shadow-lg hover:bg-black transition-colors"
+                  >
+                    Salvar Configurações
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
           <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">

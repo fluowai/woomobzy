@@ -50,6 +50,18 @@ export interface RelatorioInadimplencia {
   property: { title: string; address: string };
 }
 
+export interface Expense {
+  id?: string;
+  provider_name?: string;
+  amount?: number;
+  due_date?: string;
+  payment_date?: string;
+  status?: 'pendente' | 'pago' | 'atrasado' | 'cancelado';
+  category?: string;
+  description?: string;
+  property_id?: string;
+}
+
 export class CobrancaService {
   async listBillings(filters?: {
     status?: string;
@@ -264,6 +276,37 @@ export class CobrancaService {
       return result;
     } catch (error) {
       logger.error('Erro ao criar renegociação:', error);
+      return null;
+    }
+  }
+
+  // --- CONTAS A PAGAR ---
+  async listExpenses(filters?: { mes?: number; ano?: number; status?: string }): Promise<Expense[]> {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.status) params.set('status', filters.status);
+      if (filters?.mes) params.set('mes', String(filters.mes));
+      if (filters?.ano) params.set('ano', String(filters.ano));
+
+      const result = await callApi(
+        `/api/financeiro/despesas${params.toString() ? '?' + params.toString() : ''}`
+      );
+      return result.data || [];
+    } catch (error) {
+      logger.error('Erro ao listar contas a pagar:', error);
+      return [];
+    }
+  }
+
+  async createExpense(data: Expense): Promise<Expense | null> {
+    try {
+      const result = await callApi('/api/financeiro/despesas', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      return result.data || null;
+    } catch (error) {
+      logger.error('Erro ao registrar despesa:', error);
       return null;
     }
   }

@@ -12,7 +12,6 @@ import {
   Info,
   Globe,
   Palette,
-  Users,
   Key,
   Settings,
   HelpCircle,
@@ -22,16 +21,52 @@ import {
   Building2,
   Mail,
   Copy,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import TrackingSettings from './admin/TrackingSettings';
 import DomainSettings from './admin/DomainSettings';
 import AppearanceSettings from './admin/AppearanceSettings';
-import UserManagement from './admin/UserManagement';
 import SupportPortal from './admin/SupportPortal';
 import ChannelsSettings from './admin/ChannelsSettings';
 import SmtpSettings from './admin/SmtpSettings';
 import { toast } from 'sonner';
 
+
+const PasswordInput = ({ value, onChange, placeholder, type = "password" }: { value: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void, placeholder?: string, type?: string }) => {
+  const [showPassword, setShowPassword] = useState(false);
+
+  if (type !== 'password') {
+    return (
+      <input
+        type={type}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className="input-field font-mono"
+      />
+    );
+  }
+
+  return (
+    <div className="relative">
+      <input
+        type={showPassword ? "text" : "password"}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className="input-field font-mono pr-10"
+      />
+      <button
+        type="button"
+        className="absolute inset-y-0 right-0 pr-3 flex items-center text-text-tertiary hover:text-text-secondary transition-colors"
+        onClick={() => setShowPassword(!showPassword)}
+      >
+        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+      </button>
+    </div>
+  );
+};
 
 const SystemSettings: React.FC = () => {
   const { settings, updateSettings, loading } = useSettings();
@@ -309,7 +344,6 @@ const SystemSettings: React.FC = () => {
 
   const tabs = [
     { id: 'appearance', label: 'Aparência', icon: Palette },
-    { id: 'users', label: 'Membros & Acesso', icon: Users },
     { id: 'domains', label: 'Domínios', icon: Globe },
     { id: 'ai', label: 'Integrações 360', icon: Brain },
     { id: 'tracking', label: 'Tracking', icon: Activity },
@@ -325,7 +359,7 @@ const SystemSettings: React.FC = () => {
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-gray-900 via-gray-800 to-black p-8 shadow-lg shadow-gray-900/20 flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="absolute right-0 top-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
         <div className="absolute left-0 bottom-0 w-48 h-48 bg-white/5 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4"></div>
-        
+
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-2">
             <span className="px-2.5 py-1 rounded-full bg-white/10 text-white/90 text-[10px] font-bold tracking-wider uppercase backdrop-blur-sm border border-white/10">
@@ -386,7 +420,6 @@ const SystemSettings: React.FC = () => {
       {/* Content Area */}
       <div className="min-h-[600px]">
         {activeTab === 'appearance' && <AppearanceSettings />}
-        {activeTab === 'users' && <UserManagement />}
         {activeTab === 'domains' && <DomainSettings />}
         {activeTab === 'tracking' && <TrackingSettings />}
         {activeTab === 'canais' && <ChannelsSettings />}
@@ -449,12 +482,10 @@ const SystemSettings: React.FC = () => {
                       <label className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">
                         API Key
                       </label>
-                      <input
-                        type="password"
+                      <PasswordInput
                         value={vivarealApiKey}
                         onChange={(e) => setVivarealApiKey(e.target.value)}
                         placeholder="Chave da API VivaReal"
-                        className="input-premium font-mono"
                       />
                     </div>
                     <div className="space-y-2">
@@ -466,7 +497,7 @@ const SystemSettings: React.FC = () => {
                         value={vivarealPartnerId}
                         onChange={(e) => setVivarealPartnerId(e.target.value)}
                         placeholder="ID do parceiro"
-                        className="input-premium"
+                        className="input-field"
                       />
                     </div>
                   </div>
@@ -512,12 +543,10 @@ const SystemSettings: React.FC = () => {
                       <label className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">
                         API Key
                       </label>
-                      <input
-                        type="password"
+                      <PasswordInput
                         value={zapApiKey}
                         onChange={(e) => setZapApiKey(e.target.value)}
                         placeholder="Chave da API Zap Imóveis"
-                        className="input-premium font-mono"
                       />
                     </div>
                     <div className="space-y-2">
@@ -529,7 +558,7 @@ const SystemSettings: React.FC = () => {
                         value={zapPartnerId}
                         onChange={(e) => setZapPartnerId(e.target.value)}
                         placeholder="ID do parceiro"
-                        className="input-premium"
+                        className="input-field"
                       />
                     </div>
                   </div>
@@ -659,12 +688,10 @@ const SystemSettings: React.FC = () => {
                       <label className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">
                         {field.label}
                       </label>
-                      <input
-                        type="password"
+                      <PasswordInput
                         value={field.value}
                         onChange={(e) => field.setter(e.target.value)}
                         placeholder={field.placeholder}
-                        className="input-premium font-mono"
                       />
                       <p className="text-xs text-text-tertiary">{field.desc}</p>
                     </div>
@@ -706,6 +733,7 @@ const SystemSettings: React.FC = () => {
                       setter: setCvcrmEmail,
                       placeholder: 'email@imobiliaria.com.br',
                       desc: 'E-mail do usuário que gerou o token (Obrigatório).',
+                      type: 'email',
                     },
                     {
                       label: 'CVcrm URL Base',
@@ -713,6 +741,7 @@ const SystemSettings: React.FC = () => {
                       setter: setCvcrmBaseUrl,
                       placeholder: 'https://suaimobiliaria.cvcrm.com.br',
                       desc: 'URL de acesso ao seu CVcrm (inclua o https://).',
+                      type: 'url',
                     },
                     {
                       label: 'BIA API Key (Xano)',
@@ -726,12 +755,11 @@ const SystemSettings: React.FC = () => {
                       <label className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">
                         {field.label}
                       </label>
-                      <input
-                        type="password"
+                      <PasswordInput
                         value={field.value}
                         onChange={(e) => field.setter(e.target.value)}
                         placeholder={field.placeholder}
-                        className="input-premium font-mono"
+                        type={field.type}
                       />
                       <p className="text-xs text-text-tertiary">{field.desc}</p>
                     </div>

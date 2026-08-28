@@ -1,5 +1,15 @@
 # Handoff
 
+## 2026-08-28 — Working tree limpo e validado (sem commit)
+
+- `constants/siteTemplates.ts` revertido: o diff era só reformatação + corrupção de acentos (45 chars mojibake); semântica idêntica ao HEAD (326 ids).
+- Deletados 10 scripts não rastreados, incluindo `test-chat.cjs` (mintava JWT com `SUPABASE_JWT_SECRET`) e `scripts/alter.mjs` (duplicata de `migrations/20260826_signature_fields.sql`). Padrões scratch/test adicionados ao `.gitignore`.
+- `views/SystemSettings.tsx`: imports não usados (`Users`, `UserManagement`) removidos; trailing whitespace limpo em `admin.js`/`SystemSettings.tsx`/`UserManagement.tsx`.
+- Gates: type-check OK, lint 0 erros (744 warnings pré-existentes), build OK, `git diff --check` limpo.
+- Migration `20260827_ai_sandbox_fixes.sql` revisada: contém `DROP FUNCTION IF EXISTS`; deps (`get_my_org_id`/`exec_sql`), `events` e colunas de leads/imóveis confirmadas. Falta APLICAR no banco.
+- Próximo passo obrigatório: aplicar `20260827_ai_sandbox_fixes.sql` no Supabase; validar sandbox de IA (execution logs em `metadata`, toolRegistry/conversationStateManager) e a tela de usuários de admin usando a coluna `profiles.name`.
+- Nenhum commit, push ou deploy foi executado.
+
 ## 2026-08-26 — Migrações SQL completas + código limpo
 
 - 28 migrações SQL executadas com sucesso (incluindo 7 que estavam faltantes no run-migrations.mjs).

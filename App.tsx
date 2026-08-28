@@ -137,6 +137,7 @@ const RentalsBordero = lazy(() =>
 );
 const ComplianceUrbano = lazy(() => import('./views/urban/ComplianceUrbano'));
 const Cobranca = lazy(() => import('./views/urban/Cobranca'));
+const UserManagement = lazy(() => import('./views/admin/UserManagement'));
 
 const PortalLocatario = lazy(() => import('./views/urban/PortalLocatario'));
 const ExportadorPortais = lazy(() => import('./views/urban/ExportadorPortais'));
@@ -513,6 +514,7 @@ const AppContent: React.FC = () => {
             <Route path="email" element={<EmailCenter />} />
             <Route path="connections" element={<ConexoesUrbano />} />
             <Route path="integrations" element={<SystemSettings />} />
+            <Route path="users" element={<UserManagement />} />
             <Route path="settings" element={<SystemSettings />} />
           </Route>
 

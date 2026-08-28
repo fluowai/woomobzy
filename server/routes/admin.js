@@ -1366,7 +1366,7 @@ router.post('/link-profile', verifySuperAdmin, async (req, res) => {
 async function createOrganizationWithTransaction({ payload, normalizedCustomDomain, owner_name, owner_email, password, supabase }) {
   const rawConnectionString = getDirectDatabaseUrl();
   const connectionString = normalizeDirectDatabaseUrl(rawConnectionString);
-  
+
   const pool = new pg.Pool({
     connectionString,
     ssl: shouldUseSsl(rawConnectionString)
@@ -1440,13 +1440,87 @@ async function createOrganizationWithTransaction({ payload, normalizedCustomDoma
 
 // --- 👥 User Management (Tenant Isolated) ---
 
+router.post('/users', verifyAdmin, requireTenant, async (req, res) => {
+  try {
+    const organizationId = getOwnProfileOrgId(req);
+    if (!organizationId) {
+      return res.status(403).json({ error: 'Operacao nao permitida sem organizacao' });
+    }
+
+    const { email, password, full_name, role } = req.body;
+    if (!email || !password || !full_name) {
+      return res.status(400).json({ error: 'Email, senha e nome sao obrigatorios' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'A senha deve ter pelo menos 6 caracteres' });
+    }
+
+    const targetEmail = String(email).toLowerCase().trim();
+    const existingUser = await findAuthUserByEmail(targetEmail);
+
+    let authUserId;
+
+    if (existingUser) {
+      // User already exists in auth. Check if they have a profile
+      const { data: existingProfile, error: existingProfileError } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', existingUser.id)
+        .maybeSingle();
+
+      if (existingProfileError) throw existingProfileError;
+
+      if (existingProfile && existingProfile.organization_id !== organizationId) {
+        return res.status(409).json({ error: 'Este e-mail ja esta em uso por outra imobiliaria.' });
+      }
+
+      authUserId = existingUser.id;
+    } else {
+      // Create new user
+      const { data, error } = await supabase.auth.admin.createUser({
+        email: targetEmail,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          name: full_name,
+        }
+      });
+
+      if (error) throw error;
+      authUserId = data.user.id;
+    }
+
+    // Insert or update profile
+    const { error: profileError } = await supabase.from('profiles').upsert(
+      {
+        id: authUserId,
+        organization_id: organizationId,
+        email: targetEmail,
+        name: full_name,
+        role: role === 'admin' ? 'admin' : 'broker',
+        approved: true,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'id' }
+    );
+
+    if (profileError) throw profileError;
+
+    res.status(201).json({ success: true, message: 'Usuario criado com sucesso' });
+  } catch (error) {
+    console.error('[Admin] Error creating user:', error);
+    res.status(500).json({ error: error.message || 'Erro ao criar usuario' });
+  }
+});
+
 router.get('/users', verifyAdmin, requireTenant, async (req, res) => {
   try {
     const organizationId = getOwnProfileOrgId(req);
     if (!organizationId) {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, email, name, full_name, role, approved, created_at, organization_id')
+        .select('id, email, name, role, approved, created_at, organization_id')
         .eq('id', req.user?.id || '')
         .maybeSingle();
       if (error) throw error;
@@ -1458,7 +1532,7 @@ router.get('/users', verifyAdmin, requireTenant, async (req, res) => {
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, email, name, full_name, role, approved, created_at, organization_id')
+      .select('id, email, name, role, approved, created_at, organization_id')
       .eq('organization_id', organizationId)
       .neq('role', 'superadmin')
       .order('created_at', { ascending: false });
@@ -1470,11 +1544,11 @@ router.get('/users', verifyAdmin, requireTenant, async (req, res) => {
       users: (data || []).map(normalizeProfileRow),
     });
   } catch (error) {
-    console.error('[Admin] Error listing scoped users:', error.message);
+    console.error('[Admin] Error listing scoped users:', error);
     if (isInvalidSupabaseApiKeyError(error)) {
       return sendSupabaseServiceKeyError(res);
     }
-    res.status(500).json({ error: 'Erro ao listar usuarios' });
+    res.status(500).json({ error: error.message || 'Erro ao listar usuarios', stack: error.stack });
   }
 });
 
@@ -1513,7 +1587,7 @@ router.patch('/users/:id', verifyAdmin, requireTenant, async (req, res) => {
     }
 
     const { data, error } = await query
-      .select('id, email, name, full_name, role, approved, created_at, organization_id')
+      .select('id, email, name, role, approved, created_at, organization_id')
       .maybeSingle();
 
     if (error) throw error;
@@ -1533,7 +1607,7 @@ router.get('/team', verifySuperAdmin, async (req, res) => {
     const organizationId = getOwnProfileOrgId(req);
     let query = supabase
       .from('profiles')
-      .select('id, email, name, full_name, role, created_at, organization_id')
+      .select('id, email, name, role, created_at, organization_id')
       .eq('role', 'superadmin');
 
     if (organizationId) {
@@ -1574,7 +1648,7 @@ router.patch('/team/:id/demote', verifySuperAdmin, async (req, res) => {
     }
 
     const { data, error } = await query
-      .select('id, email, name, full_name, role, created_at, organization_id')
+      .select('id, email, name, role, created_at, organization_id')
       .maybeSingle();
 
     if (error) throw error;

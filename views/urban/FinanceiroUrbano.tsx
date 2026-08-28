@@ -11,6 +11,7 @@ import {
   TrendingUp,
   X,
   Plus,
+  Settings,
 } from 'lucide-react';
 import {
   BarChart,
@@ -58,9 +59,10 @@ const mockDreData = [
 ];
 
 export default function FinanceiroUrbano() {
-  const [tab, setTab] = useState<'cobranca' | 'despesas' | 'fluxo' | 'dre'>(
-    'cobranca'
-  );
+  const [tab, setTab] = useState<
+    'cobranca' | 'despesas' | 'fluxo' | 'dre' | 'config'
+  >('cobranca');
+  const [isReguaActive, setIsReguaActive] = useState(true);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [dashboard, setDashboard] = useState<DashboardFinanceiro | null>(null);
   const [billings, setBillings] = useState<Billing[]>([]);

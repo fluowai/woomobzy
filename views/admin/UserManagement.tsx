@@ -34,9 +34,16 @@ const UserManagement: React.FC = () => {
 
   // Modal States
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showNewUserModal, setShowNewUserModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [newUserForm, setNewUserForm] = useState({
+    full_name: '',
+    email: '',
+    password: '',
+    role: 'broker' as 'admin' | 'broker',
+  });
 
   useEffect(() => {
     fetchUsers();
@@ -95,6 +102,41 @@ const UserManagement: React.FC = () => {
     } catch (error: any) {
       logger.error('Error changing password:', error);
       toast.error(error.message || 'Erro ao alterar senha.');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUserForm.full_name || !newUserForm.email || !newUserForm.password) {
+      toast.error('Preencha todos os campos obrigatórios.');
+      return;
+    }
+    if (newUserForm.password.length < 6) {
+      toast.error('A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+
+    setProcessing('new');
+    try {
+      await callApi('/api/admin/users', {
+        method: 'POST',
+        body: JSON.stringify(newUserForm),
+      });
+
+      toast.success('Usuário criado com sucesso!');
+      setShowNewUserModal(false);
+      setNewUserForm({
+        full_name: '',
+        email: '',
+        password: '',
+        role: 'broker',
+      });
+      fetchUsers();
+    } catch (error: any) {
+      logger.error('Error creating user:', error);
+      toast.error(error.message || 'Erro ao criar usuário.');
     } finally {
       setProcessing(null);
     }
@@ -199,6 +241,103 @@ const UserManagement: React.FC = () => {
         </div>
       )}
 
+      {/* New User Modal */}
+      {showNewUserModal && (
+        <div className="absolute inset-0 z-50 bg-black/50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <User className="text-indigo-600" size={20} />
+                Novo Usuário
+              </h3>
+              <button
+                onClick={() => setShowNewUserModal(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateUser} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500 uppercase">Nome Completo</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: João Silva"
+                  value={newUserForm.full_name}
+                  onChange={(e) => setNewUserForm({ ...newUserForm, full_name: e.target.value })}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500 uppercase">E-mail</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="joao@imobiliaria.com.br"
+                  value={newUserForm.email}
+                  onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500 uppercase">Nível de Acesso</label>
+                <select
+                  value={newUserForm.role}
+                  onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value as 'admin' | 'broker' })}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white"
+                >
+                  <option value="broker">Corretor (Acesso restrito)</option>
+                  <option value="admin">Administrador (Acesso total)</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500 uppercase">Senha Temporária</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    minLength={6}
+                    placeholder="Mínimo 6 caracteres"
+                    value={newUserForm.password}
+                    onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
+                    className="w-full px-4 py-2 pr-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowNewUserModal(false)}
+                  className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg text-sm"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={processing === 'new'}
+                  className="px-6 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm text-sm"
+                >
+                  {processing === 'new' ? 'Criando...' : 'Criar Usuário'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <div className="p-6 border-b border-slate-100 bg-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
@@ -227,9 +366,16 @@ const UserManagement: React.FC = () => {
           </div>
           <button
             onClick={fetchUsers}
+            title="Atualizar"
             className="p-2 text-slate-500 hover:bg-slate-200 rounded-lg transition-colors"
           >
             <RefreshCw size={18} />
+          </button>
+          <button
+            onClick={() => setShowNewUserModal(true)}
+            className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 shadow-sm transition-colors flex items-center gap-2 whitespace-nowrap"
+          >
+            Novo Usuário
           </button>
         </div>
       </div>

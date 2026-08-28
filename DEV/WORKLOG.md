@@ -235,12 +235,31 @@ Isso garantirá que todas as correções de 500 error e as novas funcionalidades
 - `npm run type-check`: passou sem erros.
 - `npm run build`: passou (4070 módulos, 1m31s).
 
-### Financeiro Avan�ado: Contas a Pagar (Agosto 2026)
-- **cobrancaService.ts**: Criada a interface \Expense\ e os m�todos \listExpenses\ e \createExpense\.
-- **FinanceiroUrbano.tsx**: Adicionada a aba 'Contas a Pagar', com listagem de despesas, integra��o com o servi�o e estrutura base para controle de custo por im�vel e rateio de comiss�es/repasses.
+### Financeiro Avan�ado: Contas a Pagar (Agosto 2026)
+- **cobrancaService.ts**: Criada a interface \Expense\ e os m�todos \listExpenses\ e \createExpense\.
+- **FinanceiroUrbano.tsx**: Adicionada a aba 'Contas a Pagar', com listagem de despesas, integra��o com o servi�o e estrutura base para controle de custo por im�vel e rateio de comiss�es/repasses.
 
-### Automa��o & Split Payment (Agosto 2026)
-- **asaasGateway.js**: Adicionado no backend simula��o de Gateway para tratar webhooks (PIX/Boleto).
+### Automa��o & Split Payment (Agosto 2026)
+- **asaasGateway.js**: Adicionado no backend simula��o de Gateway para tratar webhooks (PIX/Boleto).
 - **webhook.js (routes)**: Criado router para injetar webhook (PAYMENT_RECEIVED) e processar o 'Split'.
 - **server/index.js**: Injetado as rotas de webhook (/api/webhooks).
-- **FinanceiroUrbano.tsx**: Criada a aba completa de 'Automa��o / Gateway' para gest�o de r�gua de cobran�a visual e rateio (Split) de comiss�es/repasses.
+- **FinanceiroUrbano.tsx**: Criada a aba completa de 'Automa��o / Gateway' para gest�o de r�gua de cobran�a visual e rateio (Split) de comiss�es/repasses.
+
+## 2026-08-28 — Limpeza do working tree (review + remoção de scripts internos)
+
+- Analisado git status completo: 5 arquivos staged, 11 modificados (unstaged), 10 não rastreados.
+- `constants/siteTemplates.ts`: o diff era reformatação + corrupção de encoding (45 chars mojibake, ex.: `Imobiliǭrio` no lugar de `Imobiliário`); conteúdo semântico idêntico ao HEAD (326 ids, zero diferenças além de encoding) — revertido via `git restore` para eliminar ruído e corrupção.
+- `scripts/alter.mjs` deletado: duplicava `migrations/20260826_signature_fields.sql` (já versionado e registrado no `run-migrations.mjs`).
+- Deletados 9 scripts descartáveis não rastreados: `add_templates_script.mjs`, `run_my_migration.mjs`, `scratch.cjs`, `scratch_financeiro.cjs`, `scratch_regua.cjs`, `scratch_server.cjs`, `test-api.mjs`, `test-chat.cjs`, `test-chat.mjs`.
+- Atenção: `test-chat.cjs` mintava JWT com `SUPABASE_JWT_SECRET` (segredo) e user id hardcoded — descartado, nunca commitar.
+- `.gitignore`: adicionados padrões `/scratch*.cjs`, `/scratch*.mjs`, `/test-api.mjs`, `/test-chat.*`, `/run_my_migration.mjs`, `/add_templates_script.mjs`, `/scripts/alter.mjs`.
+- `views/SystemSettings.tsx`: removidos imports não usados (`Users` do lucide-react e `UserManagement`).
+- Trailing whitespace removido em `server/routes/admin.js`, `views/SystemSettings.tsx`, `views/admin/UserManagement.tsx` — `git diff --check` limpo.
+- Revisão da migração `20260827_ai_sandbox_fixes.sql`: já contém `DROP FUNCTION IF EXISTS`; dependências `get_my_org_id()`/RPC `exec_sql` existem; colunas usadas (`events`, `next_visit_at`, `classification`, `city`/`neighborhood`) confirmadas nos schemas/migrations.
+
+### Verificação
+- `npm run type-check`: passou (exit 0).
+- `npm run lint`: 0 erros (744 warnings pré-existentes de dívida técnica); `SystemSettings.tsx` sem warnings.
+- `npm run build`: passou (3m26s, 263 precache entries).
+- `git diff --check`: passou (exit 0) após limpeza.
+- Nenhum commit, push ou deploy foi executado.

@@ -84,6 +84,16 @@
 - `npm run test:e2e:audit`: 8 casos anônimos passaram, 25 casos autenticados foram ignorados e o contrato falhou intencionalmente ao listar as oito credenciais ausentes.
 - A rotação de segredos e a validação da migration/RLS não foram executadas.
 
+## 2026-08-28 — Gates de verificação após limpeza do working tree
+
+- `npm run type-check`: passou (exit 0).
+- `npm run lint`: 0 erros, 744 avisos preexistentes; `views/SystemSettings.tsx` sem avisos.
+- `npm run build`: passou (3m26s, 263 precache entries, exit 0).
+- `git diff --check`: passou (exit 0) após remoção de trailing whitespace em `server/routes/admin.js`, `views/SystemSettings.tsx`, `views/admin/UserManagement.tsx`.
+- Revisão de `migrations/20260827_ai_sandbox_fixes.sql`: `DROP FUNCTION IF EXISTS` presente; deps `get_my_org_id()` e RPC `exec_sql` confirmadas; colunas de `events` (createEventsTable.js), `leads.next_visit_at` (20260608_ai_agent_orchestration.sql), `leads.classification` e `properties.city`/`neighborhood` confirmadas.
+- `constants/siteTemplates.ts`: conteúdo semântico identico ao HEAD (326 ids; diff era formatação + mojibake de acentos) — revertido; nenhuma perda funcional esperada.
+- Restrições não executadas: aplicar a migração `20260827_ai_sandbox_fixes.sql` no banco e validar o fluxo de usuários usando coluna `profiles.name`.
+
 ## 2026-07-28 — Linha de base para auditoria funcional
 
 - `npm run type-check`: passou.

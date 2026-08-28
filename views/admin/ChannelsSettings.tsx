@@ -162,7 +162,7 @@ const ChannelsSettings: React.FC = () => {
                     }
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
-                    className="input-premium py-3 pl-11 pr-4 w-full bg-bg-primary/50"
+                    className="input-field py-3 pl-11 pr-4 w-full bg-bg-primary/50"
                     disabled={isLimitReached}
                   />
                 </div>

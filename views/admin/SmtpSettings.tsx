@@ -126,7 +126,7 @@ const SmtpSettings: React.FC = () => {
               value={smtpHost}
               onChange={(e) => setSmtpHost(e.target.value)}
               placeholder="smtp.seudominio.com.br"
-              className="input-premium font-mono"
+              className="input-field font-mono"
             />
           </div>
 
@@ -139,7 +139,7 @@ const SmtpSettings: React.FC = () => {
               value={smtpPort}
               onChange={(e) => setSmtpPort(Number(e.target.value))}
               placeholder="465"
-              className="input-premium font-mono"
+              className="input-field font-mono"
             />
           </div>
 
@@ -157,7 +157,7 @@ const SmtpSettings: React.FC = () => {
                 value={smtpEmail}
                 onChange={(e) => setSmtpEmail(e.target.value)}
                 placeholder="contato@seudominio.com.br"
-                className="input-premium pl-10"
+                className="input-field pl-10"
               />
             </div>
           </div>
@@ -180,7 +180,7 @@ const SmtpSettings: React.FC = () => {
                     ? 'Deixe em branco para não alterar'
                     : 'Sua senha segura'
                 }
-                className="input-premium pl-10"
+                className="input-field pl-10"
               />
             </div>
           </div>

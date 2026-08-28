@@ -2192,6 +2192,26 @@ const PropertyEditor: React.FC = () => {
             </label>
           </div>
         </div>
+
+        {/* Botão de salvar no final da pagina */}
+        <div className="flex justify-end mt-8 border-t border-slate-100 pt-6 pb-12">
+          <button
+            type="button"
+            onClick={(e) => {
+              logger.debug('[PropertyEditor] Clique fisico no botao salvar (inferior)');
+              handleSave(e);
+            }}
+            disabled={loading}
+            className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-4 rounded-xl font-bold transition-all shadow-lg shadow-indigo-200 disabled:opacity-50 w-full md:w-auto text-lg"
+          >
+            {loading ? (
+              <Loader2 className="animate-spin" size={24} />
+            ) : (
+              <Save size={24} />
+            )}
+            {loading ? 'Salvando...' : 'Salvar Alterações'}
+          </button>
+        </div>
       </form>
     </div>
   );

@@ -520,18 +520,16 @@ export class PolicyEngine {
     
     // Log to execution logs (async, don't await)
     supabase.from('ai_execution_logs').insert({
+      organization_id: context.organizationId,
       tenant_id: context.organizationId,
       agent_id: context.agentVersionId, // Will be resolved to agent_id via version
       event_type: 'TOOL_EXECUTION',
       channel: context.channel,
       instance_id: context.instanceId,
       conversation_id: context.conversationId,
-      lead_id: context.leadId,
-      input_json: context.input,
-      output_json: result,
+      metadata: { input: context.input, output: result, lead_id: context.leadId },
       status: result.success ? 'success' : 'failed',
-      error_message: result.error,
-      executed_at: new Date().toISOString()
+      created_at: new Date().toISOString()
     }).then(({ error }) => {
       if (error) logger.error('[PolicyEngine] Failed to log execution', { error: error.message });
     }).catch(e => logger.error('[PolicyEngine] Audit log error', { error: e.message }));

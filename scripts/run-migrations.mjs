@@ -79,6 +79,7 @@ const MIGRATIONS = [
   'migrations/20260826_social_media_schema.sql',
   'migrations/20260826_whatsapp_cloud_api_billing.sql',
   'migrations/20260827_add_asgardpay_keys_to_organizations.sql',
+  'migrations/20260827_ai_sandbox_fixes.sql',
 ];
 
 async function executeMigrations() {

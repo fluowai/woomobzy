@@ -703,19 +703,19 @@ export class ConversationStateManager {
     
     const { data } = await supabase
       .from('ai_execution_logs')
-      .select('input_json, output_json, executed_at')
+      .select('metadata, event_type, created_at')
       .eq('tenant_id', organizationId)
       .eq('conversation_id', conversationId)
       .eq('event_type', 'AGENT_QUESTION')
-      .order('executed_at', { ascending: true })
+      .order('created_at', { ascending: true })
       .limit(50);
     
     return data?.map(log => ({
-      question: log.input_json?.question,
-      normalizedQuestion: log.input_json?.question?.toLowerCase().trim(),
-      answer: log.output_json?.answer,
-      slotKey: log.input_json?.slotKey,
-      askedAt: log.executed_at
+      question: log.metadata?.question,
+      normalizedQuestion: log.metadata?.question?.toLowerCase().trim(),
+      answer: log.metadata?.answer,
+      slotKey: log.metadata?.slotKey,
+      askedAt: log.created_at
     })) || [];
   }
 

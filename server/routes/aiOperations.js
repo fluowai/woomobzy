@@ -612,7 +612,7 @@ router.get('/:id/metrics', async (req, res) => {
     // Get conversation metrics from execution logs
     const { data: logs } = await supabase
       .from('ai_execution_logs')
-      .select('agent_id, event_type, status, latency_ms, tokens, cost_usd, created_at')
+      .select('agent_id, event_type, status, latency_ms, tokens, cost_usd, conversation_id, created_at')
       .eq('tenant_id', organizationId)
       .in('agent_id', agents?.map(a => a.id) || [])
       .gte('created_at', since);

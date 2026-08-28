@@ -305,10 +305,12 @@ export async function checkAvailability(input, context) {
  * Schedule a visit
  */
 export async function scheduleVisit(input, context) {
-  const { property_id, datetime } = input;
+  const { property_id, datetime, date_time } = input;
   const { organizationId, leadId } = context;
 
-  if (!datetime) {
+  const finalDatetime = datetime || date_time;
+
+  if (!finalDatetime) {
     throw new Error('datetime é obrigatório para agendar a visita');
   }
 
@@ -316,15 +318,16 @@ export async function scheduleVisit(input, context) {
   
   // Insert visit record
   const { data: visit, error } = await supabase
-    .from('events') // assuming events table stores visits
+    .from('lead_appointments')
     .insert({
       organization_id: organizationId,
       lead_id: leadId,
       title: 'Visita Agendada via IA',
-      start_time: datetime,
-      end_time: new Date(new Date(datetime).getTime() + 3600000).toISOString(),
-      event_type: 'visit',
-      property_id: property_id || null
+      appointment_date: finalDatetime,
+      type: 'Visita',
+      status: 'Agendado',
+      property_id: property_id || null,
+      notes: input.notes || 'Agendado pela assistente virtual'
     })
     .select()
     .single();

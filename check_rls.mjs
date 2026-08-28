@@ -1,27 +1,32 @@
 import pg from 'pg';
+import dotenv from 'dotenv';
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+dotenv.config();
 
-const pool = new pg.Pool({
-  connectionString:
-    'postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres',
-  ssl: { rejectUnauthorized: false },
+const client = new pg.Client({
+    connectionString: process.env.SUPABASE_DB_URL,
+    ssl: { rejectUnauthorized: false }
 });
 
 async function run() {
-  const { rows } = await pool.query(`
-    SELECT polname, pg_get_expr(polqual, polrelid) as polqual, pg_get_expr(polwithcheck, polrelid) as polwithcheck
-    FROM pg_policy
-    WHERE polrelid = 'public.profiles'::regclass;
-  `);
-  console.log('Profiles RLS:', rows);
+    await client.connect();
+    
+    // Check RLS on lead_appointments
+    const res = await client.query(`
+        SELECT tablename, rowsecurity 
+        FROM pg_tables 
+        WHERE tablename = 'lead_appointments';
+    `);
+    console.log('lead_appointments RLS:', res.rows);
+    
+    // Check policies
+    const pol = await client.query(`
+        SELECT policyname, permissive, roles, cmd, qual, with_check 
+        FROM pg_policies 
+        WHERE tablename = 'lead_appointments';
+    `);
+    console.log('Policies:', pol.rows);
 
-  const { rows: userRows } = await pool.query(`
-    SELECT polname, pg_get_expr(polqual, polrelid) as polqual, pg_get_expr(polwithcheck, polrelid) as polwithcheck
-    FROM pg_policy
-    WHERE polrelid = 'public."User"'::regclass;
-  `);
-  console.log('User RLS:', userRows);
-
-  pool.end();
+    await client.end();
 }
-
 run();

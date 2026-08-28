@@ -736,7 +736,7 @@ export class LLMOrchestrator {
     if (model.includes('gpt') || model.includes('o1') || model.includes('text-embedding-3')) return 'openai';
     if (model.includes('claude')) return 'anthropic';
     if (model.includes('gemini') || model.includes('text-embedding-004')) return 'gemini';
-    if (model.includes('llama') || model.includes('mixtral') || model.includes('gemma')) return 'groq';
+    if (model.includes('llama') || model.includes('mixtral') || model.includes('gemma') || model.includes('qwen')) return 'groq';
     return null; // fallback to OpenRouter or default
   }
 

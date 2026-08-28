@@ -209,6 +209,13 @@ router.get('/signed-url', async (req, res) => {
 });
 
 async function uploadToConfiguredStorage(bucket, filePath, file) {
+  const provider = (process.env.MEDIA_STORAGE_PROVIDER || process.env.STORAGE_PROVIDER || '').toLowerCase();
+  const isSupabaseExplicit = provider === 'supabase';
+
+  if (isSupabaseExplicit) {
+    return uploadToSupabase(bucket, filePath, file);
+  }
+
   if (isMinioConfigured()) {
     try {
       return await uploadToMinio(bucket, filePath, file);

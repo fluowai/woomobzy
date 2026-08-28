@@ -209,13 +209,6 @@ router.get('/signed-url', async (req, res) => {
 });
 
 async function uploadToConfiguredStorage(bucket, filePath, file) {
-  const provider = (process.env.MEDIA_STORAGE_PROVIDER || process.env.STORAGE_PROVIDER || '').toLowerCase();
-  const isSupabaseExplicit = provider === 'supabase';
-
-  if (isSupabaseExplicit) {
-    return uploadToSupabase(bucket, filePath, file);
-  }
-
   if (isMinioConfigured()) {
     try {
       return await uploadToMinio(bucket, filePath, file);
@@ -224,7 +217,7 @@ async function uploadToConfiguredStorage(bucket, filePath, file) {
       if (allowSupabaseStorageFallback()) {
         return uploadToSupabase(bucket, filePath, file);
       }
-      throw new Error(`MinIO falhou: ${minioError.message}. Configure MINIO_ENDPOINT, MINIO_ACCESS_KEY e MINIO_SECRET_KEY, ou defina MEDIA_STORAGE_PROVIDER=supabase.`);
+      throw new Error(`MinIO falhou: ${minioError.message}. Verifique a conexao do backend com o endpoint do MinIO.`);
     }
   }
 

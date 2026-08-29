@@ -17,6 +17,7 @@ vi.mock('../../context/AuthContext', () => ({
     profile: {
       id: 'user-1',
       role: 'admin',
+      organization_id: 'org-1',
       organization: {
         id: 'org-1',
         plan_id: null,

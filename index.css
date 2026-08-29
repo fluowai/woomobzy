@@ -148,18 +148,19 @@
 
   /* Scrollbar Global */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 10px;
+    height: 10px;
   }
   ::-webkit-scrollbar-track {
     background: var(--color-bg-primary);
   }
   ::-webkit-scrollbar-thumb {
-    background: var(--color-border);
+    background: var(--color-text-tertiary);
     border-radius: var(--radius-full);
+    border: 2px solid var(--color-bg-primary);
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-text-tertiary);
+    background: var(--color-text-secondary);
   }
 
   /* Seleção */

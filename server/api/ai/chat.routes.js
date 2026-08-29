@@ -133,40 +133,70 @@ router.post('/generate-page', verifyAuth, requireTenant, async (req, res) => {
   }
 });
 
-router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
-  const {
-    prompt,
-    systemInstruction,
-    temperature = 0.7,
-    jsonMode = false,
-  } = req.body;
-  const organizationId = req.orgId;
+const OPENAI_COMPATIBLE_ENDPOINTS = {
+  openai: {
+    url: 'https://api.openai.com/v1/chat/completions',
+    model: 'gpt-4o',
+  },
+  openrouter: {
+    url: 'https://openrouter.ai/api/v1/chat/completions',
+    model: 'openai/gpt-4o-mini',
+  },
+  namoBana: {
+    url: 'https://api.namobana.com/v1/chat/completions',
+    model: 'gpt-4o-mini',
+  },
+};
 
-  let geminiKey = (process.env.GEMINI_API_KEY || '').trim();
-  let groqKey = (process.env.GROQ_API_KEY || '').trim();
-  let hasGemini = false;
+function isValidKey(key) {
+  return !!(
+    key &&
+    typeof key === 'string' &&
+    key.trim() &&
+    !key.includes('YOUR_') &&
+    !key.includes('PLACEHOLDER') &&
+    key.trim().length >= 20
+  );
+}
 
-  try {
-    if (organizationId) {
-      const config = await getOrgAIConfig(organizationId);
-      if (config?.gemini?.apiKey) {
-        geminiKey = config.gemini.apiKey.trim();
-      }
-      if (config?.groq?.apiKey) {
-        groqKey = config.groq.apiKey.trim();
-      }
-    }
+function collectChatProviders(config) {
+  const extract = (keyConfig) => {
+    if (!keyConfig) return '';
+    const key = typeof keyConfig === 'object' ? keyConfig.apiKey : keyConfig;
+    return typeof key === 'string' ? key.trim() : '';
+  };
 
-    hasGemini = !!(geminiKey && !geminiKey.includes('YOUR_') && geminiKey.length >= 20);
+  const providers = [];
 
-    if (!hasGemini) {
-      throw new Error(
-        'Gemini API key invalida ou nao configurada. Configure GEMINI_API_KEY no .env do servidor ou nas configuracoes da empresa.'
-      );
-    }
+  const push = (name, key, endpoint, model) => {
+    if (!isValidKey(key)) return;
+    providers.push({ name, key, endpoint, model });
+  };
 
+  // Priority: per-org config (front/site_settings) > env vars
+  push('openai', extract(config?.openai?.apiKey) || process.env.OPENAI_API_KEY, OPENAI_COMPATIBLE_ENDPOINTS.openai.url, config?.openai?.model || OPENAI_COMPATIBLE_ENDPOINTS.openai.model);
+  push('namoBana', extract(config?.namoBana?.apiKey), OPENAI_COMPATIBLE_ENDPOINTS.namoBana.url, config?.namoBana?.model || OPENAI_COMPATIBLE_ENDPOINTS.namoBana.model);
+  push('openrouter', extract(config?.openrouter?.apiKey) || process.env.OPENROUTER_API_KEY, OPENAI_COMPATIBLE_ENDPOINTS.openrouter.url, config?.openrouter?.model || OPENAI_COMPATIBLE_ENDPOINTS.openrouter.model);
+  push('anthropic', extract(config?.anthropic?.apiKey) || process.env.ANTHROPIC_API_KEY, null, config?.anthropic?.model || 'claude-3-5-haiku-20241022');
+  push('gemini', extract(config?.gemini?.apiKey) || process.env.GEMINI_API_KEY, null, config?.gemini?.model || 'gemini-2.0-flash');
+  push('groq', extract(config?.groq?.apiKey) || process.env.GROQ_API_KEY, 'https://api.groq.com/openai/v1/chat/completions', config?.groq?.model || 'llama-3.3-70b-versatile');
+
+  return providers;
+}
+
+// Returns { text } or throws with provider details
+async function callChatProvider(provider, { prompt, systemInstruction, temperature, jsonMode }) {
+  const messages = [
+    {
+      role: 'system',
+      content: systemInstruction || 'Voce e um util assistente.',
+    },
+    { role: 'user', content: prompt },
+  ];
+
+  if (provider.name === 'gemini') {
     const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${provider.model}:generateContent?key=${provider.key}`,
       {
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
@@ -178,62 +208,107 @@ router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
           : undefined,
       }
     );
+    return {
+      text: response.data.candidates?.[0]?.content?.parts?.[0]?.text || '',
+    };
+  }
 
-    const text = response.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    return res.json({ text });
-  } catch (geminiError) {
-    console.warn('Gemini failed, trying Groq fallback...', geminiError.message);
-
-    try {
-      if (!groqKey) {
-        return res.status(503).json({
-          error: 'Nenhum provedor de IA disponivel. Configure as chaves nas configuracoes da empresa.',
-          details: {
-            gemini: hasGemini ? 'configured but failed' : 'not configured',
-            groq: groqKey ? 'configured' : 'not configured',
-          },
-        });
-      }
-
-      const groqResponse = await axios.post(
-        'https://api.groq.com/openai/v1/chat/completions',
-        {
-          model: 'llama-3.3-70b-versatile',
-          messages: [
-            {
-              role: 'system',
-              content: systemInstruction || 'Voce e um util assistente.',
-            },
-            { role: 'user', content: prompt },
-          ],
-          temperature,
-          response_format: jsonMode ? { type: 'json_object' } : undefined,
+  if (provider.name === 'anthropic') {
+    const response = await axios.post(
+      'https://api.anthropic.com/v1/messages',
+      {
+        model: provider.model,
+        max_tokens: provider.maxTokens || 4096,
+        temperature,
+        system: systemInstruction || 'Voce e um util assistente.',
+        messages: [{ role: 'user', content: prompt }],
+      },
+      {
+        headers: {
+          'x-api-key': provider.key,
+          'anthropic-version': '2023-06-01',
+          'Content-Type': 'application/json',
         },
-        {
-          headers: {
-            Authorization: `Bearer ${groqKey}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      }
+    );
+    return { text: response.data.content?.[0]?.text || '' };
+  }
 
-      const text = groqResponse.data.choices?.[0]?.message?.content || '';
-      return res.json({ text });
-    } catch (groqError) {
-      console.error(
-        'Groq Fallback Error:',
-        groqError.response?.data || groqError.message
-      );
-      return res
-        .status(503)
-        .json({
-          error: 'Falha em todos os provedores de IA. Verifique as chaves de API cadastradas nas configuracoes da empresa.',
-          details: {
-            gemini_error: geminiError.message,
-            groq_error: groqError.response?.data?.error?.message || groqError.message,
-          },
-        });
+  // OpenAI-compatible providers (openai, openrouter, groq, namoBana)
+  const body = {
+    model: provider.model,
+    messages,
+    temperature,
+  };
+  if (jsonMode) {
+    body.response_format = { type: 'json_object' };
+  }
+
+  const url = provider.url || 'https://api.groq.com/openai/v1/chat/completions';
+
+  const response = await axios.post(url, body, {
+    headers: {
+      Authorization: `Bearer ${provider.key}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  return { text: response.data.choices?.[0]?.message?.content || '' };
+}
+
+router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
+  const {
+    prompt,
+    systemInstruction,
+    temperature = 0.7,
+    jsonMode = false,
+  } = req.body;
+  const organizationId = req.orgId;
+
+  try {
+    const config = organizationId
+      ? await getOrgAIConfig(organizationId)
+      : null;
+
+    const providers = collectChatProviders(config || {});
+
+    if (providers.length === 0) {
+      return res.status(400).json({
+        error:
+          'Nenhuma chave de IA configurada. Cadastre a(s) chave(s) nas configuracoes da empresa (Integracoes > IA) ou no .env do servidor.',
+      });
     }
+
+    const errors = [];
+    for (const provider of providers) {
+      try {
+        const result = await callChatProvider(provider, {
+          prompt,
+          systemInstruction,
+          temperature,
+          jsonMode,
+        });
+        if (result.text) {
+          return res.json(result);
+        }
+      } catch (error) {
+        const detail =
+          error?.response?.data?.error?.message ||
+          error?.response?.data?.message ||
+          error?.message ||
+          'erro desconhecido';
+        errors.push({ provider: provider.name, error: detail });
+        console.warn(`[AIChat] ${provider.name} falhou, tentando proximo:`, detail);
+      }
+    }
+
+    return res.status(503).json({
+      error:
+        'Falha em todos os provedores de IA. Verifique as chaves de API cadastradas nas configuracoes da empresa.',
+      details: { providers: errors },
+    });
+  } catch (error) {
+    console.error('AI Chat Error:', error);
+    return res.status(500).json({ error: error.message });
   }
 });
 

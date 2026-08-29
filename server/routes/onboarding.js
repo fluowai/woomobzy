@@ -125,7 +125,7 @@ router.post('/', registerLimiter, async (req, res) => {
       const { data: selectedPlan } = await supabase
         .from('plans')
         .select('id')
-        .ilike('slug', plan || 'free')
+        .ilike('slug', plan || 'trial')
         .maybeSingle();
 
       const trialEndsAt = new Date(
@@ -142,6 +142,8 @@ router.post('/', registerLimiter, async (req, res) => {
           plan_id: selectedPlan?.id || null,
           trial_ends_at: trialEndsAt,
           subscription_status: 'trial',
+          owner_name: name || null,
+          owner_email: email || null,
         })
         .select()
         .single();

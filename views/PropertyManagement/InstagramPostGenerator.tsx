@@ -23,6 +23,7 @@ import {
   listMediaPosts,
   deleteMediaPost,
   getPreviewUrl,
+  fetchPreviewImage,
   TEMPLATE_LABELS,
   FORMAT_LABELS,
   type InstagramTemplate,
@@ -76,6 +77,7 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [previewUrl, setPreviewUrl] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
   const previewImgRef = useRef<HTMLImageElement>(null);
 
   const [savedPosts, setSavedPosts] = useState<MediaPost[]>([]);
@@ -103,10 +105,21 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
     }
   }, [isOpen, showSaved, loadSavedPosts]);
 
-  const refreshPreview = useCallback(() => {
+  const refreshPreview = useCallback(async () => {
     if (!property?.id) return;
-    const url = getPreviewUrl(property.id, template, format, imageIndex);
-    setPreviewUrl(`${url}&t=${Date.now()}`);
+    setPreviewLoading(true);
+    try {
+      const blob = await fetchPreviewImage(property.id, template, format, imageIndex);
+      const objectUrl = URL.createObjectURL(blob);
+      setPreviewUrl((prev) => {
+        if (prev && prev.startsWith('blob:')) URL.revokeObjectURL(prev);
+        return objectUrl;
+      });
+    } catch (err) {
+      console.error('Error fetching preview:', err);
+    } finally {
+      setPreviewLoading(false);
+    }
   }, [property?.id, template, format, imageIndex]);
 
   useEffect(() => {
@@ -436,7 +449,7 @@ const InstagramPostGenerator: React.FC<InstagramPostGeneratorProps> = ({
               </div>
             ) : (
               <div className="relative max-h-full">
-                {previewUrl ? (
+                {previewUrl && !previewLoading ? (
                   <img
                     ref={previewImgRef}
                     src={previewUrl}

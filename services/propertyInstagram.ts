@@ -178,3 +178,19 @@ export function getPreviewUrl(
     `/api/properties/${propertyId}/instagram-post/preview?template=${template}&format=${format}&imageIndex=${imageIndex}`
   );
 }
+
+export async function fetchPreviewImage(
+  propertyId: string,
+  template: InstagramTemplate,
+  format: InstagramFormat,
+  imageIndex: number = 0
+): Promise<Blob> {
+  const url = getPreviewUrl(propertyId, template, format, imageIndex);
+  const headers = await authHeaders();
+  const res = await fetch(url, { method: 'GET', headers });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Erro ao carregar preview');
+  }
+  return res.blob();
+}

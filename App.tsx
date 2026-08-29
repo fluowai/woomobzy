@@ -522,6 +522,18 @@ const AppContent: React.FC = () => {
             <Route path="settings" element={<SystemSettings />} />
           </Route>
 
+          {/* ====== WOO CONTROL ====== */}
+          <Route 
+            path="/woo-control" 
+            element={
+              <ProtectedRoute>
+                <WooControlLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<WooOverview />} />
+          </Route>
+
           {/* ====== MEGA ADMIN ====== */}
           <Route
             path="/megaadmin"

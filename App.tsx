@@ -214,6 +214,7 @@ const DirectClientsManager = lazy(
 const ConnectionManager = lazy(
   () => import('./views/megaadmin/ConnectionManager')
 );
+const AiCreditsHub = lazy(() => import('./views/megaadmin/AiCreditsHub'));
 
 // Site Builder
 const SiteManager = lazy(() => import('./views/SiteManager'));
@@ -537,6 +538,7 @@ const AppContent: React.FC = () => {
             <Route path="direct-clients" element={<DirectClientsManager />} />
             <Route path="analytics" element={<AnalyticsDashboard />} />
             <Route path="monitoring" element={<PlatformMonitoring />} />
+            <Route path="ai-credits" element={<AiCreditsHub />} />
             <Route path="billing" element={<BillingOverview />} />
             <Route path="connections" element={<ConnectionManager />} />
             <Route path="feature-flags" element={<FeatureFlags />} />

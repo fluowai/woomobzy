@@ -17,6 +17,7 @@ import {
   HardDrive,
   ShieldAlert,
   Plug,
+  Bot,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -40,6 +41,7 @@ const MegaAdminLayout: React.FC = () => {
     },
     { icon: BarChart3, label: 'Analytics', path: '/megaadmin/analytics' },
     { icon: Activity, label: 'Monitoring', path: '/megaadmin/monitoring' },
+    { icon: Bot, label: 'AI Gateway (Tokens)', path: '/megaadmin/ai-credits' },
     { icon: DollarSign, label: 'Billing', path: '/megaadmin/billing' },
     { icon: Plug, label: 'Conexões WA', path: '/megaadmin/connections' },
     {

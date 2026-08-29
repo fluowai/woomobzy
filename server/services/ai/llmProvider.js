@@ -771,28 +771,52 @@ export class LLMOrchestrator {
       }
     }
     
-    if (!provider) {
-      throw new Error('Nenhum provedor LLM configurado. Configure chaves de API (Gemini, OpenAI, Anthropic, Groq ou OpenRouter) no painel de configurações.');
+    if (!provider && (!config.orgKeys || !config.orgKeys[this.getProviderForModel(model) || 'gemini'])) {
+      throw new Error('Nenhum provedor LLM configurado. Configure chaves de API no painel de configurações.');
     }
     
+    // Dynamic provider support
+    let activeProvider = provider;
+    const providerNameToUse = provider ? provider.name : (this.getProviderForModel(model) || 'gemini');
+    
+    const extractKey = (keyConfig) => {
+      if (!keyConfig) return null;
+      let key = typeof keyConfig === 'object' ? keyConfig.apiKey : keyConfig;
+      return typeof key === 'string' && key.trim().length > 0 ? key.trim() : null;
+    };
+
+    if (config.orgKeys && extractKey(config.orgKeys[providerNameToUse])) {
+      const dynamicKey = extractKey(config.orgKeys[providerNameToUse]);
+      if (providerNameToUse === 'gemini') activeProvider = new GeminiProvider({ apiKey: dynamicKey });
+      else if (providerNameToUse === 'openai') activeProvider = new OpenAIProvider({ apiKey: dynamicKey });
+      else if (providerNameToUse === 'anthropic') activeProvider = new AnthropicProvider({ apiKey: dynamicKey });
+      else if (providerNameToUse === 'groq') activeProvider = new GroqProvider({ apiKey: dynamicKey });
+      else if (providerNameToUse === 'openrouter') activeProvider = new OpenRouterProvider({ apiKey: dynamicKey });
+    }
+    
+    if (!activeProvider) {
+      throw new Error('Provedor não inicializado corretamente.');
+    }
+
     const finalConfig = { ...config, model };
     
     logger.info('[LLMOrchestrator] Chat request', { 
       taskType, 
-      provider: provider.name, 
+      provider: activeProvider.name, 
       model, 
       isFallback,
-      messagesCount: messages.length 
+      messagesCount: messages.length,
+      dynamicKey: !!config.orgKeys
     });
     
     try {
-      const response = await provider.chat(messages, finalConfig);
+      const response = await activeProvider.chat(messages, finalConfig);
       
       // Track cost
-      const cost = provider.estimateCost(response.usage, model);
+      const cost = activeProvider.estimateCost(response.usage, model);
       await this.costTracker.record({
         taskType,
-        provider: provider.name,
+        provider: activeProvider.name,
         model,
         usage: response.usage,
         cost,

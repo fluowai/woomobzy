@@ -53,7 +53,10 @@ const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({
     org.subscription_status === 'trial' &&
     trialEndsAt &&
     trialEndsAt.getTime() < Date.now();
-  const missingPlan = !org.plan_id && org.subscription_status !== 'active';
+  const missingPlan =
+    !org.plan_id &&
+    org.subscription_status !== 'active' &&
+    org.subscription_status !== 'trial';
   const mustChoosePlan =
     expiredTrial ||
     missingPlan ||

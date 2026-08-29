@@ -13,78 +13,43 @@ import { useAIPath } from '@/src/hooks/usePanelBase';
 import { getOperation, getOperationMetrics, updateOperation } from '../services/aiWorkforce';
 
 const operation = {
-  id: 'op-001',
-  name: 'Operação Comercial Urbana',
-  segment: 'URBAN_REAL_ESTATE',
-  description: 'Pré-atendimento, qualificação e agendamento para venda e locação.',
-  status: 'PUBLISHED',
-  aiStatus: 'ACTIVE',
-  agents: [
-    { id: 'orchestrator', name: 'Orquestrador', type: 'ORCHESTRATOR', status: 'ACTIVE', conversations: 1042, resolution: '96%', score: 96, model: 'gemini-1.5-pro', color: 'bg-slate-950' },
-    { id: 'sdr-vendas', name: 'SDR Vendas', type: 'SPECIALIST', status: 'ACTIVE', conversations: 483, resolution: '94%', score: 97, model: 'gemini-1.5-pro', color: 'bg-emerald-600' },
-    { id: 'sdr-locacao', name: 'SDR Locação', type: 'SPECIALIST', status: 'ACTIVE', conversations: 421, resolution: '95%', score: 97, model: 'gemini-1.5-pro', color: 'bg-blue-600' },
-    { id: 'especialista', name: 'Especialista de Imóveis', type: 'WORKER', status: 'ACTIVE', conversations: 396, resolution: '92%', score: 95, model: 'gemini-1.5-flash', color: 'bg-amber-500' },
-    { id: 'agenda', name: 'Agenda e Handoff', type: 'WORKER', status: 'ACTIVE', conversations: 214, resolution: '98%', score: 94, model: 'gemini-1.5-flash', color: 'bg-purple-600' }
-  ],
-  channels: [
-    { id: 'whatsapp', name: 'WhatsApp', instances: ['Comercial', 'Locação'] },
-    { id: 'instagram', name: 'Instagram', instances: ['@empresa'] },
-    { id: 'webchat', name: 'Chat do site', instances: ['Site principal'] }
-  ],
+  id: '',
+  name: 'Carregando...',
+  segment: '',
+  description: '',
+  status: 'DRAFT',
+  aiStatus: 'PAUSED',
+  agents: [],
+  channels: [],
   metrics: {
-    conversations: 2851,
-    leads: 118,
-    visits: 47,
-    contacts: 239,
-    handoffs: 154,
-    resolutionRate: '93%',
-    avgResponseTime: '8s',
-    noAnswer: '3.1%',
-    followUps: 198,
-    newAgents: 5,
-    score: 97,
-    messages: 9802
+    conversations: 0,
+    leads: 0,
+    visits: 0,
+    contacts: 0,
+    handoffs: 0,
+    resolutionRate: '0%',
+    avgResponseTime: '0s',
+    noAnswer: '0%',
+    followUps: 0,
+    newAgents: 0,
+    score: 0,
+    messages: 0
   },
-  weekly: [
-    { day: 'Seg', conversations: 42, leads: 9, visits: 2 },
-    { day: 'Ter', conversations: 38, leads: 11, visits: 4 },
-    { day: 'Qua', conversations: 51, leads: 14, visits: 6 },
-    { day: 'Qui', conversations: 47, leads: 12, visits: 5 },
-    { day: 'Sex', conversations: 61, leads: 18, visits: 9 },
-    { day: 'Sáb', conversations: 58, leads: 16, visits: 8 },
-    { day: 'Dom', conversations: 35, leads: 8, visits: 3 }
-  ],
-  insights: [
-    { type: 'optimization', icon: Sparkles, title: 'Melhorar qualidade da qualificação para locação', description: 'Aumente a coleta de renda e documentação na qualificação de locação para reduzir 12% dos descartes.', score: 82, category: 'Qualificação' },
-    { type: 'optimization', icon: Sparkles, title: 'Aumentar captação de visitas', description: 'Ativar fluxo de visita no 1º contato aumenta a conversão em 18%.', score: 91, category: 'Vendas' },
-    { type: 'info', icon: TrendingUp, title: 'Tendência detectada: interesse por imóveis acima de R$ 800 mil', description: 'Muitos leads qualificados perguntando por imóveis acima de R$ 800 mil. Considere atualizar o catálogo.', score: 77, category: 'Mercado' },
-    { type: 'alert', icon: AlertTriangle, title: 'Atualize a documentação do imóvel 1024', description: 'O documento está em revisão. A equipe de IA pode informar como "Em análise" enquanto isso.', score: 45, category: 'Imóveis' }
-  ],
-  recentHandoffs: [
-    { lead: 'Maria Souza', agent: 'SDR Vendas', reason: 'Solicitou falar com humano', time: 'há 12 min', channel: 'WhatsApp', color: 'bg-emerald-50 text-emerald-700' },
-    { lead: 'João Pereira', agent: 'Orquestrador', reason: 'Pedido de desconto especial', time: 'há 34 min', channel: 'Webchat', color: 'bg-blue-50 text-blue-700' },
-    { lead: 'Ana Lima', agent: 'Agenda e Handoff', reason: 'Duas visitas seguidas em imóveis diferentes', time: 'há 1h', channel: 'WhatsApp', color: 'bg-amber-50 text-amber-700' },
-    { lead: 'Carlos Souza', agent: 'SDR Locação', reason: 'Dúvida sobre contrato de locação', time: 'há 2h', channel: 'Instagram', color: 'bg-purple-50 text-purple-700' }
-  ],
-  noAnswers: [
-    { lead: 'Fernanda Rocha', agent: 'SDR Vendas', phone: '(11) 98765-4321', time: 'há 2h', status: 'Sinal desconhecido', attempts: 1 },
-    { lead: 'Ricardo Alves', agent: 'SDR Locação', phone: '(11) 91234-5678', time: 'há 5h', status: 'Número bloqueado', attempts: 2 },
-    { lead: 'Juliana Costa', agent: 'SDR Vendas', phone: '(11) 92345-6789', time: 'ontem', status: 'Não respondeu', attempts: 1 }
-  ],
-  conversationSample: [
-    { agent: 'SDR Vendas', type: 'in', text: 'Olá Maria! Tudo bem? Vi que você busca um apartamento na zona sul de até R$ 600 mil. Posso te ajudar a encontrar opções!' },
-    { agent: 'SDR Vendas', type: 'out', text: 'Sim, ótimo! Qual a sua preferência: 2 ou 3 quartos?' }
-  ],
+  weekly: [],
+  insights: [],
+  recentHandoffs: [],
+  noAnswers: [],
+  conversationSample: [],
   scoreBreakdown: {
-    conversation: 98,
-    tools: 100,
-    memory: 95,
-    antiRepetition: 100,
-    security: 96,
-    handoff: 92,
-    data: 100
+    conversation: 0,
+    tools: 0,
+    memory: 0,
+    antiRepetition: 0,
+    security: 0,
+    handoff: 0,
+    data: 0
   },
-  weeklyLeads: { thisWeek: 88, lastWeek: 72, change: '+22%' }
+  weeklyLeads: { thisWeek: 0, lastWeek: 0, change: '0%' }
 };
 
 const AIOperationDashboard: React.FC = () => {
@@ -171,7 +136,7 @@ const AIOperationDashboard: React.FC = () => {
     }
   };
 
-  const maxLeads = Math.max(...opData.weekly.map(w => w.leads));
+  const maxLeads = opData.weekly.length > 0 ? Math.max(...opData.weekly.map(w => w.leads)) : 1;
 
   if (loading) {
     return (

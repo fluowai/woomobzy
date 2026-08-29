@@ -513,11 +513,7 @@ app.get('/', (req, res) => res.send(`${PLATFORM_COMMERCIAL_NAME} API Online`));
 // --- Instagram Service Proxy ---
 // Forward /api/instagram/* to the Instagram service on port 3200
 app.use('/api/instagram', (req, res) => {
-  const url = new URL(req.url, {
-    protocol: 'http:',
-    host: 'localhost:3200',
-    pathname: req.originalUrl,
-  });
+  const url = new URL(req.originalUrl || req.url, 'http://localhost:3200');
 
   const proxyReq = http.request(
     {
@@ -675,12 +671,19 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 10. HARDENING EXTRA - Fallback para rotas nao encontradas
+// 10. SPA / Frontend Fallback e HARDENING EXTRA
+app.use(express.static(join(__dirname, '../dist')));
+
 app.all(/(.*)/, (req, res) => {
-  res.status(404).json({
-    success: false,
-    error: 'Route not found',
-  });
+  // Se for uma requisição para a API que não foi encontrada, retorna JSON
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({
+      success: false,
+      error: 'Route not found',
+    });
+  }
+  // Caso contrário, serve o index.html do React (SPA) para deep links
+  res.sendFile(join(__dirname, '../dist/index.html'));
 });
 
 // WebSocket connections must stay open behind reverse proxies. Keep request

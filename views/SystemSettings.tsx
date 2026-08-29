@@ -663,13 +663,6 @@ const SystemSettings: React.FC = () => {
                       desc: 'Usado para gerações complexas e análise de dossiês.',
                     },
                     {
-                      label: 'Namo Bana AI Key',
-                      value: namoBanaKey,
-                      setter: setNamoBanaKey,
-                      placeholder: 'Chave do cliente...',
-                      desc: 'Chave personalizada do cliente para criação assistida por IA.',
-                    },
-                    {
                       label: 'Gemini API Key (Google)',
                       value: geminiKey,
                       setter: setGeminiKey,

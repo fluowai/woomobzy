@@ -137,6 +137,11 @@ const Onboarding: React.FC = () => {
             password: formData.password,
             agencyName: formData.agencyName,
             profileType: formData.niche === 'rural' ? 'rural' : 'traditional',
+            template: formData.template,
+            llmProvider: formData.llmProvider,
+            apiKey: formData.apiKey,
+            welcomeMessage: formData.welcomeMessage,
+            teamEmails: formData.teamEmails,
             plan: 'pro',
             parent_id: settings.id, // Reseller ID
           }),
@@ -341,8 +346,8 @@ const Onboarding: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        {['openai', 'gemini'].map((llm) => (
+      <div className="grid grid-cols-3 gap-4">
+        {['openai', 'gemini', 'groq'].map((llm) => (
           <button
             key={llm}
             onClick={() => update('llmProvider', llm)}

@@ -42,6 +42,11 @@ const onboardingSchema = z.object({
     .nullable()
     .or(z.literal('')),
   themeId: z.string().optional().nullable().or(z.literal('')),
+  template: z.string().optional().nullable().or(z.literal('')),
+  llmProvider: z.string().optional().nullable().or(z.literal('')),
+  apiKey: z.string().optional().nullable().or(z.literal('')),
+  welcomeMessage: z.string().optional().nullable().or(z.literal('')),
+  teamEmails: z.array(z.string()).optional(),
   plan: z.string().optional().nullable().or(z.literal('')),
   region: z.string().optional().nullable().or(z.literal('')),
 });
@@ -174,6 +179,24 @@ router.post('/', registerLimiter, async (req, res) => {
 
     if (upsertError)
       console.warn('Profile upsert warning:', upsertError.message);
+
+    if (organization) {
+      const integrations = {};
+      const { llmProvider, apiKey, welcomeMessage, template } = validation.data;
+      
+      if (llmProvider && apiKey) {
+        integrations[llmProvider] = { apiKey };
+      }
+      if (welcomeMessage) {
+        integrations.whatsapp = { welcomeMessage };
+      }
+
+      await supabase.from('site_settings').insert({
+        organization_id: organization.id,
+        integrations: Object.keys(integrations).length > 0 ? integrations : null,
+        theme: template ? { templateId: template } : null,
+      }).select().single();
+    }
 
     let domain = null;
     if (organization) {

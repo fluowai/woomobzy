@@ -102,6 +102,14 @@ export class AgentRuntime {
       const systemPrompt = this._buildSystemPrompt(activeVersion, conversationState);
       const messages = this._buildMessages(systemPrompt, conversationState);
       const tools = await this._loadTools(activeVersion.id, organizationId);
+      
+      // 4.5 Fetch orgKeys
+      const { data: orgSettings } = await supabase
+        .from('site_settings')
+        .select('integrations')
+        .eq('organization_id', organizationId)
+        .single();
+      const orgKeys = orgSettings?.integrations || {};
 
       // 5. Call LLM (with Tool support - ReAct Loop)
       let currentMessages = [...messages];
@@ -117,6 +125,7 @@ export class AgentRuntime {
           provider: activeVersion.model_config?.provider || 'gemini',
           model: activeVersion.model || 'gemini-1.5-pro-latest',
           temperature: activeVersion.model_config?.temperature || 0.5,
+          orgKeys,
           tools: tools.length > 0 ? tools.map(t => ({
             name: t.name,
             description: t.description,

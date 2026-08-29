@@ -263,3 +263,13 @@ Isso garantirá que todas as correções de 500 error e as novas funcionalidades
 - `npm run build`: passou (3m26s, 263 precache entries).
 - `git diff --check`: passou (exit 0) após limpeza.
 - Nenhum commit, push ou deploy foi executado.
+
+## 2026-08-29 — Teste de usuário em produção Imobzy
+
+- Executado teste end-to-end em `https://imob.wootech.com.br` com organização `WooTech Imob QA`.
+- Criados dados de QA: um imóvel de venda, um imóvel de aluguel, um lead editado/movido no Kanban, uma operação de IA com três agentes e uma conexão WhatsApp com QR Code pendente de escaneamento.
+- Salvas chaves LLM em Configurações; os valores não foram documentados no relatório por segurança.
+- Identificados bloqueios principais: onboarding cria organização sem `plan_id`, onboarding não persiste campos de IA/WhatsApp/template/equipe, sandbox de IA retorna 500 por chave Gemini inválida/não resolvida, operação publicada mantém agentes em `DRAFT`, Clube Imobzy gera 400 e módulo de mensagens gera 500 em conversas Instagram.
+- Relatório completo salvo em `DEV/TESTS/RELATORIO_TESTE_USUARIO_IMOBZY_2026-08-29.md`.
+- Evidências salvas em `test-results/imobzy-user-audit`.
+- Nenhum commit, push ou deploy foi executado.

@@ -236,6 +236,16 @@ router.patch('/:id', async (req, res) => {
       .single();
 
     if (error) throw error;
+    
+    // Sync agents status if operation status changed
+    if (updateData.status && updateData.status !== current.status) {
+      if (updateData.status === 'PUBLISHED' || updateData.status === 'PAUSED') {
+        await supabase
+          .from('ai_agents')
+          .update({ status: updateData.status, updated_at: new Date().toISOString() })
+          .eq('operation_id', id);
+      }
+    }
 
     // Audit log
     await supabase.from('ai_audit_logs').insert({
@@ -538,10 +548,13 @@ router.post('/:id/publish', async (req, res) => {
         .update({ status: 'PUBLISHED', updated_at: new Date().toISOString() })
         .eq('id', agent.id);
       
-      await supabase
-        .from('ai_agent_versions')
-        .update({ published_at: new Date().toISOString() })
-        .eq('id', agent.ai_agent_versions.id);
+      const versions = Array.isArray(agent.ai_agent_versions) ? agent.ai_agent_versions : [agent.ai_agent_versions];
+      for (const v of versions.filter(Boolean)) {
+        await supabase
+          .from('ai_agent_versions')
+          .update({ published_at: new Date().toISOString() })
+          .eq('id', v.id);
+      }
     }
 
     // Update operation

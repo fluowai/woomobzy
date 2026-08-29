@@ -290,7 +290,7 @@ const ClubeImobzy: React.FC = () => {
       // Load my gamification profile
       const { data: gp } = await (supabase as any)
         .from('gamification_profiles')
-        .select('*, profiles(full_name)')
+        .select('*, profiles(name)')
         .eq('user_id', userId)
         .eq('organization_id', orgId)
         .maybeSingle();
@@ -300,9 +300,9 @@ const ClubeImobzy: React.FC = () => {
         setMyProfile({
           ...gpAny,
           full_name:
-            gpAny.profiles?.full_name || profile?.full_name || 'Corretor',
+            gpAny.profiles?.name || profile?.full_name || 'Corretor',
           avatar_letter: (
-            gpAny.profiles?.full_name ||
+            gpAny.profiles?.name ||
             profile?.full_name ||
             'C'
           ).charAt(0),
@@ -337,7 +337,7 @@ const ClubeImobzy: React.FC = () => {
       // Load ranking
       const { data: rankData } = await (supabase as any)
         .from('gamification_profiles')
-        .select('*, profiles(full_name)')
+        .select('*, profiles(name)')
         .eq('organization_id', orgId)
         .order('points', { ascending: false })
         .limit(10);
@@ -347,8 +347,8 @@ const ClubeImobzy: React.FC = () => {
           (rankData as any[]).map((r, idx) => ({
             ...r,
             rank_position: idx + 1,
-            full_name: r.profiles?.full_name || 'Corretor',
-            avatar_letter: (r.profiles?.full_name || 'C').charAt(0),
+            full_name: r.profiles?.name || 'Corretor',
+            avatar_letter: (r.profiles?.name || 'C').charAt(0),
           }))
         );
       }

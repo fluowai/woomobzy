@@ -44,6 +44,15 @@ router.post('/:conversationId/message', async (req, res) => {
     });
   } catch (error) {
     logger.error('[AIConversations] Error processing message:', error);
+    
+    // Check if it's an API Key error
+    if (error.message && (error.message.includes('Nenhum provedor') || error.message.includes('API_KEY_INVALID') || error.message.includes('401'))) {
+      return res.status(400).json({ 
+        error: 'Chave LLM inválida ou não configurada.',
+        details: error.message 
+      });
+    }
+
     return res.status(500).json({ 
       error: 'Failed to process message',
       details: error.message 

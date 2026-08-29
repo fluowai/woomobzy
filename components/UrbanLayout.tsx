@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
+import { useBranding } from '../context/BrandingContext';
 import SupportModal from './SupportModal';
 
 type MenuItem = {
@@ -49,6 +50,11 @@ type MenuSection = {
 const UrbanLayout: React.FC = () => {
   const { profile, signOut, isImpersonating, loading: authLoading } = useAuth();
   const { settings, loading: settingsLoading } = useSettings();
+  const { branding } = useBranding();
+
+  const displayLogo = settings?.logoUrl || branding?.logo_url || '/logo-wootech-imob.svg';
+  const displayTitle = settings?.agencyName || branding?.platform_name || 'WooTech Imob';
+
   const loading = authLoading || settingsLoading;
   const subtype = settings?.urbanSubtype || 'imobiliaria';
 
@@ -220,8 +226,8 @@ const UrbanLayout: React.FC = () => {
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <img
-            src="/logo-wootech-imob.svg"
-            alt="WooTech Imob"
+            src={displayLogo}
+            alt={displayTitle}
             className="workspace-logo transition-transform group-hover:scale-[1.02]"
           />
         </Link>

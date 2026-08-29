@@ -26,6 +26,10 @@ const SetupWhitelabel: React.FC = () => {
 
   const [primaryColor, setPrimaryColor] = useState('#064e3b');
   const [secondaryColor, setSecondaryColor] = useState('#d4af37');
+  const [platformName, setPlatformName] = useState('');
+  const [platformDomain, setPlatformDomain] = useState('');
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [faviconFile, setFaviconFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (email && tempPassword) {
@@ -104,19 +108,66 @@ const SetupWhitelabel: React.FC = () => {
     setError('');
     try {
       if (orgId) {
+        let logoUrl = null;
+        let faviconUrl = null;
+
+        if (logoFile) {
+          const { data, error } = await supabase.storage
+            .from('imobfluow')
+            .upload(`whitelabel/${orgId}/logo-${Date.now()}`, logoFile);
+          if (error) throw error;
+          const { data: publicUrlData } = supabase.storage
+            .from('imobfluow')
+            .getPublicUrl(data.path);
+          logoUrl = publicUrlData.publicUrl;
+        }
+
+        if (faviconFile) {
+          const { data, error } = await supabase.storage
+            .from('imobfluow')
+            .upload(`whitelabel/${orgId}/favicon-${Date.now()}`, faviconFile);
+          if (error) throw error;
+          const { data: publicUrlData } = supabase.storage
+            .from('imobfluow')
+            .getPublicUrl(data.path);
+          faviconUrl = publicUrlData.publicUrl;
+        }
+
         const { error: orgError } = await supabase
           .from('organizations')
           .update({
             primary_color: primaryColor,
             secondary_color: secondaryColor,
+            name: platformName || undefined, // optionally update name
+            platform_domain: platformDomain || null,
           })
           .eq('id', orgId);
 
         if (orgError) throw orgError;
+
+        // Save site_settings onboarding_config
+        const { data: settings } = await supabase
+          .from('site_settings')
+          .select('onboarding_config')
+          .eq('organization_id', orgId)
+          .maybeSingle();
+
+        const currentConfig = settings?.onboarding_config || {};
+        await supabase
+          .from('site_settings')
+          .update({
+            onboarding_config: {
+              ...currentConfig,
+              platform_name: platformName,
+              logo_url: logoUrl || currentConfig.logo_url,
+              favicon_url: faviconUrl || currentConfig.favicon_url,
+            },
+          })
+          .eq('organization_id', orgId);
       }
       setStep(3);
     } catch (err: any) {
-      setError(err.message || 'Erro ao salvar cores.');
+      setError(err.message || 'Erro ao salvar branding.');
     } finally {
       setLoading(false);
     }
@@ -252,11 +303,64 @@ const SetupWhitelabel: React.FC = () => {
                   Identidade da Marca
                 </h2>
                 <p className="text-slate-500 mt-2 text-sm">
-                  Quais são as cores principais da sua nova plataforma?
+                  Personalize as cores, logomarca e domínio da sua plataforma.
                 </p>
               </div>
 
               <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
+                    Nome da Plataforma
+                  </label>
+                  <input
+                    type="text"
+                    value={platformName}
+                    onChange={(e) => setPlatformName(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-purple-500 transition-colors text-sm"
+                    placeholder="Ex: SuaImob"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
+                    Domínio de Acesso
+                  </label>
+                  <input
+                    type="text"
+                    value={platformDomain}
+                    onChange={(e) => setPlatformDomain(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-purple-500 transition-colors text-sm"
+                    placeholder="Ex: painel.suaimob.com.br"
+                  />
+                  <p className="text-xs text-slate-400 mt-1">
+                    Aponte um CNAME para <strong>app.imobzy.com.br</strong>
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
+                      Logomarca (Horizontal)
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+                      className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
+                      Ícone (Favicon)
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setFaviconFile(e.target.files?.[0] || null)}
+                      className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+                    />
+                  </div>
+                </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
                     Cor Principal

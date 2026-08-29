@@ -79,6 +79,54 @@ router.post('/contact', contactLimiter, async (req, res) => {
 });
 
 /**
+ * GET /api/public/branding
+ * Resolves branding for a given domain (used for whitelabels)
+ */
+router.get('/branding', async (req, res) => {
+  try {
+    let domain = req.query.domain;
+    if (!domain) {
+      return res.status(400).json({ error: 'Domínio não fornecido' });
+    }
+
+    domain = domain.split(':')[0];
+
+    const { data: org, error } = await supabase
+      .from('organizations')
+      .select('id, name, primary_color, secondary_color, platform_domain, custom_domain')
+      .or(`platform_domain.eq.${domain},custom_domain.eq.${domain}`)
+      .eq('is_reseller', true)
+      .maybeSingle();
+
+    if (error || !org) {
+      return res.json({ default: true });
+    }
+
+    const { data: settings } = await supabase
+      .from('site_settings')
+      .select('onboarding_config')
+      .eq('organization_id', org.id)
+      .maybeSingle();
+
+    const config = settings?.onboarding_config || {};
+
+    return res.json({
+      success: true,
+      branding: {
+        organization_id: org.id,
+        platform_name: config.platform_name || org.name,
+        primary_color: org.primary_color,
+        secondary_color: org.secondary_color,
+        logo_url: config.logo_url,
+        favicon_url: config.favicon_url,
+      }
+    });
+  } catch (err) {
+    return res.json({ default: true });
+  }
+});
+
+/**
  * POST /api/public/leads
  * Rota pública para captura de leads (página Em Breve / Landing Pages)
  * Não exige autenticação, mas exige organization_id.

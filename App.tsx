@@ -30,6 +30,7 @@ import { TextsProvider } from './context/TextsContext';
 import { PlansProvider } from './context/PlansContext';
 import { DialogProvider } from './context/DialogContext';
 import { GlobalDialogs } from './components/GlobalDialogs';
+import { BrandingProvider } from './context/BrandingContext';
 
 const LandingPageManager = lazy(() => import('./views/LandingPageManager'));
 
@@ -589,21 +590,23 @@ const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <Router>
-        <AuthProvider>
-          <DomainRouter>
-            <SettingsProvider>
-              <TextsProvider>
-                <PlansProvider>
-                  <DialogProvider>
-                    <GlobalDialogs />
-                    <TrackingPixels />
-                    <AppContent />
-                  </DialogProvider>
-                </PlansProvider>
-              </TextsProvider>
-            </SettingsProvider>
-          </DomainRouter>
-        </AuthProvider>
+        <BrandingProvider>
+          <AuthProvider>
+            <DomainRouter>
+              <SettingsProvider>
+                <TextsProvider>
+                  <PlansProvider>
+                    <DialogProvider>
+                      <GlobalDialogs />
+                      <TrackingPixels />
+                      <AppContent />
+                    </DialogProvider>
+                  </PlansProvider>
+                </TextsProvider>
+              </SettingsProvider>
+            </DomainRouter>
+          </AuthProvider>
+        </BrandingProvider>
       </Router>
     </ErrorBoundary>
   );

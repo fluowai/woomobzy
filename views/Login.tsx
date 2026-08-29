@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
+import { useBranding } from '../context/BrandingContext';
 import { getAuthenticatedPanelPath } from '../src/lib/panelNavigation';
 import { COMMERCIAL_PRODUCT_NAME } from '../utils/branding';
 import {
@@ -54,9 +55,10 @@ const Login: React.FC = () => {
     loading: authLoading,
   } = useAuth();
   const { settings } = useSettings();
+  const { branding } = useBranding();
 
-  const displayProductName = settings?.agencyName || COMMERCIAL_PRODUCT_NAME;
-  const displayLogo = settings?.logoUrl || '/logo-wootech-imob.svg';
+  const displayProductName = settings?.agencyName || branding?.platform_name || COMMERCIAL_PRODUCT_NAME;
+  const displayLogo = settings?.logoUrl || branding?.logo_url || '/logo-wootech-imob.svg';
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('wootech-login-email');

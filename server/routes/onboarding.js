@@ -137,6 +137,29 @@ router.post('/', registerLimiter, async (req, res) => {
         Date.now() + 7 * 24 * 60 * 60 * 1000
       ).toISOString();
 
+      let parentId = null;
+
+      // Tentar extrair o domínio da requisição para verificar se é um reseller
+      try {
+        const reqHost = req.get('host'); // Ex: imob.revenda.com.br
+        if (reqHost) {
+          const domain = reqHost.split(':')[0];
+          const { data: resellerOrg } = await supabase
+            .from('organizations')
+            .select('id')
+            .or(`platform_domain.eq.${domain},custom_domain.eq.${domain}`)
+            .eq('is_reseller', true)
+            .maybeSingle();
+          
+          if (resellerOrg) {
+            parentId = resellerOrg.id;
+            console.log(`[Onboarding] Vinculando nova organização ao reseller ${parentId} via domínio ${domain}`);
+          }
+        }
+      } catch (e) {
+        console.error('[Onboarding] Erro ao resolver reseller:', e);
+      }
+
       const { data: orgData, error: orgError } = await supabase
         .from('organizations')
         .insert({
@@ -149,6 +172,7 @@ router.post('/', registerLimiter, async (req, res) => {
           subscription_status: 'trial',
           owner_name: name || null,
           owner_email: email || null,
+          parent_id: parentId,
         })
         .select()
         .single();

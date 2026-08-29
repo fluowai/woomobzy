@@ -28,6 +28,8 @@ import { SettingsProvider, useSettings } from './context/SettingsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { TextsProvider } from './context/TextsContext';
 import { PlansProvider } from './context/PlansContext';
+import { DialogProvider } from './context/DialogContext';
+import { GlobalDialogs } from './components/GlobalDialogs';
 
 const LandingPageManager = lazy(() => import('./views/LandingPageManager'));
 
@@ -592,8 +594,11 @@ const App: React.FC = () => {
             <SettingsProvider>
               <TextsProvider>
                 <PlansProvider>
-                  <TrackingPixels />
-                  <AppContent />
+                  <DialogProvider>
+                    <GlobalDialogs />
+                    <TrackingPixels />
+                    <AppContent />
+                  </DialogProvider>
                 </PlansProvider>
               </TextsProvider>
             </SettingsProvider>

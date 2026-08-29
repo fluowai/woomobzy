@@ -22,7 +22,6 @@ import {
   saveInstagramPost,
   listMediaPosts,
   deleteMediaPost,
-  getPreviewUrl,
   fetchPreviewImage,
   TEMPLATE_LABELS,
   FORMAT_LABELS,

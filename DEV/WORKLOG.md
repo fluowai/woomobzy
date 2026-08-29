@@ -273,3 +273,10 @@ Isso garantirá que todas as correções de 500 error e as novas funcionalidades
 - Relatório completo salvo em `DEV/TESTS/RELATORIO_TESTE_USUARIO_IMOBZY_2026-08-29.md`.
 - Evidências salvas em `test-results/imobzy-user-audit`.
 - Nenhum commit, push ou deploy foi executado.
+
+## 2026-08-29 — Aplicação da migração WOO CONTROL
+
+- Aplicado `migrations/20260829_woo_control_schema.sql` na produção (`epgaftsjmqmpczvzsrcc`, via `node scripts/apply-migration-file.mjs` → Postgres direto).
+- Pre-flight: confirmados `organizations`/`profiles` presentes; `woo_*` não existiam; `organizations.type` faltava; `profiles_role_check` legado.
+- Verificação pós: 9 tabelas `woo_*` criadas, `organizations.type` + `parent_id`, novo `profiles_role_check` com roles RBAC + legadas, RLS habilitado com políticas, função `is_platform_admin` criada.
+- Nenhum commit, push ou deploy foi executado.

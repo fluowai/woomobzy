@@ -201,6 +201,10 @@ const ConnectionCredits = lazy(
 const MegaGlobalSettings = lazy(
   () => import('./views/megaadmin/GlobalSettings')
 );
+
+// Woo Control Imports
+const WooControlLayout = lazy(() => import('./views/woocontrol/WooControlLayout').then(module => ({ default: module.WooControlLayout })));
+const WooOverview = lazy(() => import('./views/woocontrol/pages/Overview').then(module => ({ default: module.Overview })));
 const BillingOverview = lazy(() => import('./views/megaadmin/BillingOverview'));
 const MegaAuditLog = lazy(() => import('./views/megaadmin/AuditLog'));
 

@@ -142,10 +142,11 @@ router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
   } = req.body;
   const organizationId = req.orgId;
 
-  try {
-    let geminiKey = (process.env.GEMINI_API_KEY || '').trim();
-    let groqKey = (process.env.GROQ_API_KEY || '').trim();
+  let geminiKey = (process.env.GEMINI_API_KEY || '').trim();
+  let groqKey = (process.env.GROQ_API_KEY || '').trim();
+  let hasGemini = false;
 
+  try {
     if (organizationId) {
       const config = await getOrgAIConfig(organizationId);
       if (config?.gemini?.apiKey) {
@@ -156,7 +157,7 @@ router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
       }
     }
 
-    const hasGemini = geminiKey && !geminiKey.includes('YOUR_') && geminiKey.length >= 20;
+    hasGemini = !!(geminiKey && !geminiKey.includes('YOUR_') && geminiKey.length >= 20);
 
     if (!hasGemini) {
       throw new Error(
@@ -184,11 +185,9 @@ router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
     console.warn('Gemini failed, trying Groq fallback...', geminiError.message);
 
     try {
-      // Pega de novo ou usa a ja carregada la em cima. (a variavel groqKey ja foi preenchida)
-
       if (!groqKey) {
         return res.status(503).json({
-          error: 'Nenhum provedor de IA disponivel. Configure GEMINI_API_KEY ou GROQ_API_KEY no .env do servidor.',
+          error: 'Nenhum provedor de IA disponivel. Configure as chaves nas configuracoes da empresa.',
           details: {
             gemini: hasGemini ? 'configured but failed' : 'not configured',
             groq: groqKey ? 'configured' : 'not configured',
@@ -228,7 +227,7 @@ router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
       return res
         .status(503)
         .json({
-          error: 'Falha em todos os provedores de IA. Verifique as chaves de API no .env do servidor.',
+          error: 'Falha em todos os provedores de IA. Verifique as chaves de API cadastradas nas configuracoes da empresa.',
           details: {
             gemini_error: geminiError.message,
             groq_error: groqError.response?.data?.error?.message || groqError.message,

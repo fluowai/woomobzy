@@ -12,7 +12,7 @@ async function run() {
     const { rows } = await client.query(`
       SELECT polname
       FROM pg_policy
-      WHERE polrelid = 'profiles'::regclass;
+      WHERE polrelid = 'organizations'::regclass;
     `);
     console.log(rows.map(r => r.polname));
   } catch (err) {

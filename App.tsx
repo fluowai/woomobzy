@@ -205,6 +205,19 @@ const MegaGlobalSettings = lazy(
 // Woo Control Imports
 const WooControlLayout = lazy(() => import('./views/woocontrol/WooControlLayout').then(module => ({ default: module.WooControlLayout })));
 const WooOverview = lazy(() => import('./views/woocontrol/pages/Overview').then(module => ({ default: module.Overview })));
+const WooNetwork = lazy(() => import('./views/woocontrol/pages/Network').then(m => ({ default: m.Network })));
+const WooProducts = lazy(() => import('./views/woocontrol/pages/Products').then(m => ({ default: m.Products })));
+const WooLicensing = lazy(() => import('./views/woocontrol/pages/Licensing').then(m => ({ default: m.Licensing })));
+const WooDeployments = lazy(() => import('./views/woocontrol/pages/Deployments').then(m => ({ default: m.Deployments })));
+const WooSnapshots = lazy(() => import('./views/woocontrol/pages/Snapshots').then(m => ({ default: m.Snapshots })));
+const WooReleases = lazy(() => import('./views/woocontrol/pages/Releases').then(m => ({ default: m.Releases })));
+const WooStackGenerator = lazy(() => import('./views/woocontrol/pages/StackGenerator').then(m => ({ default: m.StackGenerator })));
+const WooSupport = lazy(() => import('./views/woocontrol/pages/Support').then(m => ({ default: m.Support })));
+const WooAcademy = lazy(() => import('./views/woocontrol/pages/Academy').then(m => ({ default: m.Academy })));
+const WooRevenue = lazy(() => import('./views/woocontrol/pages/Revenue').then(m => ({ default: m.Revenue })));
+const WooSecurity = lazy(() => import('./views/woocontrol/pages/Security').then(m => ({ default: m.Security })));
+const WooAudit = lazy(() => import('./views/woocontrol/pages/Audit').then(m => ({ default: m.Audit })));
+const WooSettings = lazy(() => import('./views/woocontrol/pages/Settings').then(m => ({ default: m.Settings })));
 const BillingOverview = lazy(() => import('./views/megaadmin/BillingOverview'));
 const MegaAuditLog = lazy(() => import('./views/megaadmin/AuditLog'));
 
@@ -536,6 +549,19 @@ const AppContent: React.FC = () => {
             }
           >
             <Route index element={<WooOverview />} />
+            <Route path="network" element={<WooNetwork />} />
+            <Route path="products" element={<WooProducts />} />
+            <Route path="licensing" element={<WooLicensing />} />
+            <Route path="deployments" element={<WooDeployments />} />
+            <Route path="snapshots" element={<WooSnapshots />} />
+            <Route path="releases" element={<WooReleases />} />
+            <Route path="stack-generator" element={<WooStackGenerator />} />
+            <Route path="support" element={<WooSupport />} />
+            <Route path="academy" element={<WooAcademy />} />
+            <Route path="revenue" element={<WooRevenue />} />
+            <Route path="security" element={<WooSecurity />} />
+            <Route path="audit" element={<WooAudit />} />
+            <Route path="settings" element={<WooSettings />} />
           </Route>
 
           {/* ====== MEGA ADMIN ====== */}

@@ -143,12 +143,24 @@ router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
   const organizationId = req.orgId;
 
   try {
-    const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
+    let geminiKey = (process.env.GEMINI_API_KEY || '').trim();
+    let groqKey = (process.env.GROQ_API_KEY || '').trim();
+
+    if (organizationId) {
+      const config = await getOrgAIConfig(organizationId);
+      if (config?.gemini?.apiKey) {
+        geminiKey = config.gemini.apiKey.trim();
+      }
+      if (config?.groq?.apiKey) {
+        groqKey = config.groq.apiKey.trim();
+      }
+    }
+
     const hasGemini = geminiKey && !geminiKey.includes('YOUR_') && geminiKey.length >= 20;
 
     if (!hasGemini) {
       throw new Error(
-        'Gemini API key invalida ou nao configurada. Configure GEMINI_API_KEY no .env do servidor.'
+        'Gemini API key invalida ou nao configurada. Configure GEMINI_API_KEY no .env do servidor ou nas configuracoes da empresa.'
       );
     }
 
@@ -172,14 +184,7 @@ router.post('/chat', verifyAuth, requireTenant, async (req, res) => {
     console.warn('Gemini failed, trying Groq fallback...', geminiError.message);
 
     try {
-      let groqKey = process.env.GROQ_API_KEY;
-
-      if (organizationId) {
-        const config = await getOrgAIConfig(organizationId);
-        if (config?.groq?.apiKey) {
-          groqKey = config.groq.apiKey;
-        }
-      }
+      // Pega de novo ou usa a ja carregada la em cima. (a variavel groqKey ja foi preenchida)
 
       if (!groqKey) {
         return res.status(503).json({
@@ -290,6 +295,7 @@ router.post('/agents/:id/chat', verifyAuth, requireTenant, async (req, res) => {
     const apiKey =
       config?.namoBana?.apiKey ||
       config?.openai?.apiKey ||
+      config?.gemini?.apiKey ||
       process.env.GEMINI_API_KEY;
 
     if (!apiKey) {

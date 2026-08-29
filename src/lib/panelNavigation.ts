@@ -36,7 +36,13 @@ export function isPlatformAdminRole(role?: string | null) {
     'super_admin',
     'megaadmin',
     'mega_admin',
+    'platform_admin',
   ].includes(normalizedRole);
+}
+
+export function isPlatformOwnerRole(role?: string | null) {
+  const normalizedRole = String(role || '').toLowerCase();
+  return normalizedRole === 'platform_owner';
 }
 
 export function isMegaAdminProfile(profile?: PanelProfile | null) {
@@ -58,6 +64,11 @@ export function getAuthenticatedPanelPath(
 ) {
   if (!profile) return '/login';
 
+  // O dono absoluto da plataforma vai para o Woo Control
+  if (isPlatformOwnerRole(profile.role) && !isImpersonating) {
+    return '/woo-control';
+  }
+
   // Se o destino (real ou impersonado) for uma revenda, vai pro painel Super Admin
   if (profile.organization?.is_reseller) {
     return '/superadmin';
@@ -68,7 +79,7 @@ export function getAuthenticatedPanelPath(
     return '/megaadmin';
   }
 
-  if (!profile.organization_id && !isPlatformAdminRole(profile.role)) {
+  if (!profile.organization_id && !isPlatformAdminRole(profile.role) && !isPlatformOwnerRole(profile.role)) {
     return '/onboarding';
   }
 

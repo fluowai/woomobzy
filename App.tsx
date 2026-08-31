@@ -18,6 +18,7 @@ import FullScreenSpinner from './components/FullScreenSpinner';
 import NicheRedirect from './components/NicheRedirect';
 import SuperAdminGuard from './components/SuperAdminGuard';
 import MegaAdminGuard from './components/MegaAdminGuard';
+import WooControlGuard from './components/WooControlGuard';
 import SubscriptionGuard from './components/SubscriptionGuard';
 import PanelGuard from './components/PanelGuard';
 import { Toaster } from 'sonner';
@@ -544,7 +545,9 @@ const AppContent: React.FC = () => {
             path="/woo-control" 
             element={
               <ProtectedRoute>
-                <WooControlLayout />
+                <WooControlGuard>
+                  <WooControlLayout />
+                </WooControlGuard>
               </ProtectedRoute>
             }
           >

@@ -95,6 +95,7 @@ export const verifyAuth = async (req, res, next) => {
     req.user = requestIdentity.user;
     req.authUserId = requestIdentity.authUserId;
     req.userRole = normalizeRole(profile.role);
+    req.profileRole = profile.role;
     req.realOrgId = profile.organization_id;
     req.impersonation = impersonation;
 

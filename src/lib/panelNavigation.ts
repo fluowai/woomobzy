@@ -41,8 +41,11 @@ export function isPlatformAdminRole(role?: string | null) {
 }
 
 export function isPlatformOwnerRole(role?: string | null) {
-  const normalizedRole = String(role || '').toLowerCase();
-  return normalizedRole === 'platform_owner';
+  const normalizedRole = String(role || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[\s_]/g, '');
+  return normalizedRole === 'platformowner';
 }
 
 export function isMegaAdminProfile(profile?: PanelProfile | null) {

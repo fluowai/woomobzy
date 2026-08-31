@@ -3,8 +3,8 @@ import { motion } from 'framer-motion';
 import { Headset, Eye } from 'lucide-react';
 
 const mockTickets = [
-  { id: 'TKT-9912', subject: 'API Limits hit', reseller: 'Grupo Alpha', priority: 'HIGH', status: 'OPEN' },
-  { id: 'TKT-9910', subject: 'Billing Sync Error', reseller: 'AgroSoft', priority: 'MEDIUM', status: 'IN_PROGRESS' },
+  { id: 'TKT-9912', subject: 'Limite da API atingido', reseller: 'Grupo Alpha', priority: 'ALTA', status: 'ABERTO' },
+  { id: 'TKT-9910', subject: 'Erro de sincronização de cobrança', reseller: 'AgroSoft', priority: 'MÉDIA', status: 'EM ANDAMENTO' },
 ];
 
 export const Support = () => {
@@ -12,8 +12,8 @@ export const Support = () => {
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight">Global Support</h2>
-          <p className="text-sm text-[#9097A5] mt-1">Manage global tickets and perform account impersonation safely.</p>
+          <h2 className="text-2xl font-bold text-white tracking-tight">Suporte Global</h2>
+          <p className="text-sm text-[#9097A5] mt-1">Gerencie tickets globais e realize impersonação de conta com segurança.</p>
         </div>
       </div>
       
@@ -35,11 +35,11 @@ export const Support = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <span className={`px-2 py-1 text-xs rounded border border-[#252A35] ${t.priority === 'HIGH' ? 'text-red-500 bg-red-500/10' : 'text-amber-500 bg-amber-500/10'}`}>
+              <span className={`px-2 py-1 text-xs rounded border border-[#252A35] ${t.priority === 'ALTA' ? 'text-red-500 bg-red-500/10' : 'text-amber-500 bg-amber-500/10'}`}>
                 {t.priority}
               </span>
               <button className="flex items-center gap-2 px-3 py-1.5 rounded bg-[#161A23] border border-[#252A35] text-xs text-[#9097A5] hover:text-white transition-colors">
-                <Eye size={14} /> View
+                <Eye size={14} /> Ver
               </button>
             </div>
           </motion.div>

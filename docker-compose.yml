@@ -53,6 +53,11 @@ services:
       WHATSAPP_WS_JWT_SECRET: "f8a2c9e1d4b7f3a6e2d8c5b9a1f4e7d2c6b3a9f1e5d8c2b6a4f7e1d3c9b5a8f2"
       WHATSAPP_AI_AUTOMATION: "true"
       RABBITMQ_URL: "amqp://imobzy:Argo%4015077399brsc@rabbitmq-server:5672/"
+      
+      # --- Wootech AI Voz & Mail (Omnichannel & LLM Router) ---
+      WOOTECH_MAIL_API_URL: "http://api:3002/internal/mail-mock"
+      WOOTECH_VOICE_STREAM_HOST: "imob.wootech.com.br"
+      WOOTECH_EVENT_BUS_MODE: "memory"
       MEDIA_STORAGE_PROVIDER: "minio"
       MINIO_ENDPOINT: "https://nb.consultio.com.br"
       MINIO_PUBLIC_URL: "https://nb.consultio.com.br"
@@ -142,6 +147,20 @@ services:
 
   agro-intelligence:
     image: ghcr.io/fluowai/woomobzy-agro:latest
+    networks:
+      - imobfluow_internal
+
+  omniroute:
+    image: diegosouzapw/omniroute:latest
+    container_name: imobzy-omniroute
+    ports:
+      - '20128:20128'
+    volumes:
+      - ./docker/omniroute:/app/config
+    environment:
+      - PORT=20128
+      - OMNIROUTE_CONFIG=/app/config/omniroute.yml
+    restart: unless-stopped
     networks:
       - imobfluow_internal
 

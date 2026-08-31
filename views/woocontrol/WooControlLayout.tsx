@@ -41,20 +41,20 @@ export const WooControlLayout = () => {
   }, []);
 
   const menuItems = [
-    { name: 'Overview', icon: <Activity size={18} />, path: '/woo-control' },
-    { name: 'Network', icon: <Network size={18} />, path: '/woo-control/network' },
-    { name: 'Products', icon: <Package size={18} />, path: '/woo-control/products' },
-    { name: 'Licensing', icon: <Key size={18} />, path: '/woo-control/licensing' },
-    { name: 'Deployments', icon: <Server size={18} />, path: '/woo-control/deployments' },
+    { name: 'Visão Geral', icon: <Activity size={18} />, path: '/woo-control' },
+    { name: 'Rede de Revendas', icon: <Network size={18} />, path: '/woo-control/network' },
+    { name: 'Produtos', icon: <Package size={18} />, path: '/woo-control/products' },
+    { name: 'Licenciamento', icon: <Key size={18} />, path: '/woo-control/licensing' },
+    { name: 'Implantações', icon: <Server size={18} />, path: '/woo-control/deployments' },
     { name: 'Snapshots', icon: <Camera size={18} />, path: '/woo-control/snapshots' },
     { name: 'Releases', icon: <Rocket size={18} />, path: '/woo-control/releases' },
-    { name: 'Stack Generator', icon: <Wand2 size={18} />, path: '/woo-control/stack-generator' },
-    { name: 'Support', icon: <Headset size={18} />, path: '/woo-control/support' },
-    { name: 'Academy', icon: <GraduationCap size={18} />, path: '/woo-control/academy' },
-    { name: 'Revenue', icon: <DollarSign size={18} />, path: '/woo-control/revenue' },
-    { name: 'Security', icon: <ShieldAlert size={18} />, path: '/woo-control/security' },
-    { name: 'Audit', icon: <Command size={18} />, path: '/woo-control/audit' },
-    { name: 'Settings', icon: <Settings size={18} />, path: '/woo-control/settings' },
+    { name: 'Gerador de Stack', icon: <Wand2 size={18} />, path: '/woo-control/stack-generator' },
+    { name: 'Suporte', icon: <Headset size={18} />, path: '/woo-control/support' },
+    { name: 'Academia', icon: <GraduationCap size={18} />, path: '/woo-control/academy' },
+    { name: 'Receita', icon: <DollarSign size={18} />, path: '/woo-control/revenue' },
+    { name: 'Segurança', icon: <ShieldAlert size={18} />, path: '/woo-control/security' },
+    { name: 'Auditoria', icon: <Command size={18} />, path: '/woo-control/audit' },
+    { name: 'Configurações', icon: <Settings size={18} />, path: '/woo-control/settings' },
   ];
 
   return (
@@ -124,8 +124,7 @@ export const WooControlLayout = () => {
             onClick={() => setIsCommandPaletteOpen(true)}
           >
             <Search size={14} />
-            {isSidebarOpen && <span>Ctrl + K</span>}
-          </button>
+            {isSidebarOpen && <span>Ctrl + K</span>}          </button>
         </div>
       </motion.aside>
 
@@ -135,13 +134,13 @@ export const WooControlLayout = () => {
         {/* Header */}
         <header className="h-16 flex items-center justify-between px-6 border-b" style={{ backgroundColor: '#11141C', borderColor: '#252A35' }}>
           <div className="flex items-center gap-4">
-            <h1 className="text-lg font-semibold tracking-wide">Platform Control Center</h1>
+            <h1 className="text-lg font-semibold tracking-wide">Central de Controle da Plataforma</h1>
           </div>
           
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#080A0F] border border-[#252A35] text-xs text-[#9097A5]">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              Operational
+              Operacional
             </div>
             
             <button className="p-2 rounded-full hover:bg-[#161A23] transition-colors relative">
@@ -154,7 +153,7 @@ export const WooControlLayout = () => {
                 PO
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-medium leading-tight">Platform Owner</span>
+                <span className="text-sm font-medium leading-tight">Dono da Plataforma</span>
                 <span className="text-xs text-[#9097A5] leading-tight">WooTech</span>
               </div>
               <ChevronDown size={14} className="text-[#9097A5] ml-1" />
@@ -192,7 +191,7 @@ export const WooControlLayout = () => {
                   <input 
                     autoFocus
                     type="text" 
-                    placeholder="Search organizations, domains, licenses..." 
+                    placeholder="Buscar organizações, domínios, licenças..." 
                     className="flex-1 bg-transparent border-none outline-none text-[#F5F6F8] placeholder-[#9097A5] text-lg"
                   />
                   <button onClick={() => setIsCommandPaletteOpen(false)} className="p-1 text-[#9097A5] hover:text-white rounded">
@@ -201,27 +200,27 @@ export const WooControlLayout = () => {
                 </div>
                 <div className="max-h-[60vh] overflow-y-auto p-2">
                   <div className="px-3 py-2 text-xs font-semibold text-[#9097A5] uppercase tracking-wider">
-                    Recent Searches
+                    Pesquisas Recentes
                   </div>
                   <div className="p-2 flex items-center justify-between hover:bg-[#161A23] rounded-lg cursor-pointer transition-colors group">
                     <div className="flex items-center gap-3">
                       <Network size={16} className="text-[#d4af37]" />
                       <div className="flex flex-col">
                         <span className="text-sm font-medium group-hover:text-white">Grupo Alpha</span>
-                        <span className="text-xs text-[#9097A5]">Master Reseller</span>
+                        <span className="text-xs text-[#9097A5]">Revenda Master</span>
                       </div>
                     </div>
-                    <span className="text-xs text-[#9097A5] px-2 py-1 rounded bg-[#252A35]">Open</span>
+                    <span className="text-xs text-[#9097A5] px-2 py-1 rounded bg-[#252A35]">Abrir</span>
                   </div>
                   <div className="p-2 flex items-center justify-between hover:bg-[#161A23] rounded-lg cursor-pointer transition-colors group">
                     <div className="flex items-center gap-3">
                       <Key size={16} className="text-emerald-500" />
                       <div className="flex flex-col">
                         <span className="text-sm font-medium group-hover:text-white">crm.alpha.com.br</span>
-                        <span className="text-xs text-[#9097A5]">Imobzy v4.8.0 • ACTIVE</span>
+                        <span className="text-xs text-[#9097A5]">Imobzy v4.8.0 • ATIVA</span>
                       </div>
                     </div>
-                    <span className="text-xs text-[#9097A5] px-2 py-1 rounded bg-[#252A35]">License</span>
+                    <span className="text-xs text-[#9097A5] px-2 py-1 rounded bg-[#252A35]">Licença</span>
                   </div>
                 </div>
               </motion.div>

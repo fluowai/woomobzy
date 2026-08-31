@@ -7,8 +7,8 @@ export const Security = () => {
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight">Security & Encryption</h2>
-          <p className="text-sm text-[#9097A5] mt-1">Global security policies and key management.</p>
+          <h2 className="text-2xl font-bold text-white tracking-tight">Segurança & Criptografia</h2>
+          <p className="text-sm text-[#9097A5] mt-1">Políticas globais de segurança e gerenciamento de chaves.</p>
         </div>
       </div>
       
@@ -21,13 +21,13 @@ export const Security = () => {
         >
           <div className="flex items-center gap-3">
             <KeyRound size={20} className="text-[#d4af37]" />
-            <h3 className="text-lg font-semibold text-white">Ed25519 Keys</h3>
+            <h3 className="text-lg font-semibold text-white">Chaves Ed25519</h3>
           </div>
-          <p className="text-sm text-[#9097A5]">Active keypair used for signing license manifests.</p>
+          <p className="text-sm text-[#9097A5]">Par de chaves ativo usado para assinar manifestos de licença.</p>
           <div className="p-3 rounded bg-[#161A23] border border-[#252A35]">
-            <p className="text-xs font-mono text-[#9097A5] break-all">PUBLIC_KEY: a7x9b...f12z</p>
+            <p className="text-xs font-mono text-[#9097A5] break-all">CHAVE_PÚBLICA: (gerenciada pelo servidor)</p>
           </div>
-          <button className="self-start text-sm text-[#d4af37] hover:underline">Rotate Keys</button>
+          <button className="self-start text-sm text-[#d4af37] hover:underline">Rotacionar Chaves</button>
         </motion.div>
 
         <motion.div 
@@ -39,11 +39,11 @@ export const Security = () => {
         >
           <div className="flex items-center gap-3">
             <Lock size={20} className="text-emerald-500" />
-            <h3 className="text-lg font-semibold text-white">Database Policies</h3>
+            <h3 className="text-lg font-semibold text-white">Políticas de Banco de Dados</h3>
           </div>
-          <p className="text-sm text-[#9097A5]">Row Level Security (RLS) and Platform Admin enforcement is active.</p>
+          <p className="text-sm text-[#9097A5]">Segurança em nível de linha (RLS) e aplicação de administrador de plataforma ativas.</p>
           <button className="self-start px-4 py-2 mt-auto rounded bg-[#161A23] border border-[#252A35] text-sm text-white hover:bg-[#252A35] transition-colors">
-            Run Security Audit
+            Executar Auditoria de Segurança
           </button>
         </motion.div>
       </div>

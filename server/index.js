@@ -59,6 +59,7 @@ import wootechAiRoutes from './routes/wootechAi.js';
 import cvcrmBiaRoutes from './routes/cvcrmBia.js';
 import megaAdminRoutes from './routes/mega-admin.js';
 import licensingRoutes from './routes/licensing.js';
+import wooControlRoutes from './routes/woo-control.js';
 import subscriptionRoutes from './routes/subscription.js';
 import zapRoutes from './routes/zap.js';
 import campaignRoutes from './api/campaigns/index.js';
@@ -70,6 +71,14 @@ import whatsappCloudRoutes from './api/whatsapp-cloud/index.js';
 import connectionBillingRoutes from './api/billing/connections.js';
 import socialRoutes from './api/social/index.js';
 import { startSocialWorker } from './workers/social.worker.js';
+
+// --- Wootech Hub ---
+import wootechVoiceRoutes from './routes/wootechVoice.js';
+import wootechAnalyticsRoutes from './api/wootech-services/analytics.js';
+import './services/omnichannel/interactionLogger.js';
+import './services/crm/leadScoringEngine.js';
+import './services/automation/automationEngine.js';
+
 import {
   getPlatformOriginList,
   PLATFORM_COMMERCIAL_NAME,
@@ -410,6 +419,11 @@ app.use('/api/demo', demoRoutes);
 app.use('/api/fluowai-migration', fluowaiMigrationRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/wootech-ai', wootechAiRoutes);
+
+// --- Wootech Hub Mounts ---
+app.use('/api/wootech-voice', wootechVoiceRoutes);
+app.use('/api/wootech-services/analytics', wootechAnalyticsRoutes);
+
 app.use('/api/sites', siteRoutes);
 app.use('/api/orulo', oruloRoutes);
 app.use('/api/portals', portalRoutes);
@@ -436,6 +450,7 @@ app.use('/api/social', verifyAuth, requireTenant, socialRoutes);
 app.use('/api/cvcrm-bia', cvcrmBiaRoutes);
 app.use('/api/mega', megaAdminRoutes);
 app.use('/api/licensing', licensingRoutes);
+app.use('/api/woo-control', wooControlRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/public/zap', zapRoutes);
 app.use(

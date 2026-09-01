@@ -20,6 +20,7 @@ import SuperAdminGuard from './components/SuperAdminGuard';
 import MegaAdminGuard from './components/MegaAdminGuard';
 import WooControlGuard from './components/WooControlGuard';
 import SubscriptionGuard from './components/SubscriptionGuard';
+import SuspendedGuard from './components/SuspendedGuard';
 import PanelGuard from './components/PanelGuard';
 import { Toaster } from 'sonner';
 import { getAuthenticatedPanelPath } from './src/lib/panelNavigation';
@@ -319,9 +320,11 @@ const AppContent: React.FC = () => {
             element={
               <ProtectedRoute>
                 <PanelGuard panel="rural">
-                  <SubscriptionGuard>
-                    <RuralLayout />
-                  </SubscriptionGuard>
+                  <SuspendedGuard>
+                    <SubscriptionGuard>
+                      <RuralLayout />
+                    </SubscriptionGuard>
+                  </SuspendedGuard>
                 </PanelGuard>
               </ProtectedRoute>
             }
@@ -437,9 +440,11 @@ const AppContent: React.FC = () => {
             element={
               <ProtectedRoute>
                 <PanelGuard panel="urban">
-                  <SubscriptionGuard>
-                    <UrbanLayout />
-                  </SubscriptionGuard>
+                  <SuspendedGuard>
+                    <SubscriptionGuard>
+                      <UrbanLayout />
+                    </SubscriptionGuard>
+                  </SuspendedGuard>
                 </PanelGuard>
               </ProtectedRoute>
             }

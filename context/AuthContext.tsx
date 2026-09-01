@@ -38,6 +38,8 @@ interface UserProfile {
     subscription_status?: 'trial' | 'active' | 'payment_required' | 'suspended';
     is_reseller?: boolean;
     parent_id?: string | null;
+    status?: string;
+    parent?: { status?: string } | null;
   };
   created_at: string;
 }
@@ -53,6 +55,7 @@ interface AuthContextType {
   impersonateOrganization: (orgId: string, reason: string) => Promise<void>;
   stopImpersonation: () => Promise<void>;
   isImpersonating: boolean;
+  isSuspended: boolean;
   enableDebugMode: () => Promise<void>;
 }
 
@@ -65,6 +68,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isImpersonating, setIsImpersonating] = useState(false);
+  const [isSuspended, setIsSuspended] = useState(false);
 
   // Track whether INITIAL_SESSION has been processed to debounce SIGNED_IN
   const initialSessionProcessed = React.useRef(false);
@@ -121,6 +125,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         setUser(null);
         setProfile(null);
         setIsImpersonating(false);
+        setIsSuspended(false);
         setLoading(false);
       }
     });
@@ -184,7 +189,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         logger.error('❌ [AuthContext] Error loading profile:', profileError);
         syncActiveOrganization(null, userId);
         setProfile((prev) => (prev && prev.id === userId ? prev : null));
-        if (!profile) setIsImpersonating(false);
+        if (!profile) {
+          setIsImpersonating(false);
+          setIsSuspended(false);
+        }
       } else if (profileData) {
         logger.info(
           '✅ [AuthContext] Profile core data loaded:',
@@ -208,7 +216,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           const { data: orgData, error: orgError } = await supabase
             .from('organizations')
             .select(
-              'id, name, slug, niche, custom_domain, plan_id, trial_ends_at, subscription_status, is_reseller, parent_id'
+              'id, name, slug, niche, custom_domain, plan_id, trial_ends_at, subscription_status, is_reseller, parent_id, status, parent:parent_id(status)'
             )
             .eq('id', impOrgId)
             .single();
@@ -236,7 +244,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
             const { data: orgData, error: orgError } = await supabase
               .from('organizations')
               .select(
-                'id, name, slug, niche, custom_domain, plan_id, trial_ends_at, subscription_status, is_reseller, parent_id'
+                'id, name, slug, niche, custom_domain, plan_id, trial_ends_at, subscription_status, is_reseller, parent_id, status, parent:parent_id(status)'
               )
               .eq('id', finalProfile.organization_id)
               .maybeSingle();
@@ -258,6 +266,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           finalProfile.id || userId
         );
         setProfile(finalProfile);
+        
+        if (finalProfile.organization) {
+          const org = finalProfile.organization;
+          const suspended = org.status === 'suspended' || org.parent?.status === 'suspended';
+          setIsSuspended(suspended);
+        } else {
+          setIsSuspended(false);
+        }
+
       } else {
         logger.warn('⚠️ [AuthContext] Profile query returned no data.');
         syncActiveOrganization(null, userId);
@@ -447,6 +464,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         impersonateOrganization,
         stopImpersonation,
         isImpersonating,
+        isSuspended,
         enableDebugMode,
       }}
     >

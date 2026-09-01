@@ -40,7 +40,7 @@ export const startImpersonation = async (req, res) => {
       .eq('id', actorId)
       .single();
 
-    if (actorError || actorProfile?.role !== 'superadmin') {
+    if (actorError || (actorProfile?.role !== 'superadmin' && actorProfile?.role !== 'admin')) {
       await logAudit(
         actorId,
         'IMPERSONATE_ATTEMPT_FAILED',

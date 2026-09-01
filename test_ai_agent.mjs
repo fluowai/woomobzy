@@ -60,9 +60,10 @@ async function runTest() {
   }
 
   // 2. Simular dialogo
-  await chat('Olá, me chamo Paulo, meu telefone é 5548988003260 e quero alugar o Apartamento Campinas Sao Jose');
-  await chat('Qual o valor do aluguel deste apartamento e condomínio?');
+  await chat('Olá, me chamo Paulo, meu telefone é 48991138937 e estou procurando um imóvel para alugar no valor de até 1500 reais. Vocês têm alguma opção cadastrada?');
+  await chat('Gostei, quais as condições de locação?');
   await chat('Pode agendar uma visita para mim amanhã às 14h?');
+  await chat('Pode ser na quarta-feira às 14h00 então. Por favor, registre o agendamento no sistema usando sua ferramenta.');
   
   // 3. Checar status do lead após o dialogo (deve ter sido movido no kanban / status)
   const { data: updatedLead } = await supabase.from('leads').select('*').eq('id', lead.id).single();

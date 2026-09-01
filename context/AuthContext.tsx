@@ -371,7 +371,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       .eq('id', user?.id)
       .single();
 
-    if (currentProfile?.role !== 'superadmin') throw new Error('Unauthorized');
+    if (currentProfile?.role !== 'superadmin' && currentProfile?.role !== 'admin') throw new Error('Unauthorized');
 
     const trimmedReason = reason.trim();
     if (!trimmedReason) {

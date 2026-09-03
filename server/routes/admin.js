@@ -4,6 +4,7 @@ import pg from 'pg';
 import {
   verifySuperAdmin,
   verifyAdmin,
+  verifyPlatformAdmin,
   clearProfileCache,
 } from '../middleware/auth.js';
 import {
@@ -638,19 +639,19 @@ router.post(
 
 // --- 🔓 IMPERSONATION (BLOCO 3) ---
 
-router.post('/impersonations', verifySuperAdmin, async (req, res) => {
+router.post('/impersonations', verifyPlatformAdmin, async (req, res) => {
   await handleCreateImpersonationSession(req, res);
 });
 
 // --- 🏢 Organizations Management ---
 
-router.post('/impersonate', verifySuperAdmin, async (req, res) => {
+router.post('/impersonate', verifyPlatformAdmin, async (req, res) => {
   await handleCreateImpersonationSession(req, res, {
     legacy: true,
   });
 });
 
-router.delete('/impersonations/current', verifySuperAdmin, async (req, res) => {
+router.delete('/impersonations/current', verifyPlatformAdmin, async (req, res) => {
   try {
     const { sessionId, sessionSecret } = readImpersonationSessionHeaders(
       req.headers

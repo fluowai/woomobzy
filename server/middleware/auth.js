@@ -921,3 +921,22 @@ export const verifyMegaAdmin = (req, res, next) => {
     next();
   });
 };
+
+const PLATFORM_ROLES = new Set([
+  'superadmin', 'megaadmin', 'platformowner',
+  'platformadmin', 'masterreselleradmin', 'reselleradmin',
+]);
+
+export const verifyPlatformAdmin = (req, res, next) => {
+  verifyAuth(req, res, (err) => {
+    if (err) return next(err);
+    const role = String(req.profileRole ?? req.userRole || '')
+      .toLowerCase().trim().replace(/[\s_]/g, '');
+    if (!PLATFORM_ROLES.has(role)) {
+      return res.status(403).json({
+        error: 'Acesso negado: requer privilégios de administrador da plataforma',
+      });
+    }
+    next();
+  });
+};

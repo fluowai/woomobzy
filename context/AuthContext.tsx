@@ -388,7 +388,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       .eq('id', user?.id)
       .single();
 
-    if (currentProfile?.role !== 'superadmin' && currentProfile?.role !== 'admin') throw new Error('Unauthorized');
+    const PLATFORM_ROLES = new Set([
+      'superadmin', 'megaadmin', 'platformowner', 'platformadmin',
+      'masterreselleradmin', 'reselleradmin', 'admin',
+    ]);
+    if (!PLATFORM_ROLES.has(String(currentProfile?.role || '').toLowerCase().trim().replace(/[\s_]/g, ''))) {
+      throw new Error('Unauthorized');
+    }
 
     const trimmedReason = reason.trim();
     if (!trimmedReason) {

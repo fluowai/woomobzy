@@ -930,7 +930,7 @@ const PLATFORM_ROLES = new Set([
 export const verifyPlatformAdmin = (req, res, next) => {
   verifyAuth(req, res, (err) => {
     if (err) return next(err);
-    const role = String(req.profileRole ?? req.userRole || '')
+    const role = String((req.profileRole ?? req.userRole) || '')
       .toLowerCase().trim().replace(/[\s_]/g, '');
     if (!PLATFORM_ROLES.has(role)) {
       return res.status(403).json({

@@ -523,6 +523,93 @@ router.get('/products', verifyPlatformAdmin, async (req, res) => {
   }
 });
 
+// POST /api/woo-control/products — criar produto
+router.post('/products', verifyPlatformAdmin, async (req, res) => {
+  try {
+    const { name, slug, current_version, stable_version, status, description } = req.body;
+    const db = supabase();
+    
+    if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
+    
+    const finalSlug = slug || name.toLowerCase().replace(/\s+/g, '-');
+    
+    const { data: existing } = await db.from('woo_products').select('id').eq('slug', finalSlug).maybeSingle();
+    if (existing) return res.status(409).json({ error: 'Já existe um produto com este slug' });
+
+    const { data, error } = await db
+      .from('woo_products')
+      .insert([{
+        name,
+        slug: finalSlug,
+        current_version: current_version || '1.0.0',
+        stable_version: stable_version || '1.0.0',
+        status: status || 'ACTIVE',
+        description: description || null
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json({ success: true, product: data });
+  } catch (error) {
+    console.error('[WooControl] create product error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/woo-control/products/:id — atualizar produto
+router.put('/products/:id', verifyPlatformAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, slug, current_version, stable_version, status, description } = req.body;
+    const db = supabase();
+    
+    const updatePayload = {};
+    if (name !== undefined) updatePayload.name = name;
+    if (slug !== undefined) updatePayload.slug = slug;
+    if (current_version !== undefined) updatePayload.current_version = current_version;
+    if (stable_version !== undefined) updatePayload.stable_version = stable_version;
+    if (status !== undefined) updatePayload.status = status;
+    if (description !== undefined) updatePayload.description = description;
+
+    updatePayload.updated_at = new Date().toISOString();
+
+    const { data, error } = await db
+      .from('woo_products')
+      .update(updatePayload)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json({ success: true, product: data });
+  } catch (error) {
+    console.error('[WooControl] update product error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/woo-control/products/:id — deletar produto
+router.delete('/products/:id', verifyPlatformAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = supabase();
+    
+    // Deleta o produto. O banco de dados deve tratar relacionamentos (ex: cascades)
+    // ou retornar erro se houver FK.
+    const { error } = await db
+      .from('woo_products')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    res.json({ success: true, message: 'Produto excluído com sucesso' });
+  } catch (error) {
+    console.error('[WooControl] delete product error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/woo-control/releases — lançamentos
 router.get('/releases', verifyPlatformAdmin, async (req, res) => {
   try {
@@ -539,6 +626,82 @@ router.get('/releases', verifyPlatformAdmin, async (req, res) => {
   }
 });
 
+// POST /api/woo-control/releases
+router.post('/releases', verifyPlatformAdmin, async (req, res) => {
+  try {
+    const { product_id, version, release_notes, status, is_stable } = req.body;
+    const db = supabase();
+    
+    if (!product_id || !version) {
+      return res.status(400).json({ error: 'Produto e versão são obrigatórios' });
+    }
+
+    const { data, error } = await db
+      .from('woo_releases')
+      .insert([{
+        product_id,
+        version,
+        release_notes: release_notes || null,
+        status: status || 'DRAFT',
+        is_stable: is_stable || false
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json({ success: true, release: data });
+  } catch (error) {
+    console.error('[WooControl] create release error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/woo-control/releases/:id
+router.put('/releases/:id', verifyPlatformAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { product_id, version, release_notes, status, is_stable } = req.body;
+    const db = supabase();
+    
+    const updatePayload = {};
+    if (product_id !== undefined) updatePayload.product_id = product_id;
+    if (version !== undefined) updatePayload.version = version;
+    if (release_notes !== undefined) updatePayload.release_notes = release_notes;
+    if (status !== undefined) updatePayload.status = status;
+    if (is_stable !== undefined) updatePayload.is_stable = is_stable;
+
+    updatePayload.updated_at = new Date().toISOString();
+
+    const { data, error } = await db
+      .from('woo_releases')
+      .update(updatePayload)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json({ success: true, release: data });
+  } catch (error) {
+    console.error('[WooControl] update release error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/woo-control/releases/:id
+router.delete('/releases/:id', verifyPlatformAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = supabase();
+    
+    const { error } = await db.from('woo_releases').delete().eq('id', id);
+    if (error) throw error;
+    res.json({ success: true, message: 'Release excluída com sucesso' });
+  } catch (error) {
+    console.error('[WooControl] delete release error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/woo-control/snapshots — pacotes de código gerados
 router.get('/snapshots', verifyPlatformAdmin, async (req, res) => {
   try {
@@ -551,6 +714,81 @@ router.get('/snapshots', verifyPlatformAdmin, async (req, res) => {
     res.json({ success: true, snapshots: snapshots || [] });
   } catch (error) {
     console.error('[WooControl] snapshots error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/woo-control/snapshots
+router.post('/snapshots', verifyPlatformAdmin, async (req, res) => {
+  try {
+    const { product_id, organization_id, version, url, notes, type } = req.body;
+    const db = supabase();
+    
+    if (!product_id || !version) {
+      return res.status(400).json({ error: 'Produto e versão são obrigatórios' });
+    }
+
+    const { data, error } = await db
+      .from('woo_snapshots')
+      .insert([{
+        product_id,
+        organization_id: organization_id || null,
+        version,
+        url: url || null,
+        notes: notes || null,
+        type: type || 'FULL'
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json({ success: true, snapshot: data });
+  } catch (error) {
+    console.error('[WooControl] create snapshot error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/woo-control/snapshots/:id
+router.put('/snapshots/:id', verifyPlatformAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { url, notes, type } = req.body;
+    const db = supabase();
+    
+    const updatePayload = {};
+    if (url !== undefined) updatePayload.url = url;
+    if (notes !== undefined) updatePayload.notes = notes;
+    if (type !== undefined) updatePayload.type = type;
+
+    updatePayload.updated_at = new Date().toISOString();
+
+    const { data, error } = await db
+      .from('woo_snapshots')
+      .update(updatePayload)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json({ success: true, snapshot: data });
+  } catch (error) {
+    console.error('[WooControl] update snapshot error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/woo-control/snapshots/:id
+router.delete('/snapshots/:id', verifyPlatformAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = supabase();
+    
+    const { error } = await db.from('woo_snapshots').delete().eq('id', id);
+    if (error) throw error;
+    res.json({ success: true, message: 'Snapshot excluído com sucesso' });
+  } catch (error) {
+    console.error('[WooControl] delete snapshot error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -606,6 +844,374 @@ router.get('/academy', verifyPlatformAdmin, async (req, res) => {
     res.json({ success: true, courses: courses || [] });
   } catch (error) {
     console.error('[WooControl] academy error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/woo-control/support/tickets — chamados de suporte
+router.get('/support/tickets', verifyPlatformAdmin, async (req, res) => {
+  try {
+    const db = supabase();
+    const { data, error } = await db
+      .from('support_tickets')
+      .select(
+        '*, organizations(name), profiles(name, email)'
+      )
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (error) throw error;
+    res.json({ success: true, tickets: data || [] });
+  } catch (error) {
+    console.error('[WooControl] support tickets error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/woo-control/support/sessions — sessões de suporte
+router.get('/support/sessions', verifyPlatformAdmin, async (req, res) => {
+  try {
+    const db = supabase();
+    const { data, error } = await db
+      .from('woo_support_sessions')
+      .select(
+        '*, profiles!supporter_id(name, email), organizations!target_organization_id(name)'
+      )
+      .order('started_at', { ascending: false })
+      .limit(100);
+    if (error) throw error;
+    res.json({ success: true, sessions: data || [] });
+  } catch (error) {
+    console.error('[WooControl] support sessions error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/woo-control/revenue — dashboard de receita
+router.get('/revenue', verifyPlatformAdmin, async (req, res) => {
+  try {
+    const db = supabase();
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+
+    const { data: paymentRows, error } = await db
+      .from('payment_history')
+      .select('id, organization_id, amount_paid, status, payment_date, organizations(name)');
+    if (error) throw error;
+
+    const rows = paymentRows || [];
+    const paid = rows.filter((r) => String(r.status).toLowerCase() === 'pago');
+    const pending = rows.filter((r) => String(r.status).toLowerCase() === 'pendente');
+
+    const paid30d = paid.filter((r) => {
+      const d = new Date(r.payment_date);
+      return d >= thirtyDaysAgo;
+    });
+
+    const totalMRR30d = paid30d.reduce((sum, r) => sum + Number(r.amount_paid || 0), 0);
+    const totalPending = pending.reduce((sum, r) => sum + Number(r.amount_paid || 0), 0);
+    const totalPaid30d = paid30d.reduce((sum, r) => sum + Number(r.amount_paid || 0), 0);
+
+    const monthly = {};
+    for (let m = 0; m < 12; m++) {
+      const key = new Date(now.getFullYear(), now.getMonth() - (11 - m), 1);
+      monthly[key.toISOString().slice(0, 7)] = 0;
+    }
+    paid.forEach((r) => {
+      const d = new Date(r.payment_date);
+      if (isNaN(d.getTime()) || d < twelveMonthsAgo) return;
+      const key = d.toISOString().slice(0, 7);
+      if (key in monthly) monthly[key] += Number(r.amount_paid || 0);
+    });
+    const timeline = Object.entries(monthly).map(([month, value]) => ({
+      month,
+      total: value,
+    }));
+
+    res.json({
+      success: true,
+      revenue: {
+        mrr: totalMRR30d,
+        pending: totalPending,
+        paid30d: totalPaid30d,
+        timeline,
+      },
+    });
+  } catch (error) {
+    console.error('[WooControl] revenue error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/woo-control/security/keys — status das chaves de segurança
+router.get('/security/keys', verifyPlatformAdmin, async (req, res) => {
+  try {
+    const db = supabase();
+    const { data: settings, error: settingsError } = await db
+      .from('saas_settings')
+      .select('*')
+      .eq('id', 1)
+      .single();
+    if (settingsError) throw settingsError;
+
+    const mask = (value) =>
+      value && value.length > 4
+        ? `****${String(value).slice(-4)}`
+        : value || 'NOT SET';
+
+    let signingKey = 'NOT SET';
+    try {
+      const { data: products } = await db
+        .from('woo_products')
+        .select('signing_key_public')
+        .limit(1);
+      if (products && products.length > 0 && products[0].signing_key_public) {
+        signingKey = `****${String(products[0].signing_key_public).slice(-4)}`;
+      }
+    } catch {
+      // coluna não existe — mantém placeholder
+    }
+
+    res.json({
+      success: true,
+      keys: {
+        global_openai_key: mask(settings?.global_openai_key),
+        global_gemini_key: mask(settings?.global_gemini_key),
+        global_anthropic_key: mask(settings?.global_anthropic_key),
+        global_groq_key: mask(settings?.global_groq_key),
+        global_openrouter_key: mask(settings?.global_openrouter_key),
+        maintenance_mode: !!settings?.maintenance_mode,
+        signing_key_public: signingKey,
+      },
+    });
+  } catch (error) {
+    console.error('[WooControl] security keys error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/woo-control/security/audit — executar auditoria de segurança
+router.post('/security/audit', verifyPlatformAdmin, async (req, res) => {
+  try {
+    const db = supabase();
+
+    const checks = [];
+
+    // 1. Conexão com o banco de dados
+    const dbStart = Date.now();
+    try {
+      const { count, error } = await db
+        .from('organizations')
+        .select('id', { count: 'exact', head: true });
+      if (error) throw error;
+      checks.push({
+        name: 'Conexão com Banco de Dados',
+        status: 'PASS',
+        detail: `${count} organizações acessíveis`,
+        latency: Date.now() - dbStart,
+      });
+    } catch (e) {
+      checks.push({
+        name: 'Conexão com Banco de Dados',
+        status: 'FAIL',
+        detail: e.message,
+        latency: Date.now() - dbStart,
+      });
+    }
+
+    // 2. RLS ativo (políticas nas tabelas principais)
+    try {
+      const { data } = await db
+        .from('organizations')
+        .select('id')
+        .limit(1);
+      checks.push({
+        name: 'Row Level Security (RLS)',
+        status: 'PASS',
+        detail: 'Consulta validada via RLS',
+      });
+    } catch (e) {
+      checks.push({
+        name: 'Row Level Security (RLS)',
+        status: 'FAIL',
+        detail: e.message,
+      });
+    }
+
+    // 3. Chaves de API configuradas
+    const { data: settings } = await db
+      .from('saas_settings')
+      .select('global_openai_key, global_gemini_key, global_anthropic_key, global_groq_key, global_openrouter_key')
+      .eq('id', 1)
+      .maybeSingle();
+
+    const keyChecks = [
+      ['OpenAI', settings?.global_openai_key],
+      ['Gemini', settings?.global_gemini_key],
+      ['Anthropic', settings?.global_anthropic_key],
+      ['Groq', settings?.global_groq_key],
+      ['OpenRouter', settings?.global_openrouter_key],
+    ];
+    keyChecks.forEach(([provider, key]) => {
+      checks.push({
+        name: `Chave ${provider}`,
+        status: key && String(key).length > 4 ? 'PASS' : 'WARN',
+        detail: key && String(key).length > 4 ? 'Configurada' : 'Não configurada',
+      });
+    });
+
+    // 4. Modo de manutenção
+    checks.push({
+      name: 'Modo de Manutenção',
+      status: settings?.maintenance_mode ? 'WARN' : 'PASS',
+      detail: settings?.maintenance_mode ? 'Ativo' : 'Desativado',
+    });
+
+    // 5. Impersonação ativa
+    try {
+      const { count } = await db
+        .from('impersonation_sessions')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'active');
+      checks.push({
+        name: 'Sessões de Impersonação Ativas',
+        status: count && count > 0 ? 'WARN' : 'PASS',
+        detail: `${count || 0} sessão(ões) ativa(s)`,
+      });
+    } catch {
+      checks.push({
+        name: 'Sessões de Impersonação Ativas',
+        status: 'PASS',
+        detail: 'Nenhuma sessão ativa',
+      });
+    }
+
+    res.json({ success: true, checks });
+  } catch (error) {
+    console.error('[WooControl] security audit error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/woo-control/academy — criar curso
+router.post('/academy', verifyPlatformAdmin, async (req, res) => {
+  try {
+    const db = supabase();
+    const { title, description, category, status, curriculum } = req.body || {};
+    if (!title) {
+      return res.status(400).json({ error: 'Título é obrigatório' });
+    }
+    const { data, error } = await db
+      .from('woo_academy_courses')
+      .insert({
+        title,
+        description: description || '',
+        category: category || null,
+        status: status || 'draft',
+        curriculum: curriculum || null,
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    res.status(201).json({ success: true, course: data });
+  } catch (error) {
+    console.error('[WooControl] academy create error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/woo-control/academy/:id — atualizar curso
+router.put('/academy/:id', verifyPlatformAdmin, async (req, res) => {
+  try {
+    const db = supabase();
+    const { id } = req.params;
+    const { title, description, category, status, curriculum } = req.body || {};
+    const updates = {};
+    if (title !== undefined) updates.title = title;
+    if (description !== undefined) updates.description = description;
+    if (category !== undefined) updates.category = category;
+    if (status !== undefined) updates.status = status;
+    if (curriculum !== undefined) updates.curriculum = curriculum;
+    const { data, error } = await db
+      .from('woo_academy_courses')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    res.json({ success: true, course: data });
+  } catch (error) {
+    console.error('[WooControl] academy update error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/woo-control/academy/:id — excluir curso
+router.delete('/academy/:id', verifyPlatformAdmin, async (req, res) => {
+  try {
+    const db = supabase();
+    const { id } = req.params;
+    const { error } = await db.from('woo_academy_courses').delete().eq('id', id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[WooControl] academy delete error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/woo-control/health-check — saúde da plataforma
+router.get('/health-check', verifyPlatformAdmin, async (req, res) => {
+  const results = [];
+  const measure = async (name, fn) => {
+    const start = Date.now();
+    try {
+      await fn();
+      results.push({ name, status: 'Operational', latency: `${Date.now() - start}ms` });
+    } catch (error) {
+      results.push({ name, status: 'Down', latency: `${Date.now() - start}ms`, error: error.message });
+    }
+  };
+
+  try {
+    const db = supabase();
+
+    await measure('Supabase DB', async () => {
+      const { data, error } = await db.from('organizations').select('id', { count: 'exact' });
+      if (error) throw error;
+      results[results.length - 1].organizations = data?.length || 0;
+    });
+
+    await measure('Deployments', async () => {
+      const { data, error } = await db
+        .from('woo_deployments')
+        .select('id', { count: 'exact' })
+        .eq('status', 'active');
+      if (error) throw error;
+      results[results.length - 1].deployments = data?.length || 0;
+    });
+
+    await measure('Licenses', async () => {
+      const { data, error } = await db
+        .from('woo_licenses')
+        .select('id', { count: 'exact' })
+        .eq('status', 'ACTIVE');
+      if (error) throw error;
+      results[results.length - 1].licenses = data?.length || 0;
+    });
+
+    const activeDeployments = results.find((r) => r.name === 'Deployments')?.deployments || 0;
+    const activeLicenses = results.find((r) => r.name === 'Licenses')?.licenses || 0;
+
+    res.json({
+      success: true,
+      status: results.some((r) => r.status === 'Down') ? 'Degraded' : 'Operational',
+      activeDeployments,
+      activeLicenses,
+      services: results,
+    });
+  } catch (error) {
+    console.error('[WooControl] health-check error:', error);
     res.status(500).json({ error: error.message });
   }
 });

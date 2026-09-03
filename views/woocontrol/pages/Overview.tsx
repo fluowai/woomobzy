@@ -10,8 +10,7 @@ import {
   AlertTriangle,
   Layers
 } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { fetchWooSummary, WooKpis } from '../../../services/wooControl';
+import { fetchWooSummary, fetchWooHealthCheck, WooKpis } from '../../../services/wooControl';
 
 const StatCard = ({ title, value, subtext, icon: Icon, trend }: any) => (
   <motion.div 
@@ -36,10 +35,19 @@ const StatCard = ({ title, value, subtext, icon: Icon, trend }: any) => (
   </motion.div>
 );
 
+const statusMap: Record<string, { color: string; icon: any; label: string }> = {
+  'Operational': { color: 'text-emerald-500', icon: ShieldCheck, label: 'Operacional' },
+  'Degraded': { color: 'text-amber-500', icon: AlertTriangle, label: 'Degradado' },
+  'Down': { color: 'text-red-500', icon: AlertTriangle, label: 'Indisponível' },
+};
+
 export const Overview = () => {
   const [kpis, setKpis] = useState<WooKpis | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [healthServices, setHealthServices] = useState<any[]>([]);
+  const [healthLoading, setHealthLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -61,13 +69,43 @@ export const Overview = () => {
     };
   }, []);
 
-  const services = [
-    { name: 'API de Licenciamento', status: 'Operacional', icon: ShieldCheck, color: 'text-emerald-500', ok: true },
-    { name: 'Registro de Containers', status: 'Operacional', icon: Server, color: 'text-emerald-500', ok: true },
-    { name: 'Cluster de Banco de Dados', status: 'Operacional', icon: Server, color: 'text-emerald-500', ok: true },
-    { name: 'Workers de IA', status: 'Operacional', icon: AlertTriangle, color: 'text-emerald-500', ok: true },
-    { name: 'Relé de Heartbeat', status: 'Operacional', icon: Activity, color: 'text-emerald-500', ok: true },
-  ];
+  useEffect(() => {
+    let active = true;
+    fetchWooHealthCheck()
+      .then((services) => {
+        if (active) setHealthServices(services);
+      })
+      .catch(() => {
+        if (active) setHealthServices([]);
+      })
+      .finally(() => {
+        if (active) setHealthLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const services = healthLoading
+    ? []
+    : healthServices.length > 0
+      ? healthServices.map((s: any) => {
+          const status = statusMap[s.status] || statusMap['Down'];
+          return {
+            name: s.name,
+            status: status.label,
+            icon: status.icon,
+            color: status.color,
+            ok: s.status === 'Operational',
+          };
+        })
+      : [
+          { name: 'API de Licenciamento', status: 'Indisponível', icon: ShieldCheck, color: 'text-red-500', ok: false },
+          { name: 'Registro de Containers', status: 'Indisponível', icon: Server, color: 'text-red-500', ok: false },
+          { name: 'Cluster de Banco de Dados', status: 'Indisponível', icon: Server, color: 'text-red-500', ok: false },
+          { name: 'Workers de IA', status: 'Indisponível', icon: Activity, color: 'text-red-500', ok: false },
+          { name: 'Relé de Heartbeat', status: 'Indisponível', icon: Activity, color: 'text-red-500', ok: false },
+        ];
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -75,7 +113,10 @@ export const Overview = () => {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-white tracking-tight">Visão Geral Global</h2>
         <div className="flex gap-2">
-          <button className="px-4 py-2 rounded bg-[#161A23] hover:bg-[#252A35] transition-colors border border-[#252A35] text-sm text-[#9097A5]">
+          <button
+            onClick={(e) => e.preventDefault()}
+            className="px-4 py-2 rounded bg-[#161A23] hover:bg-[#252A35] transition-colors border border-[#252A35] text-sm text-[#9097A5]"
+          >
             Últimos 30 Dias
           </button>
         </div>

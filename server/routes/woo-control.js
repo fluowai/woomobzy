@@ -1107,7 +1107,7 @@ router.post('/academy', verifyPlatformAdmin, async (req, res) => {
         title,
         description: description || '',
         category: category || null,
-        status: status || 'draft',
+        status: status || 'PUBLISHED',
         curriculum: curriculum || null,
       })
       .select()

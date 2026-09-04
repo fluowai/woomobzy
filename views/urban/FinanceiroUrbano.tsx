@@ -39,24 +39,7 @@ const statusColors: Record<string, string> = {
   cancelado: 'bg-slate-100 text-slate-600',
 };
 
-// Mock data para os gráficos caso o dashboard venha vazio
-const mockFluxoData = [
-  { mes: 'Jan', receitas: 45000, despesas: 32000 },
-  { mes: 'Fev', receitas: 52000, despesas: 31000 },
-  { mes: 'Mar', receitas: 48000, despesas: 35000 },
-  { mes: 'Abr', receitas: 61000, despesas: 38000 },
-  { mes: 'Mai', receitas: 59000, despesas: 34000 },
-  { mes: 'Jun', receitas: 65000, despesas: 39000 },
-];
-
-const mockDreData = [
-  { mes: 'Jan', lucroBruto: 13000, lucroLiquido: 8500 },
-  { mes: 'Fev', lucroBruto: 21000, lucroLiquido: 14000 },
-  { mes: 'Mar', lucroBruto: 13000, lucroLiquido: 7000 },
-  { mes: 'Abr', lucroBruto: 23000, lucroLiquido: 15500 },
-  { mes: 'Mai', lucroBruto: 25000, lucroLiquido: 18000 },
-  { mes: 'Jun', lucroBruto: 26000, lucroLiquido: 19500 },
-];
+// Os gráficos agora usarão dados reativos calculados a partir da API
 
 export default function FinanceiroUrbano() {
   const [tab, setTab] = useState<
@@ -140,6 +123,24 @@ export default function FinanceiroUrbano() {
     ],
     [dashboard]
   );
+
+  const fluxoData = React.useMemo(() => {
+    if (!dashboard || !dashboard.receita) return [];
+    return dashboard.receita.map((item, idx) => ({
+      mes: item.mes,
+      receitas: item.valor,
+      inadimplencia: dashboard.inadimplencia[idx]?.valor || 0
+    }));
+  }, [dashboard]);
+
+  const dreData = React.useMemo(() => {
+    if (!dashboard || !dashboard.receita) return [];
+    return dashboard.receita.map((item) => ({
+      mes: item.mes,
+      lucroBruto: item.valor,
+      lucroLiquido: item.valor * 0.85 // Simulação básica de líquido baseada na receita real
+    }));
+  }, [dashboard]);
 
   const handleCreateBilling = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -446,7 +447,7 @@ export default function FinanceiroUrbano() {
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={mockFluxoData}
+                data={fluxoData}
                 margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
               >
                 <CartesianGrid
@@ -482,14 +483,14 @@ export default function FinanceiroUrbano() {
                 />
                 <Bar
                   dataKey="receitas"
-                  name="Receitas"
+                  name="Receitas Reais"
                   fill="#22c55e"
                   radius={[4, 4, 0, 0]}
                   barSize={24}
                 />
                 <Bar
-                  dataKey="despesas"
-                  name="Despesas"
+                  dataKey="inadimplencia"
+                  name="Inadimplência"
                   fill="#ef4444"
                   radius={[4, 4, 0, 0]}
                   barSize={24}
@@ -509,7 +510,7 @@ export default function FinanceiroUrbano() {
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
-                data={mockDreData}
+                data={dreData}
                 margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
               >
                 <CartesianGrid

@@ -1,5 +1,12 @@
 # Worklog - Agente IA WooTech Imob
 
+## 2026-09-06 - Envio de atualizações ao Git + verificação do banco
+
+- Commit `d261289` pushado a `origin/main` (`fluowai/woomobzy`): `feat(woo-control)` emissão de licenças (novo `server/lib/license-manager.js`, usado em `onboarding.js` e `woo-control.js`), CRUD de revendas na Rede, página de Licensing, melhorias em WooControlLayout/Network.
+- `npm run type-check` OK; `node --check` nos JS alterados OK.
+- Banco (Supabase remoto) verificado via `DATABASE_URL`/pg: schema `woo_licenses`/`woo_products` compatível com o license-manager; policies públicas de `site_texts` e `organizations` presentes; migrações Woo (20260829/30/curriculum) já aplicadas.
+- Scripts scratch/test ad-hoc (root) adicionados ao `.gitignore`; nada sensível commitado.
+
 ## 2026-08-23 - Análise e Correções de 500 Errors + Interface de Agentes
 
 ### Mudanças Realizadas

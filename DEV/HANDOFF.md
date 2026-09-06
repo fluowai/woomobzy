@@ -1,5 +1,12 @@
 # Handoff
 
+## 2026-09-06 — Atualizações pushadas e banco verificado
+
+- Commit `d261289` pushado a `origin/main`: `server/lib/license-manager.js` (issueLicense) + uso em `onboarding.js`/`woo-control.js`, CRUD de revendas (Rede), página de Licensing, gitignore de scratch scripts.
+- Gates: `npm run type-check` OK; `node --check` nos 3 JS OK; `npm run check-db` — 401 RLS em perfis/imóveis/leads é esperado (sem policy pública), schema Woo completo e compatível.
+- Banco: Supabase remoto acessível via `DATABASE_URL`; `woo_licenses`/`woo_products` com colunas exatas do license-manager; policies `site_texts_public_select`, `site_texts_admin_all`, `organizations safe select` presentes.
+- Próximo passo: validar em homologação o fluxo de emissão de licença (onboarding + Licensing), credenciais E2E dos seis perfis para homologação, e rotacionar chaves expostas anteriormente (pendência de 2026-07-28).
+
 ## 2026-09-06 — Auditoria integral em andamento
 
 - Plano: `SPECS/REAL_DATA_EXECUTION_PLAN.md`; contrato: `SPECS/ACTIVE.md`.

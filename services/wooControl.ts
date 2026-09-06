@@ -51,6 +51,13 @@ export async function fetchWooLicenses() {
   return data?.licenses || [];
 }
 
+export async function createWooLicense(payload: { organization_id: string; plan?: string; is_trial?: boolean }) {
+  return callApi('/api/woo-control/licenses', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function fetchWooDeployments() {
   const data = await callApi('/api/woo-control/deployments');
   return data?.deployments || [];

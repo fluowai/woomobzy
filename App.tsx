@@ -557,7 +557,8 @@ const AppContent: React.FC = () => {
             }
           >
             <Route index element={<WooOverview />} />
-            <Route path="network" element={<WooNetwork />} />
+            <Route path="resellers" element={<WooNetwork type="resellers" />} />
+            <Route path="customers" element={<WooNetwork type="customers" />} />
             <Route path="products" element={<WooProducts />} />
             <Route path="licensing" element={<WooLicensing />} />
             <Route path="deployments" element={<WooDeployments />} />

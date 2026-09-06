@@ -7,6 +7,7 @@ import {
   isForeignKeyError,
   unlinkKnownOrganizationReferences,
 } from '../lib/organization-deletion.js';
+import { issueLicense } from '../lib/license-manager.js';
 
 const router = express.Router();
 
@@ -131,7 +132,7 @@ router.get('/summary', verifyPlatformAdmin, async (req, res) => {
         db.from('woo_licenses').select('*'),
         db.from('woo_deployments').select('id, status, last_heartbeat, organization_id'),
         db.from('woo_products').select('*'),
-        db.from('plans').select('id, name, monthly_price, price'),
+        db.from('plans').select('id, name, price'),
         db.from('payment_history').select('amount_paid, status'),
       ]);
 
@@ -149,7 +150,7 @@ router.get('/summary', verifyPlatformAdmin, async (req, res) => {
     const orgPlanPrice = (org) => {
       if (!org.plan_id) return 0;
       const p = planList.find((x) => x.id === org.plan_id);
-      return Number(p?.monthly_price ?? p?.price ?? 0) || 0;
+      return Number(p?.price ?? 0) || 0;
     };
     orgList.forEach((o) => {
       mrr += orgPlanPrice(o);
@@ -233,7 +234,7 @@ router.get('/network', verifyPlatformAdmin, async (req, res) => {
       id: o.id,
       name: o.name,
       slug: o.slug,
-      type: o.type || (o.is_reseller ? 'RESELLER' : 'CUSTOMER'),
+      type: (o.is_reseller && o.type === 'CUSTOMER') ? 'RESELLER' : (o.type || (o.is_reseller ? 'RESELLER' : 'CUSTOMER')),
       status: o.status || 'active',
       parentId: o.parent_id || null,
       ownerName: o.owner_name || null,
@@ -312,6 +313,14 @@ router.post('/network/resellers', verifyPlatformAdmin, async (req, res) => {
       .single();
 
     if (orgError) throw orgError;
+
+    // Auto-emitir licença Active (1 ano)
+    try {
+      await issueLicense(db, org.id, 'Básico', false);
+      console.log(`[WooControl] Licença ACTIVE emitida para ${org.name}`);
+    } catch (err) {
+      console.error(`[WooControl] Falha ao emitir licença para ${org.name}:`, err);
+    }
 
     let authUser = await findAuthUserByEmail(String(owner_email).toLowerCase().trim());
 
@@ -430,12 +439,14 @@ router.delete('/network/resellers/:id', verifyPlatformAdmin, async (req, res) =>
 
     const { data: org } = await db
       .from('organizations')
-      .select('id, name')
+      .select('id, name, type, is_reseller')
       .eq('id', id)
-      .eq('is_reseller', true)
       .maybeSingle();
 
-    if (!org) return res.status(404).json({ error: 'Reseller não encontrado' });
+    if (!org) return res.status(404).json({ error: 'Organização não encontrada' });
+    if (org.type === 'PLATFORM') {
+      return res.status(400).json({ error: 'Não é possível excluir a organização principal da plataforma' });
+    }
 
     // Excluir filhos
     const { error: deleteChildrenError } = await db
@@ -465,6 +476,21 @@ router.delete('/network/resellers/:id', verifyPlatformAdmin, async (req, res) =>
     res.json({ success: true, message: 'Reseller excluído com sucesso' });
   } catch (error) {
     console.error('[WooControl] Error deleting reseller:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/woo-control/licenses — Emitir licença manual
+router.post('/licenses', verifyPlatformAdmin, async (req, res) => {
+  try {
+    const db = supabase();
+    const { organization_id, plan, is_trial } = req.body;
+    if (!organization_id) return res.status(400).json({ error: 'Organização é obrigatória' });
+    
+    const license = await issueLicense(db, organization_id, plan, is_trial === true);
+    res.json({ success: true, license });
+  } catch (error) {
+    console.error('[WooControl] Error issuing license:', error);
     res.status(500).json({ error: error.message });
   }
 });

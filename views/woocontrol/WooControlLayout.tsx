@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { 
   Command, 
   Network, 
+  Building2,
   Package, 
   Key, 
   Server, 
@@ -42,7 +43,8 @@ export const WooControlLayout = () => {
 
   const menuItems = [
     { name: 'Visão Geral', icon: <Activity size={18} />, path: '/woo-control' },
-    { name: 'Rede de Revendas', icon: <Network size={18} />, path: '/woo-control/network' },
+    { name: 'Revendas Whitelabel', icon: <Network size={18} />, path: '/woo-control/resellers' },
+    { name: 'Clientes Imobiliárias', icon: <Building2 size={18} />, path: '/woo-control/customers' },
     { name: 'Produtos', icon: <Package size={18} />, path: '/woo-control/products' },
     { name: 'Licenciamento', icon: <Key size={18} />, path: '/woo-control/licensing' },
     { name: 'Implantações', icon: <Server size={18} />, path: '/woo-control/deployments' },

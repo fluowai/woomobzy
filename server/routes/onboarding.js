@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getSupabaseServer } from '../lib/supabase-server.js';
 import { PUBLIC_APP_URL } from '../lib/platform-config.js';
 import { registerLimiter } from '../middleware/rateLimit.js';
+import { issueLicense } from '../lib/license-manager.js';
 
 const router = express.Router();
 const isProduction = process.env.NODE_ENV === 'production';
@@ -184,6 +185,14 @@ router.post('/', registerLimiter, async (req, res) => {
             : `Erro ao criar organização: ${orgError.message}`,
         });
       organization = orgData;
+      
+      // Auto-emitir licença Trial (7 dias)
+      try {
+        await issueLicense(supabase, organization.id, plan, true);
+        console.log(`[Onboarding] Licença TRIAL emitida para ${organization.name}`);
+      } catch (err) {
+        console.error(`[Onboarding] Falha ao emitir licença para ${organization.name}:`, err);
+      }
     }
 
     const { data: profileRecord, error: upsertError } = await supabase

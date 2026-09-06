@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Key } from 'lucide-react';
-import { fetchWooLicenses } from '../../../services/wooControl';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Key, Plus, X, Search } from 'lucide-react';
+import { fetchWooLicenses, fetchWooNetwork, createWooLicense } from '../../../services/wooControl';
+import { toast } from 'sonner';
 
 const statusMeta: Record<string, { label: string; cls: string }> = {
   TRIAL: { label: 'Teste', cls: 'bg-sky-500/10 text-sky-400' },
@@ -24,25 +25,78 @@ export const Licensing = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let active = true;
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orgs, setOrgs] = useState<any[]>([]);
+  const [orgSearch, setOrgSearch] = useState('');
+  
+  // Form State
+  const [selectedOrg, setSelectedOrg] = useState('');
+  const [selectedPlan, setSelectedPlan] = useState('Básico');
+  const [isTrial, setIsTrial] = useState(false);
+
+  const loadData = () => {
+    setLoading(true);
     fetchWooLicenses()
       .then((l) => {
-        if (active) {
-          setLicenses(l);
-          setError(null);
-        }
+        setLicenses(l);
+        setError(null);
       })
       .catch((e: any) => {
-        if (active) setError(e.message || 'Falha ao carregar licenças');
+        setError(e.message || 'Falha ao carregar licenças');
       })
       .finally(() => {
-        if (active) setLoading(false);
+        setLoading(false);
       });
-    return () => {
-      active = false;
-    };
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
+
+  const handleOpenModal = async () => {
+    setIsModalOpen(true);
+    setSelectedOrg('');
+    setOrgSearch('');
+    setIsTrial(false);
+    setSelectedPlan('Básico');
+    try {
+      const net = await fetchWooNetwork();
+      const allOrgs = [...net.resellers, ...net.customers, ...net.orphans].filter(
+        (obj, index, self) => index === self.findIndex((t) => t.id === obj.id)
+      );
+      setOrgs(allOrgs);
+    } catch (err) {
+      toast.error('Erro ao carregar organizações');
+    }
+  };
+
+  const handleGenerateLicense = async () => {
+    if (!selectedOrg) {
+      toast.error('Selecione uma organização');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await createWooLicense({
+        organization_id: selectedOrg,
+        plan: selectedPlan,
+        is_trial: isTrial,
+      });
+      toast.success('Licença emitida com sucesso!');
+      setIsModalOpen(false);
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao emitir licença');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const filteredOrgs = orgs.filter((o) =>
+    o.name.toLowerCase().includes(orgSearch.toLowerCase())
+  );
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -51,9 +105,17 @@ export const Licensing = () => {
           <h2 className="text-2xl font-bold text-white tracking-tight">Motor de Licenciamento</h2>
           <p className="text-sm text-[#9097A5] mt-1">Leases criptográficos e autorizações por domínio.</p>
         </div>
-        <span className="px-3 py-1.5 rounded-full bg-[#161A23] border border-[#252A35] text-xs text-[#9097A5]">
-          {loading ? '...' : licenses.length} licenças
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="px-3 py-1.5 rounded-full bg-[#161A23] border border-[#252A35] text-xs text-[#9097A5]">
+            {loading ? '...' : licenses.length} licenças
+          </span>
+          <button
+            onClick={handleOpenModal}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium text-sm transition-colors"
+          >
+            <Plus size={16} /> Nova Licença
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -113,6 +175,110 @@ export const Licensing = () => {
           </table>
         </div>
       )}
+
+      {/* Modal Nova Licença */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md bg-[#11141C] border border-[#252A35] rounded-2xl shadow-2xl overflow-hidden"
+            >
+              <div className="flex items-center justify-between p-5 border-b border-[#252A35] bg-[#161A23]">
+                <h3 className="text-lg font-semibold text-white">Emitir Nova Licença</h3>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="text-[#9097A5] hover:text-white transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="p-5 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#9097A5] mb-1">
+                    Cliente / Organização
+                  </label>
+                  <div className="relative mb-2">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9097A5]" size={16} />
+                    <input
+                      type="text"
+                      placeholder="Buscar organização..."
+                      value={orgSearch}
+                      onChange={(e) => setOrgSearch(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 bg-[#161A23] border border-[#252A35] rounded-lg text-white focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                  <div className="max-h-40 overflow-y-auto border border-[#252A35] rounded-lg bg-[#161A23]">
+                    {filteredOrgs.map((o) => (
+                      <button
+                        key={o.id}
+                        onClick={() => setSelectedOrg(o.id)}
+                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                          selectedOrg === o.id
+                            ? 'bg-purple-600/20 text-purple-400'
+                            : 'text-white hover:bg-[#252A35]'
+                        }`}
+                      >
+                        {o.name} <span className="text-xs text-[#9097A5]">({o.type})</span>
+                      </button>
+                    ))}
+                    {filteredOrgs.length === 0 && (
+                      <div className="p-3 text-center text-sm text-[#9097A5]">Nenhuma organização encontrada.</div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#9097A5] mb-1">
+                    Plano
+                  </label>
+                  <select
+                    value={selectedPlan}
+                    onChange={(e) => setSelectedPlan(e.target.value)}
+                    className="w-full px-3 py-2 bg-[#161A23] border border-[#252A35] rounded-lg text-white focus:outline-none focus:border-purple-500"
+                  >
+                    <option value="Básico">Básico</option>
+                    <option value="Pro">Pro</option>
+                    <option value="Enterprise">Enterprise</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-3 mt-2">
+                  <input
+                    type="checkbox"
+                    id="isTrial"
+                    checked={isTrial}
+                    onChange={(e) => setIsTrial(e.target.checked)}
+                    className="w-4 h-4 rounded border-[#252A35] bg-[#161A23] text-purple-600 focus:ring-purple-500"
+                  />
+                  <label htmlFor="isTrial" className="text-sm text-white cursor-pointer select-none">
+                    Licença de Teste (Trial - 7 dias)
+                  </label>
+                </div>
+
+              </div>
+              <div className="flex items-center justify-end gap-3 p-5 border-t border-[#252A35] bg-[#161A23]">
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-[#9097A5] hover:text-white transition-colors"
+                  disabled={isSubmitting}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleGenerateLicense}
+                  disabled={isSubmitting || !selectedOrg}
+                  className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? 'Emitindo...' : 'Emitir Licença'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

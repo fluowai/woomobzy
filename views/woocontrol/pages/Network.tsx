@@ -33,7 +33,7 @@ const typeBadgeClass = (type?: string | null): string => {
   }
 };
 
-export const Network = () => {
+export const Network = ({ type = 'all' }: { type?: 'all' | 'resellers' | 'customers' }) => {
   const { impersonateOrganization } = useAuth();
   const [network, setNetwork] = useState<WooNetworkType>({
     resellers: [],
@@ -183,7 +183,10 @@ export const Network = () => {
     }
   };
 
-  const allNodes: WooOrg[] = [...network.resellers, ...network.customers];
+  const allNodes: WooOrg[] = 
+    type === 'resellers' ? network.resellers :
+    type === 'customers' ? [...network.customers, ...network.orphans] :
+    [...network.resellers, ...network.customers];
   const filtered = allNodes.filter((n) =>
     String(n.name || '').toLowerCase().includes(search.toLowerCase())
   );
@@ -192,9 +195,11 @@ export const Network = () => {
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight">Rede de Revendas</h2>
+          <h2 className="text-2xl font-bold text-white tracking-tight">
+            {type === 'resellers' ? 'Revendas Whitelabel' : type === 'customers' ? 'Clientes Imobiliárias' : 'Rede de Revendas'}
+          </h2>
           <p className="text-sm text-[#9097A5] mt-1">
-            Gerencie revendas master, revendas e clientes da distribuição hierárquica.
+            {type === 'resellers' ? 'Gerencie as revendas master e revendas do sistema.' : type === 'customers' ? 'Gerencie os clientes finais e licenças vinculadas.' : 'Gerencie revendas master, revendas e clientes da distribuição hierárquica.'}
           </p>
         </div>
         <div className="flex items-center gap-4">

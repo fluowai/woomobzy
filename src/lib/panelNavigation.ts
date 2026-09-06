@@ -68,7 +68,7 @@ export function getAuthenticatedPanelPath(
   if (!profile) return '/login';
 
   // O dono absoluto da plataforma vai para o Woo Control
-  if (isPlatformOwnerRole(profile.role) && !isImpersonating) {
+  if (isPlatformOwnerRole(profile.role) && !profile.organization?.is_reseller && !isImpersonating) {
     return '/woo-control';
   }
 

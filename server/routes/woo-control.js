@@ -8,36 +8,22 @@ import {
   unlinkKnownOrganizationReferences,
 } from '../lib/organization-deletion.js';
 import { issueLicense } from '../lib/license-manager.js';
+import { canAccessWooControl } from '../lib/woo-control-access.js';
 
 const router = express.Router();
 
-const PLATFORM_ROLES = new Set([
-  'superadmin',
-  'megaadmin',
-  'platformowner',
-  'platformadmin',
-  'masterreselleradmin',
-  'reselleradmin',
-]);
-
-function isPlatformRole(rawRole) {
-  const normalized = String(rawRole || '')
-    .toLowerCase()
-    .trim()
-    .replace(/[\s_]/g, '');
-  return PLATFORM_ROLES.has(normalized);
-}
-
-// Garante que somente donos/admins da plataforma acessem o WooControl.
+// Authenticate the real platform identity before any global service-role query.
 function verifyPlatformAdmin(req, res, next) {
   verifyAuth(req, res, async (err) => {
     if (err) return next(err);
-    if (!isPlatformRole(req.profileRole ?? req.userRole)) {
-      return res.status(403).json({
-        error: 'Acesso negado: requer privilégios de administrador da plataforma',
-      });
+    try {
+      if (!(await canAccessWooControl(req, getSupabaseServer()))) {
+        return res.status(403).json({ error: 'Acesso negado: requer administrador global fora do modo suporte' });
+      }
+      next();
+    } catch (error) {
+      next(error);
     }
-    next();
   });
 }
 
@@ -128,7 +114,7 @@ router.get('/summary', verifyPlatformAdmin, async (req, res) => {
 
     const [orgs, licenses, deployments, products, plans, payHist] =
       await Promise.all([
-        db.from('organizations').select('id, name, type, is_reseller, status, parent_id, created_at'),
+        db.from('organizations').select('id, name, type, is_reseller, status, parent_id, plan_id, created_at'),
         db.from('woo_licenses').select('*'),
         db.from('woo_deployments').select('id, status, last_heartbeat, organization_id'),
         db.from('woo_products').select('*'),
@@ -136,6 +122,9 @@ router.get('/summary', verifyPlatformAdmin, async (req, res) => {
         db.from('payment_history').select('amount_paid, status'),
       ]);
 
+    for (const result of [orgs, licenses, deployments, products, plans, payHist]) {
+      if (result.error) throw result.error;
+    }
     const orgList = orgs.data || [];
     const licenseList = licenses.data || [];
     const deployList = deployments.data || [];
@@ -176,7 +165,7 @@ router.get('/summary', verifyPlatformAdmin, async (req, res) => {
     ).length;
 
     const totalRevenue = (payHist.data || []).reduce((acc, p) => {
-      if (String(p.status || '').toUpperCase() === 'PAID') {
+      if (['paid', 'pago'].includes(String(p.status || '').toLowerCase())) {
         return acc + Number(p.amount_paid || 0);
       }
       return acc;
@@ -926,8 +915,8 @@ router.get('/revenue', verifyPlatformAdmin, async (req, res) => {
     if (error) throw error;
 
     const rows = paymentRows || [];
-    const paid = rows.filter((r) => String(r.status).toLowerCase() === 'pago');
-    const pending = rows.filter((r) => String(r.status).toLowerCase() === 'pendente');
+    const paid = rows.filter((r) => ['paid', 'pago'].includes(String(r.status).toLowerCase()));
+    const pending = rows.filter((r) => ['pending', 'pendente'].includes(String(r.status).toLowerCase()));
 
     const paid30d = paid.filter((r) => {
       const d = new Date(r.payment_date);

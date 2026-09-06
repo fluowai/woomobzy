@@ -1,5 +1,23 @@
 # Verificação
 
+## 2026-09-06 — Auditoria integral: evidência local, homologação pendente
+
+- `node node_modules/vitest/vitest.mjs run --maxWorkers=2`: 142 testes passaram em 28 arquivos. A primeira execução com concorrência padrão teve timeouts de workers; a repetição limitada passou sem esses erros.
+- `npm run type-check`: passou, inclusive após alterações finais de navegação e cobertura.
+- `npm run build`: passou após alterações finais, 4.092 módulos e PWA gerada. Aviso: base Browserslist desatualizada.
+- `npm run lint`: exit 0, zero erros e 770 avisos. ESLint direcionado aos arquivos alterados com `--quiet`: exit 0.
+- `node --check`: passou em woo-control.js, woo-control-access.js e check-db.mjs.
+- Playwright: primeira rodada selecionada com 16 cenários teve 12 aprovações e 4 falhas de API porque o backend local estava desligado. Depois de iniciar `server/index.js` em NODE_ENV=development, os 4 cenários foram repetidos e passaram (desktop e mobile). As 12 aprovações anteriores incluem os cinco painéis anônimos em dois dispositivos e a rota inexistente. Não apresentar essas duas rodadas como uma regressão autenticada completa.
+- Limite da suíte pública existente: ela intercepta `/api/public/texts` com uma fixture vazia. Portanto esses testes validam interface/roteamento, não o conteúdo real de textos no banco.
+- HTTP real no backend local: `/api/woo-control/summary` e `/api/woo-control/network` sem token retornaram 401; `/api/public/branding?domain=127.0.0.1` retornou 200.
+- `node --env-file=.env scripts/check-db.mjs`: exit 1 correto. Organizations respondeu 200; profiles, properties, leads, landing_pages, site_settings e site_texts responderam 401 usando a chave pública. Isso não prova ausência de tabelas nem valida operações autenticadas.
+- Todas as variáveis de e-mail/senha IMOBZY_E2E_* dos seis perfis estão ausentes. URL/contas de homologação solicitadas ao usuário; não foram fornecidas nesta rodada.
+- `git diff --check`: passou. `.env`, `.env.local`, `.env.production`, node_modules e dist confirmados como ignorados. Relatórios HTML/vídeos gerados ficam fora do commit.
+- Backend local iniciou sincronização de cinco configurações de domínio no startup; nenhum diff rastreado de domínio foi produzido. Worker social de produção não foi iniciado. Não foram executados CRUD de negócio, cobrança, envio a clientes ou migração de produção.
+
+**Conclusão:** correções locais verificadas, sem homologação integral. Permanecem mocks, ações incompletas e integrações sem evidência real; consultar SPECS/REAL_DATA_EXECUTION_PLAN.md. Não declarar sistema 100% funcional ou zero mocks.
+
+
 ## 2026-08-26 — Migrações SQL + Limpeza de Código
 
 - 28 migrações executadas via `npm run run-migrations` + `exec_sql` RPC manual.

@@ -280,3 +280,8 @@ Isso garantirá que todas as correções de 500 error e as novas funcionalidades
 - Pre-flight: confirmados `organizations`/`profiles` presentes; `woo_*` não existiam; `organizations.type` faltava; `profiles_role_check` legado.
 - Verificação pós: 9 tabelas `woo_*` criadas, `organizations.type` + `parent_id`, novo `profiles_role_check` com roles RBAC + legadas, RLS habilitado com políticas, função `is_platform_admin` criada.
 - Nenhum commit, push ou deploy foi executado.
+
+
+## 2026-09-06 — Auditoria de dados reais e WooControl
+
+Inventariadas 184 rotas e registrados 121 sinais estáticos para revisão. Plano por nível criado em SPECS/REAL_DATA_EXECUTION_PLAN.md. Corrigidos autorização global do WooControl, consistência do suporte, indicadores sem plan_id, tratamento de erro da consulta, status financeiro e exit code do diagnóstico de banco. Normalizado .gitignore sem NUL preservando exclusão de segredos. Adicionados testes WooControl e deduplicadas rotas da suíte E2E. Homologação integral depende de contas/URL não configuradas; mocks e implementações restantes estão explicitados no plano. Verificação em VERIFY.md.

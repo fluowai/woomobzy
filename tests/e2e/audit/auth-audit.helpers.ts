@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 
-export type AuditRole = 'urbanAdmin' | 'urbanBroker' | 'ruralAdmin' | 'superAdmin' | 'megaAdmin';
+export type AuditRole = 'wooControl' | 'urbanAdmin' | 'urbanBroker' | 'ruralAdmin' | 'superAdmin' | 'megaAdmin';
 
 type RoleConfig = {
   label: string;
@@ -22,6 +22,16 @@ export const auditBaseUrl =
   process.env.IMOBZY_E2E_BASE_URL?.trim() || 'http://127.0.0.1:3006';
 
 export const roleConfigs: Record<AuditRole, RoleConfig> = {
+  wooControl: {
+    label: 'dono da plataforma WooControl',
+    emailEnv: 'IMOBZY_E2E_WOO_CONTROL_EMAIL',
+    passwordEnv: 'IMOBZY_E2E_WOO_CONTROL_PASSWORD',
+    homePath: '/woo-control',
+    allowedLanding: /\/woo-control(?:\/.*)?$/,
+    shellHref: '/woo-control/resellers',
+    smokeNavHref: '/woo-control/products',
+    blockedPath: '/megaadmin',
+  },
   urbanAdmin: {
     label: 'admin urbano',
     emailEnv: 'IMOBZY_E2E_URBAN_ADMIN_EMAIL',

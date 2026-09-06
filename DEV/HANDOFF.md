@@ -1,5 +1,17 @@
 # Handoff
 
+## 2026-09-06 — Auditoria integral em andamento
+
+- Plano: `SPECS/REAL_DATA_EXECUTION_PLAN.md`; contrato: `SPECS/ACTIVE.md`.
+- Inventário atualizado: 184 rotas, incluindo 16 do WooControl. Triagem de código: 121 sinais a revisar, não 121 defeitos comprovados.
+- Corrigidos acesso global de revendas no WooControl, acesso durante suporte, navegação, consultas de indicadores e falso sucesso do diagnóstico de banco.
+- Incluídos testes de autorização WooControl e navegação; suíte E2E agora inclui o dono da plataforma e elimina títulos duplicados por rota.
+- Bloqueio externo: faltam URL e contas de homologação IMOBZY_E2E_* para os seis perfis. Leituras públicas do banco: uma HTTP 200 e seis HTTP 401. Não executar migrações com base nesse resultado.
+- Permanecem mocks e funções incompletas, sobretudo IA, locação e integrações. Não declarar 100% funcional.
+- Commit/push autorizado nesta solicitação; entrega em branch `codex/auditoria-dados-reais-20260906`. Sem deploy, cobrança, envio a clientes ou migração de produção.
+- Resultados efetivos em `VERIFY.md`.
+
+
 ## 2026-08-28 — Working tree limpo e validado (sem commit)
 
 - `constants/siteTemplates.ts` revertido: o diff era só reformatação + corrupção de acentos (45 chars mojibake); semântica idêntica ao HEAD (326 ids).

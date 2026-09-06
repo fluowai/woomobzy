@@ -40,3 +40,11 @@ DEV/
 
 - `HANDOFF.md` — estado atual e próximos passos para continuidade.
 - `VERIFY.md` — evidências dos gates executados e riscos restantes.
+
+## Auditoria integral — setembro de 2026
+
+- `SPECS/ACTIVE.md` — escopo atual e critérios de aceite.
+- `SPECS/REAL_DATA_EXECUTION_PLAN.md` — diagnóstico, prioridades, etapas e bloqueios.
+- `TESTS/FUNCTIONAL_AUDIT_MATRIX.md` — 184 rotas de todos os níveis.
+- `TESTS/REAL_DATA_FINDINGS.md` — triagem de dados simulados e ações incompletas.
+- `CONTEXT.md` — estado e limites da validação.

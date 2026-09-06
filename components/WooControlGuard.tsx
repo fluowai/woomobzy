@@ -15,7 +15,7 @@ const WooControlGuard: React.FC<{ children: React.ReactNode }> = ({
 
   if (loading) return <FullScreenSpinner />;
 
-  const isOwner = isPlatformOwnerRole(profile?.role);
+  const isOwner = isPlatformOwnerRole(profile?.role) && !profile?.organization?.is_reseller && !isImpersonating;
   const isMega = isMegaAdminProfile(profile) && !isImpersonating;
 
   if (!isOwner && !isMega) {

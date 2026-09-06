@@ -173,12 +173,16 @@ router.get('/:id', async (req, res) => {
       .eq('operation_id', id)
       .eq('is_active', true);
 
-    // Get channel rules
-    const { data: channelRules } = await supabase
-      .from('ai_channel_rules')
-      .select('*')
-      .in('agent_id', agents?.map(a => a.id) || [])
-      .eq('is_active', true);
+    const agentIds = (agents || []).map(a => a.id);
+    const { data: channelRules, error: channelRulesError } = agentIds.length > 0
+      ? await supabase
+        .from('ai_channel_rules')
+        .select('*')
+        .in('agent_id', agentIds)
+        .eq('is_active', true)
+      : { data: [], error: null };
+
+    if (channelRulesError) throw channelRulesError;
 
     res.json({
       operation: {
@@ -315,6 +319,12 @@ router.post('/:id/architect', async (req, res) => {
       .eq('organization_id', organizationId)
       .eq('is_active', true);
 
+    const { data: siteSettings } = await supabase
+      .from('site_settings')
+      .select('integrations')
+      .eq('organization_id', organizationId)
+      .maybeSingle();
+
     // Get environments for segment info
     const { data: environments } = await supabase
       .from('environments')
@@ -337,7 +347,8 @@ router.post('/:id/architect', async (req, res) => {
       funnels: [], // Would get from CRM settings
       availableTools,
       knowledgeSources: knowledgeSources || [],
-      businessRules: operation.business_model?.rules || []
+      businessRules: operation.business_model?.rules || [],
+      llmIntegrations: siteSettings?.integrations || null
     };
 
     // Update status to ARCHITECTURE_DESIGN
@@ -501,41 +512,71 @@ router.post('/:id/publish', async (req, res) => {
   try {
     const organizationId = await getOrgId(req);
     const { id } = req.params;
-    const { minScore = 90 } = req.body;
+    const minScore = Number(req.body?.minScore ?? 90);
+
+    if (!Number.isFinite(minScore) || minScore < 70 || minScore > 100) {
+      return res.status(400).json({ error: 'minScore deve estar entre 70 e 100' });
+    }
 
     const supabase = getSupabaseServer();
+    const publishedAt = new Date().toISOString();
     
     // Get operation with agents
-    const { data: operation } = await supabase
+    const { data: operation, error: operationError } = await supabase
       .from('ai_operations')
       .select('*')
       .eq('id', id)
       .eq('organization_id', organizationId)
-      .single();
+      .maybeSingle();
+
+    if (operationError) throw operationError;
 
     if (!operation) {
       return res.status(404).json({ error: 'Operation not found' });
     }
 
-    // Get agents with latest test scores
-    const { data: agents } = await supabase
+    const { data: agents, error: agentsError } = await supabase
       .from('ai_agents')
-      .select('*, ai_agent_versions!inner(score, published_at)')
-      .eq('operation_id', id);
+      .select('id, name, status, active_version_id')
+      .eq('operation_id', id)
+      .eq('organization_id', organizationId);
+
+    if (agentsError) throw agentsError;
+
+    if (!agents || agents.length === 0) {
+      return res.status(400).json({
+        error: 'Operation has no agents to publish',
+        code: 'AI_OPERATION_NO_AGENTS'
+      });
+    }
+
+    const activeVersionIds = agents.map((agent) => agent.active_version_id).filter(Boolean);
+    const { data: activeVersions, error: versionsError } = activeVersionIds.length > 0
+      ? await supabase
+        .from('ai_agent_versions')
+        .select('id, agent_id, score, test_results, created_at')
+        .in('id', activeVersionIds)
+      : { data: [], error: null };
+
+    if (versionsError) throw versionsError;
+
+    const versionByAgentId = new Map((activeVersions || []).map((version) => [version.agent_id, version]));
 
     // Check all agents meet minimum score
     const unreadyAgents = (agents || []).filter(a => {
-      const version = a.ai_agent_versions;
-      return !version.published_at || (version.score || 0) < minScore;
+      const version = versionByAgentId.get(a.id);
+      const tested = version?.test_results?.verdict && version?.test_results?.score?.overall !== undefined;
+      return !a.active_version_id || !version?.id || !tested || (version.score || 0) < minScore;
     });
 
     if (unreadyAgents.length > 0) {
       return res.status(400).json({ 
-        error: 'Some agents do not meet minimum score',
+        error: 'Some agents do not meet minimum score or do not have persisted test evidence',
         unreadyAgents: unreadyAgents.map(a => ({
           id: a.id,
           name: a.name,
-          score: a.ai_agent_versions?.score || 0,
+          score: versionByAgentId.get(a.id)?.score || 0,
+          activeVersionId: a.active_version_id || null,
           minScore
         }))
       });
@@ -543,44 +584,53 @@ router.post('/:id/publish', async (req, res) => {
 
     // Publish all agents
     for (const agent of agents || []) {
-      await supabase
+      const { error: agentUpdateError } = await supabase
         .from('ai_agents')
-        .update({ status: 'PUBLISHED', updated_at: new Date().toISOString() })
-        .eq('id', agent.id);
+        .update({ status: 'PUBLISHED', updated_at: publishedAt })
+        .eq('id', agent.id)
+        .eq('organization_id', organizationId);
+
+      if (agentUpdateError) throw agentUpdateError;
       
-      const versions = Array.isArray(agent.ai_agent_versions) ? agent.ai_agent_versions : [agent.ai_agent_versions];
-      for (const v of versions.filter(Boolean)) {
-        await supabase
-          .from('ai_agent_versions')
-          .update({ published_at: new Date().toISOString() })
-          .eq('id', v.id);
-      }
+      const activeVersion = versionByAgentId.get(agent.id);
+      const { error: versionUpdateError } = await supabase
+        .from('ai_agent_versions')
+        .update({ published_at: publishedAt })
+        .eq('id', activeVersion.id)
+        .eq('agent_id', agent.id);
+
+      if (versionUpdateError) throw versionUpdateError;
     }
 
     // Update operation
-    await supabase
+    const { error: updateOperationError } = await supabase
       .from('ai_operations')
       .update({ 
         status: 'PUBLISHED', 
-        published_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        published_at: publishedAt,
+        updated_at: publishedAt
       })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('organization_id', organizationId);
+
+    if (updateOperationError) throw updateOperationError;
 
     // Audit log
-    await supabase.from('ai_audit_logs').insert({
+    const { error: auditError } = await supabase.from('ai_audit_logs').insert({
       organization_id: organizationId,
       actor_type: 'USER',
       entity_type: 'ai_operation',
       entity_id: id,
       action: 'publish',
-      after_state: { agentsPublished: agents?.length }
+      after_state: { agentsPublished: agents.length, minScore, publishedAt }
     });
+
+    if (auditError) throw auditError;
 
     res.json({ 
       success: true, 
       message: 'Operation published successfully',
-      agentsPublished: agents?.length
+      agentsPublished: agents.length
     });
   } catch (error) {
     logger.error('[aiOperations] Publish error', { error: error.message });
@@ -622,13 +672,17 @@ router.get('/:id/metrics', async (req, res) => {
       .select('id, name, type, role, status, health_status, metrics')
       .eq('operation_id', id);
 
-    // Get conversation metrics from execution logs
-    const { data: logs } = await supabase
-      .from('ai_execution_logs')
-      .select('agent_id, event_type, status, latency_ms, tokens, cost_usd, conversation_id, created_at')
-      .eq('tenant_id', organizationId)
-      .in('agent_id', agents?.map(a => a.id) || [])
-      .gte('created_at', since);
+    const agentIds = (agents || []).map(a => a.id);
+    const { data: logs, error: logsError } = agentIds.length > 0
+      ? await supabase
+        .from('ai_execution_logs')
+        .select('agent_id, event_type, status, latency_ms, tokens, cost_usd, conversation_id, created_at')
+        .eq('tenant_id', organizationId)
+        .in('agent_id', agentIds)
+        .gte('created_at', since)
+      : { data: [], error: null };
+
+    if (logsError) throw logsError;
 
     // Aggregate metrics
     const metrics = {
@@ -674,6 +728,101 @@ router.get('/:id/metrics', async (req, res) => {
   } catch (error) {
     logger.error('[aiOperations] Metrics error', { error: error.message });
     res.status(500).json({ error: 'Failed to get metrics' });
+  }
+});
+
+router.get('/:id/logs', async (req, res) => {
+  try {
+    const organizationId = await getOrgId(req);
+    const { id } = req.params;
+    const status = req.query.status ? String(req.query.status) : null;
+    const q = req.query.q ? String(req.query.q).toLowerCase() : '';
+    const limit = Math.min(Number(req.query.limit || 100), 500);
+
+    const supabase = getSupabaseServer();
+    const { data: agents, error: agentsError } = await supabase
+      .from('ai_agents')
+      .select('id')
+      .eq('operation_id', id)
+      .eq('organization_id', organizationId);
+
+    if (agentsError) throw agentsError;
+    const agentIds = (agents || []).map((agent) => agent.id);
+
+    let query = supabase
+      .from('ai_execution_logs')
+      .select('id, agent_id, event_type, status, latency_ms, tokens, cost_usd, conversation_id, metadata, created_at')
+      .eq('tenant_id', organizationId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (agentIds.length === 0) {
+      return res.json({ logs: [] });
+    }
+
+    query = query.in('agent_id', agentIds);
+
+    if (status && status !== 'Todos') {
+      query = query.eq('status', status);
+    }
+
+    const { data: logs, error } = await query;
+    if (error) throw error;
+
+    const filtered = q
+      ? (logs || []).filter((log) => JSON.stringify(log).toLowerCase().includes(q))
+      : logs || [];
+
+    res.json({ logs: filtered });
+  } catch (error) {
+    logger.error('[aiOperations] Logs error', { error: error.message });
+    res.status(500).json({ error: 'Failed to get logs' });
+  }
+});
+
+router.get('/:id/history', async (req, res) => {
+  try {
+    const organizationId = await getOrgId(req);
+    const { id } = req.params;
+    const limit = Math.min(Number(req.query.limit || 100), 500);
+
+    const supabase = getSupabaseServer();
+    const { data: history, error } = await supabase
+      .from('ai_audit_logs')
+      .select('id, actor_type, entity_type, entity_id, action, before_state, after_state, created_at')
+      .eq('organization_id', organizationId)
+      .eq('entity_id', id)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+
+    res.json({ history: history || [] });
+  } catch (error) {
+    logger.error('[aiOperations] History error', { error: error.message });
+    res.status(500).json({ error: 'Failed to get history' });
+  }
+});
+
+router.get('/:id/knowledge', async (req, res) => {
+  try {
+    const organizationId = await getOrgId(req);
+    const { id } = req.params;
+
+    const supabase = getSupabaseServer();
+    const { data: sources, error } = await supabase
+      .from('ai_knowledge_sources')
+      .select('id, name, description, source_type, source_url, status, metadata, is_active, updated_at, created_at')
+      .eq('organization_id', organizationId)
+      .or(`operation_id.eq.${id},operation_id.is.null`)
+      .order('updated_at', { ascending: false });
+
+    if (error) throw error;
+
+    res.json({ sources: sources || [] });
+  } catch (error) {
+    logger.error('[aiOperations] Knowledge error', { error: error.message });
+    res.status(500).json({ error: 'Failed to get knowledge sources' });
   }
 });
 

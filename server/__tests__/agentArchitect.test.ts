@@ -41,14 +41,11 @@ describe('AgentArchitect', () => {
     expect(architect.modelName).toBe('llama-3.1-8b-instant');
   });
 
-  it('fallback architecture creates agents with the selected Groq model', async () => {
+  it('fails explicitly when no real provider can generate architecture', async () => {
     const architect = createArchitect([]);
 
-    const architecture = await architect.designArchitecture(input, 'groq', 'llama-3.1-8b-instant');
-
-    expect(architecture.operation.agents).toHaveLength(3);
-    expect(architecture.operation.agents.some(agent => agent.type === 'ORCHESTRATOR')).toBe(true);
-    expect(architecture.operation.agents.every(agent => agent.model === 'llama-3.1-8b-instant')).toBe(true);
-    expect(architecture.testPlan.length).toBeGreaterThan(0);
+    await expect(
+      architect.designArchitecture(input, 'groq', 'llama-3.1-8b-instant')
+    ).rejects.toThrow('Agent Architect failed with real provider');
   });
 });

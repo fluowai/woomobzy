@@ -129,3 +129,10 @@
 - A consulta do dashboard urbano deixou de solicitar a coluna inexistente `leads.broker_id`.
 - A instância real foi redefinida condicionalmente de `connecting` para `disconnected`; a próxima abertura autenticada do modal inicia um novo pareamento.
 - A correção está validada; para ativar a recuperação permanente, ainda é necessário implantar as imagens `frontend` e `whatsapp-service`.
+## 2026-09-06 — Real-data P1/P2 validado localmente e pronto para push
+
+- Branch: `codex/auditoria-dados-reais-20260906`.
+- Escopo entregue: IA testa/publica somente com evidência persistida; Wizard e Dashboard de IA removem score/canais/logs/conhecimento demonstrativos; Asaas exige chave real e valida webhook; agenda da IA persiste em `lead_appointments`; Wootech Mail usa campanhas/destinatários persistidos; Sienge/CVCRM/BIA deixam de fabricar sucesso/IDs; scoring de lead atualiza banco; licenciamento não assina lease com chave efêmera; CMA gera PDF real.
+- Migrations novas: `20260906_real_ai_calendar_tools.sql` e `20260906_real_wootech_mail_campaigns.sql`. Não aplicadas automaticamente em produção/homologação nesta rodada.
+- Gates passados: `node --check` focado, ESLint focado, `npm run type-check`, Vitest completo 29/29 e 147/147, `npm run lint` com 0 erros, `npm run build`, `git diff --check`, `npm run audit:matrix`.
+- Restrições restantes: sem ambiente/credenciais de homologação IMOBZY_E2E_*; sem execução real de cobrança/envio/webhook externo; ainda há ações “em breve” em locação, DataRoom, WhatsApp, rural/admin e módulos financeiros que precisam de implementação por fluxo.

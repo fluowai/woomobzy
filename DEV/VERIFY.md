@@ -133,3 +133,15 @@
 - `npm run type-check`: inconclusivo; o processo `tsc` foi encerrado pelo Windows sem emitir diagnóstico TypeScript. O build Vite de produção passou.
 - Produção antes do deploy: health do Node/WhatsMeow em HTTP 200; instância `22222` presa em `connecting`, com QR vazio.
 - Recuperação imediata aplicada em produção: atualização condicional da instância `22222` para `disconnected`; permaneceu aguardando uma requisição autenticada do modal durante a janela de observação.
+## 2026-09-06 — Real-data P1/P2 após execução autônoma
+
+- `node --check` nos arquivos backend alterados: passou para `eventBus`, `leadScoringEngine`, `licensing`, `campaignDispatcher`, `siengeService`, `cvcrmBiaService`, `agentOrchestrator`, `aiOperations`, além dos arquivos de IA/Asaas verificados antes.
+- `npx eslint ... --quiet` focado nos arquivos alterados: passou sem erros.
+- `npm run type-check`: passou após as telas e serviços novos.
+- `node node_modules/vitest/vitest.mjs run --maxWorkers=2`: 29 arquivos e 147 testes passaram. Teste legado do Architect foi atualizado porque o contrato correto agora é falhar sem provedor real, não gerar arquitetura fallback.
+- `npm run lint`: exit 0, zero erros e 739 warnings legados/de dívida técnica.
+- `npm run build`: passou, 4.273 módulos transformados e PWA gerada. Aviso não bloqueante: base Browserslist/caniuse-lite desatualizada.
+- `git diff --check`: passou; apenas avisos CRLF esperados no Windows.
+- `npm run audit:matrix`: passou, matriz regenerada com 184 rotas: WooControl 16, público/compartilhado 23, Urbano 59, Rural 57, Super Admin 14, Mega Admin 15.
+
+Não executado: migrações novas em banco remoto, webhooks/cobranças reais contra Asaas, envio real de e-mail/WhatsApp, chamadas reais Sienge/CVCRM/BIA, Playwright autenticado ponta a ponta. Esses testes exigem ambiente de homologação, credenciais e autorização operacional para não afetar clientes ou produção.

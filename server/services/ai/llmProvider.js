@@ -617,27 +617,8 @@ export class LLMOrchestrator {
   async initialize() {
     if (this.initialized) return;
     
-    // First, try to get keys from site_settings (per-organization)
-    // This allows each SaaS tenant to have their own API keys configured
-    let orgKeys = null;
-    try {
-      const orgRes = await getSupabaseServer()
-        .from('site_settings')
-        .select('integrations')
-        .single();
-      orgKeys = orgRes.data?.integrations || {};
-      // Extract just the apiKey string from each provider config
-      const extractApiKey = (keyConfig) => typeof keyConfig === 'object' ? keyConfig.apiKey : keyConfig;
-      const groqKeyFromOrg = extractApiKey(orgKeys?.groq);
-      
-      // Store the extracted keys for use in the keys object
-      // We'll use these in the keys priority chain below
-    } catch (err) {
-      // ignore - fall back to saas_settings
-      logger.debug('[LLMOrchestrator] No site_settings found, using global config');
-    }
-    
-    // Then, get global saas_settings keys as fallback
+    // Tenant keys must be passed explicitly through config.orgKeys.
+    // A singleton cannot safely auto-select a row from site_settings.
     const supabase = getSupabaseServer();
     let settings = null;
     try {
@@ -650,8 +631,7 @@ export class LLMOrchestrator {
       // ignore
     }
     
-    // Priority: site_settings (per-org) > saas_settings (global) > env vars
-    // Extract apiKey from org key configs if they're objects
+    // Priority: saas_settings (global) > env vars. Tenant keys override these in chat().
     const extractApiKey = (keyConfig) => {
       if (!keyConfig) return null;
       let key = typeof keyConfig === 'object' ? keyConfig.apiKey : keyConfig;
@@ -668,11 +648,11 @@ export class LLMOrchestrator {
     };
     
     const keys = {
-      openai: getValidKey(orgKeys?.openai, settings?.global_openai_key, process.env.OPENAI_API_KEY),
-      anthropic: getValidKey(orgKeys?.anthropic, settings?.global_anthropic_key, process.env.ANTHROPIC_API_KEY),
-      gemini: getValidKey(orgKeys?.gemini, settings?.global_gemini_key, process.env.GEMINI_API_KEY),
-      groq: getValidKey(orgKeys?.groq, settings?.global_groq_key, process.env.GROQ_API_KEY),
-      openrouter: getValidKey(orgKeys?.openrouter, settings?.global_openrouter_key, process.env.OPENROUTER_API_KEY)
+      openai: getValidKey(settings?.global_openai_key, process.env.OPENAI_API_KEY),
+      anthropic: getValidKey(settings?.global_anthropic_key, process.env.ANTHROPIC_API_KEY),
+      gemini: getValidKey(settings?.global_gemini_key, process.env.GEMINI_API_KEY),
+      groq: getValidKey(settings?.global_groq_key, process.env.GROQ_API_KEY),
+      openrouter: getValidKey(settings?.global_openrouter_key, process.env.OPENROUTER_API_KEY)
     };
     
     if (keys.openai) this.providers.set('openai', new OpenAIProvider({ apiKey: keys.openai }));
@@ -828,7 +808,7 @@ export class LLMOrchestrator {
       logger.error('[LLMOrchestrator] Chat error', { 
         error: error.message, 
         taskType, 
-        provider: provider.name 
+        provider: activeProvider?.name
       });
       
       // Try fallback if not already using fallback

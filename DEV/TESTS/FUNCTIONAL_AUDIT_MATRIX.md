@@ -1,6 +1,6 @@
 # Matriz mestra de auditoria funcional — IMOBZY
 
-**Gerada em:** 2026-09-06T21:24:28.390Z
+**Gerada em:** 2026-09-06T22:46:24.867Z
 **Fonte:** `App.tsx` analisado por AST  
 **Status inicial:** PENDENTE até execução com evidência
 

@@ -251,8 +251,7 @@ export class AgentArchitect {
     
     const availableProviders = this.llmOrchestrator.getAvailableProviders();
     if (availableProviders.length === 0) {
-      logger.warn('[AgentArchitect] No LLM providers available - running in development mode without AI generation');
-      this.isMockMode = true;
+      this.isMockMode = false;
     } else {
       if (!availableProviders.includes(this.providerOverride)) {
         logger.warn(`[AgentArchitect] Provider ${this.providerOverride} not available, falling back to ${availableProviders[0]}`);
@@ -276,27 +275,10 @@ export class AgentArchitect {
       objectivesCount: input.objectives?.length
     });
     
-    let result;
-    try {
-      // If no valid provider available, force fallback
-      if (this.isMockMode) {
-        throw new Error('No LLM model available - forcing mock mode');
-      }
-      
-      // Build comprehensive prompt
-      const prompt = this.buildArchitectPrompt(input);
-      
-      // Generate with structured output
-      result = await this.generateWithSchema(prompt, this.getOutputSchema());
-    } catch (error) {
-      logger.error('[AgentArchitect] Design failed, falling back to mock architecture', {
-        error: error.message,
-        tenant: input.tenant?.id,
-        segment: input.segment
-      });
-      
-      result = this.buildFallbackArchitecture(input);
-    }
+    const prompt = this.buildArchitectPrompt(input);
+    const result = await this.generateWithSchema(prompt, this.getOutputSchema(), {
+      orgKeys: input.llmIntegrations
+    });
     
     // Validate and enrich (applies defaults and missing blocks for both LLM and fallback results)
     const architecture = this.validateAndEnrich(result, input);
@@ -647,7 +629,7 @@ REGRAS OBRIGATÓRIAS:
   /**
    * Generate with JSON schema validation
    */
-  async generateWithSchema(prompt, schema) {
+  async generateWithSchema(prompt, schema, options = {}) {
     const messages = [
       { role: 'system', content: 'Você é um arquiteto de IA. Responda APENAS com JSON válido conforme o schema. Sem markdown, sem explicações.' },
       { role: 'user', content: prompt }
@@ -661,14 +643,11 @@ REGRAS OBRIGATÓRIAS:
     };
     
     try {
-      let response;
-      if (this.providerOverride && this.llmOrchestrator.providers.has(this.providerOverride)) {
-        const provider = this.llmOrchestrator.providers.get(this.providerOverride);
-        config.model = this.modelName;
-        response = await provider.chat(messages, config);
-      } else {
-        response = await this.llmOrchestrator.chat(messages, 'agent_architect', config);
-      }
+      if (this.modelName) config.model = this.modelName;
+      const response = await this.llmOrchestrator.chat(messages, 'agent_architect', {
+        ...config,
+        orgKeys: options.orgKeys
+      });
       
       let text = response.content;
       // Clean up markdown code blocks if the model didn't respect jsonMode perfectly
@@ -677,7 +656,7 @@ REGRAS OBRIGATÓRIAS:
       return JSON.parse(text);
     } catch (e) {
       logger.error('[AgentArchitect] Failed to generate or parse JSON', { error: e.message });
-      throw new Error('Agent Architect returned invalid JSON or failed');
+      throw new Error(`Agent Architect failed with real provider: ${e.message}`);
     }
   }
 

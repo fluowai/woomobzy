@@ -289,15 +289,40 @@ export async function extractDocumentText(input, context) {
  * Check availability for a visit
  */
 export async function checkAvailability(input, context) {
-  // In a real scenario, this would query a calendar integration or database table 'agent_schedules'
-  // For demonstration, we simulate some available slots based on the requested date or next few days
+  const { organizationId } = context;
+  const requestedDateTime = input.datetime || input.date_time;
+  const requestedDate = input.date || requestedDateTime?.slice(0, 10);
+
+  if (!requestedDate) {
+    throw new Error('date ou datetime é obrigatório para consultar disponibilidade');
+  }
+
+  const supabase = getSupabaseServer();
+  const start = requestedDateTime || `${requestedDate}T00:00:00.000Z`;
+  const end = requestedDateTime
+    ? new Date(new Date(requestedDateTime).getTime() + 60 * 60 * 1000).toISOString()
+    : `${requestedDate}T23:59:59.999Z`;
+
+  const { data: appointments, error } = await supabase
+    .from('lead_appointments')
+    .select('id, appointment_date, status, title')
+    .eq('organization_id', organizationId)
+    .gte('appointment_date', start)
+    .lte('appointment_date', end)
+    .neq('status', 'canceled')
+    .order('appointment_date', { ascending: true });
+
+  if (error) throw error;
+
   return {
     success: true,
-    available_slots: [
-      { date: new Date(Date.now() + 86400000).toISOString().split('T')[0], times: ['09:00', '10:30', '14:00', '16:00'] },
-      { date: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0], times: ['11:00', '15:30'] }
-    ],
-    message: "Horários disponíveis encontrados."
+    date: requestedDate,
+    requested_datetime: requestedDateTime || null,
+    available: requestedDateTime ? (appointments || []).length === 0 : null,
+    busy_appointments: appointments || [],
+    message: requestedDateTime
+      ? ((appointments || []).length === 0 ? 'Horário sem conflito registrado.' : 'Horário possui conflito registrado.')
+      : 'Consulta retornou compromissos já registrados para a data.'
   };
 }
 
@@ -316,7 +341,6 @@ export async function scheduleVisit(input, context) {
 
   const supabase = getSupabaseServer();
   
-  // Insert visit record
   const { data: visit, error } = await supabase
     .from('lead_appointments')
     .insert({
@@ -325,31 +349,33 @@ export async function scheduleVisit(input, context) {
       title: 'Visita Agendada via IA',
       appointment_date: finalDatetime,
       type: 'Visita',
-      status: 'Agendado',
-      property_id: property_id || null,
-      notes: input.notes || 'Agendado pela assistente virtual'
+      status: 'pending',
+      notes: [
+        input.notes || 'Agendado pela assistente virtual',
+        property_id ? `property_id=${property_id}` : null
+      ].filter(Boolean).join('\n')
     })
     .select()
     .single();
 
-  if (error) {
-    logger.warn('[scheduleVisit] events table might not exist or schema differs. Fallback to updating lead.', error);
-  }
+  if (error) throw error;
 
   // Update lead status and visit flag
-  await supabase
+  const { error: leadError } = await supabase
     .from('leads')
     .update({ 
       status: 'Visita',
-      next_visit_at: datetime
+      next_visit_at: finalDatetime
     })
     .eq('id', leadId)
     .eq('organization_id', organizationId);
 
+  if (leadError) throw leadError;
+
   return {
     success: true,
-    visit_id: visit?.id || `simulated_${Date.now()}`,
-    confirmed_datetime: datetime,
+    visit_id: visit.id,
+    confirmed_datetime: finalDatetime,
     message: "Visita agendada com sucesso!"
   };
 }

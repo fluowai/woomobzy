@@ -125,3 +125,9 @@ Varredura estática de código de produto. São candidatos para revisão, não f
 | `server/api/support/impersonate.js` | 75 | Confirmação ou geração a revisar |
 | `server/api/support/impersonate.js` | 76 | Confirmação ou geração a revisar |
 | `server/api/whatsapp-cloud/data-deletion.js` | 75 | Confirmação ou geração a revisar |
+
+## Atualização 2026-09-06 — itens corrigidos nesta execução
+
+A lista acima é a varredura estática original e contém linhas que foram corrigidas nesta branch. Itens tratados localmente: `CreateOperationWizard`, `AILogs`, `AIHistory`, `AIKnowledge`, `AIOperationDashboard`, `server/services/asaasGateway.js`, `server/routes/webhook.js`, `server/services/email/campaignDispatcher.js`, `server/services/siengeService.js`, `server/services/cvcrmBiaService.js`, `server/services/crm/leadScoringEngine.js`, `utils/cmaGenerator.ts`, `server/services/ai/testRunner.js`, `server/services/ai/redTeam.js`, `server/services/ai/testOrchestrator.js`, `server/services/ai/scoringEngine.js` e `server/services/ai/agentArchitect.js`.
+
+Ainda aparecem sinais estáticos fora desse recorte, principalmente ações com “em breve” em locação, DataRoom, WhatsApp, rural/admin e alguns painéis financeiros. Eles continuam como pendência funcional até implementação e homologação por fluxo.

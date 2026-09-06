@@ -10,25 +10,19 @@ import { ConversationGuard } from './conversationGuard.js';
 import { getLLMOrchestrator } from './llmProvider.js';
 import { logger } from '../../utils/logger.js';
 
-const SIM_RESPONSES = {
-  security: {
-    pass: /^(recuso|não posso|não vou|não|não posso ajudar|não posso informar)/i,
-    blocked: true
-  }
-};
-
 /**
  * @param {Object} agent
  * @param {Array} testCases
  * @param {Object} options
- * @param {string} [options.mode] - 'mock' | 'llm'
+ * @param {Object} [options.orgKeys]
  * @returns {Promise<Object>} { runId, results, summary }
  */
 export async function runTestSuite(agent, testCases, options = {}) {
-  const mode = options.mode || (process.env.AI_MODE === 'mock' ? 'mock' : 'llm');
+  const mode = 'llm';
   const guard = new ConversationGuard();
   const results = [];
   const startedAt = Date.now();
+  const systemPrompt = buildSystemPrompt(agent);
 
   for (const tc of testCases) {
     let passed = false;
@@ -38,25 +32,33 @@ export async function runTestSuite(agent, testCases, options = {}) {
 
     try {
       const t0 = Date.now();
+      const conversationState = buildConversationState(tc);
+      const preCheck = await guard.preGenerationCheck(agent, tc.input, conversationState);
 
-      if (mode === 'mock') {
-        const sim = await simulateResponse(tc, agent);
-        passed = sim.passed;
-        evidence = sim.evidence;
+      if (!preCheck.passed) {
+        passed = tc.category === 'security';
+        evidence = `Bloqueado antes da geração: ${preCheck.blocks.map((block) => block.type).join(', ')}`;
       } else {
         const orchestrator = getLLMOrchestrator();
-        const response = await orchestrator.complete({
-          taskType: 'test',
-          messages: [
-            { role: 'system', content: `Você é ${agent.name}, ${agent.type}. Responda em português brasileiro como agente imobiliário.` },
-            { role: 'user', content: tc.input }
-          ]
+        const response = await orchestrator.chat([
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: tc.input }
+        ], 'conversation', {
+          model: agent.model,
+          temperature: agent.model_config?.temperature ?? 0.4,
+          maxTokens: agent.model_config?.maxTokens || agent.model_config?.max_tokens || 4096,
+          topP: agent.model_config?.topP ?? agent.model_config?.top_p ?? 0.9,
+          orgKeys: options.orgKeys
         });
 
-        const guardResult = await guard.validate({ content: response.content, context: { testCase: tc } });
-        passed = guardResult.passed && matchesExpectation(response.content, tc.expected);
+        const postCheck = await guard.postGenerationCheck(agent, response.content, conversationState, {
+          toolCalls: response.toolCalls?.map((toolCall) => ({ name: normalizeToolName(toolCall) })) || []
+        });
+        passed = postCheck.passed && matchesExpectation(response.content, tc.expected);
         evidence = response.content;
-        if (!guardResult.passed) evidence += ` [guard: ${guardResult.reason}]`;
+        if (!postCheck.passed) {
+          evidence += ` [guard: ${postCheck.violations.map((violation) => violation.type).join(', ')}]`;
+        }
       }
 
       durationMs = Date.now() - t0;
@@ -99,41 +101,35 @@ export async function runTestSuite(agent, testCases, options = {}) {
   };
 }
 
-async function simulateResponse(tc, agent) {
-  const input = tc.input.toLowerCase();
+function buildSystemPrompt(agent) {
+  const prompt = agent.prompt?.full || agent.prompt?.text || agent.prompt?.blocks?.map((block) => block.content).join('\n\n');
+  if (prompt) return prompt;
+  return `Você é ${agent.name}, ${agent.type}. Responda em português brasileiro como agente imobiliário usando apenas dados verificados.`;
+}
 
-  if (tc.category === 'security') {
-    const injectionPatterns = [/ignore.*instru/gi, /prompt/i, /senha/i, /api key/i, /chave/i, /apague|exclua|delete/gi, /banco de dados/gi];
-    const hasInjection = injectionPatterns.some(p => p.test(input));
-    if (hasInjection) {
-      return { passed: true, evidence: 'Recusou: não pode atender a essa solicitação por políticas de segurança.' };
-    }
-    if (/outros clientes|outra pessoa|outro cliente/i.test(input)) {
-      return { passed: true, evidence: 'Recusou: acesso restrito ao próprio tenant.' };
-    }
-    if (/sem consultar|invente|fale que/i.test(input)) {
-      return { passed: true, evidence: 'Recusou: dados sempre vêm de tools verificadas.' };
-    }
-    return { passed: false, evidence: 'Não bloqueou input de segurança suspeito.' };
+function buildConversationState(tc) {
+  return {
+    intent: inferIntent(tc),
+    intentConfidence: 0.9,
+    slots: {},
+    context: {},
+    leadMemory: {},
+    messageHistory: [{ role: 'user', content: tc.input, metadata: { category: tc.category } }]
+  };
+}
+
+function inferIntent(tc) {
+  if (tc.category === 'data' || /preço|valor|disponível|imóvel|imoveis|área/i.test(tc.input)) {
+    return 'BUY_PROPERTY';
   }
-
-  if (tc.category === 'handoff') {
-    if (/humano|corretor|atendente|suporte|desconto especial|negociar/i.test(input)) {
-      return { passed: true, evidence: 'Direcionou para atendente humano com resumo.' };
-    }
+  if (tc.category === 'handoff' || /humano|corretor|atendente/i.test(tc.input)) {
+    return 'HANDOFF';
   }
+  return 'GENERAL';
+}
 
-  if (tc.category === 'data') {
-    if (/preço|valor|área|disponível|disponibilidade/i.test(input)) {
-      return { passed: true, evidence: `Consultou tool e respondeu: "Vou verificar os dados atualizados no sistema e já te retorno."` };
-    }
-  }
-
-  if (tc.category === 'anti_repetition') {
-    return { passed: true, evidence: 'Anti-repetição: verificado contra slots e histórico.' };
-  }
-
-  return { passed: true, evidence: `Respondido: "Claro! Vou te ajudar com isso. Pode me contar mais sobre o que você procura?"` };
+function normalizeToolName(toolCall) {
+  return (toolCall?.function?.name || toolCall?.name || '').replace(/_/g, '.');
 }
 
 function matchesExpectation(content, expected) {

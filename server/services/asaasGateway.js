@@ -1,62 +1,170 @@
-import crypto from 'crypto';
+import { getSupabaseServer } from '../lib/supabase-server.js';
+import { logger } from '../utils/logger.js';
+
+const STATUS_BY_EVENT = {
+  PAYMENT_RECEIVED: 'pago',
+  PAYMENT_CONFIRMED: 'pago',
+  PAYMENT_OVERDUE: 'vencido',
+  PAYMENT_DELETED: 'cancelado',
+  PAYMENT_REFUNDED: 'cancelado'
+};
 
 class AsaasGateway {
   constructor() {
-    this.apiKey = process.env.ASAAS_API_KEY || 'mock_key';
-    this.apiUrl =
-      process.env.ASAAS_API_URL || 'https://sandbox.asaas.com/api/v3';
+    this.apiUrl = process.env.ASAAS_API_URL || (
+      process.env.ASAAS_ENV === 'production'
+        ? 'https://api.asaas.com/v3'
+        : 'https://sandbox.asaas.com/api/v3'
+    );
+  }
+
+  getHeaders() {
+    const apiKey = process.env.ASAAS_API_KEY?.trim();
+    if (!apiKey) {
+      throw new Error('ASAAS_API_KEY nao configurada');
+    }
+
+    return {
+      'Content-Type': 'application/json',
+      access_token: apiKey
+    };
   }
 
   async createCharge(customerInfo, billingInfo) {
-    console.log('[ASAAS] Creating charge for', customerInfo?.name);
-
-    const fakeId = 'pay_' + crypto.randomBytes(6).toString('hex');
-    return {
-      id: fakeId,
-      status: 'PENDING',
-      invoiceUrl: `https://sandbox.asaas.com/i/${fakeId}`,
-      pix: {
-        payload: '00020126580014br.gov.bcb.pix...',
-        encodedImage: 'base64_image_data_here',
-      },
-      bankSlip: {
-        identificationField:
-          '34191.09008 00000.000000 00000.000000 0 00000000000000',
-        barCode: '341910000000000000009000000000000000000000000',
-      },
+    const customerId = customerInfo?.id || await this.getOrCreateCustomer(customerInfo);
+    const payload = {
+      customer: customerId,
+      billingType: billingInfo?.billingType || 'UNDEFINED',
+      value: Number(billingInfo?.value ?? billingInfo?.amount),
+      dueDate: billingInfo?.dueDate,
+      description: billingInfo?.description,
+      externalReference: billingInfo?.externalReference
     };
+
+    if (!payload.value || !payload.dueDate || !payload.description) {
+      throw new Error('value, dueDate e description sao obrigatorios para criar cobranca Asaas');
+    }
+
+    if (billingInfo?.split) {
+      payload.split = billingInfo.split;
+    }
+
+    const data = await this.request('/payments', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    return {
+      id: data.id,
+      status: data.status,
+      invoiceUrl: data.invoiceUrl,
+      bankSlipUrl: data.bankSlipUrl,
+      pixCopyPaste: data.pixCopyPaste || null,
+      raw: data
+    };
+  }
+
+  async getOrCreateCustomer(customerInfo = {}) {
+    if (customerInfo.id) return customerInfo.id;
+
+    const cpfCnpj = customerInfo.cpfCnpj || customerInfo.cpf || customerInfo.cnpj;
+    if (cpfCnpj) {
+      const search = await this.request(`/customers?cpfCnpj=${encodeURIComponent(cpfCnpj)}`);
+      const existing = search?.data?.[0];
+      if (existing?.id) return existing.id;
+    }
+
+    const data = await this.request('/customers', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: customerInfo.name,
+        cpfCnpj: cpfCnpj || undefined,
+        email: customerInfo.email || undefined,
+        mobilePhone: customerInfo.phone || customerInfo.mobilePhone || undefined
+      })
+    });
+
+    return data.id;
   }
 
   async handleWebhook(payload) {
-    if (payload.event === 'PAYMENT_RECEIVED') {
-      const paymentId = payload.payment.id;
-      const amountPaid = payload.payment.value;
-      console.log(`[ASAAS] Payment ${paymentId} received! Processing Split...`);
-
-      return this.processSplitPayment(paymentId, amountPaid);
+    const event = payload?.event;
+    const payment = payload?.payment;
+    if (!event || !payment?.id) {
+      return { success: true, action: 'IGNORED', reason: 'UNSUPPORTED_PAYLOAD' };
     }
-    return { success: true, action: 'IGNORED' };
-  }
 
-  async processSplitPayment(paymentId, amount) {
-    // Imobiliária retém 10%
-    const adminFeePercentage = 0.1;
-    const adminFee = amount * adminFeePercentage;
-    const ownerTransfer = amount - adminFee;
+    const status = STATUS_BY_EVENT[event];
+    if (!status) {
+      return { success: true, action: 'IGNORED', event };
+    }
 
-    console.log(`[SPLIT SYSTEM] Fatura de ${amount} Paga.`);
-    console.log(`[SPLIT SYSTEM] Taxa Imobiliária (10%): ${adminFee}`);
-    console.log(
-      `[SPLIT SYSTEM] Gerando "Contas a Pagar" pro proprietário: ${ownerTransfer}`
-    );
+    const supabase = getSupabaseServer();
+    const updates = {
+      status
+    };
+
+    if (status === 'pago') {
+      updates.payment_date = payment.clientPaymentDate || payment.paymentDate || new Date().toISOString().slice(0, 10);
+      updates.paid_amount = payment.netValue ?? payment.value ?? null;
+      updates.payment_method = 'asaas';
+    }
+
+    const invoiceUpdate = await supabase
+      .from('invoices')
+      .update(updates)
+      .eq('gateway_id', payment.id)
+      .select('id');
+
+    if (invoiceUpdate.error) throw invoiceUpdate.error;
+
+    const billingUpdates = {
+      status,
+      observation: `Asaas ${event}: ${payment.id}`
+    };
+
+    if (status === 'pago') {
+      billingUpdates.payment_date = updates.payment_date;
+    }
+
+    const billingUpdate = await supabase
+      .from('billing')
+      .update(billingUpdates)
+      .or(`nossonumero.eq.${payment.id},barcode.eq.${payment.id}`)
+      .select('id');
+
+    if (billingUpdate.error) {
+      logger.warn('[AsaasGateway] Could not update legacy billing table', { error: billingUpdate.error.message });
+    }
 
     return {
       success: true,
-      action: 'SPLIT_PROCESSED',
-      adminFee,
-      ownerTransfer,
+      action: 'PAYMENT_STATUS_SYNCED',
+      event,
+      paymentId: payment.id,
+      status,
+      invoicesUpdated: invoiceUpdate.data?.length || 0,
+      billingsUpdated: billingUpdate.data?.length || 0
     };
+  }
+
+  async request(path, options = {}) {
+    const response = await fetch(`${this.apiUrl}${path}`, {
+      ...options,
+      headers: {
+        ...this.getHeaders(),
+        ...(options.headers || {})
+      }
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(`Erro Asaas ${response.status}: ${JSON.stringify(data)}`);
+    }
+
+    return data;
   }
 }
 
+export { AsaasGateway, STATUS_BY_EVENT };
 export default new AsaasGateway();

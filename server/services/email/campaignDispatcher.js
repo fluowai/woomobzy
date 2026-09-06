@@ -2,72 +2,90 @@ import { mailAdapter } from './wootechMailAdapter.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { eventBus, EVENTS } from '../../lib/eventBus.js';
 
+function normalizeLeadRow(row) {
+  const lead = row.leads || row;
+  return {
+    id: row.lead_id || lead.id,
+    email: row.email || lead.email,
+    name: lead.name || row.name || null
+  };
+}
+
 /**
  * Wootech Mail - Campaign Dispatcher
- * Manages the generation, segmentation, and batch dispatching of marketing emails
- * via the Wootech Mail Adapter (BillionMail), keeping logic decoupled from the Imobzy CRM.
+ * Dispara campanhas somente a partir de campanha, remetente, template e público
+ * persistidos no banco. Erros de schema, credencial ou provedor bloqueiam o
+ * envio em vez de cair em dados fictícios.
  */
 class CampaignDispatcher {
-  /**
-   * Dispatches a specific marketing campaign.
-   */
   async dispatchCampaign(tenantId, campaignId) {
     console.log(`[WootechMail] Dispatching campaign ${campaignId} for tenant ${tenantId}`);
-    
-    // Check feature flag
+
     const supabase = getSupabaseServer();
-    const { data: flags } = await supabase
+    const { data: flags, error: flagsError } = await supabase
       .from('feature_flags')
       .select('email_marketing_enabled')
       .eq('organization_id', tenantId)
       .single();
 
-    if (!flags?.email_marketing_enabled) {
-      throw new Error('Email marketing is disabled for this tenant.');
+    if (flagsError) {
+      throw flagsError;
     }
 
-    // 1. Fetch Campaign Data
-    // Note: 'mail_campaigns' is a theoretical table we will create in the next migration batch
-    // but the stub prepares for it.
-    /*
-    const { data: campaign } = await supabase
+    if (!flags?.email_marketing_enabled) {
+      throw new Error('Email marketing está desativado para este tenant.');
+    }
+
+    const { data: campaign, error: campaignError } = await supabase
       .from('mail_campaigns')
-      .select('*, mail_senders(name, email), mail_templates(html)')
+      .select('id, subject, status, audience_filter, sender:mail_senders(name, email), template:mail_templates(html)')
       .eq('id', campaignId)
+      .eq('organization_id', tenantId)
       .single();
-    */
-    
-    // Mock Campaign for Phase 4 implementation
-    const campaign = {
-      id: campaignId,
-      subject: 'Novos Lançamentos em sua região!',
-      mail_senders: { name: 'João Corretor', email: 'joao@crm.alpha.com.br' },
-      mail_templates: { html: '<html><body>Veja estes imóveis.</body></html>' }
-    };
 
-    // 2. Fetch Audience (Segment)
-    // We query leads based on the segment rules (e.g. city = 'Itajaí', score > 50)
-    // For now, we mock an audience.
-    const audience = [
-      { id: 'lead-1', email: 'cliente@exemplo.com' }
-    ];
+    if (campaignError || !campaign) {
+      throw new Error(`Campanha de email não encontrada: ${campaignError?.message || campaignId}`);
+    }
 
-    console.log(`[WootechMail] Found ${audience.length} recipients in segment.`);
+    if (!['scheduled', 'ready', 'draft'].includes(campaign.status)) {
+      throw new Error(`Campanha ${campaignId} não está pronta para envio: ${campaign.status}`);
+    }
 
-    // 3. Dispatch in Batches
+    if (!campaign.sender?.email || !campaign.template?.html || !campaign.subject) {
+      throw new Error('Campanha sem remetente, assunto ou template HTML persistido.');
+    }
+
+    const audience = await this.loadAudience(supabase, tenantId, campaignId, campaign.audience_filter || {});
+
+    if (audience.length === 0) {
+      await this.markCampaign(supabase, campaignId, tenantId, {
+        status: 'empty',
+        last_error: 'Nenhum lead com email encontrado para o público da campanha.',
+        sent_at: new Date().toISOString()
+      });
+      return { success: true, dispatched: 0, skipped: 0, failed: 0 };
+    }
+
+    await this.markCampaign(supabase, campaignId, tenantId, {
+      status: 'sending',
+      started_at: new Date().toISOString(),
+      last_error: null
+    });
+
+    let dispatched = 0;
+    let failed = 0;
+
     for (const lead of audience) {
       try {
-        // We use the Mail Adapter to send the email, ensuring we don't 
-        // tightly couple BillionMail endpoints to this dispatcher.
         const result = await mailAdapter.sendTransactionalEmail(tenantId, {
           to: lead.email,
           subject: campaign.subject,
-          html: campaign.mail_templates.html,
-          from_name: campaign.mail_senders.name,
-          from_email: campaign.mail_senders.email
+          html: campaign.template.html,
+          from_name: campaign.sender.name,
+          from_email: campaign.sender.email
         });
 
-        // Publish to Event Bus
+        dispatched += 1;
         eventBus.publish(EVENTS.EMAIL.SENT, {
           tenant_id: tenantId,
           campaign_id: campaign.id,
@@ -76,17 +94,101 @@ class CampaignDispatcher {
           type: 'marketing'
         });
 
+        await supabase
+          .from('mail_campaign_recipients')
+          .upsert({
+            organization_id: tenantId,
+            campaign_id: campaign.id,
+            lead_id: lead.id,
+            email: lead.email,
+            status: 'sent',
+            provider_message_id: result.id,
+            sent_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'campaign_id,lead_id' });
       } catch (err) {
-        console.error(`[WootechMail] Failed to send to ${lead.email}:`, err.message);
+        failed += 1;
+        await supabase
+          .from('mail_campaign_recipients')
+          .upsert({
+            organization_id: tenantId,
+            campaign_id: campaign.id,
+            lead_id: lead.id,
+            email: lead.email,
+            status: 'failed',
+            last_error: err.message,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'campaign_id,lead_id' });
       }
     }
 
-    // Update Campaign Status
-    /*
-    await supabase.from('mail_campaigns').update({ status: 'completed' }).eq('id', campaignId);
-    */
+    await this.markCampaign(supabase, campaignId, tenantId, {
+      status: failed > 0 ? 'partial' : 'completed',
+      sent_count: dispatched,
+      failed_count: failed,
+      sent_at: new Date().toISOString(),
+      last_error: failed > 0 ? `${failed} destinatário(s) falharam.` : null
+    });
 
-    return { success: true, dispatched: audience.length };
+    return { success: failed === 0, dispatched, failed };
+  }
+
+  async loadAudience(supabase, tenantId, campaignId, filter) {
+    const { data: explicitRecipients, error: recipientError } = await supabase
+      .from('mail_campaign_recipients')
+      .select('lead_id, email, leads(id, name, email)')
+      .eq('campaign_id', campaignId)
+      .eq('organization_id', tenantId);
+
+    if (recipientError) {
+      throw recipientError;
+    }
+
+    const explicit = (explicitRecipients || [])
+      .map(normalizeLeadRow)
+      .filter((lead) => lead.id && lead.email);
+
+    if (explicit.length > 0) {
+      return explicit;
+    }
+
+    let query = supabase
+      .from('leads')
+      .select('id, name, email')
+      .eq('organization_id', tenantId)
+      .not('email', 'is', null);
+
+    if (Array.isArray(filter.statuses) && filter.statuses.length > 0) {
+      query = query.in('status', filter.statuses);
+    }
+
+    if (Number.isFinite(Number(filter.minLeadScore))) {
+      query = query.gte('lead_score', Number(filter.minLeadScore));
+    }
+
+    if (filter.source) {
+      query = query.eq('source', filter.source);
+    }
+
+    const { data: leads, error: leadsError } = await query.limit(Number(filter.limit || 500));
+
+    if (leadsError) {
+      throw leadsError;
+    }
+
+    return (leads || []).map(normalizeLeadRow).filter((lead) => lead.id && lead.email);
+  }
+
+  async markCampaign(supabase, campaignId, tenantId, patch) {
+    const { error } = await supabase
+      .from('mail_campaigns')
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq('id', campaignId)
+      .eq('organization_id', tenantId);
+
+    if (error) {
+      throw error;
+    }
   }
 }
 

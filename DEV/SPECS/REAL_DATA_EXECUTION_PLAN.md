@@ -1,6 +1,6 @@
 # Plano de execução — WooControl ao cliente final
 
-Data: 2026-09-06. Status: PARCIAL, com correções locais e homologação pendente.
+Data: 2026-09-06. Status: PARCIAL VALIDADO LOCALMENTE, com P0/P1 críticos de IA/cobrança/integrações convertidos para dado real e homologação externa pendente.
 
 ## Escopo e diagnóstico
 
@@ -11,14 +11,14 @@ O inventário gerado a partir de `App.tsx` contém 184 rotas: WooControl 16, Meg
 | P0 | `server/routes/woo-control.js`, autorização global | Revendas eram aceitas como administradores globais, sem escopo por organização | Corrigido localmente com teste negativo; homologação pendente |
 | P1 | `components/WooControlGuard.tsx`, `src/lib/panelNavigation.ts` | Dono em suporte e organização revendedora precisavam de regras consistentes | Corrigido localmente |
 | P1 | `server/routes/woo-control.js`, summary/revenue | MRR consultava plan_id não selecionado; falhas viravam indicadores zero; estados PAID/PAGO divergiam | Corrigido localmente; ainda revisar definição de MRR versus recebimentos e paginação acima de 1.000 registros |
-| P1 | `views/CreateOperationWizard.tsx:85`, `:206`, `:218`, `:562` | Notas fixas, testes apenas marcados concluídos, publicação com mínimo zero, canais fictícios | Pendente: avaliação real, persistência de versão, seleção de instâncias e gravação de regras |
-| P1 | `server/routes/aiOperations.js:523` | Publicação trata relação de versões como objeto, não seleciona IDs atualizados, ignora erros de escrita e pode publicar zero agentes | Pendente: gate por versão ativa, tenant em todas as consultas e transação de publicação |
-| P1 | `server/api/ai/agents.routes.js:1302`, `server/services/ai/testOrchestrator.js` | Import de pipeline aponta para diretório incorreto; pipeline faz fallback mock; configuração de integração consultada sem tenant | Pendente: corrigir caminho, escopo, usar prompt persistido, falhar sem provedor e persistir evidência real |
-| P1 | `server/services/ai/testRunner.js`, `redTeam.js`, `scoringEngine.js` | Avaliação genérica não prova ferramentas/memória reais; erro de provedor é contado como bloqueio no red team; categorias divergentes | Pendente: execução real de ferramentas, evidência e rejeição de falhas de infraestrutura |
-| P1 | `views/AILogs.tsx`, `AIHistory.tsx`, `AIKnowledge.tsx`, `AIOperationDashboard.tsx` | Eventos, conteúdo e indicadores demonstrativos; alguns botões sem efeito | Pendente: API com tenant, paginação, filtros, exportação e estados vazios/erro |
-| P1 | `server/services/asaasGateway.js`, `server/routes/webhook.js` | Cobrança, PIX e split fictícios; webhook de simulação montado no servidor | Pendente: integração oficial, verificação de webhook, idempotência, conciliação e remoção da simulação pública |
-| P1 | `server/services/email/campaignDispatcher.js` | Campanha/remetente/destinatário fixos | Pendente: buscar campanha e público reais, consentimento, fila, idempotência e entrega comprovada |
-| P2 | `server/services/siengeService.js` | Conexão sempre positiva e transferências inventadas; nenhum consumidor localizado na busca | Pendente: definir ativação/contrato da integração, implementar API e não anunciar conexão sem teste |
+| P1 | `views/CreateOperationWizard.tsx` | Notas fixas, testes apenas marcados concluídos, publicação com mínimo zero, canais fictícios | Corrigido localmente: usa versões persistidas, teste real, mínimo 90, instâncias reais e regras persistidas; homologação pendente |
+| P1 | `server/routes/aiOperations.js` | Publicação tratava relação de versões como objeto, ignorava erros de escrita e podia publicar zero agentes | Corrigido localmente: versão ativa explícita, gate por evidência, erro em zero agentes e escrita verificada |
+| P1 | `server/api/ai/agents.routes.js`, `server/services/ai/testOrchestrator.js` | Import de pipeline, fallback mock e integração sem tenant | Corrigido localmente: pipeline real por `agentVersionId`, tenant keys, persistência de `ai_test_runs`/score/audit e falha sem provedor |
+| P1 | `server/services/ai/testRunner.js`, `redTeam.js`, `scoringEngine.js` | Avaliação genérica, erro de provedor contado como bloqueio e categorias divergentes | Corrigido localmente: execução LLM real, prompt persistido, erros de infraestrutura bloqueiam publicação e categorias normalizadas |
+| P1 | `views/AILogs.tsx`, `AIHistory.tsx`, `AIKnowledge.tsx`, `AIOperationDashboard.tsx` | Eventos, conteúdo e indicadores demonstrativos; alguns botões sem efeito | Corrigido localmente: telas consultam logs, histórico, conhecimento, métricas, testes e canais reais; mostram vazio/erro quando não há dado |
+| P1 | `server/services/asaasGateway.js`, `server/routes/webhook.js`, `server/api/locacao/invoice.routes.js` | Cobrança, PIX e split fictícios; webhook de simulação público | Corrigido localmente: gateway exige chave real, usa cliente/pagamento Asaas, valida webhook por token e remove simulação pública |
+| P1 | `server/services/email/campaignDispatcher.js` | Campanha/remetente/destinatário fixos | Corrigido localmente: campanha, remetente, template e público vêm do banco; migration cria tabelas necessárias; credencial/provedor falham explicitamente |
+| P2 | `server/services/siengeService.js` | Conexão sempre positiva e transferências inventadas | Corrigido localmente: serviço exige URL/credenciais e chama endpoint real configurável; homologação Sienge pendente |
 | P2 | `src/components/lease`, `views/RentalsManagement.tsx`, `LegalContracts.tsx` | Edição, upload, download, exportação e navegação com ações “em breve” | Pendente: persistência, storage, assinatura e fluxo financeiro completo |
 | P2 | `views/rural/CadastroTecnico.tsx`, `DueDiligence.tsx`, `views/DataRoom.tsx` | Exclusão, upload e PDF sem implementação em ações específicas | Pendente: vincular APIs existentes ou criar endpoints com isolamento e retorno real |
 | P2 | `views/PropertyManagement.tsx`, `EmailCenter.tsx`, `views/admin` | Filtros, encaminhamento, atendimento e atalhos com mensagens sem efeito | Pendente: implementar cada ação e testar resultado, não apenas toast |
@@ -48,4 +48,4 @@ Referências de linha dos itens não editados correspondem ao checkout inspecion
 
 ## Verificação e bloqueios
 
-Consultar `DEV/VERIFY.md` para resultados efetivamente executados. No ambiente atual faltam todas as credenciais IMOBZY_E2E_* dos seis perfis. A pergunta sobre homologação foi enviada ao usuário. Não há evidência suficiente para afirmar 100% funcional ou zero mocks: permanecem os itens acima e os 121 sinais estáticos para revisão.
+Consultar `DEV/VERIFY.md` para resultados efetivamente executados. No ambiente atual faltam todas as credenciais IMOBZY_E2E_* dos seis perfis. A pergunta sobre homologação foi enviada ao usuário. Não há evidência suficiente para afirmar 100% funcional do sistema inteiro: P0/P1 críticos de IA/cobrança/integrações foram corrigidos localmente, mas permanecem ações “em breve” e integrações não homologadas nos módulos listados, além da necessidade de aplicar migrations novas em ambiente controlado.

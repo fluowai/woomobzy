@@ -8,6 +8,7 @@ import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
 import { isValidUUID } from '../../lib/shared-utils.js';
+import { isAsaasWebhookAuthorized } from '../../lib/asaas-webhook-auth.js';
 import { AsaasService } from '../../services/asaasService.js';
 
 const router = Router();
@@ -165,10 +166,11 @@ router.post('/generate', verifyAuth, requireTenant, async (req, res) => {
             '[InvoiceRoutes] Erro ao criar fatura no Asaas:',
             err.message
           );
+          throw err;
         }
       }
 
-      const { data: invoice } = await supabase
+      const { data: invoice, error: invoiceError } = await supabase
         .from('invoices')
         .insert({
           lease_id,
@@ -191,6 +193,7 @@ router.post('/generate', verifyAuth, requireTenant, async (req, res) => {
         .select()
         .single();
 
+      if (invoiceError) throw invoiceError;
       if (invoice) generated.push(invoice);
     }
 
@@ -246,8 +249,9 @@ router.put('/:id/pay', verifyAuth, requireTenant, async (req, res) => {
  */
 router.post('/webhook/asaas', async (req, res) => {
   try {
-    // Validação de token de segurança opcional
-    // const { 'asaas-access-token': asaasToken } = req.headers;
+    if (!isAsaasWebhookAuthorized(req)) {
+      return res.status(401).json({ error: 'Unauthorized webhook' });
+    }
 
     const payload = req.body;
     const updateData = await AsaasService.handleWebhook(payload);
@@ -262,10 +266,12 @@ router.post('/webhook/asaas', async (req, res) => {
         updates.payment_method = 'asaas';
       }
 
-      await supabase
+      const { error: updateError } = await supabase
         .from('invoices')
         .update(updates)
         .eq('gateway_id', updateData.asaasChargeId);
+
+      if (updateError) throw updateError;
     }
 
     res.status(200).json({ received: true });

@@ -17,6 +17,7 @@ import { getPolicyEngine } from '../../services/ai/toolRegistry.js';
 import { getConversationStateManager } from '../../services/ai/conversationStateManager.js';
 import ConversationGuard from '../../services/ai/conversationGuard.js';
 import { getLLMOrchestrator } from '../../services/ai/llmProvider.js';
+import { runAgentVersionTestPipeline } from '../../services/ai/testOrchestrator.js';
 import { logger } from '../../utils/logger.js';
 import {
   isMissingRelationError,
@@ -1141,7 +1142,7 @@ router.post('/agents/conversations/:id/resume', verifyAuth, requireTenant, async
 
 router.post('/test/run', verifyAuth, requireTenant, async (req, res) => {
   try {
-    const { agentVersionId, testCaseIds, runRedTeam = false } = req.body;
+    const { agentVersionId, testCaseIds, runRedTeam = true, minScore = 90 } = req.body;
 
     if (!agentVersionId) {
       return res.status(400).json({
@@ -1151,41 +1152,18 @@ router.post('/test/run', verifyAuth, requireTenant, async (req, res) => {
       });
     }
 
-    // Verify agent version belongs to org
-    const supabase = getSupabaseServer();
-    const { data: version } = await supabase
-      .from('ai_agent_versions')
-      .select('agent_id')
-      .eq('id', agentVersionId)
-      .single();
+    const report = await runAgentVersionTestPipeline(agentVersionId, {
+      organizationId: req.orgId,
+      testCaseIds,
+      runRedTeam,
+      minScore
+    });
 
-    if (!version) {
-      return res.status(404).json({
-        success: false,
-        error: 'Versao do agente nao encontrada',
-        code: 'AI_VERSION_NOT_FOUND',
-      });
-    }
-
-    const { data: agent } = await supabase
-      .from('ai_agents')
-      .select('organization_id')
-      .eq('id', version.agent_id)
-      .single();
-
-    if (agent?.organization_id !== req.orgId) {
-      return res.status(403).json({
-        success: false,
-        error: 'Acesso negado: versao pertence a outra organizacao',
-        code: 'AI_TEST_PERMISSION_DENIED',
-      });
-    }
-
-    // This would trigger the test runner service
     res.json({
       success: true,
-      message: 'Test run initiated',
-      runId: `test_${Date.now()}`
+      message: 'Testes executados e persistidos',
+      runId: report.persistedRunId || report.runId,
+      report
     });
   } catch (error) {
     handleRouteError(res, error, 'TEST_RUN');
@@ -1236,7 +1214,7 @@ router.get('/test/results/:runId', verifyAuth, requireTenant, async (req, res) =
 
 router.post('/test/red-team', verifyAuth, requireTenant, async (req, res) => {
   try {
-    const { agentVersionId } = req.body;
+    const { agentVersionId, minScore = 90 } = req.body;
 
     if (!agentVersionId) {
       return res.status(400).json({
@@ -1246,41 +1224,17 @@ router.post('/test/red-team', verifyAuth, requireTenant, async (req, res) => {
       });
     }
 
-    // Verify agent version belongs to org
-    const supabase = getSupabaseServer();
-    const { data: version } = await supabase
-      .from('ai_agent_versions')
-      .select('agent_id')
-      .eq('id', agentVersionId)
-      .single();
+    const report = await runAgentVersionTestPipeline(agentVersionId, {
+      organizationId: req.orgId,
+      runRedTeam: true,
+      minScore
+    });
 
-    if (!version) {
-      return res.status(404).json({
-        success: false,
-        error: 'Versao do agente nao encontrada',
-        code: 'AI_VERSION_NOT_FOUND',
-      });
-    }
-
-    const { data: agent } = await supabase
-      .from('ai_agents')
-      .select('organization_id')
-      .eq('id', version.agent_id)
-      .single();
-
-    if (agent?.organization_id !== req.orgId) {
-      return res.status(403).json({
-        success: false,
-        error: 'Acesso negado',
-        code: 'AI_REDTEAM_PERMISSION_DENIED',
-      });
-    }
-
-    // This would trigger the red team service
     res.json({
       success: true,
-      message: 'Red team assessment initiated',
-      assessmentId: `redteam_${Date.now()}`
+      message: 'Red team executado e persistido',
+      assessmentId: report.redTeam.runId || report.persistedRunId,
+      report
     });
   } catch (error) {
     handleRouteError(res, error, 'REDTEAM');
@@ -1289,19 +1243,20 @@ router.post('/test/red-team', verifyAuth, requireTenant, async (req, res) => {
 
 router.post('/agents/test/full', verifyAuth, requireTenant, async (req, res) => {
   try {
-    const { agent } = req.body;
+    const { agentVersionId, minScore = 90 } = req.body;
 
-    if (!agent || !agent.name) {
+    if (!agentVersionId) {
       return res.status(400).json({
         success: false,
-        error: 'agent com nome e obrigatorio',
-        code: 'AI_FULLTEST_AGENT_REQUIRED',
+        error: 'agentVersionId e obrigatorio',
+        code: 'AI_FULLTEST_AGENT_VERSION_REQUIRED',
       });
     }
 
-    const { runFullTestPipeline } = await import('../services/ai/testOrchestrator.js');
-    const report = await runFullTestPipeline(agent, {
-      mode: req.query.mode || process.env.AI_MODE
+    const report = await runAgentVersionTestPipeline(agentVersionId, {
+      organizationId: req.orgId,
+      runRedTeam: true,
+      minScore
     });
 
     res.json({ success: true, report });

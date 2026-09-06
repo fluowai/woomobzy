@@ -6,6 +6,7 @@ import {
   getSignatureWebhookSecret,
 } from '../api/locacao/signature.routes.js';
 import { isDebugAccessAllowed } from '../routes/internal.js';
+import { isAsaasWebhookAuthorized } from '../lib/asaas-webhook-auth.js';
 
 const envKeys = [
   'DOCUMENT_WEBHOOK_SECRET',
@@ -13,6 +14,7 @@ const envKeys = [
   'CLICKSIGN_WEBHOOK_SECRET',
   'ZAPSIGN_WEBHOOK_SECRET',
   'INTERNAL_AUTH_DEBUG_TOKEN',
+  'ASAAS_WEBHOOK_TOKEN',
   'NODE_ENV',
 ];
 
@@ -98,6 +100,33 @@ describe('webhook security helpers', () => {
         } as never,
         'any-token'
       )
+    ).toBe(false);
+  });
+
+  it('requires the Asaas webhook token in production', () => {
+    process.env.NODE_ENV = 'production';
+    process.env.ASAAS_WEBHOOK_TOKEN = 'asaas-secret';
+
+    expect(
+      isAsaasWebhookAuthorized({
+        headers: { 'asaas-access-token': 'wrong' },
+      } as never)
+    ).toBe(false);
+
+    expect(
+      isAsaasWebhookAuthorized({
+        headers: { 'asaas-access-token': 'asaas-secret' },
+      } as never)
+    ).toBe(true);
+  });
+
+  it('does not accept unsigned Asaas webhooks in production without a configured token', () => {
+    process.env.NODE_ENV = 'production';
+
+    expect(
+      isAsaasWebhookAuthorized({
+        headers: {},
+      } as never)
     ).toBe(false);
   });
 });

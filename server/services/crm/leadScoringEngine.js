@@ -35,30 +35,38 @@ class LeadScoringEngine {
 
   async incrementScore(tenantId, leadId, points) {
     console.log(`[LeadScoring] Incrementing score for lead ${leadId} by ${points} points.`);
-    
-    /* 
+
     const supabase = getSupabaseServer();
-    
-    // In production, we'd do an atomic increment via an RPC or query:
-    const { data: updatedLead } = await supabase
-      .rpc('increment_lead_score', { p_lead_id: leadId, p_points: points });
+
+    const { data: lead, error: loadError } = await supabase
+      .from('leads')
+      .select('id, lead_score')
+      .eq('id', leadId)
+      .eq('organization_id', tenantId)
+      .single();
+
+    if (loadError || !lead) {
+      throw new Error(`Lead não encontrado para scoring: ${leadId}`);
+    }
+
+    const oldScore = Number(lead.lead_score || 0);
+    const newScore = Math.max(0, Math.min(100, oldScore + Number(points || 0)));
+
+    const { error: updateError } = await supabase
+      .from('leads')
+      .update({ lead_score: newScore })
+      .eq('id', leadId)
+      .eq('organization_id', tenantId);
+
+    if (updateError) {
+      throw updateError;
+    }
 
     eventBus.publish(EVENTS.LEAD.SCORE_CHANGED, {
       tenant_id: tenantId,
       lead_id: leadId,
-      old_score: updatedLead.old_score,
-      new_score: updatedLead.new_score
-    });
-    */
-
-    // Simulate for Phase 6
-    const simulatedNewScore = 55; // Imagine old was 50, points = 5
-    
-    eventBus.publish(EVENTS.LEAD.SCORE_CHANGED, {
-      tenant_id: tenantId,
-      lead_id: leadId,
-      old_score: 50,
-      new_score: simulatedNewScore
+      old_score: oldScore,
+      new_score: newScore
     });
   }
 }

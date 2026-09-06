@@ -4,21 +4,8 @@ import crypto from 'crypto';
 
 const router = express.Router();
 
-// For production, these keys should come from environment variables.
-// Generating temporary keys if none are provided for demo purposes.
-let privateKey, publicKey;
-try {
-  if (process.env.LICENSE_PRIVATE_KEY && process.env.LICENSE_PUBLIC_KEY) {
-    privateKey = process.env.LICENSE_PRIVATE_KEY;
-    publicKey = process.env.LICENSE_PUBLIC_KEY;
-  } else {
-    const keyPair = crypto.generateKeyPairSync('ed25519');
-    privateKey = keyPair.privateKey;
-    publicKey = keyPair.publicKey;
-  }
-} catch (e) {
-  console.warn("Could not generate Ed25519 keys, fallback to none.");
-}
+const privateKey = process.env.LICENSE_PRIVATE_KEY || null;
+const publicKey = process.env.LICENSE_PUBLIC_KEY || null;
 
 /**
  * POST /api/licensing/heartbeat
@@ -30,6 +17,13 @@ router.post('/heartbeat', async (req, res) => {
 
     if (!license_id || !instance_id) {
       return res.status(400).json({ error: 'Missing license_id or instance_id' });
+    }
+
+    if (!privateKey || !publicKey) {
+      return res.status(503).json({
+        error: 'Licensing signing keys are not configured',
+        code: 'LICENSE_KEYS_NOT_CONFIGURED'
+      });
     }
 
     // 1. Find License in Database
@@ -131,14 +125,16 @@ router.post('/heartbeat', async (req, res) => {
 
     // 6. Sign payload with Ed25519
     let signatureHex = '';
-    if (privateKey) {
-      try {
-        const payloadString = JSON.stringify(payload);
-        const signature = crypto.sign(null, Buffer.from(payloadString), privateKey);
-        signatureHex = signature.toString('hex');
-      } catch (err) {
-        console.error("Signature error:", err);
-      }
+    try {
+      const payloadString = JSON.stringify(payload);
+      const signature = crypto.sign(null, Buffer.from(payloadString), privateKey);
+      signatureHex = signature.toString('hex');
+    } catch (err) {
+      console.error("Signature error:", err);
+      return res.status(503).json({
+        error: 'Unable to sign license lease with configured key',
+        code: 'LICENSE_SIGNING_FAILED'
+      });
     }
 
     payload.signature = signatureHex;

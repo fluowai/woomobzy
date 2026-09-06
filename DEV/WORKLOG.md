@@ -1,5 +1,12 @@
 # Worklog - Agente IA WooTech Imob
 
+## 2026-09-06 - Envio de atualizações ao Git + verificação do banco
+
+- Commit `d261289` pushado a `origin/main` (`fluowai/woomobzy`): `feat(woo-control)` emissão de licenças (novo `server/lib/license-manager.js`, usado em `onboarding.js` e `woo-control.js`), CRUD de revendas na Rede, página de Licensing, melhorias em WooControlLayout/Network.
+- `npm run type-check` OK; `node --check` nos JS alterados OK.
+- Banco (Supabase remoto) verificado via `DATABASE_URL`/pg: schema `woo_licenses`/`woo_products` compatível com o license-manager; policies públicas de `site_texts` e `organizations` presentes; migrações Woo (20260829/30/curriculum) já aplicadas.
+- Scripts scratch/test ad-hoc (root) adicionados ao `.gitignore`; nada sensível commitado.
+
 ## 2026-08-23 - Análise e Correções de 500 Errors + Interface de Agentes
 
 ### Mudanças Realizadas
@@ -280,3 +287,32 @@ Isso garantirá que todas as correções de 500 error e as novas funcionalidades
 - Pre-flight: confirmados `organizations`/`profiles` presentes; `woo_*` não existiam; `organizations.type` faltava; `profiles_role_check` legado.
 - Verificação pós: 9 tabelas `woo_*` criadas, `organizations.type` + `parent_id`, novo `profiles_role_check` com roles RBAC + legadas, RLS habilitado com políticas, função `is_platform_admin` criada.
 - Nenhum commit, push ou deploy foi executado.
+
+
+## 2026-09-06 — Auditoria de dados reais e WooControl
+
+Inventariadas 184 rotas e registrados 121 sinais estáticos para revisão. Plano por nível criado em SPECS/REAL_DATA_EXECUTION_PLAN.md. Corrigidos autorização global do WooControl, consistência do suporte, indicadores sem plan_id, tratamento de erro da consulta, status financeiro e exit code do diagnóstico de banco. Normalizado .gitignore sem NUL preservando exclusão de segredos. Adicionados testes WooControl e deduplicadas rotas da suíte E2E. Homologação integral depende de contas/URL não configuradas; mocks e implementações restantes estão explicitados no plano. Verificação em VERIFY.md.
+## 2026-09-06 — Execução real-data P1/P2: IA, cobrança, integrações e telas
+
+- Pipeline de testes/publicação da IA deixou de aprovar com mock: versões persistidas são carregadas por tenant, casos rodam contra LLM real, erros de provedor bloqueiam publicação e o resultado é gravado em `ai_test_runs`, `ai_agent_versions`, `ai_agents`, `ai_operations`, `ai_red_team_results` e `ai_audit_logs`.
+- Wizard de criação de operação passou a usar `agentVersionId`, instâncias reais de canais, score mínimo 90 e regras persistidas; removidos score fixo, canais fictícios e aprovação automática.
+- Dashboard, logs, histórico e conhecimento da IA passaram a consumir APIs reais (`ai_execution_logs`, `ai_audit_logs`, `ai_knowledge_sources`, métricas da operação) e a exibir estado vazio em vez de exemplos inventados.
+- Asaas removido do modo simulado: criação de cobrança exige `ASAAS_API_KEY`, cria/consulta cliente real, usa `/payments`, valida webhook com `ASAAS_WEBHOOK_TOKEN`/header `asaas-access-token` e remove endpoint público de simulação.
+- Ferramentas de agenda da IA e RPCs SQL substituíram slots fixos por leitura de `lead_appointments` e criação de compromissos reais, com falha explícita em erro de banco.
+- Wootech Mail removeu campanha/audiência fixas: dispatcher agora busca campanha, remetente, template e destinatários persistidos. Nova migration cria `mail_templates`, `mail_campaigns` e `mail_campaign_recipients`.
+- Sienge removeu conexão e transferências inventadas: serviço exige URL/credenciais reais e chama a API configurada por ambiente/tenant.
+- CVCRM/BIA removeu fallback `lead_simulado_*`; criação de lead sem ID real retornado agora falha.
+- Lead scoring passou a atualizar `leads.lead_score` no banco e publicar evento com score antigo/novo real.
+- Licenciamento self-hosted deixou de gerar par efêmero de assinatura em runtime; sem chaves configuradas retorna erro 503 em vez de lease assinado com chave descartável.
+- Relatório CMA da captação deixou de ser delay/console e gera PDF real no navegador com `pdf-lib` a partir dos dados persistidos da captação.
+- Corrigido `server/lib/eventBus.js` importando `crypto`, evitando quebra em eventos com `correlation_id`.
+
+Verificação executada nesta etapa está em `DEV/VERIFY.md`. Ainda há ações “em breve” e integrações não homologadas nos módulos de locação, DataRoom, WhatsApp, rural/admin e alguns fluxos financeiros; não declarar o sistema inteiro como 100% funcional sem homologação autenticada e aplicação controlada das migrations novas.
+## 2026-09-06 — Migrations real-data aplicadas no banco
+
+- Aplicada `migrations/20260906_real_ai_calendar_tools.sql` via `node scripts\apply-migration-file.mjs`, com sucesso por Postgres direto.
+- A aplicação de `migrations/20260906_real_wootech_mail_campaigns.sql` falhou inicialmente porque `public.mail_senders` ainda não existia no banco alvo.
+- Aplicada a dependência `migrations/20260830_wootech_communications_foundation.sql` via Postgres direto.
+- Reaplicada `migrations/20260906_real_wootech_mail_campaigns.sql`, agora com sucesso por Postgres direto.
+- Verificação direta no Postgres confirmou tabelas `feature_flags`, `provider_credentials`, `customer_interactions`, `mail_domains`, `mail_senders`, `mail_templates`, `mail_campaigns`, `mail_campaign_recipients`, policies RLS dessas tabelas e RPCs `get_available_slots`/`schedule_visit` com assinaturas esperadas.
+- `npm run check-db` continuou retornando exit 1 por HTTP 401 em tabelas protegidas (`profiles`, `properties`, `leads`, `landing_pages`, `site_settings`, `site_texts`), o que é esperado e não indica ausência dessas tabelas.

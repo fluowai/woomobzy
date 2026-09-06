@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import logger from '../utils/logger.js';
 import { getSupabaseServer } from '../lib/supabase-server.js';
 
@@ -207,13 +206,16 @@ export async function createLeadOnCvcrm(
     const textData = await response.text();
     const data = textData ? JSON.parse(textData) : {};
 
-    // CVcrm v1/cvbot retorna { idlead: X }
+    // CVcrm v1/cvbot costuma retornar { idlead: X }.
     const newLeadId =
       data.idlead ||
       data.id_lead ||
       data.id ||
-      data?.lead?.id ||
-      'lead_simulado_' + Date.now();
+      data?.lead?.id;
+
+    if (!newLeadId) {
+      throw new Error('CVcrm não retornou o ID real do lead criado.');
+    }
     logger.info(`[CVCrm Integration] Lead created on CVcrm. ID: ${newLeadId}`);
     return newLeadId;
   } catch (error) {

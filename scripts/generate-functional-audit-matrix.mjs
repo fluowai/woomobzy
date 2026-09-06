@@ -24,6 +24,7 @@ const wrapperNames = new Set([
   'SubscriptionGuard',
   'SuperAdminGuard',
   'MegaAdminGuard',
+  'WooControlGuard',
 ]);
 
 const routeRows = [];
@@ -153,6 +154,7 @@ const joinRoutePath = (parentPath, routePath, isIndex) => {
 };
 
 const classifyPanel = (routePath) => {
+  if (routePath.startsWith('/woo-control')) return 'WooControl';
   if (routePath.startsWith('/urban')) return 'Urbano';
   if (routePath.startsWith('/rural')) return 'Rural';
   if (routePath.startsWith('/superadmin')) return 'Super Admin';
@@ -234,6 +236,7 @@ const coverageFor = (routePath) => {
 };
 
 const panelOrder = [
+  'WooControl',
   'Público/compartilhado',
   'Urbano',
   'Rural',
@@ -259,7 +262,7 @@ const escapeCell = (value) => String(value).replaceAll('|', '\\|').replaceAll('\
 const lines = [
   '# Matriz mestra de auditoria funcional — IMOBZY',
   '',
-  `**Gerada em:** ${new Date().toISOString()}  `,
+  `**Gerada em:** ${new Date().toISOString()}`,
   '**Fonte:** `App.tsx` analisado por AST  ',
   '**Status inicial:** PENDENTE até execução com evidência',
   '',

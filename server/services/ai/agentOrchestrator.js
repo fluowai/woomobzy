@@ -233,7 +233,8 @@ export class AgentOrchestrator {
           query = query.lte('price', args.orcamento_maximo);
         if (args.quartos) query = query.gte('bedrooms', args.quartos);
 
-        const { data } = await query.limit(5);
+        const { data, error } = await query.limit(5);
+        if (error) throw error;
         return {
           resultado:
             data && data.length > 0
@@ -248,7 +249,7 @@ export class AgentOrchestrator {
             erro: 'Lead nao identificado. Nao e possivel agendar visita sem um lead salvo.',
           };
 
-        await supabase.from('lead_followups').insert({
+        const { error } = await supabase.from('lead_followups').insert({
           organization_id: organizationId,
           lead_id: leadId,
           title: `Visita Agendada: ${args.property_id || 'Imovel a definir'}`,
@@ -257,6 +258,8 @@ export class AgentOrchestrator {
           kind: 'visit',
           status: 'pending',
         });
+
+        if (error) throw error;
 
         return {
           sucesso: true,
@@ -357,9 +360,8 @@ export class AgentOrchestrator {
 
       if (name === 'enviar_audio_whatsapp') {
         return {
-          sucesso: true,
-          instrucao_interna:
-            'A infraestrutura processara isso em breve. Na sua resposta ao cliente, inclua a tag [VOICE_AI] seguida do texto que deve ser falado. Exemplo: [VOICE_AI]Ola, como posso ajudar?[/VOICE_AI]',
+          erro:
+            'Envio de áudio por WhatsApp não está configurado para este agente. Configure um provedor real de TTS e mídia antes de habilitar esta ferramenta.',
         };
       }
 

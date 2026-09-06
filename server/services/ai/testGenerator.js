@@ -94,9 +94,10 @@ Cada objeto deve ter:
 
 Responda APENAS com um array JSON válido.
 `;
-      const response = await orchestrator.complete({
-        taskType: 'test-generation',
-        messages: [{ role: 'system', content: 'Você gera casos de teste para agentes de IA imobiliários. Responda apenas JSON válido.' }, { role: 'user', content: prompt }],
+      const response = await orchestrator.chat([
+        { role: 'system', content: 'Você gera casos de teste para agentes de IA imobiliários. Responda apenas JSON válido.' },
+        { role: 'user', content: prompt }
+      ], 'agent', {
         jsonMode: true
       });
 
@@ -116,6 +117,9 @@ Responda APENAS com um array JSON válido.
         }
       }
     } catch (err) {
+      if (useAI === 'always') {
+        throw err;
+      }
       logger.warn('[testGenerator] IA indisponível, usando somente template', err.message);
     }
   }

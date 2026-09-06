@@ -103,6 +103,43 @@ export interface ArchitectResult {
   testPlan: Array<Record<string, unknown>>;
 }
 
+export interface AITestReport {
+  runId: string;
+  persistedRunId?: string | null;
+  agentId: string;
+  agentName: string;
+  mode: string;
+  durationMs: number;
+  suite: {
+    summary: {
+      total: number;
+      passed: number;
+      failed: number;
+      alerts: number;
+      passRate: number;
+    };
+    results: Array<Record<string, unknown>>;
+  };
+  redTeam: {
+    summary: {
+      total: number;
+      blocked: number;
+      vulnerabilities: number;
+      warnings: number;
+      blockedRate: number;
+    };
+    findings: Array<Record<string, unknown>>;
+  };
+  score: {
+    overall: number;
+    breakdown: Record<string, number>;
+    publishable: boolean;
+    minScore: number;
+    reasons: string[];
+  };
+  verdict: 'APPROVED' | 'NEEDS_WORK';
+}
+
 export interface ChannelInstances {
   whatsapp: Array<{ id: string; name: string; status: string; phone?: string; jid?: string }>;
   instagram: Array<{ id: string; username: string; status: string }>;
@@ -169,6 +206,33 @@ export const getOperationMetrics = async (
   return data.metrics;
 };
 
+export const getOperationLogs = async (
+  id: string,
+  params: { status?: string; q?: string; limit?: number } = {}
+): Promise<Array<Record<string, unknown>>> => {
+  const query = new URLSearchParams();
+  if (params.status) query.set('status', params.status);
+  if (params.q) query.set('q', params.q);
+  if (params.limit) query.set('limit', String(params.limit));
+  const data = await callApi(`/api/ai/operations/${id}/logs?${query.toString()}`);
+  return data.logs || [];
+};
+
+export const getOperationHistory = async (
+  id: string,
+  limit = 100
+): Promise<Array<Record<string, unknown>>> => {
+  const data = await callApi(`/api/ai/operations/${id}/history?limit=${limit}`);
+  return data.history || [];
+};
+
+export const getOperationKnowledge = async (
+  id: string
+): Promise<Array<Record<string, unknown>>> => {
+  const data = await callApi(`/api/ai/operations/${id}/knowledge`);
+  return data.sources || [];
+};
+
 // ============================================================
 // Agents
 // ============================================================
@@ -204,11 +268,12 @@ export const updateAgentModel = async (id: string, model: string): Promise<void>
 };
 
 export const runFullTest = async (
-  agent: Partial<AIAgent>
-): Promise<{ success: boolean; report: Record<string, unknown> }> => {
+  agentVersionId: string,
+  options: { runRedTeam?: boolean; minScore?: number } = {}
+): Promise<{ success: boolean; report: AITestReport }> => {
   return callApi('/api/ai/agents/test/full', {
     method: 'POST',
-    body: JSON.stringify({ agent }),
+    body: JSON.stringify({ agentVersionId, runRedTeam: options.runRedTeam ?? true, minScore: options.minScore ?? 90 }),
   });
 };
 

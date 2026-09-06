@@ -1,5 +1,24 @@
 # Handoff
 
+## 2026-09-06 — Atualizações pushadas e banco verificado
+
+- Commit `d261289` pushado a `origin/main`: `server/lib/license-manager.js` (issueLicense) + uso em `onboarding.js`/`woo-control.js`, CRUD de revendas (Rede), página de Licensing, gitignore de scratch scripts.
+- Gates: `npm run type-check` OK; `node --check` nos 3 JS OK; `npm run check-db` — 401 RLS em perfis/imóveis/leads é esperado (sem policy pública), schema Woo completo e compatível.
+- Banco: Supabase remoto acessível via `DATABASE_URL`; `woo_licenses`/`woo_products` com colunas exatas do license-manager; policies `site_texts_public_select`, `site_texts_admin_all`, `organizations safe select` presentes.
+- Próximo passo: validar em homologação o fluxo de emissão de licença (onboarding + Licensing), credenciais E2E dos seis perfis para homologação, e rotacionar chaves expostas anteriormente (pendência de 2026-07-28).
+
+## 2026-09-06 — Auditoria integral em andamento
+
+- Plano: `SPECS/REAL_DATA_EXECUTION_PLAN.md`; contrato: `SPECS/ACTIVE.md`.
+- Inventário atualizado: 184 rotas, incluindo 16 do WooControl. Triagem de código: 121 sinais a revisar, não 121 defeitos comprovados.
+- Corrigidos acesso global de revendas no WooControl, acesso durante suporte, navegação, consultas de indicadores e falso sucesso do diagnóstico de banco.
+- Incluídos testes de autorização WooControl e navegação; suíte E2E agora inclui o dono da plataforma e elimina títulos duplicados por rota.
+- Bloqueio externo: faltam URL e contas de homologação IMOBZY_E2E_* para os seis perfis. Leituras públicas do banco: uma HTTP 200 e seis HTTP 401. Não executar migrações com base nesse resultado.
+- Permanecem mocks e funções incompletas, sobretudo IA, locação e integrações. Não declarar 100% funcional.
+- Commit/push autorizado nesta solicitação; entrega em branch `codex/auditoria-dados-reais-20260906`. Sem deploy, cobrança, envio a clientes ou migração de produção.
+- Resultados efetivos em `VERIFY.md`.
+
+
 ## 2026-08-28 — Working tree limpo e validado (sem commit)
 
 - `constants/siteTemplates.ts` revertido: o diff era só reformatação + corrupção de acentos (45 chars mojibake); semântica idêntica ao HEAD (326 ids).
@@ -110,3 +129,15 @@
 - A consulta do dashboard urbano deixou de solicitar a coluna inexistente `leads.broker_id`.
 - A instância real foi redefinida condicionalmente de `connecting` para `disconnected`; a próxima abertura autenticada do modal inicia um novo pareamento.
 - A correção está validada; para ativar a recuperação permanente, ainda é necessário implantar as imagens `frontend` e `whatsapp-service`.
+## 2026-09-06 — Real-data P1/P2 validado localmente e pronto para push
+
+- Branch: `codex/auditoria-dados-reais-20260906`.
+- Escopo entregue: IA testa/publica somente com evidência persistida; Wizard e Dashboard de IA removem score/canais/logs/conhecimento demonstrativos; Asaas exige chave real e valida webhook; agenda da IA persiste em `lead_appointments`; Wootech Mail usa campanhas/destinatários persistidos; Sienge/CVCRM/BIA deixam de fabricar sucesso/IDs; scoring de lead atualiza banco; licenciamento não assina lease com chave efêmera; CMA gera PDF real.
+- Migrations novas: `20260906_real_ai_calendar_tools.sql` e `20260906_real_wootech_mail_campaigns.sql`. Não aplicadas automaticamente em produção/homologação nesta rodada.
+- Gates passados: `node --check` focado, ESLint focado, `npm run type-check`, Vitest completo 29/29 e 147/147, `npm run lint` com 0 erros, `npm run build`, `git diff --check`, `npm run audit:matrix`.
+- Restrições restantes: sem ambiente/credenciais de homologação IMOBZY_E2E_*; sem execução real de cobrança/envio/webhook externo; ainda há ações “em breve” em locação, DataRoom, WhatsApp, rural/admin e módulos financeiros que precisam de implementação por fluxo.
+## 2026-09-06 — Banco atualizado com migrations real-data
+
+- Banco alvo do `.env` atualizado com `20260906_real_ai_calendar_tools.sql`, `20260830_wootech_communications_foundation.sql` e `20260906_real_wootech_mail_campaigns.sql`.
+- Validação direta confirmou tabelas/policies/RPCs necessários para agenda real da IA e campanhas reais do Wootech Mail.
+- Próximo teste operacional seguro: criar campanha de homologação com remetente/template/destinatário reais de teste, configurar credencial BillionMail do tenant, configurar `ASAAS_WEBHOOK_TOKEN`/`ASAAS_API_KEY` de sandbox e rodar fluxo com destinatários controlados.

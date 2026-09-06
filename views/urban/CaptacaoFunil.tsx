@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { captacaoService, CaptacaoLead, CaptacaoStatus, CaptacaoLeadInput } from '@/src/services/captacao';
 import CaptacaoModal from './Captacao/CaptacaoModal';
-import { generateCmaPdfMock } from '@/utils/cmaGenerator'; // We will create this mock generator
+import { generateCmaPdf } from '@/utils/cmaGenerator';
 
 const INITIAL_STAGES: { id: CaptacaoStatus; label: string; color: string }[] = [
   { id: 'mapeado', label: 'Mapeado (Radar)', color: 'bg-slate-100 border-slate-200 text-slate-800' },
@@ -104,8 +104,8 @@ const CaptacaoFunil: React.FC = () => {
 
   const handleGenerateReport = (item: CaptacaoLead, e: React.MouseEvent) => {
     e.stopPropagation();
-    toast.promise(generateCmaPdfMock(item), {
-      loading: 'Gerando relatório com IA...',
+    toast.promise(generateCmaPdf(item), {
+      loading: 'Gerando relatório CMA...',
       success: 'Relatório de Avaliação gerado com sucesso!',
       error: 'Erro ao gerar relatório',
     });

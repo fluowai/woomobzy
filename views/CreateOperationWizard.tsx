@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Bot, ArrowLeft, ArrowRight, Building2, MessageSquare, Target,
@@ -8,7 +8,17 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIPath } from '@/src/hooks/usePanelBase';
-import { createOperation, runArchitect as runArchitectApi, publishOperation, updateAgentPrompt } from '../services/aiWorkforce';
+import {
+  createChannelRule,
+  createOperation,
+  getChannelInstances,
+  runArchitect as runArchitectApi,
+  publishOperation,
+  runFullTest,
+  updateAgentPrompt,
+  type AITestReport,
+  type ChannelInstances
+} from '../services/aiWorkforce';
 
 type AIProvider = 'openai' | 'anthropic' | 'gemini' | 'groq' | 'openrouter';
 type AIModel = 'gpt-4o-mini' | 'gpt-4o' | 'claude-3-5-sonnet-20241022' | 'gemini-1.5-pro' | 'gemini-1.5-flash' | 'llama-3.1-8b-instant';
@@ -77,20 +87,12 @@ type ArchitectureDraft = {
     description?: string;
     tools: string[];
     model?: string;
+    activeVersionId?: string | null;
+    promptText?: string;
+    testReport?: AITestReport;
   }>;
   workflows: Array<Record<string, unknown>>;
   testPlan: Array<Record<string, unknown>>;
-};
-
-const mockTestScores = {
-  conversation: 98,
-  tools: 100,
-  memory: 95,
-  antiRepetition: 100,
-  security: 96,
-  handoff: 92,
-  data: 100,
-  overall: 97
 };
 
 const CreateOperationWizard: React.FC = () => {
@@ -117,6 +119,16 @@ const CreateOperationWizard: React.FC = () => {
     selectedAIModel: 'gemini-1.5-pro' as AIModel
   });
   const [testRunning, setTestRunning] = useState(false);
+  const [channelInstances, setChannelInstances] = useState<ChannelInstances | null>(null);
+  const [channelsLoading, setChannelsLoading] = useState(false);
+  const [supportRules, setSupportRules] = useState({
+    newContacts: true,
+    unassignedLeads: true,
+    campaignLeads: false,
+    outsideBusinessHours: true,
+    blockWhenHumanActive: true
+  });
+  const [scheduleMode, setScheduleMode] = useState('24h');
 
   const currentSegment = segmentData[draft.segment] || segmentData.URBAN_REAL_ESTATE;
   const currentStepInfo = steps[currentStep];
@@ -148,6 +160,16 @@ const CreateOperationWizard: React.FC = () => {
     });
   };
 
+  useEffect(() => {
+    if (steps[currentStep].id !== 'channels' || channelInstances || channelsLoading) return;
+
+    setChannelsLoading(true);
+    getChannelInstances()
+      .then(setChannelInstances)
+      .catch((error: Error) => toast.error('Erro ao carregar canais: ' + error.message))
+      .finally(() => setChannelsLoading(false));
+  }, [channelInstances, channelsLoading, currentStep]);
+
   const ensureOperation = async (): Promise<string> => {
     if (operationId) return operationId;
     const created = await createOperation({
@@ -177,16 +199,20 @@ const CreateOperationWizard: React.FC = () => {
             description: result.architecture.description,
             globalGuardrails: result.architecture.globalGuardrails || {}
           },
-          agents: (result.agents || []).map(a => ({
+          agents: (result.agents || []).map(a => {
+            const version = (a as any).version || (a.versions?.[0] as any) || null;
+            return {
             id: a.id,
             name: a.name,
             type: a.type,
             role: a.role,
             description: a.description || '',
             tools: (a.tools || []).map((t: any) => t?.name || t?.id || String(t)),
-            model: (a.versions?.[0] as any)?.model || draft.selectedAIModel,
-            promptText: (a.versions?.[0] as any)?.prompt?.full || (a.versions?.[0] as any)?.prompt?.text || ''
-          })),
+              model: version?.model || draft.selectedAIModel,
+              activeVersionId: a.active_version_id || version?.id || null,
+              promptText: version?.prompt?.full || version?.prompt?.text || ''
+            };
+          }),
           workflows: result.architecture.workflows || [],
           testPlan: result.testPlan || []
         }
@@ -203,8 +229,42 @@ const CreateOperationWizard: React.FC = () => {
     setTestRunning(true);
     try {
       await ensureOperation();
-      setDraft(d => ({ ...d, testsRun: true }));
-      toast.success('Testes marcados como concluídos. Operação criada.');
+      const agents = draft.architecture?.agents || [];
+      const testableAgents = agents.filter(agent => agent.activeVersionId);
+
+      if (testableAgents.length === 0) {
+        throw new Error('Nenhuma versão ativa encontrada para testar. Gere a arquitetura antes de executar os testes.');
+      }
+
+      const reports = await Promise.all(
+        testableAgents.map(async (agent) => {
+          const result = await runFullTest(agent.activeVersionId!, { runRedTeam: true, minScore: 90 });
+          return { agentId: agent.id, report: result.report };
+        })
+      );
+      const reportByAgent = new Map(reports.map(item => [item.agentId, item.report]));
+      const allPublishable = reports.every(item => item.report.score.publishable);
+
+      setDraft(d => ({
+        ...d,
+        testsRun: allPublishable,
+        architecture: d.architecture
+          ? {
+            ...d.architecture,
+            agents: d.architecture.agents.map(agent => ({
+              ...agent,
+              testReport: reportByAgent.get(agent.id) || agent.testReport
+            }))
+          }
+          : d.architecture
+      }));
+
+      if (!allPublishable) {
+        toast.error('Testes executados, mas há agentes reprovados. Revise os relatórios antes de publicar.');
+        return;
+      }
+
+      toast.success('Testes executados e persistidos com sucesso.');
     } catch (error: any) {
       toast.error('Erro ao executar testes: ' + error.message);
     } finally {
@@ -212,11 +272,38 @@ const CreateOperationWizard: React.FC = () => {
     }
   };
 
+  const persistSelectedChannels = async () => {
+    const primaryAgent = draft.architecture?.agents.find(agent => agent.type === 'ORCHESTRATOR') || draft.architecture?.agents[0];
+    if (!primaryAgent) throw new Error('Nenhum agente encontrado para vincular aos canais.');
+
+    const selected = Object.entries(draft.selectedChannels).flatMap(([channelType, instanceIds]) =>
+      instanceIds.map(instanceId => ({ channelType, instanceId }))
+    );
+
+    await Promise.all(selected.map(({ channelType, instanceId }) => createChannelRule({
+      agent_id: primaryAgent.id,
+      channel_type: channelType,
+      instance_id: instanceId === 'webchat' ? null : instanceId,
+      activation_rules: {
+        newContacts: supportRules.newContacts,
+        unassignedLeads: supportRules.unassignedLeads,
+        campaignLeads: supportRules.campaignLeads,
+        outsideBusinessHours: supportRules.outsideBusinessHours
+      },
+      blocking_rules: {
+        humanActive: supportRules.blockWhenHumanActive
+      },
+      schedule: { mode: scheduleMode },
+      priority: channelType === 'whatsapp' ? 100 : 50
+    })));
+  };
+
   const publish = async () => {
     setLoading(true);
     try {
       const id = await ensureOperation();
-      await publishOperation(id, 0);
+      await persistSelectedChannels();
+      await publishOperation(id, 90);
       toast.success('Operação publicada com sucesso!');
       navigate(aiPath(`operations/${id}`));
     } catch (error: any) {
@@ -424,14 +511,14 @@ const CreateOperationWizard: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {[
-          { icon: Bot, label: 'Prompts gerados', value: '4 agentes', color: 'bg-emerald-50 text-emerald-600' },
-          { icon: Database, label: 'Ferramentas selecionadas', value: '8 tools', color: 'bg-blue-50 text-blue-600' },
-          { icon: Shield, label: 'Permissões', value: '14 (menor privilégio)', color: 'bg-purple-50 text-purple-600' },
-          { icon: Users, label: 'Memória', value: 'Ativa (4 camadas)', color: 'bg-amber-50 text-amber-600' },
-          { icon: GitBranch, label: 'Handoff', value: 'Ativo (5 regras)', color: 'bg-red-50 text-red-600' },
-          { icon: Sparkles, label: 'Anti-repetição', value: 'Question Dedup Engine', color: 'bg-slate-100 text-slate-600' },
+          { icon: Bot, label: 'Prompts gerados', value: `${draft.architecture?.agents.length || 0} agente(s)`, color: 'bg-emerald-50 text-emerald-600' },
+          { icon: Database, label: 'Ferramentas selecionadas', value: `${new Set(draft.architecture?.agents.flatMap(agent => agent.tools) || []).size} tool(s)`, color: 'bg-blue-50 text-blue-600' },
+          { icon: Shield, label: 'Permissões', value: 'Definidas na versão ativa', color: 'bg-purple-50 text-purple-600' },
+          { icon: Users, label: 'Memória', value: 'Configuração persistida', color: 'bg-amber-50 text-amber-600' },
+          { icon: GitBranch, label: 'Handoff', value: `${draft.architecture?.workflows.length || 0} workflow(s)`, color: 'bg-red-50 text-red-600' },
+          { icon: Sparkles, label: 'Anti-repetição', value: 'Validado na suíte', color: 'bg-slate-100 text-slate-600' },
           { icon: Shield, label: 'Guardrails', value: 'Ativos (Data Truth Policy)', color: 'bg-emerald-50 text-emerald-600' },
-          { icon: Settings, label: 'Workflows', value: '1 criado', color: 'bg-blue-50 text-blue-600' }
+          { icon: Settings, label: 'Workflows', value: `${draft.architecture?.workflows.length || 0} criado(s)`, color: 'bg-blue-50 text-blue-600' }
         ].map((item, i) => (
           <div key={i} className="rounded-xl border border-slate-200 bg-white p-4">
             <div className={`h-9 w-9 rounded-lg ${item.color} flex items-center justify-center mb-2`}>
@@ -484,17 +571,19 @@ const CreateOperationWizard: React.FC = () => {
     </div>
   );
 
-  const renderTests = () => (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <TestTube2 className="text-emerald-600" size={22} />
-        <div>
-          <h3 className="text-lg font-bold text-slate-950">Teste antes de publicar</h3>
-          <p className="text-sm text-slate-500">Nenhum agente é publicado sem passar por testes. Execute a suíte completa agora.</p>
-        </div>
-      </div>
+  const renderTests = () => {
+    const testedAgents = draft.architecture?.agents.filter(agent => agent.testReport) || [];
 
-      {!draft.testsRun ? (
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <TestTube2 className="text-emerald-600" size={22} />
+          <div>
+            <h3 className="text-lg font-bold text-slate-950">Teste antes de publicar</h3>
+            <p className="text-sm text-slate-500">Nenhum agente é publicado sem relatório persistido de suíte e red team.</p>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="rounded-xl border border-slate-200 bg-white p-5">
             <div className="flex items-center gap-2 mb-3">
@@ -512,103 +601,170 @@ const CreateOperationWizard: React.FC = () => {
               <Sparkles className="text-emerald-600" size={18} />
               <h4 className="font-bold text-slate-950">Testes automáticos + AI Red Team</h4>
             </div>
-            <p className="text-sm text-slate-600 mb-4">A IA gera cenários, executa e avalia segurança, repetição e alucinação.</p>
-            <button onClick={runTests} disabled={testRunning}
+            <p className="text-sm text-slate-600 mb-4">Executa a versão ativa de cada agente e grava evidência no banco.</p>
+            <button onClick={runTests} disabled={testRunning || !draft.architecture?.agents.length}
               className="w-full h-11 rounded-lg bg-slate-950 text-white text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50">
               {testRunning ? <Loader2 size={16} className="animate-spin" /> : <PlayIcon size={16} />}
               {testRunning ? 'Executando testes...' : 'Executar testes automáticos'}
             </button>
           </div>
         </div>
-      ) : (
-        <div className="space-y-6">
-          <div className="rounded-xl border border-slate-200 bg-white p-6 text-center">
-            <div className="h-24 w-24 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-4">
-              <div className="text-3xl font-bold text-emerald-600">{mockTestScores.overall}</div>
-            </div>
-            <h4 className="text-xl font-bold text-slate-950 mb-1">Score geral: {mockTestScores.overall}/100</h4>
-            <p className="text-sm text-slate-500 mb-5">Agente aprovado para publicação</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-2xl mx-auto">
-              {Object.entries(mockTestScores).filter(([k]) => k !== 'overall').map(([k, v]) => (
-                <div key={k} className="rounded-lg border border-slate-100 p-3">
-                  <div className="text-[10px] font-bold uppercase text-slate-500">{k.replace(/([A-Z])/g, ' $1')}</div>
-                  <div className="text-lg font-bold text-slate-950">{v}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-            <h4 className="font-bold text-slate-950 text-sm mb-2">Alertas da AI Red Team</h4>
-            <ul className="text-xs text-slate-600 space-y-1">
-              <li>✓ Sem vulnerabilidades de prompt injection detectadas</li>
-              <li>✓ Sem repetição de perguntas em 21 cenários</li>
-              <li>⚠ 1 handoff pode ser otimizado (tempo de resposta)</li>
-            </ul>
-          </div>
-        </div>
-      )}
-    </div>
-  );
 
-  const renderChannels = () => (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-bold text-slate-950 mb-1">Onde sua equipe de IA vai atender?</h3>
-        <p className="text-sm text-slate-500 mb-4">Selecione os canais e instâncias conectadas ao seu tenant.</p>
-      </div>
-      {[
-        { id: 'whatsapp', label: 'WhatsApp', instances: ['Comercial', 'Locação', 'Vendas', 'Plantão'] },
-        { id: 'instagram', label: 'Instagram', instances: ['@empresa', '@empreendimento01'] },
-        { id: 'webchat', label: 'Chat do site', instances: ['Site principal', 'Landing page'] }
-      ].map(ch => (
-        <div key={ch.id} className="rounded-xl border border-slate-200 bg-white p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <MessageSquare className="text-emerald-600" size={18} />
-            <h4 className="font-bold text-slate-950">{ch.label}</h4>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {ch.instances.map(inst => {
-              const active = (draft.selectedChannels[ch.id] || []).includes(inst);
+        {testedAgents.length > 0 && (
+          <div className="space-y-4">
+            {testedAgents.map(agent => {
+              const report = agent.testReport!;
               return (
-                <button key={inst} onClick={() => toggleChannel(ch.id, inst)}
-                  className={`px-3 py-2 rounded-lg text-sm font-bold border transition ${active ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
-                  {active && <Check size={14} className="inline mr-1" />}
-                  {inst}
-                </button>
+                <div key={agent.id} className={`rounded-xl border bg-white p-5 ${report.score.publishable ? 'border-emerald-200' : 'border-amber-200'}`}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h4 className="font-bold text-slate-950">{agent.name}</h4>
+                      <p className="text-xs text-slate-500">Run {report.persistedRunId || report.runId}</p>
+                    </div>
+                    <div className={`text-2xl font-bold ${report.score.publishable ? 'text-emerald-600' : 'text-amber-600'}`}>
+                      {report.score.overall}/100
+                    </div>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {Object.entries(report.score.breakdown).map(([key, value]) => (
+                      <div key={key} className="rounded-lg border border-slate-100 p-3">
+                        <div className="text-[10px] font-bold uppercase text-slate-500">{key.replace(/_/g, ' ')}</div>
+                        <div className="text-lg font-bold text-slate-950">{value}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-600">
+                    <div>Suíte: {report.suite.summary.passed}/{report.suite.summary.total} aprovados</div>
+                    <div>Red team: {report.redTeam.summary.vulnerabilities} vulnerabilidades, {report.redTeam.summary.warnings} alertas</div>
+                  </div>
+                  {report.score.reasons.length > 0 && (
+                    <ul className="mt-3 list-disc pl-5 text-xs text-slate-600 space-y-1">
+                      {report.score.reasons.map(reason => <li key={reason}>{reason}</li>)}
+                    </ul>
+                  )}
+                </div>
               );
             })}
           </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderChannels = () => {
+    const channelGroups = [
+      {
+        id: 'whatsapp',
+        label: 'WhatsApp',
+        instances: (channelInstances?.whatsapp || []).map(instance => ({
+          id: instance.id,
+          label: `${instance.name}${instance.phone ? ` (${instance.phone})` : ''}`,
+          status: instance.status
+        }))
+      },
+      {
+        id: 'instagram',
+        label: 'Instagram',
+        instances: (channelInstances?.instagram || []).map(instance => ({
+          id: instance.id,
+          label: instance.username,
+          status: instance.status
+        }))
+      },
+      {
+        id: 'webchat',
+        label: 'Chat do site',
+        instances: (channelInstances?.webchat || []).map(instance => ({
+          id: instance.id,
+          label: instance.name || instance.slug,
+          status: instance.is_live ? 'live' : 'inactive'
+        }))
+      }
+    ];
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-lg font-bold text-slate-950 mb-1">Onde sua equipe de IA vai atender?</h3>
+          <p className="text-sm text-slate-500 mb-4">Selecione os canais e instâncias conectadas ao seu tenant.</p>
         </div>
-      ))}
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
-        <h4 className="font-bold text-slate-950 text-sm mb-3">Regras de atendimento</h4>
-        <div className="space-y-2">
-          {[
-            { label: 'Novos contatos', checked: true },
-            { label: 'Leads sem responsável', checked: true },
-            { label: 'Leads de campanha', checked: false },
-            { label: 'Fora do horário comercial', checked: true },
-            { label: 'Não responder quando humano ativo', checked: true }
-          ].map((r, i) => (
-            <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-slate-50">
-              <span className="text-sm font-bold text-slate-700">{r.label}</span>
-              <input type="checkbox" defaultChecked={r.checked} className="h-4 w-4 accent-emerald-600" />
+
+        {channelsLoading ? (
+          <div className="rounded-xl border border-slate-200 bg-white p-5 flex items-center gap-3 text-sm font-bold text-slate-600">
+            <Loader2 size={18} className="animate-spin" />
+            Carregando canais conectados...
+          </div>
+        ) : (
+          channelGroups.map(ch => (
+            <div key={ch.id} className="rounded-xl border border-slate-200 bg-white p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <MessageSquare className="text-emerald-600" size={18} />
+                <h4 className="font-bold text-slate-950">{ch.label}</h4>
+              </div>
+              {ch.instances.length === 0 ? (
+                <p className="text-sm text-slate-500">Nenhuma instância conectada para este canal.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {ch.instances.map(inst => {
+                    const active = (draft.selectedChannels[ch.id] || []).includes(inst.id);
+                    return (
+                      <button key={inst.id} onClick={() => toggleChannel(ch.id, inst.id)}
+                        className={`px-3 py-2 rounded-lg text-sm font-bold border transition ${active ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
+                        {active && <Check size={14} className="inline mr-1" />}
+                        {inst.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          ))}
+          ))
+        )}
+
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <h4 className="font-bold text-slate-950 text-sm mb-3">Regras de atendimento</h4>
+          <div className="space-y-2">
+            {[
+              { key: 'newContacts', label: 'Novos contatos' },
+              { key: 'unassignedLeads', label: 'Leads sem responsável' },
+              { key: 'campaignLeads', label: 'Leads de campanha' },
+              { key: 'outsideBusinessHours', label: 'Fora do horário comercial' },
+              { key: 'blockWhenHumanActive', label: 'Não responder quando humano ativo' }
+            ].map((rule) => (
+              <label key={rule.key} className="flex items-center justify-between p-2 rounded-lg bg-slate-50">
+                <span className="text-sm font-bold text-slate-700">{rule.label}</span>
+                <input
+                  type="checkbox"
+                  checked={supportRules[rule.key as keyof typeof supportRules]}
+                  onChange={(event) => setSupportRules(current => ({ ...current, [rule.key]: event.target.checked }))}
+                  className="h-4 w-4 accent-emerald-600"
+                />
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <h4 className="font-bold text-slate-950 text-sm mb-3">Horário de funcionamento</h4>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { id: '24h', label: '24 horas' },
+              { id: 'business_hours', label: 'Horário comercial' },
+              { id: 'custom', label: 'Personalizado' },
+              { id: 'after_hours', label: 'Só fora do expediente' }
+            ].map(h => (
+              <button
+                key={h.id}
+                onClick={() => setScheduleMode(h.id)}
+                className={`px-3 py-2 rounded-lg text-xs font-bold border ${scheduleMode === h.id ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}
+              >
+                {h.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
-        <h4 className="font-bold text-slate-950 text-sm mb-3">Horário de funcionamento</h4>
-        <div className="flex flex-wrap gap-2">
-          {['24 horas', 'Horário comercial', 'Personalizado', 'Só fora do expediente'].map(h => (
-            <button key={h} className="px-3 py-2 rounded-lg text-xs font-bold border border-slate-200 text-slate-600 hover:border-slate-300">
-              {h}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderPublish = () => (
     <div className="space-y-6">
@@ -622,14 +778,14 @@ const CreateOperationWizard: React.FC = () => {
           ['Segmento', segments.find(s => s.id === draft.segment)?.label || ''],
           ['Objetivo', draft.goals.join(', ') || 'Pré-atendimento e qualificação'],
           ['Canais', Object.entries(draft.selectedChannels).flatMap(([c, i]) => i.map(x => `${c}: ${x}`)).join(', ') || '—'],
-          ['Tools', '8'],
-          ['Permissões', '14'],
-          ['Memória', 'Ativa'],
-          ['Handoff', 'Ativo'],
-          ['Anti-repetição', 'Ativo'],
+          ['Tools', String(new Set(draft.architecture?.agents.flatMap(agent => agent.tools) || []).size)],
+          ['Agentes', String(draft.architecture?.agents.length || 0)],
+          ['Memória', 'Persistida por versão'],
+          ['Handoff', `${draft.architecture?.workflows.length || 0} workflow(s)`],
+          ['Anti-repetição', draft.testsRun ? 'Aprovado na suíte' : 'Pendente'],
           ['Guardrails', 'Ativos'],
-          ['Testes', draft.testsRun ? '47/48' : 'Pendente'],
-          ['Score', draft.testsRun ? '97/100' : '—']
+          ['Testes', draft.testsRun ? 'Aprovados' : 'Pendente'],
+          ['Score', draft.architecture?.agents.some(agent => agent.testReport) ? `${Math.min(...draft.architecture.agents.map(agent => agent.testReport?.score.overall ?? 0))}/100` : '—']
         ].map(([label, value], i) => (
           <div key={i} className="flex items-center justify-between border-b border-slate-100 pb-2 last:border-0">
             <span className="text-sm text-slate-500">{label}</span>

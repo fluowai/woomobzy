@@ -1,5 +1,23 @@
 # Verificação
 
+## 2026-09-06 — Auditoria integral: evidência local, homologação pendente
+
+- `node node_modules/vitest/vitest.mjs run --maxWorkers=2`: 142 testes passaram em 28 arquivos. A primeira execução com concorrência padrão teve timeouts de workers; a repetição limitada passou sem esses erros.
+- `npm run type-check`: passou, inclusive após alterações finais de navegação e cobertura.
+- `npm run build`: passou após alterações finais, 4.092 módulos e PWA gerada. Aviso: base Browserslist desatualizada.
+- `npm run lint`: exit 0, zero erros e 770 avisos. ESLint direcionado aos arquivos alterados com `--quiet`: exit 0.
+- `node --check`: passou em woo-control.js, woo-control-access.js e check-db.mjs.
+- Playwright: primeira rodada selecionada com 16 cenários teve 12 aprovações e 4 falhas de API porque o backend local estava desligado. Depois de iniciar `server/index.js` em NODE_ENV=development, os 4 cenários foram repetidos e passaram (desktop e mobile). As 12 aprovações anteriores incluem os cinco painéis anônimos em dois dispositivos e a rota inexistente. Não apresentar essas duas rodadas como uma regressão autenticada completa.
+- Limite da suíte pública existente: ela intercepta `/api/public/texts` com uma fixture vazia. Portanto esses testes validam interface/roteamento, não o conteúdo real de textos no banco.
+- HTTP real no backend local: `/api/woo-control/summary` e `/api/woo-control/network` sem token retornaram 401; `/api/public/branding?domain=127.0.0.1` retornou 200.
+- `node --env-file=.env scripts/check-db.mjs`: exit 1 correto. Organizations respondeu 200; profiles, properties, leads, landing_pages, site_settings e site_texts responderam 401 usando a chave pública. Isso não prova ausência de tabelas nem valida operações autenticadas.
+- Todas as variáveis de e-mail/senha IMOBZY_E2E_* dos seis perfis estão ausentes. URL/contas de homologação solicitadas ao usuário; não foram fornecidas nesta rodada.
+- `git diff --check`: passou. `.env`, `.env.local`, `.env.production`, node_modules e dist confirmados como ignorados. Relatórios HTML/vídeos gerados ficam fora do commit.
+- Backend local iniciou sincronização de cinco configurações de domínio no startup; nenhum diff rastreado de domínio foi produzido. Worker social de produção não foi iniciado. Não foram executados CRUD de negócio, cobrança, envio a clientes ou migração de produção.
+
+**Conclusão:** correções locais verificadas, sem homologação integral. Permanecem mocks, ações incompletas e integrações sem evidência real; consultar SPECS/REAL_DATA_EXECUTION_PLAN.md. Não declarar sistema 100% funcional ou zero mocks.
+
+
 ## 2026-08-26 — Migrações SQL + Limpeza de Código
 
 - 28 migrações executadas via `npm run run-migrations` + `exec_sql` RPC manual.
@@ -115,3 +133,24 @@
 - `npm run type-check`: inconclusivo; o processo `tsc` foi encerrado pelo Windows sem emitir diagnóstico TypeScript. O build Vite de produção passou.
 - Produção antes do deploy: health do Node/WhatsMeow em HTTP 200; instância `22222` presa em `connecting`, com QR vazio.
 - Recuperação imediata aplicada em produção: atualização condicional da instância `22222` para `disconnected`; permaneceu aguardando uma requisição autenticada do modal durante a janela de observação.
+## 2026-09-06 — Real-data P1/P2 após execução autônoma
+
+- `node --check` nos arquivos backend alterados: passou para `eventBus`, `leadScoringEngine`, `licensing`, `campaignDispatcher`, `siengeService`, `cvcrmBiaService`, `agentOrchestrator`, `aiOperations`, além dos arquivos de IA/Asaas verificados antes.
+- `npx eslint ... --quiet` focado nos arquivos alterados: passou sem erros.
+- `npm run type-check`: passou após as telas e serviços novos.
+- `node node_modules/vitest/vitest.mjs run --maxWorkers=2`: 29 arquivos e 147 testes passaram. Teste legado do Architect foi atualizado porque o contrato correto agora é falhar sem provedor real, não gerar arquitetura fallback.
+- `npm run lint`: exit 0, zero erros e 739 warnings legados/de dívida técnica.
+- `npm run build`: passou, 4.273 módulos transformados e PWA gerada. Aviso não bloqueante: base Browserslist/caniuse-lite desatualizada.
+- `git diff --check`: passou; apenas avisos CRLF esperados no Windows.
+- `npm run audit:matrix`: passou, matriz regenerada com 184 rotas: WooControl 16, público/compartilhado 23, Urbano 59, Rural 57, Super Admin 14, Mega Admin 15.
+
+Não executado: migrações novas em banco remoto, webhooks/cobranças reais contra Asaas, envio real de e-mail/WhatsApp, chamadas reais Sienge/CVCRM/BIA, Playwright autenticado ponta a ponta. Esses testes exigem ambiente de homologação, credenciais e autorização operacional para não afetar clientes ou produção.
+## 2026-09-06 — Verificação das migrations aplicadas
+
+- `node scripts\apply-migration-file.mjs migrations\20260906_real_ai_calendar_tools.sql`: passou via Postgres direto.
+- `node scripts\apply-migration-file.mjs migrations\20260830_wootech_communications_foundation.sql`: passou via Postgres direto após dependência ausente de `mail_senders`.
+- `node scripts\apply-migration-file.mjs migrations\20260906_real_wootech_mail_campaigns.sql`: passou via Postgres direto após a dependência.
+- Script ad hoc local `scratch\verify-real-data-migrations.mjs`: confirmou existência das 8 tabelas Wootech Mail/communications, policies RLS e funções `public.get_available_slots` e `public.schedule_visit`.
+- `npm run check-db`: exit 1 esperado por RLS pública em tabelas protegidas; `organizations` respondeu OK.
+
+Ainda não executado: cobrança real Asaas, envio real Wootech Mail, chamada real Sienge/CVCRM/BIA e Playwright autenticado ponta a ponta. As migrations necessárias para os recursos implementados nesta branch estão aplicadas no banco configurado no `.env`.

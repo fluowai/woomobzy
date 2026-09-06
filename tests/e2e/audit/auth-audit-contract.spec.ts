@@ -24,7 +24,7 @@ test.describe('Onda 0 - contrato de auditoria autenticada', () => {
     ).toEqual([]);
   });
 
-  for (const config of Object.values(roleConfigs)) {
+  for (const config of new Map(Object.values(roleConfigs).map(config => [config.homePath, config])).values()) {
     test(`bloqueia usuário anônimo em ${config.homePath} e exibe o login`, async ({
       page,
     }) => {

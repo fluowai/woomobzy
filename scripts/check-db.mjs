@@ -84,17 +84,18 @@ async function main() {
 
   console.log();
   if (allExist) {
-    console.log(`${colors.green}Todas as tabelas existem.${colors.reset}`);
+    console.log(`${colors.green}Todas as consultas responderam HTTP 200.${colors.reset}`);
     console.log(
-      `${colors.cyan}Seu banco esta pronto para usar.${colors.reset}\n`
+      `${colors.cyan}Este teste não comprova escrita, schema completo ou isolamento entre organizações.${colors.reset}\n`
     );
   } else {
     console.log(
-      `${colors.red}Algumas tabelas faltam ou nao responderam.${colors.reset}`
+      `${colors.red}Uma ou mais consultas falharam. HTTP 401/403 indica acesso negado, não tabela ausente.${colors.reset}`
     );
     console.log(
-      `${colors.yellow}Execute as migrations SQL e valide RLS no Supabase.${colors.reset}`
+      `${colors.yellow}Verifique autenticação e políticas RLS antes de concluir que faltam migrações.${colors.reset}`
     );
+    process.exitCode = 1;
   }
 }
 

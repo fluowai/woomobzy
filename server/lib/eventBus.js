@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import crypto from 'crypto';
 
 /**
  * Wootech Global Event Bus

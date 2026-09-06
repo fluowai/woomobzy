@@ -145,3 +145,12 @@
 - `npm run audit:matrix`: passou, matriz regenerada com 184 rotas: WooControl 16, público/compartilhado 23, Urbano 59, Rural 57, Super Admin 14, Mega Admin 15.
 
 Não executado: migrações novas em banco remoto, webhooks/cobranças reais contra Asaas, envio real de e-mail/WhatsApp, chamadas reais Sienge/CVCRM/BIA, Playwright autenticado ponta a ponta. Esses testes exigem ambiente de homologação, credenciais e autorização operacional para não afetar clientes ou produção.
+## 2026-09-06 — Verificação das migrations aplicadas
+
+- `node scripts\apply-migration-file.mjs migrations\20260906_real_ai_calendar_tools.sql`: passou via Postgres direto.
+- `node scripts\apply-migration-file.mjs migrations\20260830_wootech_communications_foundation.sql`: passou via Postgres direto após dependência ausente de `mail_senders`.
+- `node scripts\apply-migration-file.mjs migrations\20260906_real_wootech_mail_campaigns.sql`: passou via Postgres direto após a dependência.
+- Script ad hoc local `scratch\verify-real-data-migrations.mjs`: confirmou existência das 8 tabelas Wootech Mail/communications, policies RLS e funções `public.get_available_slots` e `public.schedule_visit`.
+- `npm run check-db`: exit 1 esperado por RLS pública em tabelas protegidas; `organizations` respondeu OK.
+
+Ainda não executado: cobrança real Asaas, envio real Wootech Mail, chamada real Sienge/CVCRM/BIA e Playwright autenticado ponta a ponta. As migrations necessárias para os recursos implementados nesta branch estão aplicadas no banco configurado no `.env`.

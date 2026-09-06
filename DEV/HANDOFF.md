@@ -136,3 +136,8 @@
 - Migrations novas: `20260906_real_ai_calendar_tools.sql` e `20260906_real_wootech_mail_campaigns.sql`. Não aplicadas automaticamente em produção/homologação nesta rodada.
 - Gates passados: `node --check` focado, ESLint focado, `npm run type-check`, Vitest completo 29/29 e 147/147, `npm run lint` com 0 erros, `npm run build`, `git diff --check`, `npm run audit:matrix`.
 - Restrições restantes: sem ambiente/credenciais de homologação IMOBZY_E2E_*; sem execução real de cobrança/envio/webhook externo; ainda há ações “em breve” em locação, DataRoom, WhatsApp, rural/admin e módulos financeiros que precisam de implementação por fluxo.
+## 2026-09-06 — Banco atualizado com migrations real-data
+
+- Banco alvo do `.env` atualizado com `20260906_real_ai_calendar_tools.sql`, `20260830_wootech_communications_foundation.sql` e `20260906_real_wootech_mail_campaigns.sql`.
+- Validação direta confirmou tabelas/policies/RPCs necessários para agenda real da IA e campanhas reais do Wootech Mail.
+- Próximo teste operacional seguro: criar campanha de homologação com remetente/template/destinatário reais de teste, configurar credencial BillionMail do tenant, configurar `ASAAS_WEBHOOK_TOKEN`/`ASAAS_API_KEY` de sandbox e rodar fluxo com destinatários controlados.

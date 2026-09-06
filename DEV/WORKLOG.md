@@ -308,3 +308,11 @@ Inventariadas 184 rotas e registrados 121 sinais estáticos para revisão. Plano
 - Corrigido `server/lib/eventBus.js` importando `crypto`, evitando quebra em eventos com `correlation_id`.
 
 Verificação executada nesta etapa está em `DEV/VERIFY.md`. Ainda há ações “em breve” e integrações não homologadas nos módulos de locação, DataRoom, WhatsApp, rural/admin e alguns fluxos financeiros; não declarar o sistema inteiro como 100% funcional sem homologação autenticada e aplicação controlada das migrations novas.
+## 2026-09-06 — Migrations real-data aplicadas no banco
+
+- Aplicada `migrations/20260906_real_ai_calendar_tools.sql` via `node scripts\apply-migration-file.mjs`, com sucesso por Postgres direto.
+- A aplicação de `migrations/20260906_real_wootech_mail_campaigns.sql` falhou inicialmente porque `public.mail_senders` ainda não existia no banco alvo.
+- Aplicada a dependência `migrations/20260830_wootech_communications_foundation.sql` via Postgres direto.
+- Reaplicada `migrations/20260906_real_wootech_mail_campaigns.sql`, agora com sucesso por Postgres direto.
+- Verificação direta no Postgres confirmou tabelas `feature_flags`, `provider_credentials`, `customer_interactions`, `mail_domains`, `mail_senders`, `mail_templates`, `mail_campaigns`, `mail_campaign_recipients`, policies RLS dessas tabelas e RPCs `get_available_slots`/`schedule_visit` com assinaturas esperadas.
+- `npm run check-db` continuou retornando exit 1 por HTTP 401 em tabelas protegidas (`profiles`, `properties`, `leads`, `landing_pages`, `site_settings`, `site_texts`), o que é esperado e não indica ausência dessas tabelas.

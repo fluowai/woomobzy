@@ -35,6 +35,11 @@ jobs:
             image: ghcr.io/fluowai/woomobzy-agro
             dockerfile: Dockerfile.agro
             deployment_alias: ghcr.io/fluowai/woomobzy-agro:latest
+          - name: freellm
+            image: ghcr.io/fluowai/wootech-ai-freellm
+            dockerfile: docker/wootech-ai/Dockerfile
+            context: docker/wootech-ai
+            deployment_alias: ghcr.io/fluowai/wootech-ai-freellm:latest
 
     steps:
       - name: Checkout
@@ -53,7 +58,7 @@ jobs:
       - name: Build and push ${{ matrix.name }}
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ${{ matrix.context || '.' }}
           file: ${{ matrix.dockerfile }}
           push: true
           tags: |

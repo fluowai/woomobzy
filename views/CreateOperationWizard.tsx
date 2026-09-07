@@ -21,12 +21,12 @@ import {
 } from '../services/aiWorkforce';
 
 type AIProvider = 'openai' | 'anthropic' | 'gemini' | 'groq' | 'openrouter';
-type AIModel = 'gpt-4o-mini' | 'gpt-4o' | 'claude-3-5-sonnet-20241022' | 'gemini-1.5-pro' | 'gemini-1.5-flash' | 'llama-3.1-8b-instant';
+type AIModel = 'gpt-4o-mini' | 'gpt-4o' | 'claude-3-5-sonnet-20241022' | 'gemini-2.0-flash' | 'llama-3.1-8b-instant';
 
 const providerOptions = [
   { value: 'openai' as AIProvider, label: 'OpenAI', models: ['gpt-4o-mini', 'gpt-4o'], default: 'gpt-4o-mini', icon: 'Bot' },
   { value: 'anthropic' as AIProvider, label: 'Anthropic', models: ['claude-3-5-sonnet-20241022'], default: 'claude-3-5-sonnet-20241022', icon: 'Shield' },
-  { value: 'gemini' as AIProvider, label: 'Google Gemini', models: ['gemini-1.5-pro', 'gemini-1.5-flash'], default: 'gemini-1.5-pro', icon: 'Sparkles' },
+  { value: 'gemini' as AIProvider, label: 'Google Gemini', models: ['gemini-2.0-flash'], default: 'gemini-2.0-flash', icon: 'Sparkles' },
   { value: 'groq' as AIProvider, label: 'Groq', models: ['llama-3.1-8b-instant'], default: 'llama-3.1-8b-instant', icon: 'Zap' },
   { value: 'openrouter' as AIProvider, label: 'OpenRouter', models: ['gpt-4o-mini'], default: 'gpt-4o-mini', icon: 'Router' }
 ];
@@ -116,7 +116,7 @@ const CreateOperationWizard: React.FC = () => {
     selectedChannels: {} as Record<string, string[]>,
     testsRun: false,
     selectedAIProvider: 'gemini' as AIProvider,
-    selectedAIModel: 'gemini-1.5-pro' as AIModel
+    selectedAIModel: 'gemini-2.0-flash' as AIModel
   });
   const [testRunning, setTestRunning] = useState(false);
   const [channelInstances, setChannelInstances] = useState<ChannelInstances | null>(null);

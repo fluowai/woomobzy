@@ -34,7 +34,7 @@ describe('AgentArchitect', () => {
   it('updates provider and model overrides between singleton calls', async () => {
     const architect = createArchitect();
 
-    await architect.initialize('gemini', 'gemini-1.5-pro');
+    await architect.initialize('gemini', 'gemini-2.0-flash');
     await architect.initialize('groq', 'llama-3.1-8b-instant');
 
     expect(architect.providerOverride).toBe('groq');

@@ -2,7 +2,7 @@ import { callApi } from '../src/lib/api';
 
 // AI Provider types
 export type AIProvider = 'openai' | 'anthropic' | 'gemini' | 'groq' | 'openrouter';
-export type AIModel = 'gpt-4o-mini' | 'gpt-4o' | 'claude-3-5-sonnet-20241022' | 'gemini-1.5-pro' | 'gemini-1.5-flash' | 'llama-3.1-8b-instant';
+export type AIModel = 'gpt-4o-mini' | 'gpt-4o' | 'claude-3-5-sonnet-20241022' | 'gemini-2.0-flash' | 'llama-3.1-8b-instant';
 
 // ============================================================
 // Types

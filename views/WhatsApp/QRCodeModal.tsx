@@ -103,14 +103,9 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ instance, onClose }) => {
         return;
       }
 
-      if (freshInstance.qr_code && !qrCode) {
+      if (freshInstance.qr_code && !qrCodeRef.current) {
         setQrCode(freshInstance.qr_code);
         setLoading(false);
-      }
-
-      if (freshInstance.status !== 'qr_pending' && !freshInstance.qr_code) {
-        setLoading(true);
-        return;
       }
 
       const shouldRefreshQR = Date.now() - lastQRFetchRef.current > 2500;

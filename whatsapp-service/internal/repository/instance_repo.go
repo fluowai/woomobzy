@@ -169,13 +169,35 @@ func (r *InstanceRepo) UpdateConnected(ctx context.Context, id uuid.UUID, phone,
 
 // Delete removes an instance by ID
 func (r *InstanceRepo) Delete(ctx context.Context, id uuid.UUID) error {
-	query := `DELETE FROM whatsapp_instances WHERE id = $1`
-	tag, err := r.db.Exec(ctx, query, id)
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to start instance deletion: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	// Older deployments were created before these foreign keys used ON DELETE
+	// CASCADE. Remove dependent WhatsApp data explicitly so deleting an
+	// instance remains reliable across both schema generations.
+	for _, query := range []string{
+		`DELETE FROM whatsapp_media WHERE instance_id = $1`,
+		`DELETE FROM whatsapp_messages WHERE instance_id = $1`,
+		`DELETE FROM whatsapp_chats WHERE instance_id = $1`,
+		`DELETE FROM whatsapp_contacts WHERE instance_id = $1`,
+	} {
+		if _, err := tx.Exec(ctx, query, id); err != nil {
+			return fmt.Errorf("failed to remove instance dependencies: %w", err)
+		}
+	}
+
+	tag, err := tx.Exec(ctx, `DELETE FROM whatsapp_instances WHERE id = $1`, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete instance: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
 		return fmt.Errorf("instance not found: %s", id)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit instance deletion: %w", err)
 	}
 	return nil
 }

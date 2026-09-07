@@ -154,3 +154,10 @@ Não executado: migrações novas em banco remoto, webhooks/cobranças reais con
 - `npm run check-db`: exit 1 esperado por RLS pública em tabelas protegidas; `organizations` respondeu OK.
 
 Ainda não executado: cobrança real Asaas, envio real Wootech Mail, chamada real Sienge/CVCRM/BIA e Playwright autenticado ponta a ponta. As migrations necessárias para os recursos implementados nesta branch estão aplicadas no banco configurado no `.env`.
+
+## 2026-09-07 — Resumo WooControl
+
+- Diagnóstico de schema somente leitura: `plans.price_monthly` está presente e `plans.price` não existe no banco alvo; isso explica o 500 devolvido pelo PostgREST para `GET /api/woo-control/summary`.
+- Correção local: `server/routes/woo-control.js` consulta `price_monthly` e calcula o MRR com esse campo.
+- Testes direcionados, `node --check`, `npm run type-check`, lint focado e `git diff --check` passaram. O build completo não concluiu nesta sessão; o último build registrado no projeto havia passado.
+- Ainda é necessário publicar a nova imagem/backend para a produção consumir a correção.

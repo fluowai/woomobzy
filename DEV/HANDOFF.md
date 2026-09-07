@@ -18,6 +18,12 @@
 - Commit/push autorizado nesta solicitação; entrega em branch `codex/auditoria-dados-reais-20260906`. Sem deploy, cobrança, envio a clientes ou migração de produção.
 - Resultados efetivos em `VERIFY.md`.
 
+## 2026-09-07 — Hotfix local do resumo WooControl
+
+- Causa do HTTP 500 em `/api/woo-control/summary`: o código selecionava `plans.price`, mas o schema atual expõe `plans.price_monthly`.
+- A correção troca a coluna usada pela consulta e pelo cálculo de MRR; foi incluído teste de regressão.
+- Para refletir em `imob-admin.wootech.com.br`, será necessário publicar o backend atualizado após o envio ao Git.
+
 
 ## 2026-08-28 — Working tree limpo e validado (sem commit)
 

@@ -9,6 +9,7 @@ import {
 } from '../lib/organization-deletion.js';
 import { issueLicense } from '../lib/license-manager.js';
 import { canAccessWooControl } from '../lib/woo-control-access.js';
+import { getWooPlanMonthlyPrice } from '../lib/woo-control-summary.js';
 
 const router = express.Router();
 
@@ -118,7 +119,7 @@ router.get('/summary', verifyPlatformAdmin, async (req, res) => {
         db.from('woo_licenses').select('*'),
         db.from('woo_deployments').select('id, status, last_heartbeat, organization_id'),
         db.from('woo_products').select('*'),
-        db.from('plans').select('id, name, price'),
+        db.from('plans').select('id, name, price_monthly'),
         db.from('payment_history').select('amount_paid, status'),
       ]);
 
@@ -139,7 +140,7 @@ router.get('/summary', verifyPlatformAdmin, async (req, res) => {
     const orgPlanPrice = (org) => {
       if (!org.plan_id) return 0;
       const p = planList.find((x) => x.id === org.plan_id);
-      return Number(p?.price ?? 0) || 0;
+      return getWooPlanMonthlyPrice(p);
     };
     orgList.forEach((o) => {
       mrr += orgPlanPrice(o);

@@ -316,3 +316,10 @@ Verificação executada nesta etapa está em `DEV/VERIFY.md`. Ainda há ações 
 - Reaplicada `migrations/20260906_real_wootech_mail_campaigns.sql`, agora com sucesso por Postgres direto.
 - Verificação direta no Postgres confirmou tabelas `feature_flags`, `provider_credentials`, `customer_interactions`, `mail_domains`, `mail_senders`, `mail_templates`, `mail_campaigns`, `mail_campaign_recipients`, policies RLS dessas tabelas e RPCs `get_available_slots`/`schedule_visit` com assinaturas esperadas.
 - `npm run check-db` continuou retornando exit 1 por HTTP 401 em tabelas protegidas (`profiles`, `properties`, `leads`, `landing_pages`, `site_settings`, `site_texts`), o que é esperado e não indica ausência dessas tabelas.
+
+## 2026-09-07 — Correção do resumo WooControl
+
+- Corrigido o 500 de `GET /api/woo-control/summary`: a consulta solicitava `plans.price`, coluna ausente no schema atual; passou a consultar e calcular MRR com `plans.price_monthly`.
+- Consulta somente leitura ao banco confirmou as colunas atuais das tabelas envolvidas, incluindo `plans.price_monthly` e a ausência de `plans.price`.
+- Incluído teste de regressão para priorizar `price_monthly` no cálculo.
+- Nenhuma alteração de dados, migration, commit, push ou deploy foi executado nesta correção.

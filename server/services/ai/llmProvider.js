@@ -76,12 +76,12 @@ const MODEL_ROUTING = {
   // Fast, cheap models for simple tasks
   'intent_detection': { 
     primary: { provider: 'groq', model: 'llama-3.1-70b-versatile' },
-    fallback: [{ provider: 'gemini', model: 'gemini-1.5-flash' }]
+    fallback: [{ provider: 'gemini', model: 'gemini-2.0-flash' }]
   },
   
   // Main conversation - balanced quality/speed
   'conversation': { 
-    primary: { provider: 'gemini', model: 'gemini-1.5-pro' },
+    primary: { provider: 'gemini', model: 'gemini-2.0-flash' },
     fallback: [
       { provider: 'openai', model: 'gpt-4o' },
       { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
@@ -91,7 +91,7 @@ const MODEL_ROUTING = {
 
   // Agent execution
   'agent': { 
-    primary: { provider: 'gemini', model: 'gemini-1.5-pro' },
+    primary: { provider: 'gemini', model: 'gemini-2.0-flash' },
     fallback: [
       { provider: 'openai', model: 'gpt-4o' },
       { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
@@ -110,7 +110,7 @@ const MODEL_ROUTING = {
     primary: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
     fallback: [
       { provider: 'openai', model: 'gpt-4o' },
-      { provider: 'gemini', model: 'gemini-1.5-pro' }
+      { provider: 'gemini', model: 'gemini-2.0-flash' }
     ]
   },
   
@@ -119,7 +119,7 @@ const MODEL_ROUTING = {
     primary: { provider: 'openai', model: 'gpt-4o' },
     fallback: [
       { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
-      { provider: 'gemini', model: 'gemini-1.5-pro' }
+      { provider: 'gemini', model: 'gemini-2.0-flash' }
     ]
   },
   
@@ -146,9 +146,7 @@ const MODEL_COSTS = {
     'claude-3-opus-20240229': { input: 15.00, output: 75.00 }
   },
   'gemini': {
-    'gemini-1.5-pro': { input: 3.50, output: 10.50 },
-    'gemini-1.5-flash': { input: 0.075, output: 0.30 },
-    'gemini-2.0-flash-exp': { input: 0.10, output: 0.40 },
+    'gemini-2.0-flash': { input: 0.10, output: 0.40 },
     'text-embedding-004': { input: 0.02, output: 0 }
   },
   'groq': {
@@ -700,7 +698,7 @@ export class LLMOrchestrator {
       return {
         provider: this.providers.get(available),
         model: available === 'groq' ? 'llama-3.1-8b-instant' : 
-               available === 'gemini' ? 'gemini-1.5-flash' :
+               available === 'gemini' ? 'gemini-2.0-flash' :
                available === 'openai' ? 'gpt-4o-mini' :
                available === 'anthropic' ? 'claude-3-5-haiku-20241022' :
                'gpt-4o-mini',

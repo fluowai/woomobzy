@@ -235,15 +235,15 @@ export class AgentArchitect {
         const providerMap = {
           'openai': { model: 'gpt-4o-mini' },
           'anthropic': { model: 'claude-3-5-sonnet-20241022' },
-          'gemini': { model: 'gemini-1.5-pro' },
+          'gemini': { model: 'gemini-2.0-flash' },
           'groq': { model: 'llama-3.1-8b-instant' },
           'openrouter': { model: 'gpt-4o-mini' }
         };
-        modelName = providerMap[providerOverride]?.model || 'gemini-1.5-pro';
+        modelName = providerMap[providerOverride]?.model || 'gemini-2.0-flash';
       }
     } else {
       providerOverride = 'gemini';
-      modelName = modelName || 'gemini-1.5-pro';
+      modelName = modelName || 'gemini-2.0-flash';
     }
     
     this.providerOverride = providerOverride;
@@ -298,7 +298,7 @@ export class AgentArchitect {
   buildFallbackArchitecture(input) {
     const segment = input.segment || 'URBAN_REAL_ESTATE';
     const operationLabel = this.getSegmentOperationLabel(segment);
-    const selectedModel = this.modelName || 'gemini-1.5-pro';
+    const selectedModel = this.modelName || 'gemini-2.0-flash';
     const availableToolNames = input.availableTools?.map(t => t.name).filter(Boolean) || [];
     const defaultTools = this.pickTools(availableToolNames, ['crm.leads.create', 'crm.leads.update', 'properties.search', 'calendar.availability', 'calendar.create']);
     const searchTools = this.pickTools(availableToolNames, ['properties.search', 'properties.read', 'crm.leads.update', 'calendar.availability']);
@@ -681,7 +681,7 @@ REGRAS OBRIGATÓRIAS:
       if (!agent.id) agent.id = `agent_${idx + 1}`;
       
       // Default model config
-      agent.model = this.modelName || agent.model || 'gemini-1.5-pro';
+      agent.model = this.modelName || agent.model || 'gemini-2.0-flash';
       agent.modelConfig = {
         temperature: 0.4,
         maxTokens: 4096,

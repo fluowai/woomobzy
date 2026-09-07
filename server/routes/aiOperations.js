@@ -18,6 +18,20 @@ const getOrgId = async (req) => {
   return req.orgId || req.headers['x-organization-id'] || req.query.organization_id;
 };
 
+const getArchitectErrorResponse = (error) => {
+  const message = error instanceof Error ? error.message : 'Falha desconhecida ao gerar a arquitetura.';
+
+  if (/nenhum provedor|provedor não inicializado|api.?key|unauthorized|invalid api key/i.test(message)) {
+    return { status: 503, error: 'Nenhum provedor de IA está disponível. Configure uma chave válida no painel de configurações.' };
+  }
+
+  if (/model.*(not found|not supported|retired|deprecated)|404.*model/i.test(message)) {
+    return { status: 422, error: 'O modelo de IA selecionado não está mais disponível. Selecione Gemini 2.0 Flash e tente novamente.' };
+  }
+
+  return { status: 502, error: `O provedor de IA não conseguiu gerar a arquitetura: ${message}` };
+};
+
 /**
  * POST /api/ai/operations
  * Create a new AI Operation (workforce)
@@ -500,7 +514,8 @@ router.post('/:id/architect', async (req, res) => {
       .update({ status: 'DRAFT', updated_at: new Date().toISOString() })
       .eq('id', req.params.id);
     
-    res.status(500).json({ error: 'Agent Architect failed: ' + error.message });
+    const response = getArchitectErrorResponse(error);
+    res.status(response.status).json({ error: response.error });
   }
 });
 

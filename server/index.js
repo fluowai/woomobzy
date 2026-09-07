@@ -56,6 +56,7 @@ import jarvisRoutes from './routes/jarvis.js';
 import accountRoutes from './routes/account.js';
 import whatsappProxyRoutes from './routes/whatsapp-proxy.js';
 import wootechAiRoutes from './routes/wootechAi.js';
+import wooControlAiRoutes from './routes/wooControlAi.js';
 import cvcrmBiaRoutes from './routes/cvcrmBia.js';
 import megaAdminRoutes from './routes/mega-admin.js';
 import licensingRoutes from './routes/licensing.js';
@@ -419,6 +420,7 @@ app.use('/api/demo', demoRoutes);
 app.use('/api/fluowai-migration', fluowaiMigrationRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/wootech-ai', wootechAiRoutes);
+app.use('/api/woo-control/ai', wooControlAiRoutes);
 
 // --- Wootech Hub Mounts ---
 app.use('/api/wootech-voice', wootechVoiceRoutes);

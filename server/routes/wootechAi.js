@@ -23,7 +23,10 @@ router.post('/chat', verifyAuth, async (req, res) => {
     }
 
     const gatewayUrl = process.env.WOOTECH_AI_BASE_URL || 'https://imobwoodesk.wootech.com.br/v1';
-    const apiKey = process.env.WOOTECH_AI_API_KEY || 'freellmapi-f7999e89f9d1f7e0a69e929f0d9bfa3dd43c0490818a5a64';
+    const apiKey = process.env.WOOTECH_AI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'WOOTECH_AI_API_KEY not configured' });
+    }
     
     // 1. Reserve Credits
     const idempotencyKey = crypto.randomUUID();
@@ -156,7 +159,8 @@ router.post('/messages', verifyAuth, async (req, res) => {
     if (!messages) return res.status(400).json({ error: 'Messages are required' });
 
     const gatewayUrl = process.env.WOOTECH_AI_BASE_URL || 'https://imobwoodesk.wootech.com.br/v1';
-    const apiKey = process.env.WOOTECH_AI_API_KEY || 'freellmapi-f7999e89f9d1f7e0a69e929f0d9bfa3dd43c0490818a5a64';
+    const apiKey = process.env.WOOTECH_AI_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: 'WOOTECH_AI_API_KEY not configured' });
     
     const idempotencyKey = crypto.randomUUID();
     const fingerprint = req.ip || 'unknown';
@@ -250,7 +254,8 @@ router.post('/embeddings', verifyAuth, async (req, res) => {
 
     const supabase = getSupabaseServer();
     const gatewayUrl = process.env.WOOTECH_AI_BASE_URL || 'https://imobwoodesk.wootech.com.br/v1';
-    const apiKey = process.env.WOOTECH_AI_API_KEY || 'freellmapi-f7999e89f9d1f7e0a69e929f0d9bfa3dd43c0490818a5a64';
+    const apiKey = process.env.WOOTECH_AI_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: 'WOOTECH_AI_API_KEY not configured' });
 
     const { input, model = 'auto' } = req.body;
     if (!input) return res.status(400).json({ error: 'Input is required for embeddings' });
@@ -302,10 +307,13 @@ router.post('/embeddings', verifyAuth, async (req, res) => {
 // ==========================================
 // ROTA: RESPONSES (Passthrough)
 // ==========================================
-router.all('/responses*', verifyAuth, async (req, res) => {
+router.all(['/responses', '/responses/*splat'], verifyAuth, async (req, res) => {
   try {
     const gatewayUrl = process.env.WOOTECH_AI_BASE_URL || 'https://imobwoodesk.wootech.com.br/v1';
-    const apiKey = process.env.WOOTECH_AI_API_KEY || 'freellmapi-f7999e89f9d1f7e0a69e929f0d9bfa3dd43c0490818a5a64';
+    const apiKey = process.env.WOOTECH_AI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'WOOTECH_AI_API_KEY not configured' });
+    }
     
     // Pega o caminho adicional após /responses, se houver
     const extraPath = req.originalUrl.split('/wootechAi')[1]; // Ex: /responses/123

@@ -22,8 +22,8 @@ router.post('/chat', verifyAuth, async (req, res) => {
       return res.status(400).json({ error: 'Messages array is required' });
     }
 
-    const gatewayUrl = process.env.WOOTECH_AI_BASE_URL || 'http://wootech-ai-gateway:3000/v1';
-    const apiKey = process.env.WOOTECH_AI_API_KEY || 'dummy';
+    const gatewayUrl = process.env.WOOTECH_AI_BASE_URL || 'https://imobwoodesk.wootech.com.br/v1';
+    const apiKey = process.env.WOOTECH_AI_API_KEY || 'freellmapi-f7999e89f9d1f7e0a69e929f0d9bfa3dd43c0490818a5a64';
     
     // 1. Reserve Credits
     const idempotencyKey = crypto.randomUUID();
@@ -137,6 +137,192 @@ router.post('/chat', verifyAuth, async (req, res) => {
     
   } catch (error) {
     logger.error('[WooTechAI] Exception caught:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// ==========================================
+// ROTA: MESSAGES (Claude API)
+// ==========================================
+router.post('/messages', verifyAuth, async (req, res) => {
+  try {
+    const orgId = req.orgId || req.user?.user_metadata?.organization_id;
+    const userId = req.user?.id;
+    if (!orgId || !userId) return res.status(401).json({ error: 'Organization or User ID not found' });
+
+    const supabase = getSupabaseServer();
+    const { messages, model = 'wootech-default', stream = false, max_tokens = 2000 } = req.body;
+    
+    if (!messages) return res.status(400).json({ error: 'Messages are required' });
+
+    const gatewayUrl = process.env.WOOTECH_AI_BASE_URL || 'https://imobwoodesk.wootech.com.br/v1';
+    const apiKey = process.env.WOOTECH_AI_API_KEY || 'freellmapi-f7999e89f9d1f7e0a69e929f0d9bfa3dd43c0490818a5a64';
+    
+    const idempotencyKey = crypto.randomUUID();
+    const fingerprint = req.ip || 'unknown';
+    
+    // Reserva os créditos baseados na estimativa max_tokens
+    const { error: reserveError } = await supabase.rpc('wootech_ai_mutate', {
+      p_action: 'reserve', p_org: orgId, p_actor: userId, p_key: idempotencyKey, p_fingerprint: fingerprint,
+      p_amount: max_tokens, p_reason: `Messages request for ${model}`
+    });
+
+    if (reserveError) {
+      if (reserveError.message.includes('AI_INSUFFICIENT_CREDITS')) return res.status(402).json({ error: 'Payment Required' });
+      return res.status(403).json({ error: 'Access Denied' });
+    }
+
+    const payload = req.body;
+    const response = await fetch(`${gatewayUrl}/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      await supabase.rpc('wootech_ai_mutate', { p_action: 'release', p_org: orgId, p_actor: userId, p_key: idempotencyKey, p_fingerprint: fingerprint });
+      return res.status(response.status).json({ error: 'Gateway Error' });
+    }
+
+    let exactTokens = 0;
+
+    if (stream) {
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const textChunk = decoder.decode(value, { stream: true });
+        
+        // Em Anthropic streaming, o uso vem no evento message_stop ou message_delta
+        const lines = textChunk.split('\n').filter(l => l.trim());
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.usage && data.usage.output_tokens) {
+                exactTokens += data.usage.output_tokens;
+              }
+              if (data.message && data.message.usage) {
+                exactTokens += (data.message.usage.input_tokens || 0) + (data.message.usage.output_tokens || 0);
+              }
+            } catch (e) {}
+          }
+        }
+        res.write(textChunk);
+      }
+      res.end();
+    } else {
+      const data = await response.json();
+      if (data.usage) {
+        exactTokens = (data.usage.input_tokens || 0) + (data.usage.output_tokens || 0);
+      }
+      res.json(data);
+    }
+
+    if (exactTokens > 0) {
+      await supabase.rpc('wootech_ai_mutate', { p_action: 'settle', p_org: orgId, p_actor: userId, p_key: idempotencyKey, p_fingerprint: fingerprint, p_amount: exactTokens });
+    } else {
+      await supabase.rpc('wootech_ai_mutate', { p_action: 'release', p_org: orgId, p_actor: userId, p_key: idempotencyKey, p_fingerprint: fingerprint });
+    }
+  } catch (error) {
+    logger.error('[WooTechAI Messages] Error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// ==========================================
+// ROTA: EMBEDDINGS
+// ==========================================
+router.post('/embeddings', verifyAuth, async (req, res) => {
+  try {
+    const orgId = req.orgId || req.user?.user_metadata?.organization_id;
+    const userId = req.user?.id;
+    if (!orgId || !userId) return res.status(401).json({ error: 'Organization or User ID not found' });
+
+    const supabase = getSupabaseServer();
+    const gatewayUrl = process.env.WOOTECH_AI_BASE_URL || 'https://imobwoodesk.wootech.com.br/v1';
+    const apiKey = process.env.WOOTECH_AI_API_KEY || 'freellmapi-f7999e89f9d1f7e0a69e929f0d9bfa3dd43c0490818a5a64';
+
+    const { input, model = 'auto' } = req.body;
+    if (!input) return res.status(400).json({ error: 'Input is required for embeddings' });
+
+    // Estimativa de tokens para embeddings: 1 char ~= 0.25 tokens (chute)
+    const inputStr = Array.isArray(input) ? input.join('') : input;
+    const estimatedTokens = Math.max(10, Math.ceil(inputStr.length * 0.3));
+
+    const idempotencyKey = crypto.randomUUID();
+    const fingerprint = req.ip || 'unknown';
+
+    const { error: reserveError } = await supabase.rpc('wootech_ai_mutate', {
+      p_action: 'reserve', p_org: orgId, p_actor: userId, p_key: idempotencyKey, p_fingerprint: fingerprint,
+      p_amount: estimatedTokens, p_reason: `Embeddings request for ${model}`
+    });
+
+    if (reserveError) return res.status(402).json({ error: 'Payment Required' });
+
+    const response = await fetch(`${gatewayUrl}/embeddings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(req.body),
+    });
+
+    if (!response.ok) {
+      await supabase.rpc('wootech_ai_mutate', { p_action: 'release', p_org: orgId, p_actor: userId, p_key: idempotencyKey, p_fingerprint: fingerprint });
+      return res.status(response.status).json({ error: 'Gateway Error' });
+    }
+
+    const data = await response.json();
+    let exactTokens = data.usage?.total_tokens || 0;
+
+    if (exactTokens > 0) {
+      await supabase.rpc('wootech_ai_mutate', { p_action: 'settle', p_org: orgId, p_actor: userId, p_key: idempotencyKey, p_fingerprint: fingerprint, p_amount: exactTokens });
+    } else {
+      await supabase.rpc('wootech_ai_mutate', { p_action: 'release', p_org: orgId, p_actor: userId, p_key: idempotencyKey, p_fingerprint: fingerprint });
+    }
+
+    res.json(data);
+  } catch (error) {
+    logger.error('[WooTechAI Embeddings] Error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// ==========================================
+// ROTA: RESPONSES (Passthrough)
+// ==========================================
+router.all('/responses*', verifyAuth, async (req, res) => {
+  try {
+    const gatewayUrl = process.env.WOOTECH_AI_BASE_URL || 'https://imobwoodesk.wootech.com.br/v1';
+    const apiKey = process.env.WOOTECH_AI_API_KEY || 'freellmapi-f7999e89f9d1f7e0a69e929f0d9bfa3dd43c0490818a5a64';
+    
+    // Pega o caminho adicional após /responses, se houver
+    const extraPath = req.originalUrl.split('/wootechAi')[1]; // Ex: /responses/123
+
+    const response = await fetch(`${gatewayUrl}${extraPath}`, {
+      method: req.method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined,
+    });
+
+    res.status(response.status);
+    response.body.pipe(res);
+  } catch (error) {
+    logger.error('[WooTechAI Responses] Error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });

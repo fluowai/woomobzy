@@ -20,14 +20,18 @@ import {
   Menu,
   X,
   ChevronDown,
-  Activity
+  Activity,
+  LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../context/AuthContext';
 
 export const WooControlLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const { profile, signOut } = useAuth();
 
   // Command Palette listener
   useEffect(() => {
@@ -150,15 +154,48 @@ export const WooControlLayout = () => {
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
             
-            <div className="flex items-center gap-2 pl-4 border-l border-[#252A35] cursor-pointer">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#064e3b] to-[#d4af37] flex items-center justify-center text-sm font-bold text-white shadow-lg">
-                PO
+            <div className="flex items-center gap-2 pl-4 border-l border-[#252A35] relative">
+              <div 
+                className="flex items-center gap-2 cursor-pointer"
+                onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+              >
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#064e3b] to-[#d4af37] flex items-center justify-center text-sm font-bold text-white shadow-lg uppercase">
+                  {profile?.name?.substring(0, 2) || 'PO'}
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium leading-tight text-white max-w-[120px] truncate" title={profile?.name}>
+                    {profile?.name || 'Dono da Plataforma'}
+                  </span>
+                  <span className="text-xs text-[#9097A5] leading-tight">WooTech</span>
+                </div>
+                <ChevronDown size={14} className="text-[#9097A5] ml-1" />
               </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-medium leading-tight">Dono da Plataforma</span>
-                <span className="text-xs text-[#9097A5] leading-tight">WooTech</span>
-              </div>
-              <ChevronDown size={14} className="text-[#9097A5] ml-1" />
+              
+              <AnimatePresence>
+                {isProfileMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setIsProfileMenuOpen(false)}></div>
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute right-0 top-12 mt-1 w-56 rounded-lg shadow-xl py-2 z-50 border"
+                      style={{ backgroundColor: '#161A23', borderColor: '#252A35' }}
+                    >
+                      <button 
+                        onClick={() => {
+                          setIsProfileMenuOpen(false);
+                          signOut();
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-[#252A35] transition-colors flex items-center gap-2"
+                      >
+                        <LogOut size={16} />
+                        Sair / Desconectar
+                      </button>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </header>

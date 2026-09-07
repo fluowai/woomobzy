@@ -1,4 +1,4 @@
-import express, { Router } from 'express';
+import express, { Router, text } from 'express';
 import { verifyAuth } from '../../middleware/auth.js';
 import { verifyMegaAdmin } from '../../middleware/auth.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
@@ -9,7 +9,7 @@ const router = Router();
 
 // Middleware para webhook - parse como texto para acessar o corpo bruto
 // O corpo bruto será capturado no handler usando req.body como string
-router.use('/webhook', express.text({ type: '*/*' }));
+router.use('/webhook', text({ type: '*/*' }));
 
 async function getOrgAsgardPayKeys(orgId) {
   try {

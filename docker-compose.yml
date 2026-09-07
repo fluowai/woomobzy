@@ -28,6 +28,9 @@ services:
   api:
     image: ghcr.io/fluowai/woomobzy-api:latest
     environment:
+      WOOTECH_AI_BASE_URL: http://wootech-ai-gateway:3000/v1
+      WOOTECH_AI_API_KEY: ${WOOTECH_AI_API_KEY:?Initialize Wootech AI secrets}
+      WOOTECH_AI_ENABLED: ${WOOTECH_AI_ENABLED:-false}
       NODE_ENV: production
       PORT: 3002
       WHATSAPP_PROVIDER: "whatsmeow"
@@ -71,6 +74,7 @@ services:
     volumes:
       - imobzy_traefik_dynamic:/app/traefik/dynamic
     networks:
+      - wootech_ai_api
       - wootech1
       - imobfluow_internal
     labels:
@@ -150,28 +154,169 @@ services:
     networks:
       - imobfluow_internal
 
-  omniroute:
-    image: diegosouzapw/omniroute:latest
-    container_name: imobzy-omniroute
-    ports:
-      - '20128:20128'
-    volumes:
-      - ./docker/omniroute:/app/config
+
+  wootech-ai-gateway:
+    image: ${WOOTECH_AI_GATEWAY_IMAGE:-wootech-ai-freellm:2388b868-1}
     environment:
-      - PORT=20128
-      - OMNIROUTE_CONFIG=/app/config/omniroute.yml
-    restart: unless-stopped
+      APP_PORT: '3000'
+      LITELLM_URL: http://wootech-ai-litellm:4000
+      WOOTECH_AI_API_KEY: ${WOOTECH_AI_API_KEY:?Initialize Wootech AI secrets}
+      LITELLM_MASTER_KEY: ${WOOTECH_AI_LITELLM_MASTER_KEY:?Initialize Wootech AI secrets}
+      DB_HOST: wootech-ai-db
+      DB_PORT: '5432'
+      DB_USER: freellm
+      DB_PASSWORD: ${WOOTECH_AI_DB_PASSWORD:?Initialize Wootech AI secrets}
+      DB_NAME: freellm
     networks:
-      - imobfluow_internal
+      - wootech_ai_api
+      - wootech_ai_data
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - '-q'
+        - '-O'
+        - /dev/null
+        - http://127.0.0.1:3000/healthz
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
+  wootech-ai-litellm:
+    image: ghcr.io/berriai/litellm:v1.100.0@sha256:c8756e7b9a61fe45df2ccb5b781d388c3b2f3a21ef9e4956630caef20f9f03aa
+    command:
+      - '--config=/etc/wootech-ai/litellm.yaml'
+      - '--port=4000'
+    environment:
+      DATABASE_URL: postgresql://llmproxy:${WOOTECH_AI_LITELLM_DB_PASSWORD:?Initialize Wootech AI secrets}@wootech-ai-db:5432/litellm
+      LITELLM_MASTER_KEY: ${WOOTECH_AI_LITELLM_MASTER_KEY:?Initialize Wootech AI secrets}
+      LITELLM_SALT_KEY: ${WOOTECH_AI_LITELLM_SALT_KEY:?Initialize Wootech AI secrets}
+      GROQ_API_KEY: ${WOOTECH_AI_GROQ_API_KEY:-}
+      STORE_MODEL_IN_DB: 'False'
+      LITELLM_LOG: ERROR
+    configs:
+      - source: wootech_ai_litellm
+        target: /etc/wootech-ai/litellm.yaml
+    networks:
+      - wootech_ai_data
+      - wootech_ai_egress
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - '-c'
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:4000/health/liveliness')
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 10s
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+  wootech-ai-db:
+    image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: ${WOOTECH_AI_POSTGRES_PASSWORD:?Initialize Wootech AI secrets}
+      WOOTECH_AI_DB_PASSWORD: ${WOOTECH_AI_DB_PASSWORD:?Initialize Wootech AI secrets}
+      LITELLM_DB_PASSWORD: ${WOOTECH_AI_LITELLM_DB_PASSWORD:?Initialize Wootech AI secrets}
+    configs:
+      - source: wootech_ai_db_init
+        target: /docker-entrypoint-initdb.d/10-wootech-ai.sh
+    volumes:
+      - wootech_ai_postgres:/var/lib/postgresql/data
+    networks:
+      - wootech_ai_data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U postgres -d postgres
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.wootech_ai_data == true
+      restart_policy:
+        condition: any
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+  wootech-ai-metrics:
+    image: prom/prometheus:v3.5.0@sha256:63805ebb8d2b3920190daf1cb14a60871b16fd38bed42b857a3182bc621f4996
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+    configs:
+      - source: wootech_ai_prometheus
+        target: /etc/prometheus/prometheus.yml
+    volumes:
+      - wootech_ai_metrics:/prometheus
+    networks:
+      - wootech_ai_data
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.wootech_ai_data == true
+      restart_policy:
+        condition: any
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
 volumes:
+  wootech_ai_postgres:
+  wootech_ai_metrics:
   whatsapp_sessions:
   rabbitmq_data_v4:
   imobzy_traefik_dynamic:
     external: true
 
 networks:
+  wootech_ai_api:
+    internal: true
+    driver: overlay
+  wootech_ai_data:
+    internal: true
+    driver: overlay
+  wootech_ai_egress:
+    driver: overlay
   wootech1:
     external: true
   imobfluow_internal:
     driver: overlay
+
+configs:
+  wootech_ai_litellm:
+    file: ./docker/wootech-ai/litellm-config.yaml
+  wootech_ai_db_init:
+    file: ./docker/wootech-ai/init-db.sh
+  wootech_ai_prometheus:
+    file: ./docker/wootech-ai/prometheus.yml

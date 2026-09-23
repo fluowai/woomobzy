@@ -307,7 +307,7 @@ router.post('/embeddings', verifyAuth, async (req, res) => {
 // ==========================================
 // ROTA: RESPONSES (Passthrough)
 // ==========================================
-router.all(['/responses', '/responses/*splat'], verifyAuth, async (req, res) => {
+router.all(['/responses', '/responses/(.*)'], verifyAuth, async (req, res) => {
   try {
     const gatewayUrl = process.env.WOOTECH_AI_BASE_URL || 'https://imobwoodesk.wootech.com.br/v1';
     const apiKey = process.env.WOOTECH_AI_API_KEY;

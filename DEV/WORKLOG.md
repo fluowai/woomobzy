@@ -1,5 +1,13 @@
 # DEV WORKLOG — Imobzy
 
+## [2026-10-01] Sincronização local × GitHub (fluowai/woomobzy) — CONCLUÍDO
+
+- **Solicitação (maestro)**: comparar o projeto baixado na máquina com o repositório GitHub e corrigir diferenças.
+- **Diagnóstico**: git fora do PATH (usado o git 2.53 do GitHub Desktop); branch `codex/main-whatsapp-media-hotfix` igual ao remoto (`0553212`), mas worktree com 231 mudanças não commitadas de ~16/08: 187 arquivos apagados (whatsapp-service 78, documentation 53, migrations 43, ai_worker 7, Dockerfile.agro/api…), 30 modificados (5 reais: `.dockerignore`, `Dockerfile.whatsapp`, `server/api/crm/webchat.routes.js`, teste de auth, `document_worker/app/main.py`; demais só CRLF via `autocrlf=true` do git do GitHub Desktop) e 14 untracked.
+- **Decisão (maestro)**: direção "local = GitHub", com backup prévio; branch segue divergido do `main` (+155/-136), sem merge nesta atividade.
+- **Correção**: backup em `C:\Users\paulo\OneDrive\Área de Trabalho\IMOBZY-backup-2026-10-01.zip` (44 arquivos) + `git stash push -u` (`stash@{0}: backup-antes-sincronizar-github-20261001`); `git restore --source=HEAD --staged --worktree .` restaurou os 187 apagados e reverteu os 30 modificados; `git fetch origin main:main` atualizou o ref local `main` (`acb5f42` → `4b2f8c7`).
+- **Resultado**: `git status --porcelain` = 0 linhas; worktree idêntica ao branch do GitHub. Nenhum commit/push executado.
+
 ## [2026-08-15] Agentes de IA autônomos: swarm real, memória, ferramentas e segurança — IMPLEMENTADO
 
 - **Solicitação (maestro)**: transformar a aba Agentes IA em uma operação autônoma, com conversa fluida, sem perguntas repetidas, apresentação de imóveis, agenda de visitas e especialistas internos coordenados por um agente principal.

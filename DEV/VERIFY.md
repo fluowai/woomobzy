@@ -1,5 +1,14 @@
 # Verificação
 
+## 2026-10-01 — Sincronização local × GitHub
+
+- `git status --porcelain`: **0 linhas** (worktree limpa, igual ao branch do GitHub).
+- `git status -sb`: `codex/main-whatsapp-media-hotfix...origin/codex/main-whatsapp-media-hotfix` sem ahead/behind.
+- `git ls-remote origin main refs/heads/codex/main-whatsapp-media-hotfix`: `4b2f8c796a…` e `0553212793…` — iguais aos refs locais.
+- `git fetch origin` e `git fetch origin main:main`: exit 0; ref local `main` atualizado `acb5f42..4b2f8c7`.
+- Backups: `C:\Users\paulo\OneDrive\Área de Trabalho\IMOBZY-backup-2026-10-01.zip` e `stash@{0}` (restaurar com `git stash pop`).
+- Limitação: `git` não está no PATH; executável usado: `C:\Users\paulo\AppData\Local\GitHubDesktop\app-3.6.5\resources\app\git\cmd\git.exe`.
+
 ## 2026-08-15 — Agentes de IA autônomos e swarm operacional
 
 - `node --check` nos 8 arquivos JS alterados do runtime/API: **aprovado**.

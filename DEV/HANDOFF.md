@@ -1,5 +1,12 @@
 # Handoff
 
+## 2026-10-01 — Sincronização local × GitHub (fluowai/woomobzy)
+
+- A worktree foi restaurada ao estado exato do GitHub (branch `codex/main-whatsapp-media-hotfix`, `0553212`): 187 arquivos apagados restaurados e 30 modificações revertidas; `git status` limpo.
+- As 231 mudanças locais antigas (~16/08) estão preservadas em `stash@{0}` (`backup-antes-sincronizar-github-20261001`) e no zip `C:\Users\paulo\OneDrive\Área de Trabalho\IMOBZY-backup-2026-10-01.zip`; restaurar com `git stash pop` se necessário.
+- Ref local `main` atualizado para `4b2f8c7` (= remoto). Nenhum commit/push foi executado.
+- Pendências: branch ainda divergido do `main` (+155/-136) — merge é decisão futura; o arquivo lixo `-H` está commitado no branch (remover exigiria push); `git` não está no PATH (usar o executável do GitHub Desktop).
+
 ## 2026-08-15 — Agentes de IA autônomos e multiagente
 
 - **Status**: implementação concluída no working tree; migration aplicada e validada no Supabase; build e 271 testes aprovados.

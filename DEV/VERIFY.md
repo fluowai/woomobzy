@@ -8,6 +8,9 @@
 - `git fetch origin` e `git fetch origin main:main`: exit 0; ref local `main` atualizado `acb5f42..4b2f8c7`.
 - Backups: `C:\Users\paulo\OneDrive\Área de Trabalho\IMOBZY-backup-2026-10-01.zip` e `stash@{0}` (restaurar com `git stash pop`).
 - Limitação: `git` não está no PATH; executável usado: `C:\Users\paulo\AppData\Local\GitHubDesktop\app-3.6.5\resources\app\git\cmd\git.exe`.
+- Gates: `npm run lint`: **0 erros** (571 warnings pré-existentes); `npm run build`: **aprovado** (exit 0, 1m59s).
+- `git push origin codex/main-whatsapp-media-hotfix`: `05532127..d38e5ca8` aceito; `git push -u origin copilot/worktree-2026-03-14T02-42-48`: novo branch criado em `origin`.
+- Verificação final: `git status --porcelain` = 0 linhas; todas as 8 branches locais sem ahead/behind em relação às suas upstreams.
 
 ## 2026-08-15 — Agentes de IA autônomos e swarm operacional
 

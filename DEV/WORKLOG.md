@@ -6,7 +6,8 @@
 - **Diagnóstico**: git fora do PATH (usado o git 2.53 do GitHub Desktop); branch `codex/main-whatsapp-media-hotfix` igual ao remoto (`0553212`), mas worktree com 231 mudanças não commitadas de ~16/08: 187 arquivos apagados (whatsapp-service 78, documentation 53, migrations 43, ai_worker 7, Dockerfile.agro/api…), 30 modificados (5 reais: `.dockerignore`, `Dockerfile.whatsapp`, `server/api/crm/webchat.routes.js`, teste de auth, `document_worker/app/main.py`; demais só CRLF via `autocrlf=true` do git do GitHub Desktop) e 14 untracked.
 - **Decisão (maestro)**: direção "local = GitHub", com backup prévio; branch segue divergido do `main` (+155/-136), sem merge nesta atividade.
 - **Correção**: backup em `C:\Users\paulo\OneDrive\Área de Trabalho\IMOBZY-backup-2026-10-01.zip` (44 arquivos) + `git stash push -u` (`stash@{0}: backup-antes-sincronizar-github-20261001`); `git restore --source=HEAD --staged --worktree .` restaurou os 187 apagados e reverteu os 30 modificados; `git fetch origin main:main` atualizou o ref local `main` (`acb5f42` → `4b2f8c7`).
-- **Resultado**: `git status --porcelain` = 0 linhas; worktree idêntica ao branch do GitHub. Nenhum commit/push executado.
+- **Resultado**: `git status --porcelain` = 0 linhas; worktree idêntica ao branch do GitHub. Gates: `npm run lint` 0 erros (571 warnings pré-existentes) e `npm run build` aprovado (1m59s).
+- **Push**: commits `c960c515` (docs) e `d38e5ca8` (remoção do arquivo lixo `-H`, dump HTTP 401) enviados em `codex/main-whatsapp-media-hotfix`; a branch local `copilot/worktree-2026-03-14T02-42-48` (existia só na máquina) foi publicada em `origin` com upstream configurado.
 
 ## [2026-08-15] Agentes de IA autônomos: swarm real, memória, ferramentas e segurança — IMPLEMENTADO
 

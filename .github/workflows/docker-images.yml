@@ -1,0 +1,141 @@
+name: Docker Images
+
+on:
+  push:
+    branches:
+      - main
+      - codex/main-whatsapp-media-hotfix
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: frontend
+            image: ghcr.io/fluowai/woomobzy-frontend
+            dockerfile: Dockerfile.frontend
+            deployment_alias: ghcr.io/fluowai/woomobzy-frontend:latest
+          - name: api
+            image: ghcr.io/fluowai/woomobzy-api
+            dockerfile: Dockerfile.api
+            # Portainer currently references this tag in its stored stack definition.
+            deployment_alias: ghcr.io/fluowai/woomobzy-api:5daaa4a05b3d9f85556d4c41b1d23b655e44bfa7
+          - name: whatsapp
+            image: ghcr.io/fluowai/woomobzy-whatsapp
+            dockerfile: Dockerfile.whatsapp
+            deployment_alias: ghcr.io/fluowai/woomobzy-whatsapp:latest
+          - name: agro
+            image: ghcr.io/fluowai/woomobzy-agro
+            dockerfile: Dockerfile.agro
+            deployment_alias: ghcr.io/fluowai/woomobzy-agro:latest
+          - name: freellm
+            image: ghcr.io/fluowai/wootech-ai-freellm
+            dockerfile: docker/wootech-ai/Dockerfile
+            context: docker/wootech-ai
+            deployment_alias: ghcr.io/fluowai/wootech-ai-freellm:latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push ${{ matrix.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context || '.' }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ${{ matrix.image }}:latest
+            ${{ matrix.image }}:${{ github.sha }}
+            ${{ matrix.deployment_alias }}
+          build-args: |
+            VITE_API_URL=same-origin
+            VITE_WHATSAPP_API_URL=/api/whatsapp
+            VITE_WHATSAPP_WS_URL=/api/whatsapp/ws
+            VITE_MINIO_PUBLIC_URL=https://mypanel.wootech.com.br
+            VITE_SUPABASE_URL=runtime
+            VITE_SUPABASE_ANON_KEY=runtime
+            VITE_PANEL_URL=https://imob.wootech.com.br
+
+  deploy-portainer:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Redeploy Portainer stack
+        id: redeploy
+        env:
+          PORTAINER_WEBHOOK_URL: ${{ secrets.PORTAINER_WEBHOOK_URL }}
+        run: |
+          if [ -z "$PORTAINER_WEBHOOK_URL" ]; then
+            echo "PORTAINER_WEBHOOK_URL is not configured. Images were published, but Portainer redeploy was skipped."
+            echo "triggered=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          separator="?"
+          case "$PORTAINER_WEBHOOK_URL" in
+            *\?*) separator="&" ;;
+          esac
+
+          curl --fail --show-error --silent \
+            --request POST \
+            "$PORTAINER_WEBHOOK_URL"
+
+          curl --fail --show-error --silent \
+            --request POST \
+            "${PORTAINER_WEBHOOK_URL}${separator}tag=${GITHUB_SHA}"
+          echo "triggered=true" >> "$GITHUB_OUTPUT"
+
+      - name: Verify production API routes
+        if: steps.redeploy.outputs.triggered == 'true'
+        env:
+          PRODUCTION_API_URL: ${{ vars.PRODUCTION_API_URL || 'https://imob.wootech.com.br' }}
+          PRODUCTION_APP_URL: ${{ vars.PRODUCTION_APP_URL || 'https://imob.wootech.com.br' }}
+        run: |
+          for attempt in $(seq 1 12); do
+            system_status=$(curl --silent --output /dev/null --write-out "%{http_code}" \
+              "$PRODUCTION_API_URL/api/system-status")
+            properties_status=$(curl --silent --output /dev/null --write-out "%{http_code}" \
+              "$PRODUCTION_API_URL/api/properties?page=1&limit=1")
+            runtime_config=$(curl --fail --silent --show-error \
+              -H "Cache-Control: no-cache" \
+              "$PRODUCTION_APP_URL/env-config.js" || true)
+            supabase_url=$(printf '%s' "$runtime_config" | sed -n 's/.*VITE_SUPABASE_URL: "\([^"]*\)".*/\1/p')
+            supabase_key=$(printf '%s' "$runtime_config" | sed -n 's/.*VITE_SUPABASE_ANON_KEY: "\([^"]*\)".*/\1/p')
+            supabase_status="000"
+            if [ -n "$supabase_url" ] && [ -n "$supabase_key" ]; then
+              supabase_status=$(curl --silent --output /dev/null --write-out "%{http_code}" \
+                -H "apikey: $supabase_key" \
+                -H "Authorization: Bearer $supabase_key" \
+                "$supabase_url/rest/v1/site_texts?select=key&limit=1" || true)
+            fi
+
+            if [ "$system_status" = "200" ] && [ "$properties_status" = "401" ] && [ "$supabase_status" = "200" ]; then
+              echo "Production API and public Supabase access are healthy."
+              exit 0
+            fi
+
+            echo "Attempt $attempt/12: system-status=$system_status properties=$properties_status supabase=$supabase_status"
+            sleep 10
+          done
+
+          echo "Production API routes or public Supabase credentials are invalid."
+          exit 1

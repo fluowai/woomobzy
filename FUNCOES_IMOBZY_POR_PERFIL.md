@@ -1,0 +1,514 @@
+# Funcoes do sistema IMOBZY por perfil
+
+## Super Admin
+
+O Super Admin tem as seguintes funcoes:
+
+- Dashboard geral da plataforma.
+- Analytics global da plataforma.
+- Monitoramento tecnico do sistema.
+- Gestao de imobiliarias/clientes.
+- Cadastro de novas imobiliarias.
+- Edicao de imobiliarias existentes.
+- Suspensao e reativacao de imobiliarias.
+- Exclusao individual de imobiliarias.
+- Exclusao em massa de imobiliarias.
+- Busca e filtro de imobiliarias.
+- Definicao do nicho da imobiliaria: rural, urbano ou hibrido.
+- Associacao de imobiliarias a planos.
+- Acesso impersonado em uma imobiliaria.
+- Encerramento do modo impersonado.
+- Vinculo de usuarios a organizacoes.
+- Gestao de usuarios administrativos.
+- Alteracao de senha de usuarios.
+- Exclusao de usuarios.
+- Gestao de equipe interna.
+- Convite de membros da equipe.
+- Remocao de membros da equipe.
+- Gestao de tickets de suporte.
+- Filtro de tickets por status.
+- Visualizacao de conversas de suporte.
+- Resposta a tickets.
+- Alteracao de status de tickets.
+- Resolucao de tickets.
+- Gestao de planos.
+- Gestao de assinaturas.
+- Gestao de billing/cobrancas da plataforma.
+- Controle de feature flags.
+- Ativacao e desativacao de funcionalidades.
+- Consulta de audit log.
+- Rastreamento de acoes sensiveis.
+- Gestao de templates globais.
+- Criacao de templates.
+- Duplicacao de templates.
+- Exclusao de templates.
+- Templates de landing page.
+- Templates de email.
+- Templates de contrato.
+- Templates de relatorio.
+- Gestao de dominios customizados.
+- Adicao de dominios.
+- Remocao de dominios.
+- Verificacao de DNS.
+- Sincronizacao de dominios.
+- Gestao de leads de consultoria.
+- Acompanhamento de interessados em consultoria.
+- Importador inteligente de dados.
+- Analise de importacao.
+- Finalizacao de importacao.
+- Importacao de propriedades.
+- Importacao de imagens.
+- Migracao de dados de outros sistemas.
+- Migracao FluowAI.
+- Criacao de jobs de migracao.
+- Teste de conexoes de migracao.
+- Diagnostico de migracao.
+- Dry-run de migracao.
+- Migracao de storage.
+- Validacao de migracao.
+- Geracao de relatorio de migracao.
+- Storage Intelligence.
+- Configuracao de MinIO/S3.
+- Consulta de resumo de armazenamento.
+- Listagem de buckets.
+- Listagem de arquivos.
+- Geracao de URL assinada.
+- Analise de maiores arquivos.
+- Analise por extensao.
+- Analise por prefixo.
+- Analise por cliente/tenant.
+- Deteccao de arquivos duplicados.
+- Deteccao de arquivos orfaos.
+- Simulacao de limpeza.
+- Aplicacao de lifecycle.
+- Exclusao de arquivos expirados.
+- Exclusao de arquivos orfaos.
+- Exclusao de arquivos duplicados.
+- Consulta de logs de storage.
+- Gestao de marketing e SEO.
+- Configuracoes globais da plataforma.
+
+## Cliente Imobiliaria Rural
+
+A imobiliaria rural tem as seguintes funcoes:
+
+- Dashboard rural.
+- Visao geral da operacao rural.
+- Gestao de mensagens WhatsApp.
+- Criacao de instancia WhatsApp.
+- Conexao WhatsApp por QR Code.
+- Conexao WhatsApp por codigo de pareamento.
+- Listagem de conversas WhatsApp.
+- Visualizacao de mensagens.
+- Envio de mensagens de texto.
+- Envio de midias.
+- Importacao de historico WhatsApp.
+- Atualizacao em tempo real de mensagens.
+- Status de instancia WhatsApp.
+- Logout de instancia WhatsApp.
+- Exclusao de instancia WhatsApp.
+- Vinculo de contato WhatsApp ao CRM.
+- Edicao de perfil de contato.
+- Tags em contatos.
+- Transferencia de atendimento.
+- Definicao de prioridade de atendimento.
+- Criacao de tarefas para contato.
+- Central de email.
+- Configuracao de contas de email.
+- Teste de conta de email.
+- Sincronizacao de emails.
+- Listagem de emails.
+- Visualizacao de threads.
+- Envio de email.
+- Resposta de email.
+- Atualizacao de status de email.
+- Agenda ligada aos emails.
+- CRM rural.
+- Cadastro de leads.
+- Edicao de leads.
+- Exclusao de leads.
+- Exclusao em massa de leads.
+- Alteracao de status do lead.
+- Registro de atividades no lead.
+- Historico do lead.
+- Match de leads com propriedades.
+- Distribuicao de leads para corretores.
+- Distribuicao em massa de leads.
+- Estrategias de distribuicao de leads.
+- Campanhas drip.
+- Relatorios de pipeline.
+- Ranking de corretores.
+- Kanban rural.
+- Movimentacao de leads por etapas.
+- Criacao de etapas personalizadas.
+- Filtro de leads.
+- Detalhe rapido do lead.
+- Copia de mensagem de abordagem.
+- Abertura de conversa WhatsApp pelo lead.
+- Imoveis rurais.
+- Listagem de propriedades rurais.
+- Cadastro de propriedade rural.
+- Edicao de propriedade rural.
+- Exclusao de propriedade rural.
+- Visualizacao de detalhes da propriedade.
+- Gestao de imagens da propriedade.
+- Gestao de dados rurais da propriedade.
+- Enriquecimento de dados da propriedade.
+- Preparacao de propriedade para publicacao.
+- Cadastro tecnico rural.
+- Visualizacao de propriedades georreferenciadas.
+- Visualizacao de arquivos importados.
+- Visualizacao de poligonos validados.
+- Visualizacao de cadastros pendentes.
+- Importacao de dados tecnicos.
+- Validacao de poligonos.
+- Territorio rural.
+- Geointeligencia.
+- Mapas rurais.
+- Processamento de geodados.
+- Consulta por coordenadas.
+- Analise de area rural.
+- Consulta PRODES.
+- Consulta de embargos.
+- Consulta MapBiomas.
+- Consulta de producao agricola.
+- Consulta SNCR.
+- Localizacao de CAR.
+- Busca de CAR por localizacao.
+- Visualizacao de candidatos de CAR.
+- Criacao de propriedade a partir do CAR.
+- Valuation rural.
+- Valuation por propriedade.
+- Valuation por CAR.
+- Historico de valuations.
+- Consulta de comparaveis.
+- Regras de avaliacao.
+- Precificacao de fazendas.
+- Precificacao de areas rurais.
+- Due diligence rural.
+- Checklist documental rural.
+- Status documental aprovado.
+- Status documental pendente.
+- Status documental rejeitado.
+- Status documental faltando.
+- Score geral.
+- Score fundiario.
+- Score ambiental.
+- Validacao CAR.
+- Validacao SNCR/CCIR/INCRA.
+- Validacao SIGEF/georreferenciamento.
+- Validacao ITR/Receita.
+- Alteracao manual de status documental.
+- Atualizacao documental por consulta externa.
+- Dossie inteligente.
+- Consolidacao de dados da propriedade.
+- Verificacao de georreferenciamento.
+- Verificacao de CAR ambiental.
+- Verificacao de matricula.
+- Geracao de dossie.
+- Exportacao de dossie em PDF.
+- Data room.
+- Organizacao de documentos da propriedade.
+- Compartilhamento de informacoes para negociacao.
+- Contratos e juridico.
+- Gestao de documentos juridicos.
+- Financeiro rural.
+- Gestao de metas rurais.
+- VGV acumulado.
+- Comissao estimada.
+- Quantidade de fazendas vendidas.
+- Ticket medio.
+- Salvamento de metas.
+- Site da imobiliaria rural.
+- Criacao de site.
+- Configuracao de site.
+- Criacao de paginas.
+- Edicao de paginas.
+- Publicacao de paginas.
+- Duplicacao de paginas.
+- Reordenacao de paginas.
+- Editor visual.
+- Landing pages.
+- Criacao de landing pages.
+- Edicao de landing pages.
+- Publicacao de landing pages.
+- Quiz.
+- Criacao de campanhas de quiz.
+- Edicao de quiz.
+- Visualizacao de respostas de quiz.
+- Geracao de quiz por PDF.
+- Matchmaking 360.
+- Cruzamento de leads com propriedades.
+- Sugestao de propriedades para compradores.
+- Agentes de IA.
+- Criacao de agentes de IA.
+- Edicao de agentes de IA.
+- Exclusao de agentes de IA.
+- Chat com agentes de IA.
+- Memoria de conversa.
+- Limpeza de memoria.
+- Metricas de agentes.
+- Qualificacao de respostas.
+- Registro de aprendizado.
+- Geracao de paginas por IA.
+- Relatorios rurais.
+- BI rural.
+- Indicadores comerciais rurais.
+- Indicadores de carteira rural.
+- Conexoes rurais.
+- Configuracao de integracoes.
+- Configuracao de WhatsApp.
+- Configuracao de email.
+- Configuracao de IA.
+- Configuracoes do sistema.
+- Suporte.
+
+## Cliente Imobiliaria Urbana
+
+A imobiliaria urbana tem as seguintes funcoes:
+
+- Dashboard urbano.
+- Visao geral da operacao urbana.
+- Gestao de mensagens WhatsApp.
+- Criacao de instancia WhatsApp.
+- Conexao WhatsApp por QR Code.
+- Conexao WhatsApp por codigo de pareamento.
+- Listagem de conversas WhatsApp.
+- Visualizacao de mensagens.
+- Envio de mensagens de texto.
+- Envio de midias.
+- Importacao de historico WhatsApp.
+- Atualizacao em tempo real de mensagens.
+- Status de instancia WhatsApp.
+- Logout de instancia WhatsApp.
+- Exclusao de instancia WhatsApp.
+- Vinculo de contato WhatsApp ao CRM.
+- Edicao de perfil de contato.
+- Tags em contatos.
+- Transferencia de atendimento.
+- Definicao de prioridade de atendimento.
+- Criacao de tarefas para contato.
+- Central de email.
+- Configuracao de contas de email.
+- Teste de conta de email.
+- Sincronizacao de emails.
+- Listagem de emails.
+- Visualizacao de threads.
+- Envio de email.
+- Resposta de email.
+- Atualizacao de status de email.
+- CRM urbano.
+- Cadastro de leads.
+- Edicao de leads.
+- Exclusao de leads.
+- Exclusao em massa de leads.
+- Alteracao de status do lead.
+- Registro de atividades.
+- Historico do lead.
+- Match de leads com imoveis.
+- Distribuicao de leads.
+- Campanhas drip.
+- Relatorios de pipeline.
+- Ranking de corretores.
+- Clientes unificados.
+- Listagem de clientes.
+- Cadastro de cliente.
+- Edicao de cliente.
+- Exclusao de cliente.
+- Centralizacao de dados de relacionamento.
+- Kanban urbano.
+- Movimentacao de leads por etapas.
+- Criacao de etapas personalizadas.
+- Filtro de leads por intencao.
+- Detalhe rapido do lead.
+- Abertura de WhatsApp pelo lead.
+- Selecao multipla de leads.
+- Imoveis urbanos.
+- Listagem de imoveis urbanos.
+- Cadastro de imovel urbano.
+- Edicao de imovel urbano.
+- Exclusao de imovel urbano.
+- Gestao de imagens.
+- Gestao de dados comerciais do imovel.
+- Publicacao em site.
+- Publicacao em portais.
+- Empreendimentos.
+- Loteamentos.
+- Listagem de empreendimentos.
+- Listagem de loteamentos.
+- Detalhe de loteamento.
+- Gestao de unidades/lotes.
+- Gestao de locacao.
+- Listagem de contratos de locacao.
+- Criacao de contrato de locacao.
+- Edicao de contrato de locacao.
+- Exclusao de contrato de locacao.
+- Alteracao de status de contrato.
+- Dashboard de locacao.
+- Timeline de locacao.
+- Modelos de contrato.
+- Validacao de templates de contrato.
+- Assinatura digital.
+- Envio de convite de assinatura.
+- Envio de convite de assinatura em massa.
+- Verificacao de provedor de assinatura.
+- Webhook de assinatura.
+- Vistorias.
+- Upload de fotos de vistoria.
+- Geracao de faturas.
+- Marcacao de fatura como paga.
+- Calculo de reajuste.
+- Aplicacao de reajuste.
+- Distrato.
+- Notificacoes de vencimento.
+- Notificacoes de atraso.
+- Notificacoes de reajuste.
+- Notificacoes de contrato expirando.
+- Compliance urbano.
+- Validacoes urbanas.
+- Consulta de dados legais urbanos.
+- Verificacao documental.
+- Cobranca.
+- Listagem de cobrancas.
+- Criacao de cobranca.
+- Geracao de cobrancas mensais.
+- Marcacao de cobranca como paga.
+- Cancelamento de cobranca.
+- Relatorios de cobranca.
+- Exportacao de dados financeiros.
+- Controle de inadimplentes.
+- Simulador financeiro.
+- Simulacao de financiamento.
+- Valor do imovel.
+- Entrada.
+- Numero de parcelas.
+- Taxa de juros.
+- Parcelas balao.
+- Calculo de valor financiado.
+- Calculo de parcela mensal.
+- Calculo de custo total.
+- Salvamento de simulacao.
+- Geracao de proposta.
+- Impressao de proposta.
+- Exportador de portais.
+- Configuracao de portais.
+- Publicacao de imovel em portal.
+- Remocao de imovel do portal.
+- Consulta de status de publicacao.
+- Integracao com portais imobiliarios.
+- Integracao Orulo.
+- Administracao de condominios.
+- Controle de chaves.
+- Controle de retirada de chaves.
+- Controle de devolucao de chaves.
+- Status das chaves.
+- Financeiro urbano.
+- Controle de receitas.
+- Controle de pendencias.
+- Gestao financeira ligada a locacao.
+- Gestao de documentos.
+- GED.
+- Upload de documentos.
+- Classificacao de documentos.
+- Analise documental.
+- Portal proprietario urbano.
+- Visualizacao de propriedades do proprietario.
+- Visualizacao de leads relacionados.
+- Visualizacao de documentos.
+- Visualizacao financeira do proprietario.
+- Portal comprador urbano.
+- Busca de imoveis.
+- Filtro de imoveis.
+- Favoritos.
+- Detalhe de imovel.
+- Portal locatario.
+- Visualizacao de contratos.
+- Visualizacao de boletos/cobrancas.
+- Visualizacao de historico.
+- Visualizacao de proximo vencimento.
+- Visualizacao de totais financeiros.
+- Site da imobiliaria urbana.
+- Criacao de site.
+- Configuracao de site.
+- Criacao de paginas.
+- Edicao de paginas.
+- Publicacao de paginas.
+- Duplicacao de paginas.
+- Reordenacao de paginas.
+- Editor visual.
+- Landing pages.
+- Criacao de landing pages.
+- Edicao de landing pages.
+- Publicacao de landing pages.
+- Quiz.
+- Criacao de campanhas de quiz.
+- Edicao de quiz.
+- Visualizacao de respostas de quiz.
+- Geracao de quiz por PDF.
+- Agentes de IA.
+- Criacao de agentes de IA.
+- Edicao de agentes de IA.
+- Exclusao de agentes de IA.
+- Chat com agentes de IA.
+- Memoria de conversa.
+- Metricas de agentes.
+- Registro de aprendizado.
+- Geracao de paginas por IA.
+- Relatorios urbanos.
+- BI urbano.
+- Indicadores gerenciais.
+- Conexoes urbanas.
+- Configuracao de integracoes.
+- Configuracao de WhatsApp.
+- Configuracao de email.
+- Configuracao de IA.
+- Configuracoes do sistema.
+- Suporte.
+
+## Funcoes comuns para Rural e Urbana
+
+- CRM.
+- Kanban.
+- Leads.
+- Clientes/contatos.
+- WhatsApp.
+- Email.
+- Imoveis.
+- Site.
+- Landing pages.
+- Quiz.
+- Editor visual.
+- Agentes de IA.
+- Relatorios.
+- Documentos.
+- Configuracoes.
+- Conexoes.
+- Suporte.
+- Multiusuario.
+- Multi-tenant.
+- Dominios customizados.
+- Tracking de campanhas.
+- Formularios de captacao.
+- Publicacao de paginas.
+- Templates.
+- Upload de arquivos.
+- URLs assinadas para arquivos.
+- Integracoes externas.
+
+## Funcoes publicas
+
+- Pagina comercial do IMOBZY.
+- Pagina de vendas.
+- Pagina de consultoria.
+- Qualificacao de consultoria.
+- Login.
+- Cadastro.
+- Onboarding.
+- Ajuda de DNS.
+- Site publico da imobiliaria.
+- Landing page publica.
+- Quiz publico.
+- Portal do locatario.
+- Formularios de contato.
+- Captacao de leads.
+- Rastreamento por pixels.

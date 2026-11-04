@@ -1,0 +1,11 @@
+<svg width="320" height="72" viewBox="0 0 320 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="4" y="4" width="64" height="64" rx="22" fill="#0B1C18"/>
+  <rect x="4" y="4" width="64" height="64" rx="22" stroke="#1C4A40" stroke-width="2"/>
+  <circle cx="36" cy="36" r="18" stroke="#C8FF66" stroke-width="2.8"/>
+  <path d="M27 43L31.2 26H35.1L39.4 38.8L43.7 26H47.6L51.8 43H47.8L45.2 31.3L41.3 43H37.6L33.6 31.3L31 43H27Z" fill="#F8FAFC"/>
+  <circle cx="50.5" cy="22.5" r="5.5" fill="#14B87A"/>
+  <text x="86" y="29" fill="#0B1C18" font-family="Outfit, Inter, Arial, sans-serif" font-size="13" font-weight="800" letter-spacing="0.28em">WOOTECH</text>
+  <text x="86" y="56" fill="#0B1C18" font-family="Outfit, Inter, Arial, sans-serif" font-size="31" font-weight="800">Imob</text>
+  <path d="M171 40H245" stroke="#14B87A" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="256" cy="40" r="8" fill="#C8FF66"/>
+</svg>

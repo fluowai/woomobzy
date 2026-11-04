@@ -1,0 +1,322 @@
+version: "3.8"
+
+services:
+  frontend:
+    image: ghcr.io/fluowai/woomobzy-frontend:latest
+    environment:
+      VITE_API_URL: "same-origin"
+      VITE_WHATSAPP_API_URL: "/api/whatsapp"
+      VITE_WHATSAPP_WS_URL: "/api/whatsapp/ws"
+      VITE_SUPABASE_URL: "https://epgaftsjmqmpczvzsrcc.supabase.co"
+      VITE_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2FmdHNqbXFtcGN6dnpzcmNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5NjUyNDUsImV4cCI6MjEwMDU0MTI0NX0.3p4x2i_BtGwzp4ElNV-HqeeVlQcQS53SWai5nJ2NTL0"
+      VITE_PANEL_URL: "https://imob.wootech.com.br"
+      VITE_PUBLIC_APP_URL: "https://imob.wootech.com.br"
+      VITE_PLATFORM_IP: "207.58.153.219"
+    networks:
+      - wootech1
+      - imobfluow_internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=wootech1"
+      - "traefik.http.routers.wootech_imob_frontend.rule=Host(`imob.wootech.com.br`) || Host(`imobfluow.consultio.com.br`)"
+      - "traefik.http.routers.wootech_imob_frontend.entrypoints=websecure"
+      - "traefik.http.routers.wootech_imob_frontend.tls.certresolver=letsencryptresolver"
+      - "traefik.http.routers.wootech_imob_frontend.priority=1"
+      - "traefik.http.routers.wootech_imob_frontend.service=wootech_imob_frontend"
+      - "traefik.http.services.wootech_imob_frontend.loadbalancer.server.port=80"
+
+  api:
+    image: ghcr.io/fluowai/woomobzy-api:latest
+    environment:
+      WOOTECH_AI_BASE_URL: http://wootech-ai-gateway:3000/v1
+      WOOTECH_AI_API_KEY: ${WOOTECH_AI_API_KEY:?Initialize Wootech AI secrets}
+      WOOTECH_AI_ENABLED: ${WOOTECH_AI_ENABLED:-false}
+      NODE_ENV: production
+      PORT: 3002
+      WHATSAPP_PROVIDER: "whatsmeow"
+      WHATSAPP_WEBHOOK_URL: "http://api:3002"
+      ALLOWED_ORIGINS: "https://imob.wootech.com.br,https://imobfluow.consultio.com.br"
+      CORS_ORIGINS: "https://imob.wootech.com.br,https://imobfluow.consultio.com.br"
+      VITE_SUPABASE_URL: "https://epgaftsjmqmpczvzsrcc.supabase.co"
+      VITE_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2FmdHNqbXFtcGN6dnpzcmNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5NjUyNDUsImV4cCI6MjEwMDU0MTI0NX0.3p4x2i_BtGwzp4ElNV-HqeeVlQcQS53SWai5nJ2NTL0"
+      SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2FmdHNqbXFtcGN6dnpzcmNjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDk2NTI0NSwiZXhwIjoyMTAwNTQxMjQ1fQ.tx6ap1RQ-gPCWn_vQQ7Up-YVknjwnx2F27HWAAUqtwo"
+      SUPABASE_JWT_SECRET: "RISMBLbL3RvTt216f7d3FFQq1SE8pXDMCkcubtboBqT87vV87Da6KvWVY7fDdLHxY918CE3bQm6zy4QGCdmutQ=="
+      DATABASE_URL: "postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=require&default_query_exec_mode=simple_protocol"
+      SUPABASE_DB_URL: "postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=require&default_query_exec_mode=simple_protocol"
+      PGSSLMODE: require
+      WHATSAPP_API_URL: "http://whatsapp-service:3100"
+      WHATSMEOW_URL: "http://whatsapp-service:3100"
+      NODE_URL: "http://api:3002"
+      AGRO_INTEL_URL: "http://agro-intelligence:8000"
+      OPENAI_API_KEY: "sk-dummy1234567890"
+      GEMINI_API_KEY: "AIzaSy-dummy1234567890"
+      GROQ_API_KEY: "gsk_dummy1234567890123456789012345678901234567890123456"
+      WHATSAPP_SERVICE_TOKEN: "b145f12f69de4aa95e9d3664ead5353b344decc130418e5cb8b21808cb08e833"
+      WHATSAPP_INTERNAL_TOKEN: "61b0739dac8483b85be02e43e9ea35afb52fb2f4b0bb4e0af077f380db18fb5b"
+      WHATSAPP_WS_JWT_SECRET: "f8a2c9e1d4b7f3a6e2d8c5b9a1f4e7d2c6b3a9f1e5d8c2b6a4f7e1d3c9b5a8f2"
+      WHATSAPP_AI_AUTOMATION: "true"
+      RABBITMQ_URL: "amqp://imobzy:Argo%4015077399brsc@rabbitmq-server:5672/"
+      
+      # --- Wootech AI Voz & Mail (Omnichannel & LLM Router) ---
+      WOOTECH_MAIL_API_URL: "http://api:3002/internal/mail-mock"
+      WOOTECH_VOICE_STREAM_HOST: "imob.wootech.com.br"
+      WOOTECH_EVENT_BUS_MODE: "memory"
+      MEDIA_STORAGE_PROVIDER: "minio"
+      MINIO_ENDPOINT: "https://nb.consultio.com.br"
+      MINIO_PUBLIC_URL: "https://nb.consultio.com.br"
+      MINIO_ACCESS_KEY: "8aHPnW4JQsRWhbKld9Yw"
+      MINIO_SECRET_KEY: "YRZMCNfcdIZhUtTXpPCvvSiPB74ZFTEtnZ5B9juc"
+      MINIO_REGION: "us-east-1"
+      MINIO_WHATSAPP_BUCKET: "imobzywhatsapp"
+      TRAEFIK_DYNAMIC_DIR: "/app/traefik/dynamic"
+      TRAEFIK_FRONTEND_SERVICE: "wootech_imob_frontend@docker"
+      TRAEFIK_API_SERVICE: "wootech_imob_api@docker"
+    volumes:
+      - imobzy_traefik_dynamic:/app/traefik/dynamic
+    networks:
+      - wootech_ai_api
+      - wootech1
+      - imobfluow_internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=wootech1"
+      - "traefik.http.routers.wootech_imob_whatsapp_ws.rule=(Host(`imob.wootech.com.br`) || Host(`imobfluow.consultio.com.br`)) && PathPrefix(`/api/whatsapp/ws`)"
+      - "traefik.http.routers.wootech_imob_whatsapp_ws.entrypoints=websecure"
+      - "traefik.http.routers.wootech_imob_whatsapp_ws.tls.certresolver=letsencryptresolver"
+      - "traefik.http.routers.wootech_imob_whatsapp_ws.priority=20"
+      - "traefik.http.routers.wootech_imob_whatsapp_ws.service=wootech_imob_api"
+      - "traefik.http.routers.wootech_imob_api.rule=(Host(`imob.wootech.com.br`) || Host(`imobfluow.consultio.com.br`)) && PathPrefix(`/api`)"
+      - "traefik.http.routers.wootech_imob_api.entrypoints=websecure"
+      - "traefik.http.routers.wootech_imob_api.tls.certresolver=letsencryptresolver"
+      - "traefik.http.routers.wootech_imob_api.priority=10"
+      - "traefik.http.routers.wootech_imob_api.service=wootech_imob_api"
+      - "traefik.http.services.wootech_imob_api.loadbalancer.server.port=3002"
+
+  whatsapp-service:
+    image: ghcr.io/fluowai/woomobzy-whatsapp:latest
+    environment:
+      NODE_ENV: production
+      PORT: 3100
+      ALLOWED_ORIGINS: "https://imob.wootech.com.br,https://imobfluow.consultio.com.br"
+      CORS_ORIGINS: "https://imob.wootech.com.br,https://imobfluow.consultio.com.br"
+      SUPABASE_URL: "https://epgaftsjmqmpczvzsrcc.supabase.co"
+      SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2FmdHNqbXFtcGN6dnpzcmNjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDk2NTI0NSwiZXhwIjoyMTAwNTQxMjQ1fQ.tx6ap1RQ-gPCWn_vQQ7Up-YVknjwnx2F27HWAAUqtwo"
+      SUPABASE_JWT_SECRET: "RISMBLbL3RvTt216f7d3FFQq1SE8pXDMCkcubtboBqT87vV87Da6KvWVY7fDdLHxY918CE3bQm6zy4QGCdmutQ=="
+      SUPABASE_DB_URL: "postgresql://postgres.epgaftsjmqmpczvzsrcc:Ru3fxgGYHMepMYm3@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=require&default_query_exec_mode=simple_protocol"
+      PGSSLMODE: require
+      NODE_URL: "http://api:3002"
+      OPENAI_API_KEY: "sk-dummy1234567890"
+      GEMINI_API_KEY: "AIzaSy-dummy1234567890"
+      GROQ_API_KEY: "gsk_dummy1234567890123456789012345678901234567890123456"
+      WHATSAPP_SERVICE_TOKEN: "b145f12f69de4aa95e9d3664ead5353b344decc130418e5cb8b21808cb08e833"
+      WHATSAPP_INTERNAL_TOKEN: "61b0739dac8483b85be02e43e9ea35afb52fb2f4b0bb4e0af077f380db18fb5b"
+      WHATSAPP_WS_JWT_SECRET: "f8a2c9e1d4b7f3a6e2d8c5b9a1f4e7d2c6b3a9f1e5d8c2b6a4f7e1d3c9b5a8f2"
+      WHATSAPP_AI_AUTOMATION: "true"
+      MEDIA_STORAGE_PROVIDER: "minio"
+      MINIO_ENDPOINT: "https://nb.consultio.com.br"
+      MINIO_PUBLIC_URL: "https://nb.consultio.com.br"
+      MINIO_ACCESS_KEY: "8aHPnW4JQsRWhbKld9Yw"
+      MINIO_SECRET_KEY: "YRZMCNfcdIZhUtTXpPCvvSiPB74ZFTEtnZ5B9juc"
+      MINIO_REGION: "us-east-1"
+      MINIO_WHATSAPP_BUCKET: "imobzywhatsapp"
+    volumes:
+      - whatsapp_sessions:/app/.sessions
+    networks:
+      - imobfluow_internal
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    hostname: rabbitmq-server
+    environment:
+      RABBITMQ_ERLANG_COOKIE: "IMOBZYRABBITMQSECRETCOOKIESWARM"
+      RABBITMQ_DEFAULT_USER: "imobzy"
+      RABBITMQ_DEFAULT_PASS: "Argo@15077399brsc"
+      RABBITMQ_NODENAME: "rabbit@rabbitmq-server"
+    entrypoint: >
+      sh -c "
+        echo -n IMOBZYRABBITMQSECRETCOOKIESWARM > /var/lib/rabbitmq/.erlang.cookie &&
+        chmod 400 /var/lib/rabbitmq/.erlang.cookie &&
+        exec docker-entrypoint.sh rabbitmq-server
+      "
+    volumes:
+      - rabbitmq_data_v4:/var/lib/rabbitmq
+    networks:
+      - imobfluow_internal
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  agro-intelligence:
+    image: ghcr.io/fluowai/woomobzy-agro:latest
+    networks:
+      - imobfluow_internal
+
+
+  wootech-ai-gateway:
+    image: ${WOOTECH_AI_GATEWAY_IMAGE:-wootech-ai-freellm:2388b868-1}
+    environment:
+      APP_PORT: '3000'
+      LITELLM_URL: http://wootech-ai-litellm:4000
+      WOOTECH_AI_API_KEY: ${WOOTECH_AI_API_KEY:?Initialize Wootech AI secrets}
+      LITELLM_MASTER_KEY: ${WOOTECH_AI_LITELLM_MASTER_KEY:?Initialize Wootech AI secrets}
+      DB_HOST: wootech-ai-db
+      DB_PORT: '5432'
+      DB_USER: freellm
+      DB_PASSWORD: ${WOOTECH_AI_DB_PASSWORD:?Initialize Wootech AI secrets}
+      DB_NAME: freellm
+    networks:
+      - wootech_ai_api
+      - wootech_ai_data
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - '-q'
+        - '-O'
+        - /dev/null
+        - http://127.0.0.1:3000/healthz
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
+  wootech-ai-litellm:
+    image: ghcr.io/berriai/litellm:v1.100.0@sha256:c8756e7b9a61fe45df2ccb5b781d388c3b2f3a21ef9e4956630caef20f9f03aa
+    command:
+      - '--config=/etc/wootech-ai/litellm.yaml'
+      - '--port=4000'
+    environment:
+      DATABASE_URL: postgresql://llmproxy:${WOOTECH_AI_LITELLM_DB_PASSWORD:?Initialize Wootech AI secrets}@wootech-ai-db:5432/litellm
+      LITELLM_MASTER_KEY: ${WOOTECH_AI_LITELLM_MASTER_KEY:?Initialize Wootech AI secrets}
+      LITELLM_SALT_KEY: ${WOOTECH_AI_LITELLM_SALT_KEY:?Initialize Wootech AI secrets}
+      GROQ_API_KEY: ${WOOTECH_AI_GROQ_API_KEY:-}
+      STORE_MODEL_IN_DB: 'False'
+      LITELLM_LOG: ERROR
+    configs:
+      - source: wootech_ai_litellm
+        target: /etc/wootech-ai/litellm.yaml
+    networks:
+      - wootech_ai_data
+      - wootech_ai_egress
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - '-c'
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:4000/health/liveliness')
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 10s
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+  wootech-ai-db:
+    image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: ${WOOTECH_AI_POSTGRES_PASSWORD:?Initialize Wootech AI secrets}
+      WOOTECH_AI_DB_PASSWORD: ${WOOTECH_AI_DB_PASSWORD:?Initialize Wootech AI secrets}
+      LITELLM_DB_PASSWORD: ${WOOTECH_AI_LITELLM_DB_PASSWORD:?Initialize Wootech AI secrets}
+    configs:
+      - source: wootech_ai_db_init
+        target: /docker-entrypoint-initdb.d/10-wootech-ai.sh
+    volumes:
+      - wootech_ai_postgres:/var/lib/postgresql/data
+    networks:
+      - wootech_ai_data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U postgres -d postgres
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.wootech_ai_data == true
+      restart_policy:
+        condition: any
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+  wootech-ai-metrics:
+    image: prom/prometheus:v3.5.0@sha256:63805ebb8d2b3920190daf1cb14a60871b16fd38bed42b857a3182bc621f4996
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+    configs:
+      - source: wootech_ai_prometheus
+        target: /etc/prometheus/prometheus.yml
+    volumes:
+      - wootech_ai_metrics:/prometheus
+    networks:
+      - wootech_ai_data
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.wootech_ai_data == true
+      restart_policy:
+        condition: any
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+volumes:
+  wootech_ai_postgres:
+  wootech_ai_metrics:
+  whatsapp_sessions:
+  rabbitmq_data_v4:
+  imobzy_traefik_dynamic:
+    external: true
+
+networks:
+  wootech_ai_api:
+    internal: true
+    driver: overlay
+  wootech_ai_data:
+    internal: true
+    driver: overlay
+  wootech_ai_egress:
+    driver: overlay
+  wootech1:
+    external: true
+  imobfluow_internal:
+    driver: overlay
+
+configs:
+  wootech_ai_litellm:
+    file: ./docker/wootech-ai/litellm-config.yaml
+  wootech_ai_db_init:
+    file: ./docker/wootech-ai/init-db.sh
+  wootech_ai_prometheus:
+    file: ./docker/wootech-ai/prometheus.yml

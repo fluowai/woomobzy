@@ -1,0 +1,84 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+node_modules
+dist
+dist-ssr
+*.local
+# Environment files - NEVER COMMIT THESE
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+# Secrets backup
+*.secrets.md
+portainer-stack-*-filled.yml
+portainer-stack-pronta-corrigida.yml
+stack-wootech-imob-prod-portainer.yml
+# Security scan reports (raw scanner output)
+security-reports/
+# Debug files
+debug_scrape.html
+*.debug
+scratch/
+outputs/
+WaCalls_repo/
+whatsapp-service/run_*.txt
+whatsapp-service/internal/voip/media/mlow/testdata/
+scripts/debug/
+imobzy-message-isolation-report-*.json
+owner-access-repair-*.json
+# WhatsApp Sessions
+.sessions/
+# Traefik certificate storage - contains private keys in production
+traefik/acme.json
+# Test coverage
+coverage
+# Backup files
+*.bak
+*.backup
+*.new
+# Build artifacts
+whatsapp-service/build_output.txt
+whatsapp-service/out.txt
+whatsapp-service/whatsapp-service.exe
+instagram-service/node_modules/
+instagram-service/dist/
+whatsapp-service/*.exe
+whatsapp-service/server.exe
+# Temp files
+*.tmp
+# Windows artifacts
+nul
+# Scratch / ad-hoc dev scripts (nao commitar)
+/scratch*.cjs
+/scratch*.mjs
+/test-api.mjs
+/test-chat.*
+/run_my_migration.mjs
+/add_templates_script.mjs
+/scripts/alter.mjs
+/check-lic.js
+/check-orgs.js
+/check_site_texts.js
+/fix_site_texts_policy.js
+/patch-woo.js
+/test-*.js
+test-results/
+/playwright-report/data/

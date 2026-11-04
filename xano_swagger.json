@@ -1,0 +1,2505 @@
+﻿{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API Connection - Software I.A",
+    "description": "Welcome! Here you will have access to integration information that will help you in your development process in addition to all the API references for our AI system.\n\nTo use the API, all endpoints require authentication. The scheme \"Authorization: Bearer \u003cyour apiKey\u003e\" must be sent in the header of all calls.\n\nThis is the base link for all endpoints: https://xltw-api6-8lww.b2.xano.io/api:5ONttZdQ\n\nTo check your API key, simply access your login to the system, navigate to the profile tab, scroll to the credentials part and click on display apiKey.\n\nWe recommend using a ZAPIER, PLUGA or INTEGROMAT type integrator. Through these services you will be able to use our software connected to thousands of solutions. Our support team can help you via WhatsApp: +55 11 93623-4349\n\nNew features are being developed and will be released soon.\n\n--------------------------------------\n\nSeja bem-vindo(a)! Aqui você terá acesso as informações de integração que irão te ajudar no seu processo de desenvolvimento além de toda a referência da API do sistema de I.A contratado. \n\nPara utilizar a API, todos endpoints exigem autenticação. O esquema \"Authorization: Bearer \u003csua apiKey\u003e\" deve ser enviado no header de todas as chamadas.\n\nEsse é o link base para todos os endpoints: https://xltw-api6-8lww.b2.xano.io/api:5ONttZdQ\n\nPara consultar sua chave API, basta acessar seu login no sistema, navegar até a aba perfil, rolar até a parte de credênciais e clicar em exibir apiKey.\n\nAconselhamos a utilização um integrador do tipo ZAPIER, PLUGA ou INTEGROMAT. Através desses serviços você conseguira utilizar nosso software conectado a milhares de soluções. Nosso time de suporte pode te ajudar através do whatsapp: +55 11 93623-4349\n\nNovos recursos estão sendo desenvolvidos e serão lançados em breve.",
+    "version": "0.0.1"
+  },
+  "servers": [
+    {
+      "url": "https://xltw-api6-8lww.b2.xano.io/api:5ONttZdQ"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {}
+  },
+  "paths": {
+    "/aiTraining/conversation/{trainingId}": {
+      "delete": {
+        "operationId": "API Connection - Software I.A/aiTraining/conversation/{trainingId}|DELETE",
+        "summary": "Delete a conversation training.\n\nDeleta um treinamento de conversação.",
+        "description": "Delete a conversation training.\n\nDeleta um treinamento de conversação.\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["aiTraining"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "trainingId",
+            "in": "path",
+            "description": "ID of the Conversation Training that will be deleted.\n\nTítulo do Treinamento de Conversasão que será deletado.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        }
+      }
+    },
+    "/aiTraining/conversation": {
+      "get": {
+        "operationId": "API Connection - Software I.A/aiTraining/conversation|GET",
+        "summary": "Query conversational training from an account assistant.\n\nBusca treinamentos de conversação do assistente de uma conta.",
+        "description": "Query conversational training from an account assistant.\n\nBusca treinamentos de conversação do assistente de uma conta.\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["aiTraining"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "List page you want to query.\n\nPágina da lista que você deseja consultar.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "default": "1"
+            }
+          },
+          {
+            "name": "perPage",
+            "in": "query",
+            "description": "Items per page.\n\nItens por página.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "default": "50"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Search keywords for the training you wish to search for.\n\nPalavras chaves de busca do treinamento que deseja buscar.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": ""
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "itemsReceived": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": ""
+                    },
+                    "curPage": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": ""
+                    },
+                    "nextPage": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": "",
+                      "nullable": true
+                    },
+                    "prevPage": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": "",
+                      "nullable": true
+                    },
+                    "offset": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": ""
+                    },
+                    "itemsTotal": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": ""
+                    },
+                    "pageTotal": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": ""
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": "@{type=object; properties=}"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "API Connection - Software I.A/aiTraining/conversation|POST",
+        "summary": "Create or edit conversation training for your account\u0027s virtual assistant.\n\nCrie ou edite um treinamento de conversação para o assistente virtual da conta.",
+        "description": "Create or edit conversation training for your account\u0027s virtual assistant.\n\nCrie ou edite um treinamento de conversação para o assistente virtual da conta.\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["aiTraining"],
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": ""
+                    },
+                    "created_at": {
+                      "type": "number",
+                      "format": "timestamptz",
+                      "description": "",
+                      "default": "now"
+                    },
+                    "titulo": {
+                      "type": "string",
+                      "description": ""
+                    },
+                    "descricao": {
+                      "type": "string",
+                      "description": ""
+                    },
+                    "texto_completo": {
+                      "type": "string",
+                      "description": ""
+                    },
+                    "tipo": {
+                      "type": "string",
+                      "description": "",
+                      "enum": "contato preco descricao geral horario entrega reserva produto conversacao regras_fixadas cascata lista_precos servico regras_fixadas_antiga video pdf audio website"
+                    },
+                    "ativo": {
+                      "type": "boolean",
+                      "description": "",
+                      "default": "1"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "Title of the Conversation Training that will be created/edited.\n\nTítulo do Treinamento de Conversasão que será criado/editado."
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Description of the Conversation Training that will be created/edited.\n\nDescrição do Treinamento de Conversasão que será criado/editado."
+                  },
+                  "trainingId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "ID of the Conversation Training that will be edited. Must be 0 when creating a new training.\n\nTítulo do Treinamento de Conversasão que será criado/editado. Deve ser 0 quando estiver criando um novo treinamento."
+                  },
+                  "active": {
+                    "type": "boolean",
+                    "description": "Boolean indicating whether the training will be active or not.\n\nBooleano indicando se o treinamento ficará ativo ou não."
+                  }
+                },
+                "required": ["title", "description", "trainingId", "active"]
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "Title of the Conversation Training that will be created/edited.\n\nTítulo do Treinamento de Conversasão que será criado/editado."
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Description of the Conversation Training that will be created/edited.\n\nDescrição do Treinamento de Conversasão que será criado/editado."
+                  },
+                  "trainingId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "ID of the Conversation Training that will be edited. Must be 0 when creating a new training.\n\nTítulo do Treinamento de Conversasão que será criado/editado. Deve ser 0 quando estiver criando um novo treinamento."
+                  },
+                  "active": {
+                    "type": "boolean",
+                    "description": "Boolean indicating whether the training will be active or not.\n\nBooleano indicando se o treinamento ficará ativo ou não."
+                  }
+                },
+                "required": ["title", "description", "trainingId", "active"]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aiTraining/newModel": {
+      "get": {
+        "operationId": "API Connection - Software I.A/aiTraining/newModel|GET",
+        "summary": "GET the full text block from an agent.\n\nObtém o bloco de texto completo de treinamento do agente da conta.",
+        "description": "GET the full text block from an agent.\n\nObtém o bloco de texto completo de treinamento do agente da conta.\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["aiTraining"],
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": ""
+                    },
+                    "text": {
+                      "type": "string",
+                      "description": ""
+                    },
+                    "markdownText": {
+                      "type": "string",
+                      "description": ""
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        }
+      },
+      "put": {
+        "operationId": "API Connection - Software I.A/aiTraining/newModel|PUT",
+        "summary": "Edit the training text block for the account\u0027s virtual assistant. This only works for assistants using the new model.\n\nEdite o bloco de texto de treinamento para o assistente virtual da conta. Só funciona para assistentes do novo modelo.",
+        "description": "Edit the training text block for the account\u0027s virtual assistant. This only works for assistants using the new model.\n\nEdite o bloco de texto de treinamento para o assistente virtual da conta. Só funciona para assistentes do novo modelo.\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["aiTraining"],
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": ""
+                    },
+                    "text": {
+                      "type": "string",
+                      "description": ""
+                    },
+                    "markdownText": {
+                      "type": "string",
+                      "description": ""
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fullText": {
+                    "type": "string",
+                    "description": "Text to be saved in the training block.\n\nTexto que será salvo no bloco de treinamento."
+                  }
+                },
+                "required": ["fullText"]
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fullText": {
+                    "type": "string",
+                    "description": "Text to be saved in the training block.\n\nTexto que será salvo no bloco de treinamento."
+                  }
+                },
+                "required": ["fullText"]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/calendar/avaibleTimeSlots": {
+      "get": {
+        "operationId": "API Connection - Software I.A/calendar/avaibleTimeSlots|GET",
+        "summary": "Searches for available time slots for a given calendar.\n\nBusca intervalos de horários disponíveis para um determinado calendário.",
+        "description": "Searches for available time slots for a given calendar.\n\nBusca intervalos de horários disponíveis para um determinado calendário.\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["calendar"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "calendarId",
+            "in": "query",
+            "description": "ID of the calendar you want to get available slots for.\n\nID do calendário que deseja obter intervalos disponíveis.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "daysToShow",
+            "in": "query",
+            "description": "Number of days from the current date to search for available time slots. The calendar default value will be considered if not specified.\n\nQuantidade de dias a partir da data atual para buscar intervalos disponíveis. Será considerado o valor padrão do calendário caso não seja informado.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "default": "0"
+            }
+          },
+          {
+            "name": "slotSize",
+            "in": "query",
+            "description": "Time in minutes of the slot you want to check availability for. The calendar default value will be considered if not specified.\n\nTempo em minutos do slot que deseja buscar disponibilidade. Será considerado o valor padrão do calendário caso não seja informado.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "default": "0"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        }
+      }
+    },
+    "/calendar/events": {
+      "delete": {
+        "operationId": "API Connection - Software I.A/calendar/events|DELETE",
+        "summary": "Delete Events record.\n\nDeleta Eventos.",
+        "description": "Delete Events record.\n\nDeleta Eventos.\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["calendar"],
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": ""
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "events_id": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": "List of event IDs that will be deleted.\n\nLista de ID dos eventos que serão deletados."
+                    },
+                    "minItems": "1",
+                    "maxItems": "0"
+                  }
+                }
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "events_id": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": "List of event IDs that will be deleted.\n\nLista de ID dos eventos que serão deletados."
+                    },
+                    "minItems": "1",
+                    "maxItems": "0"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "API Connection - Software I.A/calendar/events|GET",
+        "summary": "Search events from a calendar.\n\nBusca eventos de um calendário.",
+        "description": "Search events from a calendar.\n\nBusca eventos de um calendário.\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["calendar"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "dateStart",
+            "in": "query",
+            "description": "Start date of the range you want to filter.\n\nData de início do intervalo que deseja filtrar.",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "timestamptz",
+              "default": null
+            }
+          },
+          {
+            "name": "dateEnd",
+            "in": "query",
+            "description": "End date of the range you want to filter.\n\nData final do intervalo que deseja filtrar.",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "timestamptz",
+              "default": null
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "List page you want to query.\n\nPágina da lista que você deseja consultar.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "default": "1"
+            }
+          },
+          {
+            "name": "perPage",
+            "in": "query",
+            "description": "Items per page.\n\nItens por página.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "default": "1"
+            }
+          },
+          {
+            "name": "phoneNumber",
+            "in": "query",
+            "description": "Phone number to filter events. If provided, the search will only return events that have the number indicated as a participant.\n\nNúmero de telefone para filtrar eventos. Se informado a busca retornará apenas eventos que possuem o número indicado como participante.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": ""
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "API Connection - Software I.A/calendar/events|POST",
+        "summary": "Add or Edit Events record.\n\nAdiciona ou Edita um evento de calendário.",
+        "description": "Add or Edit Events record.\n\nAdiciona ou Edita um evento de calendário.\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["calendar"],
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": ""
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "calendar": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "ID of the calendar in which the event will be created.\n\nId do calendário em que o evento será criado."
+                  },
+                  "notificationEnabled": {
+                    "type": "boolean",
+                    "description": "Indicates whether notifications created for the calendar will be sent for the event being created/edited.\n\nIndica se as notificações criadas para o calendário, serão enviadas para o evento que está sendo criado/editado.",
+                    "default": "false"
+                  },
+                  "event_id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "ID of the event to be edited. Must be sent 0 if creating a new event.\n\nId do evento que será editado. Deve ser enviado 0 se estiver criando um novo evento."
+                  },
+                  "informations": {
+                    "type": "object",
+                    "properties": {
+                      "meetingUrl": "@{type=string; description=}",
+                      "description": "@{type=string; description=}",
+                      "title": "@{type=string; description=}",
+                      "guests": "@{type=array; items=}",
+                      "dateStart": "@{type=number; format=timestamptz; description=; nullable=True}",
+                      "dateEnd": "@{type=number; format=timestamptz; description=; nullable=True}",
+                      "duration": "@{type=integer; format=int64; description=}",
+                      "privateFileUrl": "@{type=array; items=; nullable=True}",
+                      "color": "@{type=string; description=}"
+                    }
+                  }
+                },
+                "required": ["event_id"]
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "calendar": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "ID of the calendar in which the event will be created.\n\nId do calendário em que o evento será criado."
+                  },
+                  "notificationEnabled": {
+                    "type": "boolean",
+                    "description": "Indicates whether notifications created for the calendar will be sent for the event being created/edited.\n\nIndica se as notificações criadas para o calendário, serão enviadas para o evento que está sendo criado/editado.",
+                    "default": "false"
+                  },
+                  "event_id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "ID of the event to be edited. Must be sent 0 if creating a new event.\n\nId do evento que será editado. Deve ser enviado 0 se estiver criando um novo evento."
+                  },
+                  "informations": {
+                    "type": "object",
+                    "properties": {
+                      "meetingUrl": "@{type=string; description=}",
+                      "description": "@{type=string; description=}",
+                      "title": "@{type=string; description=}",
+                      "guests": "@{type=array; items=}",
+                      "dateStart": "@{type=number; format=timestamptz; description=; nullable=True}",
+                      "dateEnd": "@{type=number; format=timestamptz; description=; nullable=True}",
+                      "duration": "@{type=integer; format=int64; description=}",
+                      "privateFileUrl": "@{type=array; items=; nullable=True}",
+                      "color": "@{type=string; description=}"
+                    }
+                  }
+                },
+                "required": ["event_id"]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/calendar": {
+      "get": {
+        "operationId": "API Connection - Software I.A/calendar|GET",
+        "summary": "Query calendars from an account.\n\nBusca calendários de uma conta.",
+        "description": "Query calendars from an account.\n\nBusca calendários de uma conta.\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["calendar"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "List page you want to query.\n\nPágina da lista que você deseja consultar.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "default": "1"
+            }
+          },
+          {
+            "name": "perPage",
+            "in": "query",
+            "description": "Items per page.\n\nItens por página.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "default": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "itemsReceived": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": ""
+                    },
+                    "curPage": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": ""
+                    },
+                    "nextPage": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": "",
+                      "nullable": true
+                    },
+                    "prevPage": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": "",
+                      "nullable": true
+                    },
+                    "offset": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": ""
+                    },
+                    "itemsTotal": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": ""
+                    },
+                    "pageTotal": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": ""
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": "@{type=object; properties=}"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        }
+      }
+    },
+    "/contatos/query/messages": {
+      "get": {
+        "operationId": "API Connection - Software I.A/contatos/query/messages|GET",
+        "summary": "Query messages based on a contact ID. Remember that this search is limited to the number of days that the software stores the history.\n\nBusque mensagens baseado em um ID de contato. Lembre-se que essa busca é limitada ao número de dias que o software armazena o histórico.",
+        "description": "Query messages based on a contact ID. Remember that this search is limited to the number of days that the software stores the history.\n\nBusque mensagens baseado em um ID de contato. Lembre-se que essa busca é limitada ao número de dias que o software armazena o histórico.\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["contatos"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "List page you want to query.\n\nPágina da lista que você deseja consultar.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "default": "1"
+            }
+          },
+          {
+            "name": "perPage",
+            "in": "query",
+            "description": "Items per page.\n\nItens por página.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "default": "50"
+            }
+          },
+          {
+            "name": "contactId",
+            "in": "query",
+            "description": "Id of the contact you want to search for messages from.\n\nId do contato que deseja buscar mensagens.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "default": 0
+            }
+          },
+          {
+            "name": "initialDate",
+            "in": "query",
+            "description": "Start date of message search. Defaults to now.\n\nData inicial da busca de mensagens. O padrão é a data/hora atual.",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "timestamptz",
+              "default": null
+            }
+          },
+          {
+            "name": "finalDate",
+            "in": "query",
+            "description": "Final date of message search in timestamp milliseconds. Defaults to 7 days ago.\n\nData final da busca de mensagens. O padrão é 7 dias atrás.",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "timestamptz",
+              "default": null
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "itemsReceived": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": ""
+                    },
+                    "curPage": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": ""
+                    },
+                    "nextPage": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": "",
+                      "nullable": true
+                    },
+                    "prevPage": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": "",
+                      "nullable": true
+                    },
+                    "offset": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": ""
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": "@{type=object; properties=}"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        }
+      }
+    },
+    "/contatos/{phoneNumber}": {
+      "get": {
+        "operationId": "API Connection - Software I.A/contatos/{phoneNumber}|GET",
+        "summary": "Get details of a contact by searching for the phone number.\n\nObtem detalhes de um contato, buscando pelo número de telefone.",
+        "description": "Get details of a contact by searching for the phone number.\n\nObtem detalhes de um contato, buscando pelo número de telefone.\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["contatos"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "phoneNumber",
+            "in": "path",
+            "description": "Contact phone number you want to obtain the information. It must be used in international format, including the country code.\n\nNúmero de telefone de contato que deseja obter as informações. Deve ser utilizado em formato internacional, incluindo o código do país.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": ""
+                    },
+                    "created_at": {
+                      "type": "number",
+                      "format": "timestamptz",
+                      "description": "",
+                      "default": "now"
+                    },
+                    "nome": {
+                      "type": "string",
+                      "description": ""
+                    },
+                    "numero_tel": {
+                      "type": "string",
+                      "description": ""
+                    },
+                    "ultima_interacao": {
+                      "type": "number",
+                      "format": "timestamptz",
+                      "description": "",
+                      "nullable": true
+                    },
+                    "automacao_pausada": {
+                      "type": "boolean",
+                      "description": "",
+                      "default": "false"
+                    },
+                    "whatsapp_id": {
+                      "type": "string",
+                      "description": ""
+                    },
+                    "detalhes": {
+                      "type": "string",
+                      "description": ""
+                    },
+                    "tag_id": {
+                      "type": "array",
+                      "items": "@{type=integer; format=int64; description=}"
+                    },
+                    "mensagem_nao_lida": {
+                      "type": "boolean",
+                      "description": "",
+                      "default": "false"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "",
+                      "enum": "Conversa em aberto Aguardando ação Ação concluída"
+                    },
+                    "email": {
+                      "type": "string",
+                      "description": "",
+                      "format": "email"
+                    },
+                    "historico": {
+                      "type": "array",
+                      "items": "@{type=object; properties=}"
+                    },
+                    "parametrosFluxo": {
+                      "type": "array",
+                      "items": "@{type=object; properties=}"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        }
+      }
+    },
+    "/contatos": {
+      "get": {
+        "operationId": "API Connection - Software I.A/contatos|GET",
+        "summary": "Search for contacts with different filter options.\n\nBusque contatos com diversas opções de filtros.",
+        "description": "Search for contacts with different filter options.\n\nBusque contatos com diversas opções de filtros.\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["contatos"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "phoneNumber",
+            "in": "query",
+            "description": "Segment of the number to be searched. Example: 3197 will return contacts that contain this number sequence in their phone (553197700000, 5531978850000).\n\nTrecho de número a ser buscado. Exemplo: 3197 retornará contatos que contenham essa sequência de números em seu telefone (553197700000, 5531978850000).",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": ""
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "description": "\nSegment of the name to be searched. Example: Juli will return contacts that contain this letter sequence in their name (Juliana, Juliano, Juliander).\n\nTrecho de nome a ser buscado. Exemplo: Juli retornará contatos que contenham essa sequência de letras em seu nome (Juliana, Juliano, Juliander).",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": ""
+            }
+          },
+          {
+            "name": "details",
+            "in": "query",
+            "description": "Segment of the contact details to be searched. Example: \"special customer\" will return contacts that contain this letter sequence in their details field (special customer who has made multiple purchases at the store).\n\nTrecho de detalhes do contato a ser buscado. Exemplo: \"cliente especial\" retornará contatos que contenham essa sequência de letras em seu campo de detalhes (cliente especial que já realizou diversas compras na loja)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": ""
+            }
+          },
+          {
+            "name": "automationOnHold",
+            "in": "query",
+            "description": "Boolean field indicating whether the contact is on hold in automation or not.\n\nCampo booleano que indica se o contato está com a automação pausada ou não.",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": "false"
+            }
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "description": "Segment of the contact\u0027s email to be searched. Example: \"ca@gmail.com\" will return contacts that contain this letter sequence in their email (luca@gmail.com, leca@gmail.com).\n\nTrecho de email do contato a ser buscado. Exemplo: \"ca@gmail.com\" retornará contatos que contenham essa sequência de letras em seu email (luca@gmail.com, leca@gmail.com)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": ""
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "List page you want to query.\n\nPágina da lista que você deseja consultar.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "default": "1"
+            }
+          },
+          {
+            "name": "perPage",
+            "in": "query",
+            "description": "Items per page. Maximum 5 when getContext parameter = true.\n\nItens por página. Maxímo 5 quando o parâmetro getContext = true.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "default": "50"
+            }
+          },
+          {
+            "name": "dateLastInt",
+            "in": "query",
+            "description": "Start date when the contact last interacted. For example, if the date 01/12/2023 00:00 is provided, all contacts that interacted with the WhatsApp connected to the system after that date will be filtered. The date should be in timestamp format.\n\nData de início em que o contato fez a última interação. Exemplo: se for passada a data de 01/12/2023 00:00, todos contatos que interagiram com o whatsapp conectado ao sistema após essa data serão filtrados. Deve ser utilizado o formato de data timestamp.",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "timestamptz",
+              "default": null
+            }
+          },
+          {
+            "name": "dateMyLastInt",
+            "in": "query",
+            "description": "Start date when WhatsApp last interacted. For example, if the date 01/12/2023 00:00 is provided, all contacts that received an interaction from the WhatsApp connected to the system after that date will be filtered. The date should be in timestamp format.\n\nData de início em que o whatsapp fez a última interação. Exemplo: se for passada a data de 01/12/2023 00:00, todos contatos que receberam uma interação do whatsapp conectado ao sistema após essa data serão filtrados. Deve ser utilizado o formato de data timestamp.",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "timestamptz",
+              "default": null
+            }
+          },
+          {
+            "name": "getContext",
+            "in": "query",
+            "description": "Indicates whether you want to get conversation context for each contact.\n\nIndica se você deseja obter o contexto da conversa para cada contato.",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": "false"
+            }
+          },
+          {
+            "name": "contextMaxSize",
+            "in": "query",
+            "description": "Filter by maximum contact context size.\n\nFiltre pelo tamanho máximo do contexto do contato.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "default": null
+            }
+          },
+          {
+            "name": "contextMinSize",
+            "in": "query",
+            "description": "Filter by minimum contact context size\n\nFiltre pelo tamanho mínimo do contexto do contato.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "default": null
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "API Connection - Software I.A/contatos|POST",
+        "summary": "Add or update a contact. If the phone number sent is already registered to a contact, the information sent will replace the old information for that contact.\n\nAdicione ou atualize um contato. Se o número de telefone enviado já estiver cadastrado em um contato, as informações enviadas substituirão as informações antigas desse contato.",
+        "description": "Add or update a contact. If the phone number sent is already registered to a contact, the information sent will replace the old information for that contact.\n\nAdicione ou atualize um contato. Se o número de telefone enviado já estiver cadastrado em um contato, as informações enviadas substituirão as informações antigas desse contato.\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["contatos"],
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Contact name. If this contact already exists, its name will be updated. If this contact does not already exist, it will be added with the name passed in this parameter.\n\nNome de contato. Caso este contato já exista, seu nome será atualizado. Caso este contato ainda não exista, ele será adicionado com o nome passado neste parâmetro."
+                  },
+                  "phoneNumber": {
+                    "type": "string",
+                    "description": "Phone number that will be added to the contact. The international format must be used, including the country code.\n\nNúmero de telefone que será adicionado ao contato. Deve ser utilizado o formato internacional, incluindo o código do país."
+                  },
+                  "email": {
+                    "type": "string",
+                    "description": "If this contact already exists, its email will be updated. If this contact does not already exist, it will be added with the email passed in this parameter.\n\nCaso este contato já exista, seu email será atualizado. Caso este contato ainda não exista, ele será adicionado com o email passado neste parâmetro."
+                  },
+                  "details": {
+                    "type": "string",
+                    "description": "Contact information and/or details. This parameter will override previous information if this contact already exists.\n\nInformações e/ou detalhes de contato. Este parâmetro substituirá as informações anteriores se este contato já existir."
+                  },
+                  "automationOnHold": {
+                    "type": "boolean",
+                    "description": "Boolean field indicating whether the contact must be on hold in automation or not.\n\nCampo booleano que indica se o contato deve ficar com a automação pausada ou não.",
+                    "default": "false"
+                  },
+                  "fluxoId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Indicates whether or not the contact should be inserted into a conversation flow.\n\nIndica se o contato deve ou não ser inserido em um fluxo de conversa."
+                  },
+                  "fluxoLevel": {
+                    "type": "string",
+                    "description": "Indicates at which level of the flow the contact should be inserted.\n\nIndica qual em qual nível do fluxo o contato deve ser inserido."
+                  },
+                  "removeFromFluxo": {
+                    "type": "boolean",
+                    "description": "Indicates whether the contact should be removed from a flow. If true, the fluxoId parameter must be 0.\n\nIndica se o contato deve ser removido de um fluxo. Se true, o parâmetro fluxoId deve ser 0.",
+                    "default": "false"
+                  },
+                  "userMailToAssign": {
+                    "type": "string",
+                    "description": "Email of the user to whom the contact will be assigned.\n\nEmail do usuário ao qual o contato será atribuido.",
+                    "format": "email"
+                  },
+                  "tag_id": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": "In this parameter, send a list of tag IDs that should be assigned to this contact. If an existing contact is being edited, this list will overwrite the current tag list. Leave this parameter empty if you do not want to change a contact\u0027s tag list.\n\nEnvie nesse parâmetro uma lista de ids de tags que devem ser atribuídas a esse contato. No caso de edição de um contato existente, essa lista irá sobrescrever a lista de tags atual. Envie esse parâmetro vazio caso não queira alterar a lista de tags de um contato."
+                    }
+                  },
+                  "context": {
+                    "type": "object",
+                    "properties": {
+                      "reduce": "@{type=boolean; description=Indicates whether the context of the history saved with the contact will be reduced or not.\n\nIndica se o contexto do histórico salvo com o contato será reduzido ou não.; default=false}",
+                      "reduceTo": "@{type=integer; format=int64; description=Use this field to reduce the size of the saved history context with the contact. If 0 the history will be completely deleted, if X the last x messages in the context will be kept.\n\nUtilize esse campo para reduzir o tamanho do contexto salvo de histórico com o contato. Se 0 o histórico será totalmente apagado, se X serão mantidas as últimas x mensagens no contexto.; default=1000}",
+                      "keep": "@{type=array; items=}"
+                    }
+                  }
+                },
+                "required": ["phoneNumber"]
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Contact name. If this contact already exists, its name will be updated. If this contact does not already exist, it will be added with the name passed in this parameter.\n\nNome de contato. Caso este contato já exista, seu nome será atualizado. Caso este contato ainda não exista, ele será adicionado com o nome passado neste parâmetro."
+                  },
+                  "phoneNumber": {
+                    "type": "string",
+                    "description": "Phone number that will be added to the contact. The international format must be used, including the country code.\n\nNúmero de telefone que será adicionado ao contato. Deve ser utilizado o formato internacional, incluindo o código do país."
+                  },
+                  "email": {
+                    "type": "string",
+                    "description": "If this contact already exists, its email will be updated. If this contact does not already exist, it will be added with the email passed in this parameter.\n\nCaso este contato já exista, seu email será atualizado. Caso este contato ainda não exista, ele será adicionado com o email passado neste parâmetro."
+                  },
+                  "details": {
+                    "type": "string",
+                    "description": "Contact information and/or details. This parameter will override previous information if this contact already exists.\n\nInformações e/ou detalhes de contato. Este parâmetro substituirá as informações anteriores se este contato já existir."
+                  },
+                  "automationOnHold": {
+                    "type": "boolean",
+                    "description": "Boolean field indicating whether the contact must be on hold in automation or not.\n\nCampo booleano que indica se o contato deve ficar com a automação pausada ou não.",
+                    "default": "false"
+                  },
+                  "fluxoId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Indicates whether or not the contact should be inserted into a conversation flow.\n\nIndica se o contato deve ou não ser inserido em um fluxo de conversa."
+                  },
+                  "fluxoLevel": {
+                    "type": "string",
+                    "description": "Indicates at which level of the flow the contact should be inserted.\n\nIndica qual em qual nível do fluxo o contato deve ser inserido."
+                  },
+                  "removeFromFluxo": {
+                    "type": "boolean",
+                    "description": "Indicates whether the contact should be removed from a flow. If true, the fluxoId parameter must be 0.\n\nIndica se o contato deve ser removido de um fluxo. Se true, o parâmetro fluxoId deve ser 0.",
+                    "default": "false"
+                  },
+                  "userMailToAssign": {
+                    "type": "string",
+                    "description": "Email of the user to whom the contact will be assigned.\n\nEmail do usuário ao qual o contato será atribuido.",
+                    "format": "email"
+                  },
+                  "tag_id": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": "In this parameter, send a list of tag IDs that should be assigned to this contact. If an existing contact is being edited, this list will overwrite the current tag list. Leave this parameter empty if you do not want to change a contact\u0027s tag list.\n\nEnvie nesse parâmetro uma lista de ids de tags que devem ser atribuídas a esse contato. No caso de edição de um contato existente, essa lista irá sobrescrever a lista de tags atual. Envie esse parâmetro vazio caso não queira alterar a lista de tags de um contato."
+                    }
+                  },
+                  "context": {
+                    "type": "object",
+                    "properties": {
+                      "reduce": "@{type=boolean; description=Indicates whether the context of the history saved with the contact will be reduced or not.\n\nIndica se o contexto do histórico salvo com o contato será reduzido ou não.; default=false}",
+                      "reduceTo": "@{type=integer; format=int64; description=Use this field to reduce the size of the saved history context with the contact. If 0 the history will be completely deleted, if X the last x messages in the context will be kept.\n\nUtilize esse campo para reduzir o tamanho do contexto salvo de histórico com o contato. Se 0 o histórico será totalmente apagado, se X serão mantidas as últimas x mensagens no contexto.; default=1000}",
+                      "keep": "@{type=array; items=}"
+                    }
+                  }
+                },
+                "required": ["phoneNumber"]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/message/delete/{messageId}": {
+      "delete": {
+        "operationId": "API Connection - Software I.A/message/delete/{messageId}|DELETE",
+        "summary": "Delete a scheduled message using its id.\n\nExclua uma mensagem agendada usando seu ID.",
+        "description": "Delete a scheduled message using its id.\n\nExclua uma mensagem agendada usando seu ID.\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["message"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "path",
+            "description": "ID of the message you want to cancel the sending schedule.\n\nID da mensagem cuja programação de envio você deseja cancelar.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        }
+      }
+    },
+    "/message/list": {
+      "get": {
+        "operationId": "API Connection - Software I.A/message/list|GET",
+        "summary": "Query the list of scheduled messages and their details.\n\nConsulte a lista de mensagens agendadas e seus detalhes.",
+        "description": "Query the list of scheduled messages and their details.\n\nConsulte a lista de mensagens agendadas e seus detalhes.\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["message"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "List page you want to query.\n\nPágina da lista que você deseja consultar.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "default": "1"
+            }
+          },
+          {
+            "name": "perPage",
+            "in": "query",
+            "description": "Items per page.\n\nItens por página.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "default": "25"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "itemsReceived": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": ""
+                    },
+                    "curPage": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": ""
+                    },
+                    "nextPage": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": "",
+                      "nullable": true
+                    },
+                    "prevPage": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": "",
+                      "nullable": true
+                    },
+                    "offset": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": ""
+                    },
+                    "itemsTotal": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": ""
+                    },
+                    "pageTotal": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": ""
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": "@{type=object; properties=}"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        }
+      }
+    },
+    "/message/process": {
+      "post": {
+        "operationId": "API Connection - Software I.A/message/process|POST",
+        "summary": "Recebe uma mensagem e a coloca em fila de processamento para que o assistente a responda. Para usar essa função, um plano enterprise tem que ser contratado.\n\nReceives a message and places it in a processing queue for the assistant to respond to. To use this feature, an enterprise plan must be purchased.",
+        "description": "Recebe uma mensagem e a coloca em fila de processamento para que o assistente a responda. Para usar essa função, um plano enterprise tem que ser contratado.\n\nReceives a message and places it in a processing queue for the assistant to respond to. To use this feature, an enterprise plan must be purchased.\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["message"],
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "owner": {
+                    "type": "string",
+                    "description": "Message owner identifier. Must be the Whatsapp number in international standard Ex: 5531999999999\n\nIdentificador do proprietário da mensagem. Deve ser o número de whatsapp no padrão internacional Ex: 5531999999999"
+                  },
+                  "isGroup": {
+                    "type": "boolean",
+                    "description": "Boolean indicating whether the message is from a group or not. Should be false, as group messages are not processed.\n\nBooleano indicando se a mensagem é de um grupo ou não. Deve ser falso pois mensagens de  grupo não são processadas."
+                  },
+                  "message": {
+                    "type": "object",
+                    "properties": {
+                      "id": "@{type=string; description=Message id.\n\nId identificador único da mensagem.}",
+                      "secret": "@{type=string; description=Message Secret.\n\nHash da mensagem no serviço de mensageria (whatsapp, etc)\n\n}",
+                      "fromMe": "@{type=boolean; description=Boolean indicating whether the message was sent by the owner himself or from a third party.\n\nBooleano indicando se a mensagem foi enviada pelo próprio proprietário ou se é de terceiros.}",
+                      "type": "@{type=string; description=Type of message.\n\nTipo de mensagem.; enum=System.Object[]}",
+                      "timestamp": "@{type=number; format=timestamptz; description=Message timestamp.\n\nData e hora da mensagem no formato timestamp ms.; nullable=True}",
+                      "text": "@{type=object; properties=}",
+                      "file": "@{type=object; properties=}",
+                      "adsInfo": "@{type=object; properties=}",
+                      "contact": "@{type=object; properties=; required=System.Object[]}"
+                    },
+                    "required": ["id", "fromMe", "type", "timestamp"]
+                  }
+                },
+                "required": ["isGroup"]
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "owner": {
+                    "type": "string",
+                    "description": "Message owner identifier. Must be the Whatsapp number in international standard Ex: 5531999999999\n\nIdentificador do proprietário da mensagem. Deve ser o número de whatsapp no padrão internacional Ex: 5531999999999"
+                  },
+                  "isGroup": {
+                    "type": "boolean",
+                    "description": "Boolean indicating whether the message is from a group or not. Should be false, as group messages are not processed.\n\nBooleano indicando se a mensagem é de um grupo ou não. Deve ser falso pois mensagens de  grupo não são processadas."
+                  },
+                  "message": {
+                    "type": "object",
+                    "properties": {
+                      "id": "@{type=string; description=Message id.\n\nId identificador único da mensagem.}",
+                      "secret": "@{type=string; description=Message Secret.\n\nHash da mensagem no serviço de mensageria (whatsapp, etc)\n\n}",
+                      "fromMe": "@{type=boolean; description=Boolean indicating whether the message was sent by the owner himself or from a third party.\n\nBooleano indicando se a mensagem foi enviada pelo próprio proprietário ou se é de terceiros.}",
+                      "type": "@{type=string; description=Type of message.\n\nTipo de mensagem.; enum=System.Object[]}",
+                      "timestamp": "@{type=number; format=timestamptz; description=Message timestamp.\n\nData e hora da mensagem no formato timestamp ms.; nullable=True}",
+                      "text": "@{type=object; properties=}",
+                      "file": "@{type=object; properties=}",
+                      "adsInfo": "@{type=object; properties=}",
+                      "contact": "@{type=object; properties=; required=System.Object[]}"
+                    },
+                    "required": ["id", "fromMe", "type", "timestamp"]
+                  }
+                },
+                "required": ["isGroup"]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/message/send": {
+      "post": {
+        "operationId": "API Connection - Software I.A/message/send|POST",
+        "summary": "Send messages or schedule the sending of a message.\n\nEnvie mensagens ou agende o envio de uma mensagem.",
+        "description": "Send messages or schedule the sending of a message.\n\nEnvie mensagens ou agende o envio de uma mensagem.\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["message"],
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "textContent": {
+                    "type": "string",
+                    "description": "Text of the message to be sent. If the message type is different from the \"text\" type, the content sent in this parameter will be sent as a media caption.\n\nTexto da mensagem a ser enviada. Se o tipo de mensagem for diferente do tipo \"texto\", o conteúdo enviado nesse parâmetro será enviado como legenda da mídia. \n\nObs: Mensagens de áudio não permitem envio de texto como legenda."
+                  },
+                  "fileContent": {
+                    "type": "string",
+                    "description": "For messages that are not text only, this field must be used to send the file URL.\nThe accepted file formats for each type of message are:\nImage: PNG or JPG\nVideo: MP4\nAudio: OGG or MP3\nFile: any format\n\nPara mensagens que não são somente texto, esse campo deve ser utilizado para enviar o URL do arquivo.\nOs formatos de arquivos aceitos para cada tipo de mensagem são:\nImagem: PNG ou JPG\nVideo: MP4\nAudio: OGG ou MP3\nArquivo: qualquer formato"
+                  },
+                  "sendNow": {
+                    "type": "boolean",
+                    "description": "Boolean indicating whether or not the message should be sent immediately.\n\nBooleano que indica se a mensagem deve ou não ser enviada imediatamente."
+                  },
+                  "type": {
+                    "type": "string",
+                    "description": "Type of message that will be sent\n\nTipo de mensagem que será enviada",
+                    "enum": [
+                      "texto",
+                      "imagem",
+                      "arquivo",
+                      "video",
+                      "audio",
+                      "menu"
+                    ]
+                  },
+                  "sendDate": {
+                    "type": "number",
+                    "format": "timestamptz",
+                    "description": "It must be filled in with the date that the message must be sent if the “sendNow” parameter is false. The timestamp format must be used.\n\nDeve ser preenchido com a data que a mensagem deverá ser enviada caso o parâmetro “sendNow” seja falso. O formato de data timestamp deve ser usado.",
+                    "nullable": true
+                  },
+                  "phoneNumber": {
+                    "type": "string",
+                    "description": "Telephone number that will receive the message. The international format must be used, including the country code.\n\nTelefone que receberá a mensagem. Deve ser usado o formato internacional, incluindo o código do país."
+                  },
+                  "contactName": {
+                    "type": "string",
+                    "description": "Contact name. If this contact already exists, its name will be updated. If this contact does not already exist, it will be added with the name passed in this parameter.\n\nNome de contato. Caso este contato já exista, seu nome será atualizado. Caso este contato ainda não exista, ele será adicionado com o nome passado neste parâmetro."
+                  },
+                  "contactEmail": {
+                    "type": "string",
+                    "description": "",
+                    "format": "email"
+                  },
+                  "menu": {
+                    "type": "object",
+                    "properties": {
+                      "txtButton": "@{type=string; description=Button text, usually something like \"Click to select\".\n\nTexto do botão, geralmente algo como \"Clique para selecionar\".}",
+                      "options": "@{type=array; items=}",
+                      "txtFooter": "@{type=string; description=Message footer text.\n\nTexto do rodapé da mensagem.}"
+                    }
+                  }
+                },
+                "required": ["sendNow", "type", "phoneNumber"]
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "textContent": {
+                    "type": "string",
+                    "description": "Text of the message to be sent. If the message type is different from the \"text\" type, the content sent in this parameter will be sent as a media caption.\n\nTexto da mensagem a ser enviada. Se o tipo de mensagem for diferente do tipo \"texto\", o conteúdo enviado nesse parâmetro será enviado como legenda da mídia. \n\nObs: Mensagens de áudio não permitem envio de texto como legenda."
+                  },
+                  "fileContent": {
+                    "type": "string",
+                    "description": "For messages that are not text only, this field must be used to send the file URL.\nThe accepted file formats for each type of message are:\nImage: PNG or JPG\nVideo: MP4\nAudio: OGG or MP3\nFile: any format\n\nPara mensagens que não são somente texto, esse campo deve ser utilizado para enviar o URL do arquivo.\nOs formatos de arquivos aceitos para cada tipo de mensagem são:\nImagem: PNG ou JPG\nVideo: MP4\nAudio: OGG ou MP3\nArquivo: qualquer formato"
+                  },
+                  "sendNow": {
+                    "type": "boolean",
+                    "description": "Boolean indicating whether or not the message should be sent immediately.\n\nBooleano que indica se a mensagem deve ou não ser enviada imediatamente."
+                  },
+                  "type": {
+                    "type": "string",
+                    "description": "Type of message that will be sent\n\nTipo de mensagem que será enviada",
+                    "enum": [
+                      "texto",
+                      "imagem",
+                      "arquivo",
+                      "video",
+                      "audio",
+                      "menu"
+                    ]
+                  },
+                  "sendDate": {
+                    "type": "number",
+                    "format": "timestamptz",
+                    "description": "It must be filled in with the date that the message must be sent if the “sendNow” parameter is false. The timestamp format must be used.\n\nDeve ser preenchido com a data que a mensagem deverá ser enviada caso o parâmetro “sendNow” seja falso. O formato de data timestamp deve ser usado.",
+                    "nullable": true
+                  },
+                  "phoneNumber": {
+                    "type": "string",
+                    "description": "Telephone number that will receive the message. The international format must be used, including the country code.\n\nTelefone que receberá a mensagem. Deve ser usado o formato internacional, incluindo o código do país."
+                  },
+                  "contactName": {
+                    "type": "string",
+                    "description": "Contact name. If this contact already exists, its name will be updated. If this contact does not already exist, it will be added with the name passed in this parameter.\n\nNome de contato. Caso este contato já exista, seu nome será atualizado. Caso este contato ainda não exista, ele será adicionado com o nome passado neste parâmetro."
+                  },
+                  "contactEmail": {
+                    "type": "string",
+                    "description": "",
+                    "format": "email"
+                  },
+                  "menu": {
+                    "type": "object",
+                    "properties": {
+                      "txtButton": "@{type=string; description=Button text, usually something like \"Click to select\".\n\nTexto do botão, geralmente algo como \"Clique para selecionar\".}",
+                      "options": "@{type=array; items=}",
+                      "txtFooter": "@{type=string; description=Message footer text.\n\nTexto do rodapé da mensagem.}"
+                    }
+                  }
+                },
+                "required": ["sendNow", "type", "phoneNumber"]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/phoneNormalization/{phoneNumber}": {
+      "get": {
+        "operationId": "API Connection - Software I.A/phoneNormalization/{phoneNumber}|GET",
+        "summary": "Send a Brazilian telephone number and receive the international Whatsapp standard number in return.\n\nEnvie um número de telefone do Brasil e tenha como retorno o número no padrão internacional utilizado pelo whatsapp.",
+        "description": "Send a Brazilian telephone number and receive the international Whatsapp standard number in return.\n\nEnvie um número de telefone do Brasil e tenha como retorno o número no padrão internacional utilizado pelo whatsapp.\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["phoneNormalization"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "phoneNumber",
+            "in": "path",
+            "description": "Telephone number to be normalized. It can be sent in any format, with or without the country code, with or without the check digit 9.\n\nNúmero de telefone a ser normalizado. Pode ser enviado em qualquer formato, com ou sem o código do país, com ou sem o dígito verificador 9.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        }
+      }
+    },
+    "/tags": {
+      "get": {
+        "operationId": "API Connection - Software I.A/tags|GET",
+        "summary": "Query all Tag records.\n\nBusca todas as Tags da conta.",
+        "description": "Query all Tag records.\n\nBusca todas as Tags da conta.\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["tags"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "List page you want to query.\n\nPágina da lista que você deseja consultar.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "default": "1"
+            }
+          },
+          {
+            "name": "perPage",
+            "in": "query",
+            "description": "Items per page.\n\nItens por página.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "default": "25"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": "@{type=integer; format=int64; description=}",
+                      "created_at": "@{type=number; format=timestamptz; description=; default=now}",
+                      "nome": "@{type=string; description=Tag name}",
+                      "color": "@{type=string; description=Tag background collor; default=#f5f7fa}",
+                      "fontColor": "@{type=string; description=Tag font color; default=#000000}"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "API Connection - Software I.A/tags|POST",
+        "summary": "Add or Edit a Tag record.\n\nCria ou edita uma Tag.",
+        "description": "Add or Edit a Tag record.\n\nCria ou edita uma Tag.\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["tags"],
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tag_id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Tag ID that you want to edit. Send 0 or empty when you are creating a new tag.\n\nID da tag que você deseja editar. Envie 0 ou vazio se você estiver criando uma nova tag."
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Tag name. Will be normalized to remove special characters and spaces.\n\nNome da tag. Será normalizado para remover caracteres especiais e espaços."
+                  },
+                  "color": {
+                    "type": "string",
+                    "description": "Tag color in hexadecimal, including #. Example: #000000\n\nCor da tag em hexadecimal, incluindo #. Exemplo: #000000"
+                  },
+                  "fontColor": {
+                    "type": "string",
+                    "description": "Tag font color in hexadecimal, including #. Example: #000000\n\nCor da fonte da tag em hexadecimal, incluindo #. Exemplo: #000000"
+                  }
+                }
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tag_id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Tag ID that you want to edit. Send 0 or empty when you are creating a new tag.\n\nID da tag que você deseja editar. Envie 0 ou vazio se você estiver criando uma nova tag."
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Tag name. Will be normalized to remove special characters and spaces.\n\nNome da tag. Será normalizado para remover caracteres especiais e espaços."
+                  },
+                  "color": {
+                    "type": "string",
+                    "description": "Tag color in hexadecimal, including #. Example: #000000\n\nCor da tag em hexadecimal, incluindo #. Exemplo: #000000"
+                  },
+                  "fontColor": {
+                    "type": "string",
+                    "description": "Tag font color in hexadecimal, including #. Example: #000000\n\nCor da fonte da tag em hexadecimal, incluindo #. Exemplo: #000000"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webChat/message/get": {
+      "get": {
+        "operationId": "API Connection - Software I.A/webChat/message/get|GET",
+        "summary": "Search for messages from a specific service.\n\nBusque as mensagens de um atendimento específico",
+        "description": "Search for messages from a specific service.\n\nBusque as mensagens de um atendimento específico\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["webChat"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "webchat_id",
+            "in": "query",
+            "description": "webChat identifier.\n\nIdentificador do webChat.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "default": null
+            }
+          },
+          {
+            "name": "visitorId",
+            "in": "query",
+            "description": "Conversation ID.\n\nIdentificador da conversa.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": ""
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": "@{type=integer; format=int64; description=}",
+                      "created_at": "@{type=number; format=timestamptz; description=; default=now}",
+                      "text": "@{type=string; description=}",
+                      "visitorId": "@{type=string; description=}",
+                      "assistant": "@{type=boolean; description=; default=false}",
+                      "webchat_id": "@{type=string; format=uuid; description=; nullable=True}",
+                      "type": "@{type=string; description=; enum=System.Object[]}"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        }
+      }
+    },
+    "/webChat/message/query": {
+      "get": {
+        "operationId": "API Connection - Software I.A/webChat/message/query|GET",
+        "summary": "\nSee the list of messages from multiple services.\n\n\nConsulte a lista de mensagens de múltiplos atendimentos.",
+        "description": "See the list of messages from multiple services.\n\n\nConsulte a lista de mensagens de múltiplos atendimentos.\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["webChat"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "webchat_id",
+            "in": "query",
+            "description": "webChat identifier.\n\nIdentificador do webChat.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "default": null
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Filter conversations from a specific date.\n\nFiltre as conversas a partir de determinada data.",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "timestamptz",
+              "default": null
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "menssagensWebChat_visitorId": "@{type=string; description=}",
+                      "menssagensWebChat_text": "@{type=object; description=}",
+                      "menssagensWebChat_created_at": "@{type=number; description=}"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        }
+      }
+    },
+    "/webChat/message/send": {
+      "post": {
+        "operationId": "API Connection - Software I.A/webChat/message/send|POST",
+        "summary": "Send message to a specific service.\n\nEnvia mensagem para um atendimento específico",
+        "description": "Send message to a specific service.\n\nEnvia mensagem para um atendimento específico\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["webChat"],
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": ""
+                    },
+                    "created_at": {
+                      "type": "number",
+                      "format": "timestamptz",
+                      "description": "",
+                      "default": "now"
+                    },
+                    "text": {
+                      "type": "string",
+                      "description": ""
+                    },
+                    "visitorId": {
+                      "type": "string",
+                      "description": ""
+                    },
+                    "assistant": {
+                      "type": "boolean",
+                      "description": "",
+                      "default": "false"
+                    },
+                    "webchat_id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "description": "",
+                      "nullable": true
+                    },
+                    "type": {
+                      "type": "string",
+                      "description": "",
+                      "enum": "texto imagem video audio arquivo"
+                    },
+                    "fileUrl": {
+                      "type": "string",
+                      "description": ""
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "textContent": {
+                    "type": "string",
+                    "description": "Text of the message to be sent.\n\nTexto da mensagem a ser enviada."
+                  },
+                  "webchat_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "webChat identifier.\n\nIdentificador do webChat.",
+                    "nullable": true
+                  },
+                  "visitorId": {
+                    "type": "string",
+                    "description": "Conversation ID.\n\nIdentificador da conversa."
+                  }
+                }
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "textContent": {
+                    "type": "string",
+                    "description": "Text of the message to be sent.\n\nTexto da mensagem a ser enviada."
+                  },
+                  "webchat_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "webChat identifier.\n\nIdentificador do webChat.",
+                    "nullable": true
+                  },
+                  "visitorId": {
+                    "type": "string",
+                    "description": "Conversation ID.\n\nIdentificador da conversa."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webChat": {
+      "get": {
+        "operationId": "API Connection - Software I.A/webChat|GET",
+        "summary": "Search for your account\u0027s webChat.\n\nBusca pelo webChat da sua conta.",
+        "description": "Search for your account\u0027s webChat.\n\nBusca pelo webChat da sua conta.\n\u003cbr /\u003e\u003cbr /\u003e\n\u003cb\u003eAuthentication:\u003c/b\u003e not required",
+        "tags": ["webChat"],
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success!",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "description": ""
+                    },
+                    "created_at": {
+                      "type": "number",
+                      "format": "timestamptz",
+                      "description": "",
+                      "default": "now"
+                    },
+                    "color": {
+                      "type": "string",
+                      "description": ""
+                    },
+                    "welcomeMessage": {
+                      "type": "string",
+                      "description": ""
+                    },
+                    "animation": {
+                      "type": "string",
+                      "description": "",
+                      "enum": "ai chat chat2 bot bot2",
+                      "default": "ai"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Input Error. Check the request payload for issues."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied. Additional privileges are needed access the requested resource."
+          },
+          "404": {
+            "description": "Not Found. The requested resource does not exist."
+          },
+          "429": {
+            "description": "Rate Limited. Too many requests."
+          },
+          "500": {
+            "description": "Unexpected error"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,739 @@
+import express from 'express';
+import cors from 'cors';
+import http from 'node:http';
+
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import compression from 'compression';
+
+// --- Middlewares & Services ---
+import { getSupabaseServer } from './lib/supabase-server.js';
+import { verifyAuth } from './middleware/auth.js';
+import { requireTenant } from './middleware/tenant.js';
+import webhookRoutes from './routes/webhook.js';
+import { createCorsOptions } from './lib/cors-config.js';
+
+const normalizeDomain = (value = '') => String(value).trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+
+// --- Modular Routes ---
+import adminRoutes from './routes/admin.js';
+import adminTemplateRoutes from './routes/admin-templates.js';
+import internalRoutes from './routes/internal.js';
+import importRoutes from './routes/import.js';
+import publicRoutes from './routes/public.js';
+import onboardingRoutes from './routes/onboarding.js';
+import domainRoutes from './routes/domains.js';
+import healthRoutes from './routes/health.js';
+import crmRoutes from './api/crm/index.js';
+import crmClientsRoutes from './api/crm/clients/index.js';
+import propertyRoutes from './api/properties/index.js';
+import tenantHandler from './api/tenant/index.js';
+import ruralRoutes from './api/rural/index.js';
+import urbanRoutes from './api/urban/index.js';
+import cobrancaRoutes from './api/cobranca/index.js';
+import aiRoutes from './api/ai/index.js';
+import storageRoutes from './api/storage/index.js';
+import demoRoutes from './api/demo/index.js';
+import fluowaiMigrationRoutes from './api/fluowai-migration/index.js';
+import emailRoutes from './api/email/index.js';
+import siteRoutes from './api/sites/index.js';
+import oruloRoutes from './api/orulo/index.js';
+import portalRoutes from './api/portals/index.js';
+import settingsRoutes from './api/settings/index.js';
+import valuationRoutes from './api/valuation/index.js';
+import documentRoutes from './api/documents/index.js';
+import externalDataRoutes from './api/external-data/index.js';
+import quizRoutes from './api/quiz/index.js';
+import jarvisRoutes from './routes/jarvis.js';
+import accountRoutes from './routes/account.js';
+import whatsappProxyRoutes from './routes/whatsapp-proxy.js';
+import wootechAiRoutes from './routes/wootechAi.js';
+import wooControlAiRoutes from './routes/wooControlAi.js';
+import cvcrmBiaRoutes from './routes/cvcrmBia.js';
+import megaAdminRoutes from './routes/mega-admin.js';
+import licensingRoutes from './routes/licensing.js';
+import wooControlRoutes from './routes/woo-control.js';
+import subscriptionRoutes from './routes/subscription.js';
+import zapRoutes from './routes/zap.js';
+import campaignRoutes from './api/campaigns/index.js';
+import campaignContactsRoutes from './api/campaigns/contacts.js';
+import campaignSerperRoutes from './api/campaigns/serper.js';
+import campaignBlacklistRoutes from './api/campaigns/blacklist.js';
+import asgardpayRoutes from './api/asgardpay/index.js';
+import whatsappCloudRoutes from './api/whatsapp-cloud/index.js';
+import connectionBillingRoutes from './api/billing/connections.js';
+import socialRoutes from './api/social/index.js';
+import { startSocialWorker } from './workers/social.worker.js';
+
+// --- Wootech Hub ---
+import wootechVoiceRoutes from './routes/wootechVoice.js';
+import wootechAnalyticsRoutes from './api/wootech-services/analytics.js';
+// Os listeners de omnichannel, scoring e automação são carregados sob demanda
+// pelas rotas que publicam eventos. Evitar inicialização por efeito colateral
+// aqui mantém o boot do servidor determinístico e não bloqueia o app.listen().
+
+import {
+  getPlatformOriginList,
+  PLATFORM_COMMERCIAL_NAME,
+} from './lib/platform-config.js';
+import {
+  sendWelcomeLimiter,
+  publicLeadLimiter,
+  quizLimiter,
+} from './middleware/rateLimit.js';
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load .env only if it exists (for local development)
+dotenv.config({ path: join(__dirname, '../.env') });
+
+// ── Validação de Variáveis de Ambiente Obrigatórias ───────────────────────
+const REQUIRED_ENV_VARS = [
+  'VITE_SUPABASE_URL',
+  'VITE_SUPABASE_ANON_KEY',
+  'SUPABASE_SERVICE_ROLE_KEY',
+];
+
+// Variáveis críticas para produção
+const CRITICAL_PROD_VARS = [
+  'WHATSAPP_SERVICE_TOKEN',
+  'WHATSAPP_INTERNAL_TOKEN',
+  'WHATSAPP_WS_JWT_SECRET',
+  'WHATSMEOW_URL',
+  'MEDIA_STORAGE_PROVIDER',
+  'MINIO_ENDPOINT',
+  'MINIO_PUBLIC_URL',
+  'MINIO_ACCESS_KEY',
+  'MINIO_SECRET_KEY',
+];
+
+const missingVars = REQUIRED_ENV_VARS.filter((v) => !process.env[v]?.trim());
+
+if (missingVars.length > 0) {
+  console.error(
+    '\n❌ ERRO CRITICO: Variaveis de ambiente obrigatorias nao encontradas:'
+  );
+  missingVars.forEach((v) => console.error(`   - ${v}`));
+  console.error('\n💡 Solucao:');
+  console.error('   -> Em producao Docker: adicione no stack/env do servico');
+  console.error('   -> Em desenvolvimento: verifique o arquivo .env na raiz\n');
+  if (process.env.NODE_ENV === 'production') {
+    console.error(
+      '\n🚨 Servidor sera encerrado por falta de configuracao critica!\n'
+    );
+    process.exit(1);
+  }
+}
+
+// Avisos para variáveis críticas em produção
+if (process.env.NODE_ENV === 'production') {
+  const missingCritical = CRITICAL_PROD_VARS.filter(
+    (v) => !process.env[v]?.trim()
+  );
+  if (missingCritical.length > 0) {
+    console.warn(
+      '\n⚠️  AVISO: Variaveis de ambiente criticas para producao nao configuradas:'
+    );
+    missingCritical.forEach((v) => console.warn(`   - ${v}`));
+    console.warn(
+      '\n💡 Solucao: Configure todas as variaveis no ambiente de producao\n'
+    );
+  }
+}
+
+const app = express();
+app.set('trust proxy', 1);
+const isProduction = process.env.NODE_ENV === 'production';
+const isDev = !isProduction;
+const platformOrigins = getPlatformOriginList();
+
+app.use((req, res, next) => {
+  const startedAt = process.hrtime.bigint();
+  const originalJson = res.json.bind(res);
+  const originalEnd = res.end.bind(res);
+  let timingRecorded = false;
+
+  const recordTimingHeaders = () => {
+    if (timingRecorded || res.headersSent) return;
+    timingRecorded = true;
+    const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
+    const currentTiming = res.getHeader('Server-Timing');
+    const appTiming = `app;dur=${durationMs.toFixed(1)}`;
+    res.setHeader(
+      'Server-Timing',
+      currentTiming ? `${currentTiming}, ${appTiming}` : appTiming
+    );
+    res.setHeader('X-Response-Time', `${durationMs.toFixed(1)}ms`);
+    res.setHeader('X-Process-Memory-Rss', String(process.memoryUsage().rss));
+  };
+
+  res.json = (body) => {
+    if (!res.headersSent) {
+      res.setHeader(
+        'X-Response-Bytes',
+        Buffer.byteLength(JSON.stringify(body), 'utf8')
+      );
+      recordTimingHeaders();
+    }
+    return originalJson(body);
+  };
+
+  res.end = (...args) => {
+    recordTimingHeaders();
+    return originalEnd(...args);
+  };
+
+  next();
+});
+
+app.use(compression({ threshold: 1024 }));
+
+// --- Global Security & Setup ---
+app.use(
+  helmet({
+    contentSecurityPolicy: isProduction
+      ? {
+          useDefaults: true,
+          directives: {
+            'default-src': ["'self'"],
+            'script-src': [
+              "'self'",
+              "'unsafe-inline'",
+              'https://www.googletagmanager.com',
+              'https://connect.facebook.net',
+            ],
+            'style-src': [
+              "'self'",
+              "'unsafe-inline'",
+              'https://fonts.googleapis.com',
+            ],
+            'img-src': ["'self'", 'data:', 'blob:', 'https:'],
+            'media-src': ["'self'", 'data:', 'blob:', 'https:'],
+            'font-src': ["'self'", 'data:', 'https://fonts.gstatic.com'],
+            'connect-src': [
+              "'self'",
+              'https://*.supabase.co',
+              'wss://*.supabase.co',
+              ...platformOrigins,
+              ...platformOrigins.map((origin) =>
+                origin.replace(/^https:/, 'wss:')
+              ),
+              'https://okaimoveis.com.br',
+              'wss://okaimoveis.com.br',
+              'https://www.okaimoveis.com.br',
+              'wss://www.okaimoveis.com.br',
+              'https://fazendasbrasil.com',
+              'wss://fazendasbrasil.com',
+              'https://www.fazendasbrasil.com',
+              'wss://www.fazendasbrasil.com',
+              'https://fazendasbrasil.com.br',
+              'wss://fazendasbrasil.com.br',
+              'https://www.fazendasbrasil.com.br',
+              'wss://www.fazendasbrasil.com.br',
+            ],
+            'frame-ancestors': ["'self'"],
+          },
+        }
+      : false,
+    crossOriginEmbedderPolicy: false,
+  })
+);
+
+// --- Debug Logger Middleware (apenas em desenvolvimento) ---
+if (!isProduction) {
+  app.use((req, res, next) => {
+    if (!req.originalUrl.includes('/ws')) {
+      console.log(`[DEV] ${req.method} ${req.originalUrl} | IP: ${req.ip}`);
+    }
+    next();
+  });
+}
+
+// --- CORS Configuration (extracted to lib/cors-config.js) ---
+const corsOptions = createCorsOptions({
+  isProduction,
+  normalizeDomain,
+  getSupabaseServer,
+});
+
+app.use(cors(corsOptions));
+// MUITO IMPORTANTE: Garante o Preflight (OPTIONS)
+app.options(/(.*)/, cors(corsOptions));
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 1000, // Generoso para produção inicial
+  message: { error: 'Muitas requisições. Tente novamente em 15 minutos.' },
+});
+
+app.use(globalLimiter);
+app.use(
+  express.json({
+    limit: '10mb',
+    verify: (req, res, buf) => {
+      // Salvar corpo bruto para webhooks (ex: AsgardPay)
+      req.asgardRawBody = buf.toString();
+    },
+  })
+);
+app.use(express.urlencoded({ extended: true }));
+
+// Request Logging (apenas em desenvolvimento)
+if (!isProduction) {
+  app.use((req, res, next) => {
+    const auth = req.headers.authorization ? 'auth' : 'anon';
+    console.log(
+      `[${new Date().toISOString()}] ${auth} ${req.method} ${req.path}`
+    );
+    next();
+  });
+}
+
+// --- BYOB Tenant Resolver Middleware ---
+import { tenantContext } from './lib/supabase-server.js';
+import { createClient } from '@supabase/supabase-js';
+
+// Cache com TTL de 5 minutos
+const tenantConfigCache = new Map();
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
+function setCacheWithTTL(key, value) {
+  tenantConfigCache.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
+function getCache(key) {
+  const entry = tenantConfigCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    tenantConfigCache.delete(key);
+    return null;
+  }
+  return entry.value;
+}
+
+// Invalidação de cache - exportar para uso em rotas de admin
+export function invalidateTenantCache(domain) {
+  if (domain) tenantConfigCache.delete(domain);
+}
+
+// BYOB Middleware - TEMPORARIAMENTE DESABILITADO PARA TESTE
+// app.use(async (req, res, next) => {
+//   process.stderr.write(`[BYOB] Requisicao: ${req.method} ${req.path}\n`);
+//
+//   // Rotas de API sempre usam o client master — BYOB é apenas para páginas públicas
+//   if (req.path.startsWith('/api/')) {
+//     return next();
+//   }
+//
+//   const tenantDomain = req.headers['x-tenant-domain'] || req.hostname;
+//
+//   // Se for o domínio master, ou rotas internas, não precisa de BYOB
+//   if (
+//     !tenantDomain ||
+//     tenantDomain.includes('localhost') ||
+//     tenantDomain.includes('imobzy.com.br') ||
+//     tenantDomain.includes('vercel.app')
+//   ) {
+//     return next();
+//   }
+//
+//   // Tenta achar no cache com TTL
+//   let tenantClient = getCache(tenantDomain);
+//
+//   if (!tenantClient) {
+//     try {
+//       const masterClient = getSupabaseServer();
+//       const { data, error } = await masterClient
+//         .from('public_tenant_discovery')
+//         .select('supabase_url, supabase_anon_key')
+//         .eq('domain', tenantDomain)
+//         .single();
+//
+//       if (!error && data && data.supabase_url && data.supabase_anon_key) {
+//         const { data: adminData } = await masterClient
+//           .from('reseller_infrastructure')
+//           .select('supabase_url, supabase_service_role_key')
+//           .eq('domain', tenantDomain)
+//           .eq('is_active', true)
+//           .single();
+//
+//         if (adminData && adminData.supabase_service_role_key) {
+//           tenantClient = createClient(
+//             adminData.supabase_url,
+//             adminData.supabase_service_role_key
+//           );
+//           setCacheWithTTL(tenantDomain, tenantClient);
+//           console.log(`🔌 BYOB: Server client resolved for ${tenantDomain}`);
+//         } else {
+//           console.warn(`⚠️ BYOB: No service_role_key for ${tenantDomain}, using master client`);
+//         }
+//       }
+//     } catch (err) {
+//       console.error(`❌ BYOB Middleware Error for ${tenantDomain}:`, err.message);
+//       next(); // CHAMA next() em caso de erro
+//     }
+//   }
+//
+//   if (tenantClient) {
+//     return tenantContext.run({ supabaseClient: tenantClient }, next);
+//   }
+//
+//   // Fallback explícito: log e continua com master client
+//   if (req.path.startsWith('/health/')) {
+//     console.log(`[BYOB] Chamei next() para: ${req.path}`);
+//   }
+//   console.warn(`⚠️ BYOB: Tenant client not resolved for ${tenantDomain}, falling back to master`);
+//   next();
+// });
+
+// --- Supabase Client (lazy, via shared singleton) ---
+// Nota: não criamos o client aqui para evitar crash se env vars estiverem ausentes.
+// O cliente é criado sob demanda em cada rota via getSupabaseServer().
+
+// --- API Route Mapping ---
+app.use('/internal', internalRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/admin/templates', adminTemplateRoutes);
+app.use('/api/import', importRoutes);
+app.use('/api/public', publicRoutes);
+app.use('/api/onboarding', onboardingRoutes);
+app.use('/api/domains', domainRoutes);
+app.use('/api/crm', crmRoutes);
+app.use('/api/crm/clients', crmClientsRoutes);
+app.use('/api/properties', propertyRoutes);
+app.use('/api/rural', ruralRoutes);
+app.use('/api/urban', urbanRoutes);
+app.use('/api/cobranca', cobrancaRoutes);
+app.use('/api/webhooks', webhookRoutes);
+app.use('/api/asgardpay', asgardpayRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/demo', demoRoutes);
+app.use('/api/fluowai-migration', fluowaiMigrationRoutes);
+app.use('/api/email', emailRoutes);
+app.use('/api/wootech-ai', wootechAiRoutes);
+app.use('/api/woo-control/ai', wooControlAiRoutes);
+
+// --- Wootech Hub Mounts ---
+app.use('/api/wootech-voice', wootechVoiceRoutes);
+app.use('/api/wootech-services/analytics', wootechAnalyticsRoutes);
+
+app.use('/api/sites', siteRoutes);
+app.use('/api/orulo', oruloRoutes);
+app.use('/api/portals', portalRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/valuation', valuationRoutes);
+app.use('/api/documents', documentRoutes);
+app.use('/api/external-data', externalDataRoutes);
+app.use('/api/quiz', quizRoutes);
+// console.error('[INIT] Registrando healthRoutes...');
+// app.use('/health', healthRoutes);
+// console.error('[INIT] healthRoutes registrado.');
+
+// Teste: rota simples
+app.get('/test-health', (req, res) => {
+  console.error('[TEST] /test-health chamado');
+  res.json({ test: 'ok' });
+});
+app.use('/api/jarvis', jarvisRoutes);
+app.use('/api/account', accountRoutes);
+app.use('/api/whatsapp-proxy', whatsappProxyRoutes);
+app.use('/api/whatsapp-cloud', whatsappCloudRoutes);
+app.use('/api/mega/connections', connectionBillingRoutes);
+app.use('/api/social', verifyAuth, requireTenant, socialRoutes);
+app.use('/api/cvcrm-bia', cvcrmBiaRoutes);
+app.use('/api/mega', megaAdminRoutes);
+app.use('/api/licensing', licensingRoutes);
+app.use('/api/woo-control', wooControlRoutes);
+app.use('/api/subscription', subscriptionRoutes);
+app.use('/api/public/zap', zapRoutes);
+app.use(
+  '/api/campaigns/serper',
+  verifyAuth,
+  requireTenant,
+  campaignSerperRoutes
+);
+app.use(
+  '/api/campaigns/blacklist',
+  verifyAuth,
+  requireTenant,
+  campaignBlacklistRoutes
+);
+app.use(
+  '/api/campaigns/:campaignId/contacts',
+  verifyAuth,
+  requireTenant,
+  campaignContactsRoutes
+);
+app.use('/api/campaigns', verifyAuth, requireTenant, campaignRoutes);
+app.use('/api/storage', verifyAuth, requireTenant, storageRoutes);
+// app.use('/api/whatsapp', whatsappRoutes); // Substituído pelo proxy abaixo
+
+// Tenant Resolution
+
+app.get('/api/tenant/resolve', (req, res) => tenantHandler(req, res));
+app.get('/api/tenant/current', (req, res) => tenantHandler(req, res));
+
+// Plataforma: IP de origem para configuração de DNS por clientes autenticados.
+// Mantido no servidor (nunca no bundle público) para evitar exposição do IP.
+app.get('/api/platform/ip', verifyAuth, (req, res) => {
+  const ip = process.env.PLATFORM_IP || '';
+  return res.status(200).json({ ip });
+});
+
+// System Status & Health
+app.get('/api/system-status', async (req, res) => {
+  try {
+    return res.status(200).json({
+      success: true,
+      status: 'online',
+      service: 'wootech-imob-backend',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV,
+    });
+  } catch (error) {
+    console.error('SYSTEM STATUS ERROR:', error.message);
+    return res.status(500).json({
+      success: false,
+      error: isDev ? error.message : 'Erro ao verificar status',
+    });
+  }
+});
+
+// Old route backup below (commented out by replacement):
+/*
+/*
+  try {
+    // const supabase = getSupabaseServer();
+    // const { count } = await supabase
+    //  .from('profiles')
+    //  .select('*', { count: 'exact', head: true });
+    res.json({
+      success: true, status: "online", service: "woomobzy-backend",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+*/
+app.get('/', (req, res) => res.send(`${PLATFORM_COMMERCIAL_NAME} API Online`));
+
+// --- Instagram Service Proxy ---
+// Forward /api/instagram/* to the Instagram service on port 3200
+app.use('/api/instagram', (req, res) => {
+  const url = new URL(req.originalUrl || req.url, 'http://localhost:3200');
+
+  const proxyReq = http.request(
+    {
+      hostname: 'localhost',
+      port: 3200,
+      path: url.pathname + url.search,
+      method: req.method,
+      headers: req.headers,
+    },
+    (proxyRes) => {
+      res.writeHead(proxyRes.statusCode, proxyRes.headers);
+      proxyRes.pipe(res, { end: true });
+    }
+  );
+
+  proxyReq.on('error', (proxyErr) => {
+    console.error('[Instagram Proxy Error]:', proxyErr.message);
+    res.status(502).json({ error: 'Instagram service unavailable' });
+  });
+
+  req.pipe(proxyReq);
+});
+
+// --- Server Startup ---
+const PORT = process.env.PORT || 3002;
+
+const server = app.listen(PORT, '0.0.0.0', async () => {
+  console.log(`${PLATFORM_COMMERCIAL_NAME} server active on port ${PORT}`);
+
+  let syncPlatformTraefikServices;
+  let syncRegisteredDockerDomains;
+  try {
+    ({ syncPlatformTraefikServices, syncRegisteredDockerDomains } = await import('./domainService.js'));
+  } catch (error) {
+    console.error('[Domínios] Serviço indisponível no boot:', error.message);
+  }
+
+  try {
+    const { setupWhatsAppProxy } = await import('./api/whatsapp/index.js');
+    setupWhatsAppProxy(app, server, verifyAuth, requireTenant);
+    console.log('[WhatsApp] Proxy carregado.');
+  } catch (error) {
+    console.error('[WhatsApp] Proxy indisponível no boot:', error.message);
+  }
+
+  // O módulo de locação carrega dependências pesadas de PDF/assinatura.
+  // Carregá-lo depois do listen mantém as demais APIs disponíveis mesmo
+  // quando uma dependência opcional de contratos está ausente ou lenta.
+  try {
+    const { default: locacaoRoutes } = await import('./api/locacao/index.js');
+    app.use('/api/locacao', locacaoRoutes);
+    console.log('[Locação] Rotas carregadas.');
+  } catch (error) {
+    console.error('[Locação] Rotas indisponíveis no boot:', error.message);
+  }
+
+  try {
+    const traefikSync = syncPlatformTraefikServices
+      ? await syncPlatformTraefikServices()
+      : { skipped: true };
+    if (!traefikSync.skipped) {
+      console.log(
+        `[Traefik] Platform services synchronized: ${traefikSync.configPath}`
+      );
+    }
+
+    const supabase = getSupabaseServer();
+    const domainSync = syncRegisteredDockerDomains
+      ? await syncRegisteredDockerDomains(supabase, {
+      validateDns: false,
+        })
+      : { results: [] };
+    const syncedCount = domainSync.results.filter(
+      (result) => result.status === 'success'
+    ).length;
+    const skippedCount = domainSync.results.filter(
+      (result) => result.status !== 'success'
+    ).length;
+    console.log(
+      `[Traefik] Registered domains synchronized: ${syncedCount} ok, ${skippedCount} skipped`
+    );
+  } catch (error) {
+    console.error(
+      '[Traefik] Failed to synchronize dynamic configuration:',
+      error.message
+    );
+  }
+});
+
+// Rota para acionar boas-vindas automaticas ao capturar lead via WhatsApp
+// Protegida com rate limit especifico (rota sem auth)
+app.post('/api/send-welcome', sendWelcomeLimiter, async (req, res) => {
+  try {
+    const { name, phone, propertyTitle } = req.body;
+    if (!name || !phone) {
+      return res
+        .status(400)
+        .json({ success: false, error: 'Nome e telefone sao obrigatorios' });
+    }
+
+    const activityData = {
+      organization_id: req.orgId || null,
+      type: 'WhatsApp',
+      description: `Boas-vindas enviada para ${name} (${phone}) - Imovel: ${propertyTitle || 'N/A'}`,
+      metadata: {
+        name,
+        phone,
+        property_title: propertyTitle,
+        source: 'lead-capture-modal',
+      },
+    };
+
+    try {
+      const supabase = getSupabaseServer();
+      await supabase.from('lead_activities').insert(activityData);
+    } catch (dbErr) {
+      console.warn(
+        '[SendWelcome] Nao foi possivel registrar atividade:',
+        dbErr.message
+      );
+    }
+
+    res.json({ success: true, message: 'Boas-vindas registrada' });
+  } catch (err) {
+    console.error('[SendWelcome Error]', err.message);
+    res
+      .status(500)
+      .json({ success: false, error: 'Erro ao enviar boas-vindas' });
+  }
+});
+
+// Configura o Proxy de WhatsApp com Seguranca SaaS (API + WebSockets).
+// O server real e passado para registrar o upgrade do WebSocket.
+
+// Inicia o agendador de redes sociais (roda a cada 5m)
+if (isProduction) {
+  startSocialWorker();
+}
+
+// 7. TRATAMENTO GLOBAL DE ERROS (deve vir antes do 404 catch-all)
+app.use((err, req, res, next) => {
+  const isDev = process.env.NODE_ENV !== 'production';
+  console.error('GLOBAL ERROR:', isDev ? err : err.message);
+
+  if (err.message && err.message.includes('CORS')) {
+    return res.status(403).json({
+      success: false,
+      error: isDev ? err.message : 'Acesso bloqueado por CORS',
+      code: 'CORS_BLOCKED',
+    });
+  }
+
+  // Erros de validação do banco
+  if (err.code === '23505') {
+    return res.status(409).json({
+      success: false,
+      error: 'Registro duplicado. Este recurso já existe.',
+      code: 'DUPLICATE_ENTRY',
+    });
+  }
+
+  if (err.code === '23503') {
+    return res.status(409).json({
+      success: false,
+      error:
+        'Operação não permitida: registro possui vínculos com outros dados.',
+      code: 'FOREIGN_KEY_VIOLATION',
+    });
+  }
+
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({
+      success: false,
+      error: 'Arquivo muito grande. O limite é de 10MB.',
+      code: 'PAYLOAD_TOO_LARGE',
+    });
+  }
+
+  const statusCode = err.statusCode || err.status || 500;
+  res.status(statusCode).json({
+    success: false,
+    error: isDev ? err.message : 'Erro interno do servidor',
+    ...(isDev && { stack: err.stack?.split('\n').slice(0, 5).join('\n') }),
+    code: err.code || 'INTERNAL_ERROR',
+  });
+});
+
+// 10. SPA / Frontend Fallback e HARDENING EXTRA
+app.use(express.static(join(__dirname, '../dist')));
+
+app.all(/(.*)/, (req, res) => {
+  // Se for uma requisição para a API que não foi encontrada, retorna JSON
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({
+      success: false,
+      error: 'Route not found',
+    });
+  }
+  // Caso contrário, serve o index.html do React (SPA) para deep links
+  res.sendFile(join(__dirname, '../dist/index.html'));
+});
+
+// WebSocket connections must stay open behind reverse proxies. Keep request
+// timeouts disabled for upgraded sockets and let the WS heartbeat/proxy decide.
+server.timeout = 0;
+server.keepAliveTimeout = 65000;
+server.headersTimeout = 66000;
+
+export default app;

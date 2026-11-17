@@ -22,17 +22,30 @@ const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 // Parse Supabase project ID from URL
 const projectId = SUPABASE_URL?.match(/https:\/\/(\w+)\.supabase\.co/)?.[1];
 
-// Supabase PostgreSQL connection details
-const connectionConfig = {
-  host: `${projectId}.pooler.supabase.com`,
-  port: 6543,
-  database: 'postgres',
-  user: 'postgres.ltrmgfdpqtvypsxeknyd', // Format: postgres.{project-ref}
-  password: SERVICE_ROLE_KEY || '',
-  ssl: {
-    rejectUnauthorized: false,
-  },
-};
+// Supabase PostgreSQL connection details (prefer DATABASE_URL / SUPABASE_DB_URL when present)
+const directDbUrl = (
+  process.env.DATABASE_URL ||
+  process.env.SUPABASE_DB_URL ||
+  ''
+).trim();
+
+const connectionConfig = directDbUrl
+  ? {
+      connectionString: directDbUrl,
+      ssl: {
+        rejectUnauthorized: false,
+      },
+    }
+  : {
+      host: `aws-0-sa-east-1.pooler.supabase.com`,
+      port: 6543,
+      database: 'postgres',
+      user: `postgres.${projectId}`, // Format: postgres.{project-ref}
+      password: SERVICE_ROLE_KEY || '',
+      ssl: {
+        rejectUnauthorized: false,
+      },
+    };
 
 const colors = {
   reset: '\x1b[0m',

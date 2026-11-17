@@ -41,6 +41,7 @@ const CadastroTecnico: React.FC = () => {
   const [properties, setProperties] = useState<any[]>([]);
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
   const [saving, setSaving] = useState(false);
+  const [detailProperty, setDetailProperty] = useState<any | null>(null);
   const [technicalForm, setTechnicalForm] = useState({
     area_agricultavel: '',
     area_reserva: '',
@@ -201,6 +202,43 @@ const CadastroTecnico: React.FC = () => {
       )
     );
     toast.success('Cadastro técnico rural salvo com sucesso.');
+  };
+
+  const clearTechnicalRegistration = async (prop: any) => {
+    if (!profile?.organization_id) return;
+    if (
+      !window.confirm(
+        `Remover os dados técnicos e geometria de "${prop.title}"?`
+      )
+    ) {
+      return;
+    }
+
+    const nextFeatures = { ...(prop.features || {}) };
+    delete nextFeatures.rural_technical;
+    if (nextFeatures.legal?.geometry) {
+      nextFeatures.legal = { ...nextFeatures.legal };
+      delete nextFeatures.legal.geometry;
+    }
+
+    const { error } = await supabase
+      .from('properties')
+      .update({ features: nextFeatures })
+      .eq('id', prop.id)
+      .eq('organization_id', profile.organization_id);
+
+    if (error) {
+      logger.error('Erro ao remover dados tecnicos:', error);
+      toast.error('Erro ao remover dados técnicos da propriedade.');
+      return;
+    }
+
+    setProperties((prev) =>
+      prev.map((item) =>
+        item.id === prop.id ? { ...item, features: nextFeatures } : item
+      )
+    );
+    toast.success('Cadastro técnico removido da propriedade.');
   };
 
   return (
@@ -539,17 +577,15 @@ const CadastroTecnico: React.FC = () => {
                       <td className="px-6 py-4">
                         <div className="flex gap-2">
                           <button
-                            onClick={() =>
-                              toast.info('Visualização de detalhes em breve')
-                            }
+                            onClick={() => setDetailProperty(prop)}
+                            title="Ver detalhes técnicos"
                             className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all"
                           >
                             <Eye size={16} />
                           </button>
                           <button
-                            onClick={() =>
-                              toast.error('Exclusão não implementada')
-                            }
+                            onClick={() => clearTechnicalRegistration(prop)}
+                            title="Limpar cadastro técnico"
                             className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-all"
                           >
                             <Trash2 size={16} />
@@ -561,6 +597,102 @@ const CadastroTecnico: React.FC = () => {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {detailProperty && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 space-y-4 shadow-2xl border border-slate-100">
+            <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">
+                  {detailProperty.title}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  {[detailProperty.city, detailProperty.state]
+                    .filter(Boolean)
+                    .join(' / ') || 'Localização não informada'}
+                </p>
+              </div>
+              <button
+                onClick={() => setDetailProperty(null)}
+                className="px-3 py-1 rounded-lg bg-slate-100 text-slate-600 text-xs font-bold hover:bg-slate-200"
+              >
+                Fechar
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="p-3 bg-slate-50 rounded-xl">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">
+                  Área Total
+                </span>
+                <span className="font-bold text-slate-800">
+                  {detailProperty.total_area_ha ||
+                    detailProperty.features?.areaHectares ||
+                    '—'}{' '}
+                  ha
+                </span>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-xl">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">
+                  Bioma / Aptidão
+                </span>
+                <span className="font-bold text-slate-800">
+                  {detailProperty.features?.rural_technical?.bioma || '—'} ·{' '}
+                  {detailProperty.features?.rural_technical?.aptidao || '—'}
+                </span>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-xl">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">
+                  Área Agricultável / Reserva
+                </span>
+                <span className="font-bold text-slate-800">
+                  {detailProperty.features?.rural_technical
+                    ?.area_agricultavel ?? '—'}{' '}
+                  ha /{' '}
+                  {detailProperty.features?.rural_technical?.area_reserva ??
+                    '—'}{' '}
+                  ha
+                </span>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-xl">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">
+                  Georreferenciamento
+                </span>
+                <span className="font-bold text-emerald-700">
+                  {detailProperty.features?.legal?.geometry
+                    ? 'Polígono cadastrado'
+                    : 'Pendente'}
+                </span>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => {
+                  const tech = detailProperty.features?.rural_technical || {};
+                  setSelectedPropertyId(detailProperty.id);
+                  setTechnicalForm({
+                    area_agricultavel: String(tech.area_agricultavel ?? ''),
+                    area_reserva: String(tech.area_reserva ?? ''),
+                    bioma: tech.bioma || 'Cerrado',
+                    tipo_solo: tech.tipo_solo || 'Latossolo',
+                    regime_hidrico: tech.regime_hidrico || 'Irrigado',
+                    topografia: tech.topografia || 'Plana',
+                    aptidao: tech.aptidao || 'Pecuária',
+                    score_liquidez: String(tech.score_liquidez ?? ''),
+                  });
+                  if (detailProperty.features?.legal?.geometry) {
+                    setGeoData(detailProperty.features.legal.geometry);
+                  }
+                  setActiveTab('import');
+                  setDetailProperty(null);
+                }}
+                className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-500"
+              >
+                Editar Cadastro Técnico
+              </button>
+            </div>
           </div>
         </div>
       )}

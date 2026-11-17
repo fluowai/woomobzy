@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, Download, Plus, Trash2, X, Edit, ExternalLink } from 'lucide-react';
 import { fetchWooSnapshots, createWooSnapshot, updateWooSnapshot, deleteWooSnapshot, fetchWooProducts, fetchWooNetwork } from '../../../services/wooControl';
@@ -120,7 +121,7 @@ export const Snapshots = () => {
         await deleteWooSnapshot(id);
         loadSnapshots();
       } catch (err: any) {
-        alert(err.message || 'Erro ao excluir o snapshot');
+        toast.error(err.message || 'Erro ao excluir o snapshot');
       }
     }
   };
@@ -129,7 +130,7 @@ export const Snapshots = () => {
     if (s.url) {
       window.open(s.url, '_blank');
     } else {
-      alert('URL não disponível');
+      toast.warning('URL de download não disponível.');
     }
   };
 

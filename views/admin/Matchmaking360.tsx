@@ -227,9 +227,17 @@ const Matchmaking360: React.FC = () => {
 
                   {/* Action */}
                   <button
-                    onClick={() =>
-                      toast.info('Funcionalidade de contato em breve')
-                    }
+                    onClick={() => {
+                      const phone = String((match.lead as any).phone || (match.lead as any).whatsapp || '').replace(/\D/g, '');
+                      const text = `Olá ${match.lead.name}! Encontramos o imóvel "${match.property.title}" que combina ${match.score}% com o seu perfil.`;
+                      if (phone) {
+                        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+                      } else {
+                        navigator.clipboard?.writeText(text);
+                        toast.success('Mensagem de abordagem copiada para a área de transferência!');
+                      }
+                    }}
+                    title="Contatar Lead"
                     className="p-4 bg-black text-white rounded-2xl hover:scale-110 transition-all"
                   >
                     <MessageSquare size={20} />
@@ -291,9 +299,28 @@ const Matchmaking360: React.FC = () => {
               </div>
 
               <button
-                onClick={() =>
-                  toast.info('Exportação estará disponível em breve')
-                }
+                onClick={() => {
+                  const csvHeader = 'Lead,Imovel,Valor,Score,Motivos';
+                  const csvRows = matches.map((m) =>
+                    [
+                      `"${String(m.lead.name || '').replace(/"/g, '""')}"`,
+                      `"${String(m.property.title || '').replace(/"/g, '""')}"`,
+                      m.property.price || 0,
+                      m.score,
+                      `"${m.reasons.join('; ').replace(/"/g, '""')}"`,
+                    ].join(',')
+                  );
+                  const blob = new Blob(['\uFEFF' + [csvHeader, ...csvRows].join('\n')], {
+                    type: 'text/csv;charset=utf-8',
+                  });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'matchmaking-360.csv';
+                  a.click();
+                  URL.revokeObjectURL(url);
+                  toast.success('Sugestões exportadas em CSV!');
+                }}
                 className="w-full py-4 bg-indigo-600 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:brightness-110 transition-all flex items-center justify-center gap-3"
               >
                 Exportar Sugestões <ArrowRight size={14} />

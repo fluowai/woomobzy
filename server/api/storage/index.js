@@ -325,10 +325,26 @@ async function persistStorageObject({
 
 async function uploadToSupabase(bucket, filePath, file) {
   const supabase = getSupabaseServer();
-  const { error } = await supabase.storage.from(bucket).upload(filePath, file.buffer, {
+  const uploadOptions = {
     contentType: file.mimetype || 'application/octet-stream',
-    upsert: false,
-  });
+    upsert: true,
+  };
+
+  let { error } = await supabase.storage
+    .from(bucket)
+    .upload(filePath, file.buffer, uploadOptions);
+
+  if (error && /bucket not found/i.test(error.message || '')) {
+    const { error: bucketErr } = await supabase.storage.createBucket(bucket, {
+      public: true,
+    });
+    if (!bucketErr || /already exists/i.test(bucketErr.message || '')) {
+      const retry = await supabase.storage
+        .from(bucket)
+        .upload(filePath, file.buffer, uploadOptions);
+      error = retry.error;
+    }
+  }
 
   if (error) {
     console.error('[Storage Upload Error]', error);

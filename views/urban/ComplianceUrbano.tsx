@@ -14,10 +14,12 @@ import {
   ExternalLink,
   AlertCircle,
 } from 'lucide-react';
+import { logger } from '@/utils/logger';
 import { supabase } from '../../services/supabase';
 import { legalUrbanValidationService } from '../../services/legalUrbanValidationService';
 import { useAuth } from '../../context/AuthContext';
 import { isUrbanProperty } from '../../utils/propertyNiche';
+import { callApi } from '../../src/lib/api';
 
 type DocStatus = 'ok' | 'pendente' | 'vencido' | 'ausente';
 
@@ -189,6 +191,40 @@ const ComplianceUrbano: React.FC = () => {
   >({});
   const [isValidating, setIsValidating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [uploadTargetId, setUploadTargetId] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const handleDocUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !uploadTargetId) return;
+    if (!selectedProperty) {
+      toast.error('Selecione um imóvel antes de enviar documentos.');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      await callApi(`/api/documents/upload/${selectedProperty}`, {
+        method: 'POST',
+        body: formData,
+      });
+      setDocs((prev) =>
+        prev.map((d) =>
+          d.id === uploadTargetId
+            ? { ...d, status: d.status === 'ok' ? 'ok' : 'pendente' }
+            : d
+        )
+      );
+      toast.success(`Documento "${file.name}" anexado com sucesso.`);
+    } catch (err: any) {
+      logger.error('Erro ao enviar documento urbano:', err);
+      toast.error(err?.message || 'Erro ao enviar documento.');
+    } finally {
+      setUploadTargetId(null);
+    }
+  };
 
   const load = useCallback(async () => {
     if (!profile?.organization_id) {
@@ -375,9 +411,17 @@ const ComplianceUrbano: React.FC = () => {
                     {cfg.label}
                   </span>
                   <button
-                    onClick={() =>
-                      toast.info('Funcionalidade de upload específica em breve')
-                    }
+                    onClick={() => {
+                      if (!selectedProperty) {
+                        toast.error(
+                          'Selecione um imóvel antes de anexar o documento.'
+                        );
+                        return;
+                      }
+                      setUploadTargetId(item.id);
+                      fileInputRef.current?.click();
+                    }}
+                    title="Enviar documento (PDF, imagem ou DOC)"
                     className="invisible group-hover:visible p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100"
                   >
                     <Upload size={14} />
@@ -393,6 +437,13 @@ const ComplianceUrbano: React.FC = () => {
 
   return (
     <div className="space-y-8">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
+        className="hidden"
+        onChange={handleDocUpload}
+      />
       <div>
         <h1 className="text-3xl font-bold text-black uppercase italic tracking-tighter flex items-center gap-3">
           <ClipboardCheck className="text-blue-600" size={32} />

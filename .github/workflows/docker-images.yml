@@ -25,8 +25,7 @@ jobs:
           - name: api
             image: ghcr.io/fluowai/woomobzy-api
             dockerfile: Dockerfile.api
-            # Portainer currently references this tag in its stored stack definition.
-            deployment_alias: ghcr.io/fluowai/woomobzy-api:5daaa4a05b3d9f85556d4c41b1d23b655e44bfa7
+            deployment_alias: ghcr.io/fluowai/woomobzy-api:latest
           - name: whatsapp
             image: ghcr.io/fluowai/woomobzy-whatsapp
             dockerfile: Dockerfile.whatsapp
@@ -35,6 +34,20 @@ jobs:
             image: ghcr.io/fluowai/woomobzy-agro
             dockerfile: Dockerfile.agro
             deployment_alias: ghcr.io/fluowai/woomobzy-agro:latest
+          - name: instagram-service
+            image: ghcr.io/fluowai/woomobzy-instagram-service
+            dockerfile: Dockerfile.instagram-service
+            context: instagram-service
+            deployment_alias: ghcr.io/fluowai/woomobzy-instagram-service:latest
+          - name: instagram-worker
+            image: ghcr.io/fluowai/woomobzy-instagram-worker
+            dockerfile: Dockerfile.instagram-worker
+            context: instagram-worker
+            deployment_alias: ghcr.io/fluowai/woomobzy-instagram-worker:latest
+          - name: document-worker
+            image: ghcr.io/fluowai/woomobzy-document-worker
+            dockerfile: Dockerfile.document-worker
+            deployment_alias: ghcr.io/fluowai/woomobzy-document-worker:latest
           - name: freellm
             image: ghcr.io/fluowai/wootech-ai-freellm
             dockerfile: docker/wootech-ai/Dockerfile

@@ -81,7 +81,7 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
 
     // Update lease status
     await supabase
-      .from('rental_contracts')
+      .from('leases')
       .update({
         status: 'terminated',
         terminated_at: new Date().toISOString(),

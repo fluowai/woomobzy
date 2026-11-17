@@ -28,9 +28,13 @@ const contactLimiter = rateLimit({
 });
 
 const contactSchema = z.object({
+  organization_id: z.string().uuid().optional().nullable(),
+  organization_slug: z.string().max(120).optional().nullable(),
+  organization_domain: z.string().max(255).optional().nullable(),
   name: z.string().min(2).max(100),
   email: z.string().email().max(255),
   phone: z.string().min(8).max(20),
+  subject: z.string().max(200).optional(),
   message: z.string().min(5).max(2000),
   utm_source: z.string().optional(),
   utm_medium: z.string().optional(),
@@ -75,7 +79,136 @@ const leadSchema = z.object({
 
 // Contact Form
 router.post('/contact', contactLimiter, async (req, res) => {
-  // ... (mantido como está)
+  try {
+    const validation = contactSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        success: false,
+        error: 'Dados inválidos no formulário de contato',
+        details: validation.error.errors,
+      });
+    }
+
+    const {
+      organization_id,
+      organization_slug,
+      organization_domain,
+      name,
+      email,
+      phone,
+      subject,
+      message,
+      utm_source,
+      utm_medium,
+      utm_campaign,
+      utm_term,
+      utm_content,
+      referrer_url,
+      landing_page_url,
+      client_id,
+      fbp,
+      fbc,
+    } = validation.data;
+
+    let organization = await resolvePublicLeadOrganization({
+      supabase,
+      organizationId: organization_id,
+      slug: organization_slug,
+      domain: organization_domain,
+      source: 'Website Contact Form',
+      campaign: utm_campaign,
+      referrerUrl: referrer_url,
+      origin: req.headers.origin,
+      host: req.headers.host,
+    });
+
+    if (!organization) {
+      const { data: fallbackOrg } = await supabase
+        .from('organizations')
+        .select('id')
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      organization = fallbackOrg || null;
+    }
+
+    if (!organization?.id) {
+      return res.status(404).json({
+        success: false,
+        error: 'Organização não encontrada para receber o contato.',
+      });
+    }
+
+    const formattedNotes = subject
+      ? `Assunto: ${subject}\n\n${message}`
+      : message;
+
+    const leadPayload = {
+      organization_id: organization.id,
+      name,
+      email,
+      phone,
+      status: 'Novo',
+      source: 'Website Contact Form',
+      campaign: utm_campaign || null,
+      notes: formattedNotes,
+    };
+
+    const leadData = await insertPublicLeadWithFallback({
+      supabase,
+      payload: leadPayload,
+      fallbackPayload: buildPublicLeadFallbackPayload({
+        organizationId: organization.id,
+        name,
+        email,
+        phone,
+        source: 'Website Contact Form',
+        notes: formattedNotes,
+        metadata: {
+          subject,
+          utm_source,
+          utm_medium,
+          utm_campaign,
+          utm_term,
+          utm_content,
+          referrer_url,
+          landing_page_url,
+          client_id,
+          fbp,
+          fbc,
+        },
+      }),
+    });
+
+    const recipientEmail = process.env.CONTACT_EMAIL || process.env.EMAIL_USER;
+    if (
+      recipientEmail &&
+      process.env.EMAIL_USER &&
+      process.env.EMAIL_PASSWORD
+    ) {
+      sendContactFormEmail(
+        { name, email, phone, message: formattedNotes },
+        recipientEmail
+      ).catch((mailErr) => {
+        console.warn(
+          '[Public API] Falha não crítica ao enviar email de contato:',
+          mailErr.message
+        );
+      });
+    }
+
+    return res.status(201).json({
+      success: true,
+      leadId: leadData?.id || null,
+      message: 'Contato registrado com sucesso!',
+    });
+  } catch (error) {
+    console.error('[Public API] Erro no formulário de contato:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Erro ao processar formulário de contato',
+    });
+  }
 });
 
 /**

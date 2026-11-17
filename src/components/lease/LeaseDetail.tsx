@@ -37,6 +37,7 @@ import {
 } from '../../types/lease';
 import {
   getLease,
+  updateLease,
   listInvoices,
   listSignatures,
   listInspections,
@@ -53,6 +54,17 @@ export const LeaseDetail: React.FC = () => {
   const [signatures, setSignatures] = useState<Signature[]>([]);
   const [inspections, setInspections] = useState<Inspection[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editForm, setEditForm] = useState({
+    monthly_rent: '',
+    condominium_fee: '',
+    iptu_amount: '',
+    due_day: '',
+    tenant_phone: '',
+    tenant_email: '',
+    end_date: '',
+  });
 
   useEffect(() => {
     if (id) loadData();
@@ -153,23 +165,38 @@ export const LeaseDetail: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => toast.success('Gerando PDF do contrato...')}
+            onClick={() => window.print()}
             className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-500 transition-all shadow-lg"
           >
             <Download size={14} /> PDF
           </button>
           <button
-            onClick={() =>
-              toast.success('Abrindo chat do WhatsApp com o cliente...')
-            }
+            onClick={() => {
+              const digits = (lease.tenant_phone || '').replace(/\D/g, '');
+              if (digits.length >= 10) {
+                const phone = digits.startsWith('55') ? digits : `55${digits}`;
+                window.open(`https://wa.me/${phone}`, '_blank', 'noopener,noreferrer');
+              } else {
+                navigate('/whatsapp');
+              }
+            }}
             className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 text-white rounded-xl text-xs font-bold hover:bg-emerald-400 transition-all"
           >
             <MessageSquare size={14} /> WhatsApp
           </button>
           <button
-            onClick={() =>
-              toast.info('Edição de contrato estará disponível em breve')
-            }
+            onClick={() => {
+              setEditForm({
+                monthly_rent: String(lease.monthly_rent ?? ''),
+                condominium_fee: String(lease.condominium_fee ?? ''),
+                iptu_amount: String(lease.iptu_amount ?? ''),
+                due_day: String(lease.due_day ?? ''),
+                tenant_phone: lease.tenant_phone || '',
+                tenant_email: lease.tenant_email || '',
+                end_date: lease.end_date ? lease.end_date.slice(0, 10) : '',
+              });
+              setShowEditModal(true);
+            }}
             className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200 transition-all"
           >
             <Edit size={14} /> Editar
@@ -307,9 +334,30 @@ export const LeaseDetail: React.FC = () => {
                     </div>
                     <Download
                       size={16}
-                      onClick={() =>
-                        toast.info('Download de documento em breve')
-                      }
+                      onClick={() => {
+                        if (doc.type === 'Contrato' && lease.signed_document_url) {
+                          window.open(lease.signed_document_url, '_blank', 'noopener,noreferrer');
+                          return;
+                        }
+                        const summary = [
+                          `Documento: ${doc.name}`,
+                          `Contrato: ${lease.contract_number || lease.id}`,
+                          `Locatario: ${lease.tenant_name}`,
+                          `CPF: ${lease.tenant_cpf || 'N/A'}`,
+                          `Imovel: ${lease.property_title || 'Nao vinculado'}`,
+                          `Aluguel Mensal: R$ ${Number(lease.monthly_rent || 0).toFixed(2)}`,
+                          `Status: ${LEASE_STATUS_LABELS[lease.status] || lease.status}`,
+                        ].join('\n');
+                        const blob = new Blob([summary], { type: 'text/plain;charset=utf-8' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${doc.name.replace(/\.pdf$/i, '')}-${lease.contract_number || lease.id}.txt`;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        URL.revokeObjectURL(url);
+                      }}
                       className="text-slate-300 hover:text-blue-600 cursor-pointer"
                     />
                   </div>
@@ -461,6 +509,173 @@ export const LeaseDetail: React.FC = () => {
           )}
         </div>
       </div>
+
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900">
+                Editar Contrato de Locação
+              </h3>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">
+                  Aluguel Mensal (R$)
+                </label>
+                <input
+                  type="number"
+                  value={editForm.monthly_rent}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      monthly_rent: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">
+                  Dia Vencimento
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={28}
+                  value={editForm.due_day}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      due_day: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">
+                  Condomínio (R$)
+                </label>
+                <input
+                  type="number"
+                  value={editForm.condominium_fee}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      condominium_fee: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">
+                  IPTU (R$)
+                </label>
+                <input
+                  type="number"
+                  value={editForm.iptu_amount}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      iptu_amount: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">
+                  Telefone Locatário
+                </label>
+                <input
+                  value={editForm.tenant_phone}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      tenant_phone: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">
+                  Email Locatário
+                </label>
+                <input
+                  value={editForm.tenant_email}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      tenant_email: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">
+                  Data de Término
+                </label>
+                <input
+                  type="date"
+                  value={editForm.end_date}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      end_date: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600"
+              >
+                Cancelar
+              </button>
+              <button
+                disabled={savingEdit}
+                onClick={async () => {
+                  try {
+                    setSavingEdit(true);
+                    await updateLease(lease.id, {
+                      monthly_rent: Number(editForm.monthly_rent || 0),
+                      condominium_fee: Number(editForm.condominium_fee || 0),
+                      iptu_amount: Number(editForm.iptu_amount || 0),
+                      due_day: editForm.due_day ? Number(editForm.due_day) : undefined,
+                      tenant_phone: editForm.tenant_phone || undefined,
+                      tenant_email: editForm.tenant_email || undefined,
+                      end_date: editForm.end_date || undefined,
+                    });
+                    toast.success('Contrato atualizado com sucesso!');
+                    setShowEditModal(false);
+                    await loadData();
+                  } catch (err: any) {
+                    toast.error(err?.message || 'Erro ao atualizar contrato.');
+                  } finally {
+                    setSavingEdit(false);
+                  }
+                }}
+                className="px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-500 disabled:opacity-50"
+              >
+                {savingEdit ? 'Salvando...' : 'Salvar Alterações'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

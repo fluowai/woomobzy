@@ -193,7 +193,7 @@ router.post('/leads', async (req, res) => {
     // Busca um SDR (Admin) disponível na organização para pré-qualificar o lead.
     // NÃO atribuímos ao corretor (broker) nesta etapa para não inflar o Kanban de vendas.
     const { data: sdrs } = await supabase
-      .from('users')
+      .from('profiles')
       .select('id, role')
       .eq('organization_id', orgId)
       .in('role', ['admin', 'superadmin']) // Apenas perfis administrativos/SDR
@@ -202,8 +202,6 @@ router.post('/leads', async (req, res) => {
     const assignedAgentId = sdrs && sdrs.length > 0 ? sdrs[0].id : null;
 
     // Insere o Lead na tabela
-    // O usuário requisitou que o status seja para qualificação do SDR,
-    // então usaremos status: 'NEW' (Novo) e deixaremos a automação 'send-welcome' desabilitada para esse lead.
     const leadData = {
       organization_id: orgId,
       name: name || 'Lead Portal ZAP',
@@ -214,7 +212,7 @@ router.post('/leads', async (req, res) => {
         ? `Mensagem do Portal: ${message}\nOrigem: ${leadOrigin || 'ZAP'}`
         : `Origem: ${leadOrigin || 'ZAP'}`,
       property_id: clientListingId || null,
-      status: 'NEW', // Para que o SDR qualifique manualmente
+      status: 'Novo', // Para que o SDR qualifique manualmente
       assigned_to: assignedAgentId, // Vincula ao agente encontrado
     };
 

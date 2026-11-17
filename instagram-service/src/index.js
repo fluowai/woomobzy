@@ -6,7 +6,8 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
-import { verifyAuth, requireCompany } from './middleware/auth.js';
+import jwt from 'jsonwebtoken';
+import { verifyAuth, requireCompany, resolveUserCompany } from './middleware/auth.js';
 import { createClient } from '@supabase/supabase-js';
 
 import accountsRouter from './routes/accounts.js';
@@ -91,18 +92,33 @@ const clientsByCompany = new Map();
 wss.on('connection', (ws, req) => {
   let companyId = null;
 
-  ws.on('message', (raw) => {
+  ws.on('message', async (raw) => {
     try {
       const msg = JSON.parse(raw);
-      if (msg.type === 'auth' && msg.companyId) {
-        companyId = msg.companyId;
+      if (msg.type === 'auth') {
+        const jwtSecret = process.env.SUPABASE_JWT_SECRET;
+        const token = String(msg.token || '').replace(/^Bearer\s+/i, '').trim();
+        if (!jwtSecret || !token) {
+          ws.send(JSON.stringify({ type: 'auth_error', error: 'Token required' }));
+          ws.close(1008, 'Unauthorized');
+          return;
+        }
+        const payload = jwt.verify(token, jwtSecret, { algorithms: ['HS256'] });
+        const authorizedCompanyId = await resolveUserCompany(payload.sub, msg.companyId);
+        if (!authorizedCompanyId || (msg.companyId && msg.companyId !== authorizedCompanyId)) {
+          ws.send(JSON.stringify({ type: 'auth_error', error: 'Forbidden company' }));
+          ws.close(1008, 'Forbidden');
+          return;
+        }
+        companyId = authorizedCompanyId;
         if (!clientsByCompany.has(companyId))
           clientsByCompany.set(companyId, new Set());
         clientsByCompany.get(companyId).add(ws);
-        ws.send(JSON.stringify({ type: 'auth_ok' }));
+        ws.send(JSON.stringify({ type: 'auth_ok', companyId }));
       }
     } catch {
-      /* ignore malformed */
+      ws.send(JSON.stringify({ type: 'auth_error', error: 'Invalid token' }));
+      ws.close(1008, 'Unauthorized');
     }
   });
 

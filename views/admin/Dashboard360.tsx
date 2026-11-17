@@ -18,7 +18,7 @@ import {
   Sparkles,
   Target,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../services/supabase';
 import WelcomeTour from '../../components/WelcomeTour';
@@ -26,6 +26,10 @@ import AgroMarketWidget from '../../components/AgroMarketWidget';
 
 const Dashboard360: React.FC = () => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isRural = location.pathname.startsWith('/rural');
+  const basePath = isRural ? '/rural' : '/urban';
   const [stats, setStats] = useState({
     leads: 0,
     properties: 0,
@@ -248,9 +252,7 @@ const Dashboard360: React.FC = () => {
               </div>
 
               <button
-                onClick={() =>
-                  toast.info('Módulo financeiro estará disponível em breve')
-                }
+                onClick={() => navigate(isRural ? '/rural/financial' : '/urban/financeiro')}
                 className="btn-primary w-full mt-6 text-xs"
               >
                 Ir para Financeiro
@@ -268,26 +270,26 @@ const Dashboard360: React.FC = () => {
           icon={Briefcase}
           label="Dossiês de Venda"
           desc="Organize documentos do imóvel"
-          onClick={() => toast.info('Funcionalidade de Dossiês em breve')}
+          onClick={() => navigate(isRural ? '/rural/territorio/dossie' : '/urban/documentos')}
         />
         <ActionCard
           icon={AlertCircle}
           label="Vistorias Pendentes"
           desc="Checklists e fotos de check-in"
           accent
-          onClick={() => toast.info('Módulo de vistorias em breve')}
+          onClick={() => navigate(isRural ? '/rural/territorio/due-diligence' : '/urban/locacao')}
         />
         <ActionCard
           icon={TrendingUp}
           label="Marketing & Portais"
           desc="Exportar para Zap/VivaReal"
-          onClick={() => toast.info('Integração com portais em breve')}
+          onClick={() => navigate(isRural ? '/rural/landing-pages' : '/urban/exportador')}
         />
         <ActionCard
           icon={CheckCircle2}
           label="Garantias Locatícias"
-          desc="Análise de crédito CredPago"
-          onClick={() => toast.info('Análise de crédito CredPago em breve')}
+          desc="Análise de crédito e fiança digital"
+          onClick={() => navigate(isRural ? `${basePath}/contracts` : '/urban/fintech')}
         />
       </div>
     </div>

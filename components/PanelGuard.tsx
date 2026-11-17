@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { isRuralOrganization } from '../src/lib/panelNavigation';
+import { isPlatformAdminRole, isPlatformOwnerRole, isRuralOrganization } from '../src/lib/panelNavigation';
 import FullScreenSpinner from './FullScreenSpinner';
 
 const PanelGuard: React.FC<{
@@ -12,8 +12,13 @@ const PanelGuard: React.FC<{
 
   if (loading) return <FullScreenSpinner />;
   
-  // Wait for organization to be loaded (superadmin bypass)
-  if (profile?.role === 'superadmin' && !isImpersonating)
+  // Wait for organization to be loaded (superadmin/platform owner bypass)
+  if (
+    (profile?.role === 'superadmin' ||
+      isPlatformAdminRole(profile?.role) ||
+      isPlatformOwnerRole(profile?.role)) &&
+    !isImpersonating
+  )
     return <>{children}</>;
     
   if (!profile?.organization_id) return <Navigate to="/onboarding" replace />;

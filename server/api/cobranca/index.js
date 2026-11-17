@@ -56,7 +56,7 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
     if (contractIds.length > 0) {
       const { data: contracts } = await supabase
         .from('rental_contracts')
-        .select('id, tenant_name, monthly_rent')
+        .select('id, property_id, tenant_name, monthly_rent')
         .in('id', contractIds)
         .eq('organization_id', req.orgId);
       if (contracts) {
@@ -119,38 +119,43 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
  */
 router.post('/', verifyAuth, requireTenant, async (req, res) => {
   try {
-    const { contract_id, amount, due_date, description, tipo_cobranca } =
+    const { contract_id, amount, due_date, description, payer_name } =
       req.body;
 
-    if (!contract_id || !amount || !due_date) {
-      return res.status(400).json({ error: 'Dados obrigatórios faltando' });
-    }
-
-    if (!isValidUUID(contract_id)) {
-      return res.status(400).json({ error: 'ID de contrato inválido' });
+    if (!amount || Number(amount) <= 0 || !due_date) {
+      return res.status(400).json({ error: 'Valor e vencimento são obrigatórios' });
     }
 
     const supabase = getSupabaseServer();
+    let validContractId = null;
 
-    const { data: contract } = await supabase
-      .from('rental_contracts')
-      .select('organization_id, tenant_name')
-      .eq('id', contract_id)
-      .eq('organization_id', req.orgId)
-      .single();
+    if (contract_id) {
+      if (!isValidUUID(contract_id)) {
+        return res.status(400).json({ error: 'ID de contrato inválido' });
+      }
+      const { data: contract } = await supabase
+        .from('rental_contracts')
+        .select('organization_id, tenant_name')
+        .eq('id', contract_id)
+        .eq('organization_id', req.orgId)
+        .single();
 
-    if (!contract) {
-      return res.status(404).json({ error: 'Contrato não encontrado' });
+      if (!contract) {
+        return res.status(404).json({ error: 'Contrato não encontrado' });
+      }
+      validContractId = contract_id;
     }
+
+    const observationText = description || (payer_name ? `Cobrança avulsa - ${payer_name}` : `Cobrança ${due_date}`);
 
     const { data: billingData, error } = await supabase
       .from('billing')
       .insert({
         organization_id: req.orgId,
-        contract_id,
-        amount,
+        contract_id: validContractId,
+        amount: Number(amount),
         due_date,
-        description: description || `Aluguel ${due_date}`,
+        observation: observationText,
         status: 'aberto',
       })
       .select()
@@ -673,5 +678,195 @@ router.get(
     }
   }
 );
+
+/**
+ * GET /api/cobranca/despesas
+ * Lista despesas (Contas a Pagar) da organização
+ */
+router.get('/despesas', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { status, mes, ano } = req.query;
+    const supabase = getSupabaseServer();
+    let query = supabase
+      .from('urban_expenses')
+      .select('*')
+      .eq('organization_id', req.orgId)
+      .order('due_date', { ascending: false });
+
+    if (status) query = query.eq('status', status);
+    if (mes && ano) {
+      const start = `${ano}-${String(mes).padStart(2, '0')}-01`;
+      const end = new Date(Number(ano), Number(mes), 0).toISOString().split('T')[0];
+      query = query.gte('due_date', start).lte('due_date', end);
+    } else if (ano) {
+      query = query.gte('due_date', `${ano}-01-01`).lte('due_date', `${ano}-12-31`);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json({ success: true, data: data || [] });
+  } catch (error) {
+    console.error('List expenses error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/cobranca/despesas
+ * Cria nova despesa (Conta a Pagar)
+ */
+router.post('/despesas', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { provider_name, category, amount, due_date, description, property_id } = req.body;
+    if (!provider_name || !amount || Number(amount) <= 0 || !due_date) {
+      return res.status(400).json({ error: 'Fornecedor, valor e vencimento são obrigatórios' });
+    }
+
+    const supabase = getSupabaseServer();
+    const { data, error } = await supabase
+      .from('urban_expenses')
+      .insert({
+        organization_id: req.orgId,
+        provider_name: String(provider_name).trim(),
+        category: category || 'Operacional',
+        amount: Number(amount),
+        due_date,
+        description: description || null,
+        property_id: property_id && isValidUUID(property_id) ? property_id : null,
+        status: 'pendente',
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.status(201).json({ success: true, data });
+  } catch (error) {
+    console.error('Create expense error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * PUT /api/cobranca/despesas/:id/pagar
+ */
+router.put('/despesas/:id/pagar', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isValidUUID(id)) {
+      return res.status(400).json({ error: 'ID de despesa inválido' });
+    }
+    const supabase = getSupabaseServer();
+    const { data, error } = await supabase
+      .from('urban_expenses')
+      .update({
+        status: 'pago',
+        payment_date: new Date().toISOString().slice(0, 10),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .eq('organization_id', req.orgId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Pay expense error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/cobranca/renegociar
+ * Renegocia um débito em novas parcelas mensais
+ */
+router.post('/renegociar', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { billingId, contractId, total_debt, installments, entry = 0, first_due_date } = req.body;
+    const totalDebtNum = Number(total_debt);
+    const numInstallments = Math.max(1, Math.min(24, Number(installments || 1)));
+    const entryNum = Math.max(0, Number(entry || 0));
+
+    if (!Number.isFinite(totalDebtNum) || totalDebtNum <= 0) {
+      return res.status(400).json({ error: 'Valor total do acordo inválido' });
+    }
+
+    const supabase = getSupabaseServer();
+    let targetContractId = contractId && isValidUUID(contractId) ? contractId : null;
+
+    if (billingId) {
+      if (!isValidUUID(billingId)) {
+        return res.status(400).json({ error: 'ID da cobrança inválido' });
+      }
+      const { data: original, error: origErr } = await supabase
+        .from('billing')
+        .select('*')
+        .eq('id', billingId)
+        .eq('organization_id', req.orgId)
+        .maybeSingle();
+      if (origErr || !original) {
+        return res.status(404).json({ error: 'Cobrança original não encontrada' });
+      }
+      targetContractId = targetContractId || original.contract_id || null;
+
+      await supabase
+        .from('billing')
+        .update({
+          status: 'cancelado',
+          observation: `${original.observation || ''} [Renegociado em ${numInstallments}x]`.trim(),
+        })
+        .eq('id', billingId)
+        .eq('organization_id', req.orgId);
+    }
+
+    const created = [];
+    const baseDate = first_due_date ? new Date(first_due_date) : new Date(Date.now() + 3 * 86400000);
+
+    if (entryNum > 0) {
+      const { data: entryBilling, error: entryErr } = await supabase
+        .from('billing')
+        .insert({
+          organization_id: req.orgId,
+          contract_id: targetContractId,
+          amount: Number(entryNum.toFixed(2)),
+          due_date: baseDate.toISOString().slice(0, 10),
+          observation: 'Entrada de Acordo / Renegociação',
+          status: 'aberto',
+        })
+        .select()
+        .single();
+      if (entryErr) throw entryErr;
+      created.push(entryBilling);
+    }
+
+    const remaining = Math.max(0, totalDebtNum - entryNum);
+    if (remaining > 0) {
+      const installmentValue = Number((remaining / numInstallments).toFixed(2));
+      for (let i = 0; i < numInstallments; i++) {
+        const due = new Date(baseDate);
+        due.setMonth(due.getMonth() + (entryNum > 0 ? i + 1 : i));
+        const { data: inst, error: instErr } = await supabase
+          .from('billing')
+          .insert({
+            organization_id: req.orgId,
+            contract_id: targetContractId,
+            amount: installmentValue,
+            due_date: due.toISOString().slice(0, 10),
+            observation: `Acordo Parcela ${i + 1}/${numInstallments}`,
+            status: 'aberto',
+          })
+          .select()
+          .single();
+        if (instErr) throw instErr;
+        created.push(inst);
+      }
+    }
+
+    res.status(201).json({ success: true, data: created });
+  } catch (error) {
+    console.error('Renegotiation error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 export default router;

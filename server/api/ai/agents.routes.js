@@ -19,8 +19,7 @@ import ConversationGuard from '../../services/ai/conversationGuard.js';
 import { getLLMOrchestrator } from '../../services/ai/llmProvider.js';
 import { runAgentVersionTestPipeline } from '../../services/ai/testOrchestrator.js';
 import { logger } from '../../utils/logger.js';
-import {
-  isMissingRelationError,
+import { getOrgAIConfig, isMissingRelationError,
   normalizeAgentPayload,
   hydrateAgent,
   listFallbackAgentsSafe,
@@ -296,7 +295,11 @@ router.patch('/agents/:id/prompt', verifyAuth, requireTenant, async (req, res) =
   try {
     const supabase = getSupabaseServer();
     const { id } = req.params;
-    const { promptText } = req.body;
+    const promptText =
+      req.body.promptText ||
+      (typeof req.body.prompt === 'string'
+        ? req.body.prompt
+        : req.body.prompt?.full);
 
     if (!promptText) {
       return res.status(400).json({
@@ -322,52 +325,70 @@ router.patch('/agents/:id/prompt', verifyAuth, requireTenant, async (req, res) =
       });
     }
 
-    if (!agent.active_version_id) {
-      try {
-        const { data: version, error: createVersionError } = await supabase
-          .from('ai_agent_versions')
-          .insert({
-            agent_id: id,
-            version: '1.0',
-            prompt: { full: promptText },
-            model: 'gemini-1.5-pro',
-            model_config: { temperature: 0.4, maxTokens: 4096, topP: 0.9 },
-            tools: agent.tools || [],
-            permissions: [],
-            guardrails: {},
-            handoff_config: agent.handoff_rules || {},
-            memory_config: {},
-            workflow_config: {},
-            created_by: req.user.id
-          })
-          .select()
-          .single();
+    let targetVersionId = agent.active_version_id;
 
-        if (createVersionError) throw createVersionError;
+    if (!targetVersionId) {
+      // Verifica se já existe alguma versão cadastrada para este agente
+      const { data: existingVersions } = await supabase
+        .from('ai_agent_versions')
+        .select('*')
+        .eq('agent_id', id)
+        .order('created_at', { ascending: false });
 
+      if (existingVersions && existingVersions.length > 0) {
+        targetVersionId = existingVersions[0].id;
         await supabase
           .from('ai_agents')
-          .update({
-            active_version_id: version.id,
-            instructions: promptText,
-            updated_at: new Date().toISOString()
-          })
+          .update({ active_version_id: targetVersionId, instructions: promptText, updated_at: new Date().toISOString() })
           .eq('id', id)
           .eq('organization_id', req.orgId);
+      } else {
+        try {
+          const { data: version, error: createVersionError } = await supabase
+            .from('ai_agent_versions')
+            .insert({
+              agent_id: id,
+              version: '1.0',
+              prompt: { full: promptText },
+              model: 'gemini-1.5-pro',
+              model_config: { temperature: 0.4, maxTokens: 4096, topP: 0.9 },
+              tools: agent.tools || [],
+              permissions: [],
+              guardrails: {},
+              handoff_config: agent.handoff_rules || {},
+              memory_config: {},
+              workflow_config: {},
+              created_by: req.user.id
+            })
+            .select()
+            .single();
 
-        return res.json({ success: true, version });
-      } catch (versionCreateError) {
-        if (isMissingRelationError(versionCreateError)) {
-          const { error: legacyUpdateError } = await supabase
+          if (createVersionError) throw createVersionError;
+
+          await supabase
             .from('ai_agents')
-            .update({ instructions: promptText, updated_at: new Date().toISOString() })
+            .update({
+              active_version_id: version.id,
+              instructions: promptText,
+              updated_at: new Date().toISOString()
+            })
             .eq('id', id)
             .eq('organization_id', req.orgId);
 
-          if (legacyUpdateError) throw legacyUpdateError;
-          return res.json({ success: true, legacy: true });
+          return res.json({ success: true, version });
+        } catch (versionCreateError) {
+          if (isMissingRelationError(versionCreateError)) {
+            const { error: legacyUpdateError } = await supabase
+              .from('ai_agents')
+              .update({ instructions: promptText, updated_at: new Date().toISOString() })
+              .eq('id', id)
+              .eq('organization_id', req.orgId);
+
+            if (legacyUpdateError) throw legacyUpdateError;
+            return res.json({ success: true, legacy: true });
+          }
+          throw versionCreateError;
         }
-        throw versionCreateError;
       }
     }
 
@@ -375,7 +396,7 @@ router.patch('/agents/:id/prompt', verifyAuth, requireTenant, async (req, res) =
     const { data: version, error: versionError } = await supabase
       .from('ai_agent_versions')
       .select('prompt')
-      .eq('id', agent.active_version_id)
+      .eq('id', targetVersionId)
       .single();
 
     if (versionError) throw versionError;
@@ -383,12 +404,14 @@ router.patch('/agents/:id/prompt', verifyAuth, requireTenant, async (req, res) =
     const existingPrompt = version?.prompt || {};
     
     // Update the prompt object in the version
-    const { error: updateError } = await supabase
+    const { data: updatedVersion, error: updateError } = await supabase
       .from('ai_agent_versions')
       .update({
         prompt: { ...existingPrompt, full: promptText }
       })
-      .eq('id', agent.active_version_id);
+      .eq('id', targetVersionId)
+      .select()
+      .single();
 
     if (updateError) throw updateError;
 
@@ -400,6 +423,8 @@ router.patch('/agents/:id/prompt', verifyAuth, requireTenant, async (req, res) =
       })
       .eq('id', id)
       .eq('organization_id', req.orgId);
+
+    res.json({ success: true, version: updatedVersion });
 
     res.json({ success: true });
   } catch (error) {
@@ -856,29 +881,13 @@ router.post('/agents/conversations/:id/message', verifyAuth, requireTenant, asyn
       });
     }
 
-    // Get agent and resolve its active version explicitly.
-    const isSandbox = String(conversationId || '').startsWith('sandbox-');
-
-    let agentQuery = supabase
+    // Get agent scoped strictly to the authenticated tenant
+    const { data: agent } = await supabase
       .from('ai_agents')
       .select('*')
-      .eq('id', currentAgentId);
-
-    if (req.authRole !== 'superadmin' && !isSandbox) {
-      agentQuery = agentQuery.eq('organization_id', req.orgId);
-    }
-
-    let { data: agent } = await agentQuery.single();
-
-    // Fallback for sandbox: if org-scoped lookup fails, retry without org filter
-    if (!agent && isSandbox) {
-      const { data: fallbackAgent } = await supabase
-        .from('ai_agents')
-        .select('*')
-        .eq('id', currentAgentId)
-        .single();
-      agent = fallbackAgent;
-    }
+      .eq('id', currentAgentId)
+      .eq('organization_id', req.orgId)
+      .single();
 
     if (!agent) {
       return res.status(404).json({
@@ -941,10 +950,18 @@ router.post('/agents/conversations/:id/message', verifyAuth, requireTenant, asyn
       }))
     ];
 
-    // Check if LLM is available before processing
+    const orgKeys = await getOrgAIConfig(req.orgId);
     await llm.initialize();
-    const llmProvider = llm.getProviderForTask('conversation');
-    if (!llmProvider) {
+    const hasGlobalProvider = Boolean(llm.getProviderForTask('conversation'));
+    const hasTenantProvider = Boolean(
+      orgKeys &&
+        ['gemini', 'openai', 'anthropic', 'groq', 'openrouter'].some((p) => {
+          const raw = orgKeys[p];
+          const val = typeof raw === 'object' ? raw?.apiKey : raw;
+          return typeof val === 'string' && val.trim().length > 0;
+        })
+    );
+    if (!hasGlobalProvider && !hasTenantProvider) {
       return res.status(500).json({
         success: false,
         error: 'Nenhum provedor LLM configurado. Adicione chaves de API no painel de configurações.',
@@ -972,6 +989,7 @@ router.post('/agents/conversations/:id/message', verifyAuth, requireTenant, asyn
         temperature: version.modelConfig?.temperature || 0.4,
         maxTokens: version.modelConfig?.maxTokens || 4096,
         topP: version.modelConfig?.topP || 0.9,
+        orgKeys,
         ...toolConfig,
         signal: controller.signal
       });
@@ -988,7 +1006,7 @@ router.post('/agents/conversations/:id/message', verifyAuth, requireTenant, asyn
               version.id,
               toolName,
               toolArgs,
-              { organizationId: req.orgId, conversationId, leadId: state.leadId, channel }
+              { organizationId: req.orgId, conversationId, leadId: state.leadId, channel, agentId: currentAgentId }
             );
 
             toolResults.push({ tool: toolName, input: toolArgs, result });
@@ -1017,7 +1035,8 @@ router.post('/agents/conversations/:id/message', verifyAuth, requireTenant, asyn
           const finalResponse = await llm.chat(toolMessages, 'conversation', {
             model: version.model,
             temperature: version.modelConfig?.temperature,
-            maxTokens: version.modelConfig?.maxTokens
+            maxTokens: version.modelConfig?.maxTokens,
+            orgKeys,
           });
 
           llmResponse.content = finalResponse.content;

@@ -1,6 +1,6 @@
 # Auditoria integral e dados reais
 
-Data: 2026-09-06. Status: PARCIAL VALIDADO LOCALMENTE; sistema integral NÃO homologado.
+Data: 2026-11-12. Status: CÓDIGO REMEDIADO + NOVO BANCO SUPABASE (`ahimxutcthctbwpaedvy`, 181 tabelas base) E MINIO (`storage.wootech.com.br`, bucket `imob.erp`) APLICADOS E VALIDADOS.
 
 Pedido: analisar WooControl até cliente final, planejar, corrigir, validar com dados reais e enviar ao Git. O envio de commit/push foi expressamente autorizado pelo usuário. Não houve autorização específica para executar cobranças, enviar mensagens a clientes ou modificar cadastros de produção em testes.
 

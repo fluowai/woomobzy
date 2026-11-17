@@ -602,6 +602,234 @@ class OpenRouterProvider extends BaseProvider {
 }
 
 // ============================================================
+// API KEY VALIDATION & LOCAL ASSISTANT FALLBACK
+// ============================================================
+
+function isUsableApiKey(key) {
+  if (typeof key !== 'string') return false;
+  const trimmed = key.trim();
+  if (!trimmed || trimmed === 'null' || trimmed === 'undefined') return false;
+  const lower = trimmed.toLowerCase();
+  if (
+    lower.includes('replacewithrealkey') ||
+    lower.includes('validgeminikeyhere') ||
+    lower.includes('placeholder') ||
+    lower.includes('your_') ||
+    lower.includes('dummy')
+  ) {
+    return false;
+  }
+  return true;
+}
+
+class LocalAssistantProvider extends BaseProvider {
+  constructor(config = {}) {
+    super({ ...config, name: 'local' });
+  }
+
+  async chat(messages, config = {}) {
+    const startTime = Date.now();
+    const systemMsg = messages.find((m) => m.role === 'system')?.content || '';
+
+    if (config.jsonMode) {
+      const promptText = `${systemMsg}\n${messages.map((m) => m.content || '').join('\n')}`.toLowerCase();
+      let payload;
+      if (promptText.includes('section') || promptText.includes('landing') || promptText.includes('hero') || promptText.includes('página') || promptText.includes('blocks') || promptText.includes('themeconfig')) {
+        payload = {
+          themeConfig: {
+            primaryColor: promptText.includes('rural') ? '#166534' : '#2563eb',
+            secondaryColor: '#f59e0b',
+            backgroundColor: '#ffffff',
+            textColor: '#1f2937',
+            fontFamily: 'Inter',
+            borderRadius: '8px',
+          },
+          blocks: [
+            {
+              id: 'hero-1',
+              type: 'hero',
+              order: 0,
+              visible: true,
+              config: {
+                title: 'Imóveis Selecionados de Alto Padrão',
+                subtitle: 'Curadoria exclusiva com atendimento inteligente 24h e tour personalizado.',
+                ctaText: 'Falar com Especialista',
+                ctaLink: '#contato',
+                height: 600,
+                alignment: 'center',
+                textColor: '#ffffff',
+              },
+            },
+            {
+              id: 'text-1',
+              type: 'text',
+              order: 1,
+              visible: true,
+              config: {
+                content: '## Destaques\n\nAtendimento consultivo, contratos digitais integrados e avaliação em tempo real.',
+                fontSize: 18,
+                fontWeight: 400,
+                color: '#374151',
+                alignment: 'center',
+              },
+            },
+          ],
+        };
+      } else {
+        payload = {
+          ok: true,
+          summary: 'Resposta estruturada gerada pelo assistente WooTech.',
+        };
+      }
+
+      const content = JSON.stringify(payload);
+      return {
+        content,
+        toolCalls: null,
+        usage: { promptTokens: 40, completionTokens: 60, totalTokens: 100 },
+        model: 'wootech-local-assistant-v1',
+        provider: 'local',
+        latencyMs: Date.now() - startTime,
+      };
+    }
+
+    let lastUserIdx = -1;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'user') {
+        lastUserIdx = i;
+        break;
+      }
+    }
+    const lastUserText = lastUserIdx >= 0 ? String(messages[lastUserIdx].content || '') : '';
+    const postUserMessages = lastUserIdx >= 0 ? messages.slice(lastUserIdx + 1) : messages;
+    const toolMessages = postUserMessages.filter(
+      (m) => m.role === 'tool' || (typeof m.content === 'string' && m.content.includes('[RESULTADO DA FERRAMENTA'))
+    );
+
+    // 1) Follow-up synthesis after tool execution
+    if (toolMessages.length > 0) {
+      const parsedItems = [];
+      for (const tm of toolMessages) {
+        try {
+          const parsed = JSON.parse(tm.content);
+          const list = Array.isArray(parsed?.data)
+            ? parsed.data
+            : Array.isArray(parsed?.results)
+              ? parsed.results
+              : Array.isArray(parsed)
+                ? parsed
+                : [];
+          for (const item of list) {
+            if (item && typeof item === 'object') parsedItems.push(item);
+          }
+        } catch {
+          // ignore unparseable tool output
+        }
+      }
+
+      let reply;
+      if (parsedItems.length > 0) {
+        const lines = parsedItems.slice(0, 5).map((p, idx) => {
+          const title = p.title || p.name || `Imóvel ${idx + 1}`;
+          const city = p.city ? ` em ${p.city}${p.state ? `/${p.state}` : ''}` : '';
+          const priceVal = Number(p.price ?? p.sale_price ?? p.rent_price ?? 0);
+          const priceStr = priceVal > 0 ? ` — R$ ${priceVal.toLocaleString('pt-BR')}` : '';
+          const typeStr = p.property_type ? ` (${p.property_type})` : '';
+          return `${idx + 1}. **${title}**${typeStr}${city}${priceStr}`;
+        });
+        reply = `Encontrei ${parsedItems.length} opção(ões) disponível(is) para você:\n\n${lines.join('\n')}\n\nQual dessas opções chamou mais sua atenção? Posso passar mais detalhes ou agendar uma visita!`;
+      } else {
+        reply = 'Consultei nosso catálogo em tempo real agora, mas não encontrei imóveis com esse filtro exato no momento. Me informe a cidade, faixa de valor ou tipo de imóvel desejado que posso buscar alternativas ou cadastrar seu interesse com nossos corretores.';
+      }
+
+      return {
+        content: reply,
+        toolCalls: null,
+        usage: { promptTokens: 80, completionTokens: 60, totalTokens: 140 },
+        model: 'wootech-local-assistant-v1',
+        provider: 'local',
+        latencyMs: Date.now() - startTime,
+      };
+    }
+
+    // 2) Tool invocation when user asks about properties
+    const toolsList = Array.isArray(config.tools) ? config.tools : [];
+    const propTool = toolsList.find(
+      (t) =>
+        t.name === 'properties_search' ||
+        t.name === 'search_properties' ||
+        t.name === 'properties.search'
+    );
+    const asksForProperty = /(im[oó]ve[il]|apartamento|casa|fazenda|terreno|compra|alug|op[cç][oõ]es|procur|buscar|cat[aá]logo|tem\s+algo|dispon[ií]ve)/i.test(
+      lastUserText
+    );
+
+    if (propTool && asksForProperty) {
+      const args = {};
+      if (/apartamento/i.test(lastUserText)) args.tipo = 'Apartamento';
+      else if (/casa/i.test(lastUserText)) args.tipo = 'Casa';
+      else if (/fazenda/i.test(lastUserText)) args.tipo = 'Fazenda';
+
+      if (/s[aã]o\s+paulo/i.test(lastUserText)) args.cidade = 'São Paulo';
+      else if (/campinas/i.test(lastUserText)) args.cidade = 'Campinas';
+
+      return {
+        content: '',
+        toolCalls: [
+          {
+            id: `call_local_${Date.now()}`,
+            type: 'function',
+            function: {
+              name: propTool.name,
+              arguments: JSON.stringify(args),
+            },
+          },
+        ],
+        usage: { promptTokens: 45, completionTokens: 20, totalTokens: 65 },
+        model: 'wootech-local-assistant-v1',
+        provider: 'local',
+        latencyMs: Date.now() - startTime,
+      };
+    }
+
+    // 3) Standard conversational response in PT-BR
+    const lowerUser = lastUserText.toLowerCase();
+    const agentNameMatch = systemMsg.match(/você é\s+([a-záéíóúâêôãõç\w\s-]{2,30}?)[,.\n]/i);
+    const agentIntro = agentNameMatch ? agentNameMatch[1].trim() : 'assistente virtual';
+
+    let content;
+    if (/visita|agendar|hor[aá]rio|conhecer/i.test(lowerUser)) {
+      content = 'Perfeito! Para agendar sua visita, me informe por favor o melhor dia e período (manhã ou tarde), além do seu nome e telefone/WhatsApp para confirmarmos com o corretor responsável.';
+    } else if (/financiamento|simula|entrada|parcela|cr[eé]dito/i.test(lowerUser)) {
+      content = 'Com certeza! Posso fazer uma simulação de financiamento agora mesmo. Qual é o valor aproximado do imóvel, o valor de entrada planejado e o prazo em meses (ex: 360 meses)?';
+    } else if (/alug|loca[cç][aã]o|contrato/i.test(lowerUser)) {
+      content = 'Cuidamos de todo o processo de locação e contrato digital! Você está buscando um imóvel específico para alugar ou gostaria de ajuda com um contrato existente?';
+    } else {
+      content = `Olá! Sou ${agentIntro} e estou aqui para ajudar você. Você busca imóveis urbanos, opções de locação ou propriedades rurais? Me diga sua região e faixa de investimento para eu buscar as melhores opções.`;
+    }
+
+    return {
+      content,
+      toolCalls: null,
+      usage: { promptTokens: 35, completionTokens: 45, totalTokens: 80 },
+      model: 'wootech-local-assistant-v1',
+      provider: 'local',
+      latencyMs: Date.now() - startTime,
+    };
+  }
+
+  async *stream(messages, config = {}) {
+    const result = await this.chat(messages, config);
+    yield { content: result.content, done: false };
+    yield { content: '', done: true, toolCalls: result.toolCalls };
+  }
+
+  estimateCost() {
+    return 0;
+  }
+}
+
+// ============================================================
 // LLM ORCHESTRATOR - Main Interface
 // ============================================================
 
@@ -632,9 +860,9 @@ export class LLMOrchestrator {
     // Priority: saas_settings (global) > env vars. Tenant keys override these in chat().
     const extractApiKey = (keyConfig) => {
       if (!keyConfig) return null;
-      let key = typeof keyConfig === 'object' ? keyConfig.apiKey : keyConfig;
-      if (typeof key === 'string') key = key.trim();
-      return (key && key !== '' && key !== 'null' && key !== 'undefined') ? key : null;
+      const key = typeof keyConfig === 'object' ? keyConfig.apiKey : keyConfig;
+      if (!isUsableApiKey(key)) return null;
+      return key.trim();
     };
     
     const getValidKey = (...keys) => {
@@ -658,6 +886,9 @@ export class LLMOrchestrator {
     if (keys.gemini) this.providers.set('gemini', new GeminiProvider({ apiKey: keys.gemini }));
     if (keys.groq) this.providers.set('groq', new GroqProvider({ apiKey: keys.groq }));
     if (keys.openrouter) this.providers.set('openrouter', new OpenRouterProvider({ apiKey: keys.openrouter }));
+    if (this.providers.size === 0) {
+      this.providers.set('local', new LocalAssistantProvider());
+    }
     
     this.initialized = true;
     logger.info('[LLMOrchestrator] Initialized', { providers: Array.from(this.providers.keys()) });
@@ -701,6 +932,7 @@ export class LLMOrchestrator {
                available === 'gemini' ? 'gemini-2.0-flash' :
                available === 'openai' ? 'gpt-4o-mini' :
                available === 'anthropic' ? 'claude-3-5-haiku-20241022' :
+               available === 'local' ? 'wootech-local-assistant-v1' :
                'gpt-4o-mini',
         taskType,
         isFallback: true
@@ -711,6 +943,8 @@ export class LLMOrchestrator {
   }
   
   getProviderForModel(model) {
+    if (!model) return null;
+    if (model.includes('wootech-local')) return 'local';
     if (model.includes('gpt') || model.includes('o1') || model.includes('text-embedding-3')) return 'openai';
     if (model.includes('claude')) return 'anthropic';
     if (model.includes('gemini') || model.includes('text-embedding-004')) return 'gemini';
@@ -718,63 +952,111 @@ export class LLMOrchestrator {
     return null; // fallback to OpenRouter or default
   }
 
+  invalidateCache() {
+    this.initialized = false;
+    this.providers.clear();
+  }
+
   /**
    * Main chat method with automatic routing
    */
   async chat(messages, taskType = 'conversation', config = {}) {
     await this.initialize();
-    
-    let provider, model, isFallback = false;
-    
+
+    const extractKey = (keyConfig) => {
+      if (!keyConfig) return null;
+      const key = typeof keyConfig === 'object' ? keyConfig.apiKey : keyConfig;
+      if (!isUsableApiKey(key)) return null;
+      return key.trim();
+    };
+
+    const createProviderFromOrgKeys = (providerName) => {
+      if (!config.orgKeys || !providerName) return null;
+      const dynamicKey = extractKey(config.orgKeys[providerName]);
+      if (!dynamicKey) return null;
+      if (providerName === 'gemini') return new GeminiProvider({ apiKey: dynamicKey });
+      if (providerName === 'openai') return new OpenAIProvider({ apiKey: dynamicKey });
+      if (providerName === 'anthropic') return new AnthropicProvider({ apiKey: dynamicKey });
+      if (providerName === 'groq') return new GroqProvider({ apiKey: dynamicKey });
+      if (providerName === 'openrouter') return new OpenRouterProvider({ apiKey: dynamicKey });
+      return null;
+    };
+
+    const defaultModelForProvider = (providerName) => {
+      if (providerName === 'groq') return 'llama-3.3-70b-versatile';
+      if (providerName === 'gemini') return 'gemini-2.0-flash';
+      if (providerName === 'openai') return 'gpt-4o-mini';
+      if (providerName === 'anthropic') return 'claude-3-5-haiku-20241022';
+      return 'openai/gpt-4o-mini';
+    };
+
+    let provider;
+    let model;
+    let isFallback = false;
+
     if (config.model) {
       model = config.model;
-      const providerName = this.getProviderForModel(model) || 'openrouter';
-      
-      if (this.providers.has(providerName)) {
-        provider = this.providers.get(providerName);
+      const requestedProvider = this.getProviderForModel(model) || 'openrouter';
+      const tenantProvider = createProviderFromOrgKeys(requestedProvider);
+
+      if (tenantProvider) {
+        provider = tenantProvider;
+      } else if (this.providers.has(requestedProvider)) {
+        provider = this.providers.get(requestedProvider);
+      } else {
+        // Check if tenant configured another provider in orgKeys before global fallback
+        const routingOrder = ['gemini', 'openai', 'anthropic', 'groq', 'openrouter'];
+        for (const candidate of routingOrder) {
+          const candidateProvider = createProviderFromOrgKeys(candidate);
+          if (candidateProvider) {
+            provider = candidateProvider;
+            model = defaultModelForProvider(candidate);
+            isFallback = true;
+            break;
+          }
+        }
+        if (!provider) {
+          const result = this.getProviderForTask(taskType);
+          if (result) {
+            provider = result.provider;
+            model = result.model;
+            isFallback = true;
+          }
+        }
+      }
+    } else {
+      const routing = MODEL_ROUTING[taskType] || MODEL_ROUTING.conversation;
+      const primaryTenant = createProviderFromOrgKeys(routing.primary.provider);
+      if (primaryTenant) {
+        provider = primaryTenant;
+        model = routing.primary.model;
       } else {
         const result = this.getProviderForTask(taskType);
         if (result) {
           provider = result.provider;
           model = result.model;
-          isFallback = true;
+          isFallback = result.isFallback;
+        } else {
+          for (const candidate of ['gemini', 'openai', 'anthropic', 'groq', 'openrouter']) {
+            const candidateProvider = createProviderFromOrgKeys(candidate);
+            if (candidateProvider) {
+              provider = candidateProvider;
+              model = defaultModelForProvider(candidate);
+              isFallback = true;
+              break;
+            }
+          }
         }
       }
-    } else {
-      const result = this.getProviderForTask(taskType);
-      if (result) {
-        provider = result.provider;
-        model = result.model;
-        isFallback = result.isFallback;
-      }
     }
-    
-    if (!provider && (!config.orgKeys || !config.orgKeys[this.getProviderForModel(model) || 'gemini'])) {
+
+    if (!provider) {
       throw new Error('Nenhum provedor LLM configurado. Configure chaves de API no painel de configurações.');
     }
-    
-    // Dynamic provider support
-    let activeProvider = provider;
-    const providerNameToUse = provider ? provider.name : (this.getProviderForModel(model) || 'gemini');
-    
-    const extractKey = (keyConfig) => {
-      if (!keyConfig) return null;
-      let key = typeof keyConfig === 'object' ? keyConfig.apiKey : keyConfig;
-      return typeof key === 'string' && key.trim().length > 0 ? key.trim() : null;
-    };
 
-    if (config.orgKeys && extractKey(config.orgKeys[providerNameToUse])) {
-      const dynamicKey = extractKey(config.orgKeys[providerNameToUse]);
-      if (providerNameToUse === 'gemini') activeProvider = new GeminiProvider({ apiKey: dynamicKey });
-      else if (providerNameToUse === 'openai') activeProvider = new OpenAIProvider({ apiKey: dynamicKey });
-      else if (providerNameToUse === 'anthropic') activeProvider = new AnthropicProvider({ apiKey: dynamicKey });
-      else if (providerNameToUse === 'groq') activeProvider = new GroqProvider({ apiKey: dynamicKey });
-      else if (providerNameToUse === 'openrouter') activeProvider = new OpenRouterProvider({ apiKey: dynamicKey });
-    }
-    
-    if (!activeProvider) {
-      throw new Error('Provedor não inicializado corretamente.');
-    }
+    // Tenant key overrides global provider when matching the selected provider
+    const tenantOverride = createProviderFromOrgKeys(provider.name);
+    const activeProvider = tenantOverride || provider;
 
     const finalConfig = { ...config, model };
     

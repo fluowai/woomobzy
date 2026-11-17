@@ -1,14 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { toast } from 'sonner';
 import {
-  Table,
-  CheckCircle2,
-  AlertCircle,
-  Eye,
+  Check,
+  X,
   Edit3,
   Trash2,
   ArrowRight,
-  TrendingUp,
   LandPlot,
   Building,
   Layout,
@@ -19,13 +16,51 @@ interface PropertyReviewTableProps {
   properties: CapturedProperty[];
   onConfirm: () => void;
   onBack: () => void;
+  onUpdateProperty?: (id: string, updates: Partial<CapturedProperty>) => void;
+  onDeleteProperty?: (id: string) => void;
 }
 
 const PropertyReviewTable: React.FC<PropertyReviewTableProps> = ({
   properties,
   onConfirm,
   onBack,
+  onUpdateProperty,
+  onDeleteProperty,
 }) => {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<{
+    title: string;
+    location: string;
+    price: string;
+    type: string;
+  }>({ title: '', location: '', price: '', type: 'Urbano' });
+
+  const startEdit = (prop: CapturedProperty) => {
+    setEditingId(prop.id);
+    setEditDraft({
+      title: prop.title || '',
+      location: prop.location || '',
+      price: String(prop.price || 0),
+      type: prop.type || 'Urbano',
+    });
+  };
+
+  const saveEdit = (id: string) => {
+    const parsedPrice = Number(editDraft.price) || 0;
+    onUpdateProperty?.(id, {
+      title: editDraft.title.trim() || 'Imóvel sem título',
+      location: editDraft.location.trim(),
+      price: parsedPrice,
+      type: editDraft.type,
+    });
+    setEditingId(null);
+    toast.success('Mapeamento atualizado.');
+  };
+
+  const mappedCount = properties.filter(
+    (p) => Boolean(p.title?.trim()) && Number(p.price) > 0
+  ).length;
+  const attentionCount = properties.length - mappedCount;
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-right duration-500">
       <div className="flex items-center justify-between">
@@ -98,65 +133,146 @@ const PropertyReviewTable: React.FC<PropertyReviewTableProps> = ({
                         )}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-bold text-slate-900 truncate max-w-[200px]">
-                          {prop.title}
-                        </p>
-                        <p className="text-xs text-slate-400 truncate max-w-[200px]">
-                          {prop.location}
-                        </p>
+                        {editingId === prop.id ? (
+                          <div className="space-y-1.5">
+                            <input
+                              type="text"
+                              value={editDraft.title}
+                              onChange={(e) =>
+                                setEditDraft((prev) => ({
+                                  ...prev,
+                                  title: e.target.value,
+                                }))
+                              }
+                              className="w-full px-2 py-1 text-xs font-bold border border-indigo-300 rounded-md"
+                              placeholder="Título"
+                            />
+                            <input
+                              type="text"
+                              value={editDraft.location}
+                              onChange={(e) =>
+                                setEditDraft((prev) => ({
+                                  ...prev,
+                                  location: e.target.value,
+                                }))
+                              }
+                              className="w-full px-2 py-1 text-xs border border-slate-200 rounded-md"
+                              placeholder="Cidade / Localização"
+                            />
+                          </div>
+                        ) : (
+                          <>
+                            <p className="font-bold text-slate-900 truncate max-w-[200px]">
+                              {prop.title}
+                            </p>
+                            <p className="text-xs text-slate-400 truncate max-w-[200px]">
+                              {prop.location}
+                            </p>
+                          </>
+                        )}
                       </div>
                     </div>
                   </td>
                   <td className="p-5">
-                    <div className="flex items-center gap-2">
-                      {prop.type === 'Rural' ? (
-                        <span className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-bold uppercase">
-                          <LandPlot size={12} /> Rural
+                    {editingId === prop.id ? (
+                      <select
+                        value={editDraft.type}
+                        onChange={(e) =>
+                          setEditDraft((prev) => ({
+                            ...prev,
+                            type: e.target.value,
+                          }))
+                        }
+                        className="px-2 py-1 text-xs border border-slate-200 rounded-md bg-white"
+                      >
+                        <option value="Urbano">Urbano</option>
+                        <option value="Rural">Rural</option>
+                      </select>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        {prop.type === 'Rural' ? (
+                          <span className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-bold uppercase">
+                            <LandPlot size={12} /> Rural
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full text-[10px] font-bold uppercase">
+                            <Building size={12} /> Urbano
+                          </span>
+                        )}
+                        <span className="text-xs font-medium text-slate-500">
+                          → {prop.status}
                         </span>
-                      ) : (
-                        <span className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full text-[10px] font-bold uppercase">
-                          <Building size={12} /> Urbano
-                        </span>
-                      )}
-                      <span className="text-xs font-medium text-slate-500">
-                        → {prop.status}
-                      </span>
-                    </div>
+                      </div>
+                    )}
                   </td>
                   <td className="p-5">
-                    <span className="font-mono font-bold text-slate-900">
-                      {new Intl.NumberFormat('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL',
-                      }).format(prop.price)}
-                    </span>
+                    {editingId === prop.id ? (
+                      <input
+                        type="number"
+                        value={editDraft.price}
+                        onChange={(e) =>
+                          setEditDraft((prev) => ({
+                            ...prev,
+                            price: e.target.value,
+                          }))
+                        }
+                        className="w-28 px-2 py-1 text-xs font-mono border border-slate-200 rounded-md"
+                      />
+                    ) : (
+                      <span className="font-mono font-bold text-slate-900">
+                        {new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        }).format(prop.price)}
+                      </span>
+                    )}
                   </td>
                   <td className="p-5">
                     <div className="flex items-center gap-2">
                       <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden w-20">
                         <div
-                          className={`h-full rounded-full ${i % 3 === 0 ? 'bg-amber-400 w-[70%]' : 'bg-green-500 w-[95%]'}`}
+                          className={`h-full rounded-full ${prop.price > 0 && prop.title ? 'bg-green-500 w-[95%]' : 'bg-amber-400 w-[70%]'}`}
                         />
                       </div>
                       <span className="text-[10px] font-bold text-slate-400">
-                        {i % 3 === 0 ? '70%' : '95%'}
+                        {prop.price > 0 && prop.title ? '95%' : '70%'}
                       </span>
                     </div>
                   </td>
                   <td className="p-5 text-right">
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center justify-end gap-2 opacity-90 group-hover:opacity-100 transition-opacity">
+                      {editingId === prop.id ? (
+                        <>
+                          <button
+                            onClick={() => saveEdit(prop.id)}
+                            title="Salvar edição"
+                            className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                          >
+                            <Check size={18} />
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            title="Cancelar"
+                            className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-all"
+                          >
+                            <X size={18} />
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => startEdit(prop)}
+                          title="Editar imóvel"
+                          className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                        >
+                          <Edit3 size={18} />
+                        </button>
+                      )}
                       <button
-                        onClick={() =>
-                          toast.info('Editar disponível em breve!')
-                        }
-                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-                      >
-                        <Edit3 size={18} />
-                      </button>
-                      <button
-                        onClick={() =>
-                          toast.info('Excluir disponível em breve!')
-                        }
+                        onClick={() => {
+                          onDeleteProperty?.(prop.id);
+                          toast.success('Imóvel removido da prévia de importação.');
+                        }}
+                        title="Remover imóvel"
                         className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                       >
                         <Trash2 size={18} />
@@ -172,12 +288,12 @@ const PropertyReviewTable: React.FC<PropertyReviewTableProps> = ({
         <div className="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
           <div className="flex gap-4">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-              <div className="w-2 h-2 rounded-full bg-green-500"></div> 12
-              Mapeados com Sucesso
+              <div className="w-2 h-2 rounded-full bg-green-500"></div>{' '}
+              {mappedCount} Mapeados com Sucesso
             </div>
             <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-              <div className="w-2 h-2 rounded-full bg-amber-500"></div> 3
-              Requerem Atenção
+              <div className="w-2 h-2 rounded-full bg-amber-500"></div>{' '}
+              {attentionCount} Requerem Atenção
             </div>
           </div>
           <div className="text-xs font-medium text-slate-400 italic">

@@ -59,8 +59,8 @@ export function getSupabaseServer() {
       );
     }
 
-    // Sanity check: chaves JWT do Supabase costumam ser longas e começar com 'ey'
-    if (key.length < 50) {
+    // Sanity check: chaves JWT do Supabase costumam ser longas e começar com 'ey', enquanto novas chaves secretas usam 'sb_secret_'
+    if (key.length < 50 && !key.startsWith('sb_secret_')) {
       console.warn(
         '[Supabase] ⚠️ Alerta: SUPABASE_SERVICE_ROLE_KEY parece curta demais ou inválida.'
       );

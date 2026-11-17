@@ -15,6 +15,7 @@ export function RentalsBordero() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [leases, setLeases] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [generatedBordero, setGeneratedBordero] = useState<any | null>(null);
 
   useEffect(() => {
     fetchActiveLeases();
@@ -51,9 +52,10 @@ export function RentalsBordero() {
       );
       const data = await res.json();
       if (data.success) {
-        toast.info(`Borderô Gerado: Repasse de R$ ${data.data.total_to_repass}`);
-        // Aqui conectaria com uma lib para gerar PDF real (ex: jsPDF ou React-pdf)
+        setGeneratedBordero(data.data);
+        toast.success(`Borderô gerado: Repasse de R$ ${Number(data.data.total_to_repass || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
       } else {
+        setGeneratedBordero(null);
         toast.info('Nenhuma fatura paga encontrada para este período');
       }
     } catch (error) {
@@ -123,8 +125,9 @@ export function RentalsBordero() {
         </div>
         <div className="flex-none">
           <button
-            onClick={() => toast.info('Filtragem em breve')}
-            className="w-full md:w-auto px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2"
+            onClick={fetchActiveLeases}
+            disabled={loading}
+            className="w-full md:w-auto px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2 disabled:opacity-60"
           >
             <Search className="w-4 h-4" />
             Filtrar
@@ -197,6 +200,48 @@ export function RentalsBordero() {
           </table>
         </div>
       </div>
+
+      {generatedBordero && (
+        <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border border-indigo-200 dark:border-indigo-900/40 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-700 pb-4">
+            <div>
+              <p className="text-xs font-semibold uppercase text-indigo-600">
+                Extrato de Repasse — Ref. {generatedBordero.reference}
+              </p>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                {generatedBordero.tenant_name} {generatedBordero.property_title ? `• ${generatedBordero.property_title}` : ''}
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-slate-900 text-white hover:bg-black"
+            >
+              Imprimir / Salvar PDF
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-900">
+              <p className="text-xs text-gray-500">Total Recebido</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-white">
+                R$ {Number(generatedBordero.total_paid || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+            <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-900">
+              <p className="text-xs text-gray-500">Taxa de Administração</p>
+              <p className="text-xl font-bold text-amber-600">
+                - R$ {Number(generatedBordero.total_administration_fee || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+            <div className="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
+              <p className="text-xs text-emerald-700 dark:text-emerald-300">Valor Líquido a Repassar</p>
+              <p className="text-xl font-bold text-emerald-700 dark:text-emerald-300">
+                R$ {Number(generatedBordero.total_to_repass || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

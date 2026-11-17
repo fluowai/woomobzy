@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Package, Plus, X, Trash2 } from 'lucide-react';
 import { fetchWooProducts, createWooProduct, updateWooProduct, deleteWooProduct } from '../../../services/wooControl';
@@ -98,7 +99,7 @@ export const Products = () => {
         await deleteWooProduct(id);
         loadProducts();
       } catch (err: any) {
-        alert(err.message || 'Erro ao excluir o produto');
+        toast.error(err.message || 'Erro ao excluir o produto');
       }
     }
   };

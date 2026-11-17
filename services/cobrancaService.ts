@@ -266,10 +266,10 @@ export class CobrancaService {
   // Novo: Criação de Acordo de Renegociação
   async createRenegotiation(
     contractId: string,
-    data: { total_debt: number; installments: number; entry: number }
+    data: { billingId?: string; total_debt: number; installments: number; entry: number; first_due_date?: string }
   ): Promise<any> {
     try {
-      const result = await callApi('/api/financeiro/renegociar', {
+      const result = await callApi('/api/cobranca/renegociar', {
         method: 'POST',
         body: JSON.stringify({ contractId, ...data }),
       });
@@ -289,7 +289,7 @@ export class CobrancaService {
       if (filters?.ano) params.set('ano', String(filters.ano));
 
       const result = await callApi(
-        `/api/financeiro/despesas${params.toString() ? '?' + params.toString() : ''}`
+        `/api/cobranca/despesas${params.toString() ? '?' + params.toString() : ''}`
       );
       return result.data || [];
     } catch (error) {
@@ -300,13 +300,25 @@ export class CobrancaService {
 
   async createExpense(data: Expense): Promise<Expense | null> {
     try {
-      const result = await callApi('/api/financeiro/despesas', {
+      const result = await callApi('/api/cobranca/despesas', {
         method: 'POST',
         body: JSON.stringify(data),
       });
       return result.data || null;
     } catch (error) {
       logger.error('Erro ao registrar despesa:', error);
+      return null;
+    }
+  }
+
+  async payExpense(expenseId: string): Promise<Expense | null> {
+    try {
+      const result = await callApi(`/api/cobranca/despesas/${expenseId}/pagar`, {
+        method: 'PUT',
+      });
+      return result.data || null;
+    } catch (error) {
+      logger.error('Erro ao quitar despesa:', error);
       return null;
     }
   }

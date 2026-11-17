@@ -3,7 +3,7 @@
  */
 
 import { Property } from '../types';
-import { getApiUrl } from '../src/lib/api';
+import { callApi } from '../src/lib/api';
 
 export const ruralDataService = {
   /**
@@ -58,16 +58,15 @@ export const ruralDataService = {
    * Consulta os dados do CAR via Proxy Backend
    */
   async fetchCarData(carNumber: string) {
-    const apiUrl = getApiUrl(`/api/rural/car/${encodeURIComponent(carNumber)}`);
-
-    const response = await fetch(apiUrl);
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.error || 'Erro ao consultar CAR');
+    try {
+      const result = await callApi(
+        `/api/rural/car/${encodeURIComponent(carNumber)}`,
+        { hideError: true }
+      );
+      return result.data;
+    } catch (err: any) {
+      throw new Error(err?.message || 'Erro ao consultar CAR');
     }
-
-    const result = await response.json();
-    return result.data;
   },
 
   /**

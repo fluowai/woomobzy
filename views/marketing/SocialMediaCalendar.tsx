@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/services/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { Calendar, Clock, Plus, Share2 } from 'lucide-react';
+import { callApi } from '@/src/lib/api';
+import { Calendar, Clock, Plus, Share2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SocialMediaCalendar() {
     const { user, profile } = useAuth();
     const organization = (profile as any)?.organization;
-    const [posts, setPosts] = useState([]);
+    const [posts, setPosts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showNewModal, setShowNewModal] = useState(false);
+    const [savingPost, setSavingPost] = useState(false);
+    const [postForm, setPostForm] = useState({
+        content: '',
+        scheduled_for: new Date(Date.now() + 3600 * 1000).toISOString().slice(0, 16),
+        platforms: ['instagram', 'facebook'] as string[],
+        media_url: '',
+    });
 
     useEffect(() => {
         if (organization?.id) {
@@ -47,7 +56,7 @@ export default function SocialMediaCalendar() {
                 </div>
                 <button 
                     className="bg-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-primary/90 transition-colors"
-                    onClick={() => toast.info('Abertura do modal de novo post em desenvolvimento')}
+                    onClick={() => setShowNewModal(true)}
                 >
                     <Plus className="w-5 h-5" />
                     Novo Post
@@ -104,6 +113,123 @@ export default function SocialMediaCalendar() {
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {showNewModal && (
+                <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-xl">
+                        <div className="flex items-center justify-between border-b pb-3">
+                            <h3 className="font-bold text-lg text-gray-900">Agendar Novo Post</h3>
+                            <button
+                                onClick={() => setShowNewModal(false)}
+                                className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="space-y-3">
+                            <div>
+                                <label className="text-xs font-semibold text-gray-600 block mb-1">Legenda / Conteúdo</label>
+                                <textarea
+                                    rows={4}
+                                    value={postForm.content}
+                                    onChange={(e) => setPostForm((p) => ({ ...p, content: e.target.value }))}
+                                    placeholder="Digite o texto da publicação..."
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-primary"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-gray-600 block mb-1">URL da Imagem (opcional)</label>
+                                <input
+                                    value={postForm.media_url}
+                                    onChange={(e) => setPostForm((p) => ({ ...p, media_url: e.target.value }))}
+                                    placeholder="https://..."
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-primary"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-gray-600 block mb-1">Data e Hora de Publicação</label>
+                                <input
+                                    type="datetime-local"
+                                    value={postForm.scheduled_for}
+                                    onChange={(e) => setPostForm((p) => ({ ...p, scheduled_for: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-primary"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-gray-600 block mb-1">Redes</label>
+                                <div className="flex gap-3">
+                                    {['instagram', 'facebook'].map((platform) => {
+                                        const active = postForm.platforms.includes(platform);
+                                        return (
+                                            <button
+                                                key={platform}
+                                                type="button"
+                                                onClick={() =>
+                                                    setPostForm((p) => ({
+                                                        ...p,
+                                                        platforms: active
+                                                            ? p.platforms.filter((item) => item !== platform)
+                                                            : [...p.platforms, platform],
+                                                    }))
+                                                }
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize border ${
+                                                    active
+                                                        ? 'bg-primary text-white border-primary'
+                                                        : 'bg-white text-gray-600 border-gray-200'
+                                                }`}
+                                            >
+                                                {platform}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-2 pt-2">
+                            <button
+                                onClick={() => setShowNewModal(false)}
+                                className="px-4 py-2 rounded-lg border border-gray-200 text-xs font-bold text-gray-600"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                disabled={savingPost}
+                                onClick={async () => {
+                                    if (!postForm.content.trim() || postForm.platforms.length === 0) {
+                                        toast.error('Informe a legenda e selecione ao menos uma rede.');
+                                        return;
+                                    }
+                                    try {
+                                        setSavingPost(true);
+                                        await callApi('/api/social/posts', {
+                                            method: 'POST',
+                                            body: JSON.stringify({
+                                                content: postForm.content.trim(),
+                                                media_urls: postForm.media_url.trim()
+                                                    ? [postForm.media_url.trim()]
+                                                    : [],
+                                                platforms: postForm.platforms,
+                                                scheduled_for: new Date(postForm.scheduled_for).toISOString(),
+                                            }),
+                                        });
+                                        toast.success('Post agendado com sucesso!');
+                                        setShowNewModal(false);
+                                        setPostForm((p) => ({ ...p, content: '', media_url: '' }));
+                                        await fetchPosts();
+                                    } catch (err: any) {
+                                        toast.error(err?.message || 'Erro ao agendar post.');
+                                    } finally {
+                                        setSavingPost(false);
+                                    }
+                                }}
+                                className="px-4 py-2 rounded-lg bg-primary text-white text-xs font-bold disabled:opacity-50"
+                            >
+                                {savingPost ? 'Agendando...' : 'Agendar Post'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

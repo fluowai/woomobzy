@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Rocket, Plus, Trash2, X, Edit } from 'lucide-react';
 import { fetchWooReleases, createWooRelease, updateWooRelease, deleteWooRelease, fetchWooProducts } from '../../../services/wooControl';
@@ -126,7 +127,7 @@ export const Releases = () => {
         await deleteWooRelease(id);
         loadReleases();
       } catch (err: any) {
-        alert(err.message || 'Erro ao excluir o release');
+        toast.error(err.message || 'Erro ao excluir o release');
       }
     }
   };

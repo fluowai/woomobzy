@@ -914,20 +914,63 @@ const AICentral: React.FC = () => {
             </section>
           )}
 
-          {/* Placeholder tabs */}
-          {['tests', 'knowledge', 'channels', 'history', 'logs'].includes(activeTab) && (
-            <section className="rounded-xl border border-slate-200 bg-white p-5 lg:p-6 shadow-sm text-center py-12">
-              <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                <HelpCircle className="h-8 w-8 text-slate-400" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-950 mb-2">
-                {tabs.find(t => t.id === activeTab)?.label} - Em desenvolvimento
-              </h3>
-              <p className="text-slate-500 max-w-md mx-auto">
-                Esta seção está sendo implementada. Volte em breve para testar, gerenciar conhecimento, configurar canais, ver histórico ou logs.
-              </p>
-            </section>
-          )}
+          {/* Acoes diretas para os submodulos reais */}
+          {['tests', 'knowledge', 'channels', 'history', 'logs'].includes(activeTab) && (() => {
+            const primaryOp = operations.find(o => o.status === 'PUBLISHED' || o.status === 'ACTIVE') || operations[0];
+            const routeMap: Record<string, { title: string; description: string; target: string; cta: string }> = {
+              tests: {
+                title: 'Sandbox & Testes Automatizados',
+                description: 'Execute testes reais com seus agentes e valide score de publicação e red-team.',
+                target: primaryOp ? aiPath(`operations/${primaryOp.id}/agents/test`) : aiPath('operations/new'),
+                cta: primaryOp ? 'Abrir Sandbox da Operação' : 'Criar Operação de IA',
+              },
+              knowledge: {
+                title: 'Base de Conhecimento',
+                description: 'Gerencie documentos, FAQs e regras de atendimento sincronizadas com seus agentes.',
+                target: aiPath('knowledge'),
+                cta: 'Abrir Base de Conhecimento',
+              },
+              channels: {
+                title: 'Canais Conectados',
+                description: 'Configure regras de atendimento por WhatsApp, Instagram e Webchat na operação.',
+                target: primaryOp ? aiPath(`operations/${primaryOp.id}`) : aiPath('operations/new'),
+                cta: primaryOp ? 'Gerenciar Canais na Operação' : 'Criar Operação de IA',
+              },
+              history: {
+                title: 'Histórico de Conversas',
+                description: 'Consulte atendimentos reais, handoffs e transcripts salvos por canal.',
+                target: aiPath('history'),
+                cta: 'Abrir Histórico de Conversas',
+              },
+              logs: {
+                title: 'Logs de Execução da IA',
+                description: 'Audite chamadas LLM, ferramentas executadas, latência e falhas registradas.',
+                target: aiPath('logs'),
+                cta: 'Abrir Logs de Execução',
+              },
+            };
+            const tabInfo = routeMap[activeTab];
+            return (
+              <section className="rounded-xl border border-slate-200 bg-white p-6 lg:p-8 shadow-sm text-center py-12">
+                <div className="h-14 w-14 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-4">
+                  <Sparkles className="h-7 w-7 text-emerald-600" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-950 mb-2">
+                  {tabInfo.title}
+                </h3>
+                <p className="text-slate-500 max-w-md mx-auto mb-6">
+                  {tabInfo.description}
+                </p>
+                <button
+                  onClick={() => navigate(tabInfo.target)}
+                  className="h-11 px-6 rounded-lg bg-slate-950 text-white text-sm font-bold hover:bg-slate-800 transition inline-flex items-center gap-2"
+                >
+                  {tabInfo.cta}
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </section>
+            );
+          })()}
         </div>
       </div>
     </div>

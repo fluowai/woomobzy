@@ -189,6 +189,52 @@ const DueDiligence: React.FC = () => {
   const [isValidating, setIsValidating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [documents, setDocuments] = useState<any[]>([]);
+  const [uploadTargetItemId, setUploadTargetItemId] = useState<string | null>(
+    null
+  );
+  const docFileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const handleChecklistUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !uploadTargetItemId) return;
+    if (!selectedProperty) {
+      toast.error('Selecione uma propriedade rural antes de enviar documentos.');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await callApi(`/api/documents/upload/${selectedProperty}`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (res?.document) {
+        setDocuments((prev) => [res.document, ...prev]);
+      }
+      const nextChecklist = checklist.map((item) =>
+        item.id === uploadTargetItemId
+          ? {
+              ...item,
+              status:
+                item.status === 'approved' ? 'approved' : ('pending' as DocStatus),
+              file: file.name,
+            }
+          : item
+      );
+      setChecklist(nextChecklist);
+      await persistChecklist(nextChecklist);
+      toast.success(`Documento "${file.name}" enviado para análise.`);
+    } catch (err: any) {
+      logger.error('Erro no upload de documento rural:', err);
+      toast.error(err?.message || 'Erro ao enviar documento.');
+    } finally {
+      setUploadTargetItemId(null);
+    }
+  };
 
   const loadProps = useCallback(async () => {
     if (!profile?.organization_id) {
@@ -495,9 +541,17 @@ const DueDiligence: React.FC = () => {
                     {cfg.label}
                   </span>
                   <button
-                    onClick={() =>
-                      toast.info('Funcionalidade de upload específica em breve')
-                    }
+                    onClick={() => {
+                      if (!selectedProperty) {
+                        toast.error(
+                          'Selecione uma propriedade antes de enviar o documento.'
+                        );
+                        return;
+                      }
+                      setUploadTargetItemId(item.id);
+                      docFileInputRef.current?.click();
+                    }}
+                    title="Enviar documento (PDF, imagem ou DOC)"
                     className="invisible group-hover:visible p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all"
                   >
                     <Upload size={14} />
@@ -513,6 +567,13 @@ const DueDiligence: React.FC = () => {
 
   return (
     <div className="space-y-8">
+      <input
+        ref={docFileInputRef}
+        type="file"
+        accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
+        className="hidden"
+        onChange={handleChecklistUpload}
+      />
       <div>
         <h1 className="text-3xl font-bold text-black uppercase italic tracking-tighter flex items-center gap-3">
           <ShieldCheck className="text-emerald-600" size={32} />

@@ -125,61 +125,76 @@ const getLevelProgress = (points: number) => {
   );
 };
 
-// ──────────────────────────────────────────────────────────────
-// MOCK ACHIEVEMENTS (will be dynamic later)
-// ──────────────────────────────────────────────────────────────
-const ACHIEVEMENTS: Achievement[] = [
-  {
-    id: 'first_sale',
-    name: 'Primeira Venda',
-    description: 'Feche seu primeiro negócio na plataforma',
-    icon: '🎯',
-    unlocked: true,
-  },
-  {
-    id: 'streak_7',
-    name: 'Semana Perfeita',
-    description: 'Acesse o sistema por 7 dias consecutivos',
-    icon: '🔥',
-    unlocked: true,
-    progress: 7,
-    target: 7,
-  },
-  {
-    id: 'leads_10',
-    name: 'Caçador de Leads',
-    description: 'Converta 10 leads em clientes',
-    icon: '⚡',
-    unlocked: false,
-    progress: 4,
-    target: 10,
-  },
-  {
-    id: 'rentals_5',
-    name: 'Rei do Aluguel',
-    description: 'Feche 5 contratos de locação',
-    icon: '🏠',
-    unlocked: false,
-    progress: 2,
-    target: 5,
-  },
-  {
-    id: 'site_visits',
-    name: 'Digital First',
-    description: 'Seu site recebeu 100 visitas',
-    icon: '🌐',
-    unlocked: false,
-    progress: 68,
-    target: 100,
-  },
-  {
-    id: 'top3_rank',
-    name: 'Pódio',
-    description: 'Seja top 3 no ranking mensal',
-    icon: '🏆',
-    unlocked: false,
-  },
-];
+// Conquistas calculadas dinamicamente a partir das métricas reais do corretor
+const computeAchievements = (
+  profile: GamificationProfile | null,
+  ranking: GamificationProfile[]
+): Achievement[] => {
+  const sales = profile?.total_sales || 0;
+  const rentals = profile?.total_rentals || 0;
+  const streak = profile?.streak_days || 0;
+  const converted = profile?.total_leads_converted || 0;
+  const points = profile?.points || 0;
+  const rankIdx = profile
+    ? ranking.findIndex((r) => r.id === profile.id)
+    : -1;
+  const isTop3 = rankIdx >= 0 && rankIdx < 3 && points > 0;
+
+  return [
+    {
+      id: 'first_sale',
+      name: 'Primeira Venda',
+      description: 'Feche seu primeiro negócio na plataforma',
+      icon: '🎯',
+      unlocked: sales >= 1,
+      progress: Math.min(sales, 1),
+      target: 1,
+    },
+    {
+      id: 'streak_7',
+      name: 'Semana Perfeita',
+      description: 'Acesse o sistema por 7 dias consecutivos',
+      icon: '🔥',
+      unlocked: streak >= 7,
+      progress: Math.min(streak, 7),
+      target: 7,
+    },
+    {
+      id: 'leads_10',
+      name: 'Caçador de Leads',
+      description: 'Converta 10 leads em clientes',
+      icon: '⚡',
+      unlocked: converted >= 10,
+      progress: Math.min(converted, 10),
+      target: 10,
+    },
+    {
+      id: 'rentals_5',
+      name: 'Rei do Aluguel',
+      description: 'Feche 5 contratos de locação',
+      icon: '🏠',
+      unlocked: rentals >= 5,
+      progress: Math.min(rentals, 5),
+      target: 5,
+    },
+    {
+      id: 'points_1000',
+      name: 'Clube Ouro 1.000',
+      description: 'Acumule 1.000 pontos em atividades',
+      icon: '⭐',
+      unlocked: points >= 1000,
+      progress: Math.min(points, 1000),
+      target: 1000,
+    },
+    {
+      id: 'top3_rank',
+      name: 'Pódio',
+      description: 'Seja top 3 no ranking mensal',
+      icon: '🏆',
+      unlocked: isTop3,
+    },
+  ];
+};
 
 // ──────────────────────────────────────────────────────────────
 // MOCK REWARDS (will be configurable by admin later)
@@ -779,7 +794,7 @@ const ClubeImobzy: React.FC = () => {
       {/* ── TAB: CONQUISTAS ── */}
       {tab === 'conquistas' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {ACHIEVEMENTS.map((a) => (
+          {computeAchievements(myProfile, ranking).map((a) => (
             <div
               key={a.id}
               className={`card-premium p-5 flex gap-4 transition-all ${a.unlocked ? 'hover:shadow-md hover:border-primary/20' : 'opacity-60 grayscale'}`}

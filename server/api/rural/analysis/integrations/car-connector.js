@@ -31,6 +31,10 @@ export class CARConnector {
    * Concept: Fetch using CQL filter (ST_Intersects) for more precision if the server allows
    */
   static async fetchByGeometry(wktGeometry) {
+    if (!wktGeometry || typeof wktGeometry !== 'string') {
+      throw new Error('Geometria WKT obrigatoria para consulta CAR');
+    }
+
     const params = {
       service: 'WFS',
       version: '1.1.0',
@@ -39,6 +43,10 @@ export class CARConnector {
       outputFormat: 'application/json',
       cql_filter: `INTERSECTS(geometria, ${wktGeometry})`
     };
-    // ... similar axios call
+
+    return pRetry(async () => {
+      const response = await axios.get(this.API_URL, { params, timeout: 15000 });
+      return response.data;
+    }, { retries: 2 });
   }
 }

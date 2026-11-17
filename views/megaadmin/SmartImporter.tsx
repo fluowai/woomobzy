@@ -469,6 +469,18 @@ const SmartImporter: React.FC = () => {
               properties={capturedProperties}
               onConfirm={finalizeImport}
               onBack={() => setStep(2)}
+              onUpdateProperty={(propId, updates) =>
+                setCapturedProperties((prev) =>
+                  prev.map((item) =>
+                    item.id === propId ? { ...item, ...updates } : item
+                  )
+                )
+              }
+              onDeleteProperty={(propId) =>
+                setCapturedProperties((prev) =>
+                  prev.filter((item) => item.id !== propId)
+                )
+              }
             />
           </div>
         )}

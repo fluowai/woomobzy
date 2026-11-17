@@ -137,6 +137,31 @@ class AsaasGateway {
       logger.warn('[AsaasGateway] Could not update legacy billing table', { error: billingUpdate.error.message });
     }
 
+    if (
+      status === 'pago' &&
+      typeof payment.externalReference === 'string' &&
+      payment.externalReference.startsWith('sub:')
+    ) {
+      const [, orgId, planId] = payment.externalReference.split(':');
+      if (orgId && planId) {
+        const { error: orgActErr } = await supabase
+          .from('organizations')
+          .update({
+            plan_id: planId,
+            subscription_status: 'active',
+            status: 'active',
+          })
+          .eq('id', orgId);
+        if (orgActErr) {
+          logger.error('[AsaasGateway] Failed to activate subscription', {
+            orgId,
+            planId,
+            error: orgActErr.message,
+          });
+        }
+      }
+    }
+
     return {
       success: true,
       action: 'PAYMENT_STATUS_SYNCED',

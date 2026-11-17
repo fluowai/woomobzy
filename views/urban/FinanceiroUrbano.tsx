@@ -53,9 +53,18 @@ export default function FinanceiroUrbano() {
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [selectedBilling, setSelectedBilling] = useState<Billing | null>(null);
   const [newBilling, setNewBilling] = useState({
-    contract_id: 'contrato-avulso-123',
+    contract_id: '',
     tenantName: '',
+    amount: 0,
+    due_date: '',
+    description: '',
+  });
+  const [newExpense, setNewExpense] = useState({
+    provider_name: '',
+    category: 'Operacional',
     amount: 0,
     due_date: '',
     description: '',
@@ -135,12 +144,22 @@ export default function FinanceiroUrbano() {
 
   const dreData = React.useMemo(() => {
     if (!dashboard || !dashboard.receita) return [];
-    return dashboard.receita.map((item) => ({
-      mes: item.mes,
-      lucroBruto: item.valor,
-      lucroLiquido: item.valor * 0.85 // Simulação básica de líquido baseada na receita real
-    }));
-  }, [dashboard]);
+    const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    return dashboard.receita.map((item, idx) => {
+      const monthExpenses = expenses
+        .filter((e) => {
+          if (!e.due_date) return false;
+          const d = new Date(e.due_date);
+          return !Number.isNaN(d.getTime()) && (d.getMonth() === idx || monthNames[d.getMonth()] === item.mes);
+        })
+        .reduce((sum, e) => sum + Number(e.amount || 0), 0);
+      return {
+        mes: item.mes,
+        lucroBruto: item.valor,
+        lucroLiquido: Number((item.valor - monthExpenses).toFixed(2)),
+      };
+    });
+  }, [dashboard, expenses]);
 
   const handleCreateBilling = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,42 +168,83 @@ export default function FinanceiroUrbano() {
       return;
     }
 
-    try {
-      await cobrancaService.createBilling({
-        contract_id: newBilling.contract_id,
-        amount: newBilling.amount,
-        due_date: newBilling.due_date,
-        description: newBilling.description,
-      });
-      toast.success('Cobrança gerada com sucesso!');
-      setIsModalOpen(false);
+    const created = await cobrancaService.createBilling({
+      ...(newBilling.contract_id ? { contract_id: newBilling.contract_id } : {}),
+      payer_name: newBilling.tenantName,
+      amount: newBilling.amount,
+      due_date: newBilling.due_date,
+      description: newBilling.description,
+    } as any);
 
-      // Mocking optimistically to reflect on UI immediately since we might not have a real backend
-      const optimisticBilling: Billing = {
-        id: Math.random().toString(),
-        amount: newBilling.amount,
-        due_date: newBilling.due_date,
-        status: 'aberto',
-        description: newBilling.description,
-        contract: {
-          tenant_name: newBilling.tenantName || 'Avulso',
-          property: {
-            title: 'Imóvel Avulso',
-          },
-        },
-      };
-      setBillings((prev) => [optimisticBilling, ...prev]);
-
-      setNewBilling({
-        contract_id: 'contrato-avulso-123',
-        tenantName: '',
-        amount: 0,
-        due_date: '',
-        description: '',
-      });
-    } catch (error) {
-      toast.error('Erro ao gerar cobrança.');
+    if (!created) {
+      toast.error('Erro ao gerar cobrança no servidor.');
+      return;
     }
+
+    toast.success('Cobrança gerada com sucesso!');
+    setIsModalOpen(false);
+    setNewBilling({
+      contract_id: '',
+      tenantName: '',
+      amount: 0,
+      due_date: '',
+      description: '',
+    });
+    await loadData();
+  };
+
+  const handleCreateExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newExpense.provider_name || !newExpense.amount || !newExpense.due_date) {
+      toast.error('Preencha fornecedor, valor e vencimento.');
+      return;
+    }
+    const created = await cobrancaService.createExpense(newExpense);
+    if (!created) {
+      toast.error('Erro ao registrar despesa.');
+      return;
+    }
+    toast.success('Despesa registrada com sucesso!');
+    setIsExpenseModalOpen(false);
+    setNewExpense({
+      provider_name: '',
+      category: 'Operacional',
+      amount: 0,
+      due_date: '',
+      description: '',
+    });
+    await loadData();
+  };
+
+  const handlePayExpense = async (expenseId?: string) => {
+    if (!expenseId) return;
+    const updated = await cobrancaService.payExpense(expenseId);
+    if (!updated) {
+      toast.error('Não foi possível quitar a despesa.');
+      return;
+    }
+    toast.success('Despesa marcada como paga!');
+    await loadData();
+  };
+
+  const handleExportOpenBoletos = async () => {
+    const csv = await cobrancaService.exportData('csv', {
+      ano: new Date().getFullYear(),
+    });
+    if (!csv) {
+      toast.error('Não foi possível exportar boletos.');
+      return;
+    }
+    const blob = new Blob([typeof csv === 'string' ? csv : JSON.stringify(csv)], {
+      type: 'text/csv;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cobrancas-${new Date().getFullYear()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Remessa / lista de boletos exportada!');
   };
 
   return (
@@ -244,10 +304,10 @@ export default function FinanceiroUrbano() {
             <h2 className="font-bold text-slate-900">Cobranças do período</h2>
             <div className="flex gap-2">
               <button
-                onClick={() => toast.info('Envio em lote em breve')}
+                onClick={handleExportOpenBoletos}
                 className="btn bg-slate-100 text-sm text-slate-700 hover:bg-slate-200"
               >
-                <Send size={15} /> Enviar Boletos
+                <Send size={15} /> Exportar Boletos
               </button>
               <button
                 onClick={() => setIsModalOpen(true)}
@@ -333,9 +393,7 @@ export default function FinanceiroUrbano() {
                           </span>
                         ) : (
                           <button
-                            onClick={() =>
-                              toast.info('Visualização de boleto em breve')
-                            }
+                            onClick={() => setSelectedBilling(billing)}
                             className="text-xs font-bold text-primary hover:underline"
                           >
                             Ver Boleto
@@ -359,7 +417,7 @@ export default function FinanceiroUrbano() {
             </h2>
             <div className="flex gap-2">
               <button
-                onClick={() => toast.info('Modal de nova despesa em breve')}
+                onClick={() => setIsExpenseModalOpen(true)}
                 className="btn btn-primary text-sm flex items-center gap-1"
               >
                 <Plus size={16} /> Nova Despesa
@@ -425,9 +483,16 @@ export default function FinanceiroUrbano() {
                         </span>
                       </td>
                       <td className="p-4">
-                        <button className="text-xs font-bold text-primary hover:underline">
-                          Pagar
-                        </button>
+                        {expense.status === 'pago' ? (
+                          <span className="text-xs font-bold text-emerald-600">Pago</span>
+                        ) : (
+                          <button
+                            onClick={() => handlePayExpense(expense.id)}
+                            className="text-xs font-bold text-primary hover:underline"
+                          >
+                            Pagar
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -824,6 +889,138 @@ export default function FinanceiroUrbano() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {isExpenseModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <h3 className="font-bold text-slate-900">Nova Despesa</h3>
+              <button
+                onClick={() => setIsExpenseModalOpen(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleCreateExpense} className="p-6 space-y-4">
+              <label className="block">
+                <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Fornecedor</span>
+                <input
+                  type="text"
+                  required
+                  value={newExpense.provider_name}
+                  onChange={(e) => setNewExpense({ ...newExpense, provider_name: e.target.value })}
+                  className="mt-1 w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                  placeholder="Ex: Energia, Manutenção, Condomínio"
+                />
+              </label>
+              <div className="grid grid-cols-2 gap-4">
+                <label className="block">
+                  <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Valor (R$)</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    value={newExpense.amount || ''}
+                    onChange={(e) => setNewExpense({ ...newExpense, amount: Number(e.target.value) })}
+                    className="mt-1 w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Vencimento</span>
+                  <input
+                    type="date"
+                    required
+                    value={newExpense.due_date}
+                    onChange={(e) => setNewExpense({ ...newExpense, due_date: e.target.value })}
+                    className="mt-1 w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                  />
+                </label>
+              </div>
+              <label className="block">
+                <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Categoria</span>
+                <input
+                  type="text"
+                  value={newExpense.category}
+                  onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value })}
+                  className="mt-1 w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                />
+              </label>
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsExpenseModalOpen(false)}
+                  className="flex-1 px-4 py-3 bg-slate-100 text-slate-600 font-bold text-sm rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-3 bg-primary text-white font-bold text-sm rounded-xl"
+                >
+                  Salvar Despesa
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {selectedBilling && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-slate-900">Detalhes da Cobrança</h3>
+              <button
+                onClick={() => setSelectedBilling(null)}
+                className="p-2 text-slate-400 hover:text-slate-600 rounded-full"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="space-y-2 text-sm">
+              <p><strong>Cliente:</strong> {selectedBilling.contract?.tenant_name || 'Cobrança avulsa'}</p>
+              <p><strong>Valor:</strong> {cobrancaService.formatCurrency(selectedBilling.amount || 0)}</p>
+              <p><strong>Vencimento:</strong> {selectedBilling.due_date ? new Date(selectedBilling.due_date).toLocaleDateString('pt-BR') : '-'}</p>
+              <p><strong>Status:</strong> {selectedBilling.status || 'aberto'}</p>
+              {selectedBilling.pix_code && (
+                <div className="rounded-xl bg-slate-50 p-3 text-xs">
+                  <p className="font-bold mb-1">PIX Copia e Cola:</p>
+                  <code className="break-all">{selectedBilling.pix_code}</code>
+                </div>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2 pt-2">
+              {selectedBilling.invoice_url && (
+                <a
+                  href={selectedBilling.invoice_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold"
+                >
+                  Abrir Fatura / Boleto
+                </a>
+              )}
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!selectedBilling.id) return;
+                  await cobrancaService.registerPayment(selectedBilling.id, {
+                    data_pagamento: new Date().toISOString().slice(0, 10),
+                    valor_pago: selectedBilling.amount,
+                  });
+                  toast.success('Pagamento registrado!');
+                  setSelectedBilling(null);
+                  await loadData();
+                }}
+                className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold"
+              >
+                Registrar Pagamento
+              </button>
+            </div>
           </div>
         </div>
       )}

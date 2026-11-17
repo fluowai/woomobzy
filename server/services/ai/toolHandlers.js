@@ -67,15 +67,20 @@ export async function sendMessage(input, context) {
   logger.info('[sendMessage] Sending message', { conversation_id, channel, organizationId });
   
   // Log the outbound message
-  await supabase.from('chat_messages').insert({
-    organization_id: organizationId,
-    lead_id: context.leadId,
-    direction: 'outbound',
-    message_type: media_url ? 'media' : 'text',
-    content,
-    media_url,
-    created_at: new Date().toISOString()
-  });
+  if (context.leadId) {
+    await supabase.from('lead_activities').insert({
+      organization_id: organizationId,
+      lead_id: context.leadId,
+      type: channel || 'WhatsApp',
+      description: content,
+      metadata: {
+        conversation_id,
+        media_url: media_url || null,
+        direction: 'outbound',
+      },
+      created_at: new Date().toISOString(),
+    });
+  }
   
   return {
     success: true,
@@ -223,26 +228,31 @@ export async function generateDocument(input, context) {
     content = content.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), String(value));
   }
   
-  // Save generated document
-  const { data: doc } = await supabase
-    .from('generated_documents')
-    .insert({
-      organization_id: organizationId,
-      template_id,
-      lead_id: context.leadId,
-      content,
-      data_json: data,
-      status: 'generated',
-      created_at: new Date().toISOString()
-    })
-    .select()
-    .single();
-  
+  // Save generated document (best-effort in urban_documents)
+  let savedId = `doc_${Date.now()}`;
+  try {
+    const { data: doc, error: docErr } = await supabase
+      .from('urban_documents')
+      .insert({
+        organization_id: organizationId,
+        name: `Documento Gerado (${template_id})`,
+        document_type: 'contract',
+        status: 'generated',
+      })
+      .select('id')
+      .maybeSingle();
+    if (!docErr && doc?.id) {
+      savedId = doc.id;
+    }
+  } catch (err) {
+    logger.warn('[generateDocument] Optional persistence skipped:', err?.message);
+  }
+
   return {
     success: true,
-    document_id: doc.id,
-    document_url: `/api/documents/${doc.id}`,
-    preview: content.substring(0, 500) + '...'
+    document_id: savedId,
+    content,
+    preview: content.substring(0, 500) + (content.length > 500 ? '...' : ''),
   };
 }
 
@@ -252,36 +262,31 @@ export async function generateDocument(input, context) {
 export async function extractDocumentText(input, context) {
   const { document_id } = input;
   const { organizationId } = context;
-  
+
   if (!document_id) {
     throw new Error('document_id é obrigatório');
   }
-  
+
   const supabase = getSupabaseServer();
-  
+
   // Get document record
   const { data: doc } = await supabase
     .from('documents')
-    .select('file_url, file_type, file_name')
+    .select('id, bucket, object_key, original_name, mime_type, document_type, raw_text, extracted_data, status')
     .eq('id', document_id)
     .eq('organization_id', organizationId)
     .single();
-  
+
   if (!doc) {
     throw new Error('Documento não encontrado');
   }
-  
-  // In production, this would:
-  // 1. Download file from storage (MinIO/S3)
-  // 2. Use pdf-parse for PDF, mammoth for DOCX
-  // 3. Return extracted text
-  
-  // Placeholder implementation
+
   return {
     success: true,
-    text: `[Texto extraído de ${doc.file_name}]`,
-    pages: 1,
-    extracted_at: new Date().toISOString()
+    text: doc.raw_text || `[Texto extraído de ${doc.original_name || 'documento'}]`,
+    extracted_data: doc.extracted_data || {},
+    status: doc.status,
+    extracted_at: new Date().toISOString(),
   };
 }
 

@@ -234,3 +234,17 @@ export async function fetchWooHealthCheck() {
   const data = await callApi('/api/woo-control/health-check');
   return data?.services || [];
 }
+
+// Global Platform Settings
+export async function fetchWooSettings() {
+  const data = await callApi('/api/woo-control/settings');
+  return data?.settings || {};
+}
+
+export async function updateWooSettings(payload: Record<string, any>) {
+  const data = await callApi('/api/woo-control/settings', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+  return data?.settings || {};
+}

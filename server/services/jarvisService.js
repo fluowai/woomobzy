@@ -2,12 +2,21 @@ import Groq from 'groq-sdk';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+let groqClient = null;
+function getGroqClient() {
+  const apiKey = String(process.env.GROQ_API_KEY || '').trim();
+  if (!apiKey) {
+    throw new Error('GROQ_API_KEY não configurada para o Assistente IA.');
+  }
+  if (!groqClient) {
+    groqClient = new Groq({ apiKey });
+  }
+  return groqClient;
+}
 
 export const processAgenticTask = async (prompt, context) => {
   try {
+    const groq = getGroqClient();
     const systemPrompt = `Você é o Assistente Virtual de IA do Imobtech (Imob CRM), o orquestrador agêntico do sistema. 
 Sua função é receber solicitações do usuário (corretor/admin), analisar o contexto da tela atual (se fornecido), e fornecer uma resposta útil, gerar um resumo, ou preparar uma ação. 
 Seja conciso, prestativo e aja como um assistente inteligente de alto nível para o mercado imobiliário.

@@ -4,6 +4,24 @@ import { instagramQueue } from '../lib/queue.js';
 
 const router = Router();
 
+router.use((req, res, next) => {
+  const configuredToken = String(
+    process.env.INSTAGRAM_INTERNAL_TOKEN || process.env.INTERNAL_TOKEN || ''
+  ).trim();
+  if (!configuredToken) {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(503).json({ error: 'Internal webhook token not configured' });
+    }
+    return next();
+  }
+
+  const providedToken = String(req.headers['x-internal-token'] || '').trim();
+  if (providedToken !== configuredToken) {
+    return res.status(401).json({ error: 'Unauthorized webhook' });
+  }
+  next();
+});
+
 router.post('/instagram/message', async (req, res) => {
   try {
     const {

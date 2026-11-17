@@ -396,10 +396,37 @@ const FinanceiroRural: React.FC = () => {
             Últimos Negócios Fechados
           </h4>
           <button
-            onClick={() => toast.info('Relatório completo em desenvolvimento')}
+            onClick={() => {
+              const allSold = properties.filter(
+                (p) => p.status === ('Vendido' as any)
+              );
+              const rows = [
+                'Fazenda,Valor,Comissao_Estimada,Cidade,Estado,Status',
+                ...allSold.map((p: any) =>
+                  [
+                    `"${String(p.title || '').replace(/"/g, '""')}"`,
+                    Number(p.price || 0).toFixed(2),
+                    (Number(p.price || 0) * goals.commission_rate).toFixed(2),
+                    `"${String(p.city || '').replace(/"/g, '""')}"`,
+                    `"${String(p.state || '').replace(/"/g, '""')}"`,
+                    p.status || 'Vendido',
+                  ].join(',')
+                ),
+              ].join('\n');
+              const blob = new Blob([rows], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `relatorio-vendas-rurais-${new Date().toISOString().slice(0, 10)}.csv`;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              URL.revokeObjectURL(url);
+              toast.success('Relatório CSV exportado.');
+            }}
             className="text-xs font-bold uppercase tracking-widest text-indigo-600 hover:text-indigo-700 transition-colors"
           >
-            Ver Relatório Completo
+            Exportar Relatório CSV
           </button>
         </div>
         <div className="overflow-x-auto">

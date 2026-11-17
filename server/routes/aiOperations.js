@@ -339,12 +339,6 @@ router.post('/:id/architect', async (req, res) => {
       .eq('organization_id', organizationId)
       .maybeSingle();
 
-    // Get environments for segment info
-    const { data: environments } = await supabase
-      .from('environments')
-      .select('*')
-      .eq('organization_id', organizationId);
-
     // Build architect input
     const architectInput = {
       tenant: tenant || { id: organizationId, name: 'Imobiliária' },

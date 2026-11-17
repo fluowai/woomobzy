@@ -88,7 +88,7 @@ export class SnapshotService {
       packageHash,
       manifest,
       watermark: watermarkFileContent,
-      downloadUrl: `/api/snapshots/download/${snapshotId}`
+      downloadUrl: `/api/woo-control/snapshots/${snapshotId}/download`
     };
   }
 }

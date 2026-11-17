@@ -202,6 +202,37 @@ export class DocumentService {
     }
   }
 
+  static _attachPublicUrl(supabase, docs) {
+    return (docs || []).map((doc) => {
+      if (!doc.object_key) return doc;
+      const bucket = doc.bucket || 'documents';
+      const { data: urlData } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(doc.object_key);
+      return {
+        ...doc,
+        public_url: doc.public_url || urlData?.publicUrl || null,
+      };
+    });
+  }
+
+  static async listByOrg(orgId, propertyId = null) {
+    const supabase = getSupabaseServer();
+    let query = supabase
+      .from('documents')
+      .select('*')
+      .eq('organization_id', orgId)
+      .order('created_at', { ascending: false });
+
+    if (propertyId) {
+      query = query.eq('property_id', propertyId);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return this._attachPublicUrl(supabase, data || []);
+  }
+
   static async listByProperty(propertyId, orgId) {
     const supabase = getSupabaseServer();
     const { data, error } = await supabase
@@ -212,7 +243,7 @@ export class DocumentService {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return this._attachPublicUrl(supabase, data || []);
   }
 
   static async getAnalysis(documentId, orgId) {

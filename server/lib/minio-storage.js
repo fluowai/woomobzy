@@ -45,10 +45,13 @@ export function allowSupabaseStorageFallback() {
     'MEDIA_STORAGE_PROVIDER',
     'STORAGE_PROVIDER',
   ]).toLowerCase();
-  return (
-    provider === 'supabase' ||
-    firstEnv(['ALLOW_SUPABASE_STORAGE_FALLBACK']).toLowerCase() === 'true'
-  );
+  const explicitFallback = firstEnv([
+    'ALLOW_SUPABASE_STORAGE_FALLBACK',
+  ]).toLowerCase();
+
+  if (explicitFallback === 'false') return false;
+  if (provider === 'supabase' || explicitFallback === 'true') return true;
+  return !isMinioConfigured();
 }
 
 export function resolveMediaBucket(requestedBucket = 'imobzyimg') {
@@ -89,10 +92,14 @@ export function resolveMediaBucket(requestedBucket = 'imobzyimg') {
 
 export function resolveMinioObjectKey(logicalBucket, key) {
   const normalizedKey = String(key || '').replace(/^\/+/, '');
-  if (
-    minioRuntimeConfig.bucketMode !== 'single' ||
-    !minioRuntimeConfig.singleBucket
-  ) {
+  const singleBucket =
+    minioRuntimeConfig.singleBucket || firstEnv(['MINIO_BUCKET', 'S3_BUCKET']);
+  const bucketMode =
+    minioRuntimeConfig.bucketMode ||
+    firstEnv(['MINIO_BUCKET_MODE', 'S3_BUCKET_MODE']) ||
+    (singleBucket ? 'single' : 'separate');
+
+  if (bucketMode !== 'single' || !singleBucket) {
     return normalizedKey;
   }
 
@@ -450,11 +457,15 @@ export function getMinioConfig() {
 }
 
 function getBucketName(kind) {
-  if (
-    minioRuntimeConfig.bucketMode === 'single' &&
-    minioRuntimeConfig.singleBucket
-  ) {
-    return minioRuntimeConfig.singleBucket;
+  const singleBucket =
+    minioRuntimeConfig.singleBucket || firstEnv(['MINIO_BUCKET', 'S3_BUCKET']);
+  const bucketMode =
+    minioRuntimeConfig.bucketMode ||
+    firstEnv(['MINIO_BUCKET_MODE', 'S3_BUCKET_MODE']) ||
+    (singleBucket ? 'single' : 'separate');
+
+  if (bucketMode === 'single' && singleBucket) {
+    return singleBucket;
   }
   return (
     firstEnv(BUCKET_ENV[kind] || []) ||

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { supabase } from '@/services/supabase';
 
 interface WSEvent {
   type: string;
@@ -13,8 +14,14 @@ export function useInstagramWebSocket(
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     if (!companyId || wsRef.current?.readyState === WebSocket.OPEN) return;
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) return;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/api/instagram/ws`;
@@ -24,7 +31,7 @@ export function useInstagramWebSocket(
 
     ws.onopen = () => {
       setConnected(true);
-      ws.send(JSON.stringify({ type: 'auth', companyId }));
+      ws.send(JSON.stringify({ type: 'auth', token, companyId }));
     };
 
     ws.onmessage = (event) => {

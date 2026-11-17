@@ -63,7 +63,7 @@ router.post('/generate', verifyAuth, requireTenant, async (req, res) => {
 
     // Busca o Lease e os dados do proprietário
     const { data: lease } = await supabase
-      .from('rental_contracts')
+      .from('leases')
       .select(
         `
         *,
@@ -90,10 +90,10 @@ router.post('/generate', verifyAuth, requireTenant, async (req, res) => {
 
     if (lease.property?.owner_id) {
       const { data: owner } = await supabase
-        .from('contacts') // Assumindo que proprietários ficam em contacts
+        .from('clients')
         .select('asaas_wallet_id')
         .eq('id', lease.property.owner_id)
-        .single();
+        .maybeSingle();
 
       if (owner?.asaas_wallet_id) {
         ownerWalletId = owner.asaas_wallet_id;
@@ -114,7 +114,7 @@ router.post('/generate', verifyAuth, requireTenant, async (req, res) => {
         // Salva o Customer ID no contrato para não criar duplicado
         if (asaasCustomerId) {
           await supabase
-            .from('rental_contracts')
+            .from('leases')
             .update({ asaas_customer_id: asaasCustomerId })
             .eq('id', lease.id);
         }

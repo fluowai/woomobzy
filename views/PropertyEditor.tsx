@@ -1,5 +1,6 @@
 import { logger } from '@/utils/logger';
 import { supabase } from '../services/supabase';
+import { callApi } from '../src/lib/api';
 import { toast } from 'sonner';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
@@ -1678,16 +1679,39 @@ const PropertyEditor: React.FC = () => {
                       </label>
                       <button
                         type="button"
-                        onClick={() => {
-                          if (!formData.features?.legal?.matricula) {
+                        onClick={async () => {
+                          const matricula = formData.features?.legal?.matricula;
+                          if (!matricula) {
                             toast.error(
                               'Preencha a matrícula primeiro para solicitar a certidão.'
                             );
                             return;
                           }
-                          toast.info(
-                            'Em breve: Integração ONR para certidões automáticas será liberada na próxima versão.'
+                          const toastId = toast.loading(
+                            'Solicitando certidão de Inteiro Teor no ONR...'
                           );
+                          try {
+                            const res = await callApi('/api/documents/onr/request', {
+                              method: 'POST',
+                              hideError: true,
+                              body: JSON.stringify({
+                                propertyId: id && id !== 'new' ? id : undefined,
+                                registrationNumber: matricula,
+                                cns: (formData.features?.legal as any)?.cns || '000000',
+                                certificateType: 'INTEIRO_TEOR',
+                              }),
+                            });
+                            toast.success(
+                              `Certidão ONR solicitada com sucesso! Protocolo: ${res?.protocol || 'Registrado'}`,
+                              { id: toastId }
+                            );
+                          } catch (err: any) {
+                            toast.error(
+                              err?.message ||
+                                'Não foi possível solicitar a certidão no ONR. Verifique as credenciais em Configurações.',
+                              { id: toastId }
+                            );
+                          }
                         }}
                         className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 uppercase tracking-widest flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded-md"
                       >

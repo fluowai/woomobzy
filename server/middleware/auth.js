@@ -93,6 +93,7 @@ export const verifyAuth = async (req, res, next) => {
     // Injetar dados no request
     const requestIdentity = getAuthenticatedRequestIdentity(user, profile);
     req.user = requestIdentity.user;
+    req.userId = requestIdentity.user.id;
     req.authUserId = requestIdentity.authUserId;
     req.userRole = normalizeRole(profile.role);
     req.profileRole = profile.role;
@@ -119,7 +120,7 @@ export const verifyAuth = async (req, res, next) => {
       authorizationExists: !!req.headers.authorization,
     });
 
-    if (profile.role === 'superadmin' && impersonationSessionId) {
+    if (req.userRole === 'superadmin' && impersonationSessionId) {
       authDebug('Superadmin impersonando via sessao curta', {
         requestedOrgId: requestedOrgId || null,
         impersonationSessionId: impersonationSessionId || null,
@@ -155,7 +156,7 @@ export const verifyAuth = async (req, res, next) => {
       req.tenantValidated = true;
       req.impersonationSessionId = session.id;
     } else if (
-      profile.role === 'superadmin' &&
+      req.userRole === 'superadmin' &&
       (requestedOrgId || impersonateId)
     ) {
       return res.status(403).json({
@@ -200,7 +201,7 @@ export const verifyAuth = async (req, res, next) => {
       req.orgId = org.id;
       req.isImpersonating = false;
       req.tenantValidated = true;
-    } else if (profile.role === 'superadmin') {
+    } else if (req.userRole === 'superadmin') {
       authDebug('Superadmin acessando sem org vinculada/solicitada');
       req.orgId = null;
       req.isImpersonating = false;
@@ -687,13 +688,35 @@ function normalizeRole(role) {
     .toLowerCase()
     .trim()
     .replace(/\s|_/g, '');
-  if (normalized === 'superadmin' || normalized === 'megaadmin')
+  if (
+    [
+      'superadmin',
+      'megaadmin',
+      'platformowner',
+      'platformadmin',
+      'masterreselleradmin',
+      'reselleradmin',
+    ].includes(normalized)
+  ) {
     return 'superadmin';
-  if (normalized === 'admin') return 'admin';
+  }
+  if (
+    [
+      'admin',
+      'customeradmin',
+      'supportmanager',
+      'financeadmin',
+      'deploymentmanager',
+    ].includes(normalized)
+  ) {
+    return 'admin';
+  }
   if (normalized === 'gerente') return 'gerente';
   if (normalized === 'broker') return 'broker';
   if (normalized === 'assistente') return 'assistente';
-  if (normalized === 'user') return 'user';
+  if (['user', 'customeruser', 'supportagent'].includes(normalized)) {
+    return 'user';
+  }
   // Default to 'user' for unknown roles instead of null
   console.warn('[Auth] Unknown role, defaulting to user:', role);
   return 'user';

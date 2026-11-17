@@ -212,7 +212,7 @@ export class PolicyEngine {
    */
   async executeToolCall(agentVersionId, toolName, input, context = {}) {
     const startTime = Date.now();
-    const { organizationId, conversationId, leadId } = context;
+    const { organizationId, conversationId, leadId, agentId } = context;
     
     try {
       // 1. Get agent's authorized tools
@@ -225,7 +225,7 @@ export class PolicyEngine {
           error: `Tool '${toolName}' not authorized for this agent`,
           code: 'TOOL_NOT_AUTHORIZED',
           executionTimeMs: Date.now() - startTime
-        }, { agentVersionId, toolName, input, organizationId });
+        }, { agentVersionId, agentId, toolName, input, organizationId });
       }
 
       // 2. Validate input schema
@@ -236,7 +236,7 @@ export class PolicyEngine {
           error: validation.error,
           code: 'INVALID_INPUT',
           executionTimeMs: Date.now() - startTime
-        }, { agentVersionId, toolName, input, organizationId });
+        }, { agentVersionId, agentId, toolName, input, organizationId });
       }
 
       // 3. Check rate limits
@@ -248,7 +248,7 @@ export class PolicyEngine {
           code: 'RATE_LIMIT_EXCEEDED',
           retryAfter: rateLimitCheck.retryAfter,
           executionTimeMs: Date.now() - startTime
-        }, { agentVersionId, toolName, input, organizationId });
+        }, { agentVersionId, agentId, toolName, input, organizationId });
       }
 
       // 4. Check approval requirement
@@ -259,7 +259,7 @@ export class PolicyEngine {
           code: 'APPROVAL_REQUIRED',
           requiresApproval: true,
           executionTimeMs: Date.now() - startTime
-        }, { agentVersionId, toolName, input, organizationId });
+        }, { agentVersionId, agentId, toolName, input, organizationId });
       }
 
       // 5. Execute tool based on handler type
@@ -272,7 +272,7 @@ export class PolicyEngine {
         success: true,
         data: result,
         executionTimeMs: Date.now() - startTime
-      }, { agentVersionId, toolName, input, organizationId, conversationId, leadId });
+      }, { agentVersionId, agentId, toolName, input, organizationId, conversationId, leadId });
 
     } catch (error) {
       logger.error('[PolicyEngine] Tool execution error', { 
@@ -286,7 +286,7 @@ export class PolicyEngine {
         error: error.message,
         code: 'EXECUTION_ERROR',
         executionTimeMs: Date.now() - startTime
-      }, { agentVersionId, toolName, input, organizationId });
+      }, { agentVersionId, agentId, toolName, input, organizationId });
     }
   }
 
@@ -522,7 +522,7 @@ export class PolicyEngine {
     supabase.from('ai_execution_logs').insert({
       organization_id: context.organizationId,
       tenant_id: context.organizationId,
-      agent_id: context.agentVersionId, // Will be resolved to agent_id via version
+      agent_id: context.agentId || null,
       event_type: 'TOOL_EXECUTION',
       channel: context.channel,
       instance_id: context.instanceId,

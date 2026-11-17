@@ -21,7 +21,8 @@ const LeadDetailsModal: React.FC<{
   lead: any;
   isOpen: boolean;
   onClose: () => void;
-}> = ({ lead, isOpen, onClose }) => {
+  onConverted?: () => void;
+}> = ({ lead, isOpen, onClose, onConverted }) => {
   if (!isOpen || !lead) return null;
 
   return (
@@ -154,10 +155,25 @@ const LeadDetailsModal: React.FC<{
             Fechar
           </button>
           <button
-            onClick={() => {
+            onClick={async () => {
+              const { error } = await supabase
+                .from('leads')
+                .update({
+                  status: 'novo',
+                  source: lead.source
+                    ? `${lead.source} -> CRM`
+                    : 'CRM',
+                })
+                .eq('id', lead.id);
+              if (error) {
+                logger.error('Erro ao converter lead da lista de espera:', error);
+                toast.error('Não foi possível mover o lead para o CRM.');
+                return;
+              }
               toast.success(
                 'Lead transformado e movido para o CRM com sucesso!'
               );
+              onConverted?.();
               onClose();
             }}
             className="px-8 py-3 bg-orange-500 text-white rounded-2xl font-bold text-sm hover:bg-orange-600 transition-shadow shadow-lg shadow-orange-500/20"
@@ -174,6 +190,9 @@ const WaitlistLeads: React.FC = () => {
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState('all');
+  const [periodFilter, setPeriodFilter] = useState<'all' | '7d' | '30d'>('all');
   const [selectedLead, setSelectedLead] = useState<any | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
@@ -199,12 +218,27 @@ const WaitlistLeads: React.FC = () => {
     }
   };
 
-  const filteredLeads = leads.filter(
-    (lead) =>
+  const filteredLeads = leads.filter((lead) => {
+    const matchesSearch =
+      !searchTerm ||
       lead.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lead.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.phone?.includes(searchTerm)
-  );
+      lead.phone?.includes(searchTerm);
+    const matchesSource =
+      sourceFilter === 'all' || lead.source === sourceFilter;
+    const createdAtMs = lead.created_at
+      ? new Date(lead.created_at).getTime()
+      : 0;
+    const daysMs =
+      periodFilter === '7d'
+        ? 7 * 24 * 60 * 60 * 1000
+        : periodFilter === '30d'
+          ? 30 * 24 * 60 * 60 * 1000
+          : 0;
+    const matchesPeriod =
+      periodFilter === 'all' || createdAtMs >= Date.now() - daysMs;
+    return matchesSearch && matchesSource && matchesPeriod;
+  });
 
   const handleExport = () => {
     const csvContent =
@@ -295,11 +329,34 @@ const WaitlistLeads: React.FC = () => {
             />
           </div>
           <div className="flex items-center gap-2">
+            {showFilters && (
+              <>
+                <select
+                  value={sourceFilter}
+                  onChange={(e) => setSourceFilter(e.target.value)}
+                  className="px-3 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-600 outline-none"
+                >
+                  <option value="all">Todas as origens</option>
+                  <option value="Espera WooTech Imob">Espera WooTech Imob</option>
+                  <option value="Espera ImobFluow">Espera ImobFluow</option>
+                </select>
+                <select
+                  value={periodFilter}
+                  onChange={(e) =>
+                    setPeriodFilter(e.target.value as 'all' | '7d' | '30d')
+                  }
+                  className="px-3 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-600 outline-none"
+                >
+                  <option value="all">Todo o período</option>
+                  <option value="7d">Últimos 7 dias</option>
+                  <option value="30d">Últimos 30 dias</option>
+                </select>
+              </>
+            )}
             <button
-              onClick={() =>
-                toast.info('Filtros avançados estarão disponíveis em breve!')
-              }
-              className="p-3 text-slate-400 hover:text-slate-600 transition"
+              onClick={() => setShowFilters((prev) => !prev)}
+              title="Filtros avançados"
+              className={`p-3 rounded-xl transition ${showFilters ? 'bg-orange-100 text-orange-600' : 'text-slate-400 hover:text-slate-600'}`}
             >
               <Filter size={20} />
             </button>
@@ -407,6 +464,7 @@ const WaitlistLeads: React.FC = () => {
       <LeadDetailsModal
         lead={selectedLead}
         isOpen={isDetailsOpen}
+        onConverted={fetchLeads}
         onClose={() => {
           setIsDetailsOpen(false);
           setSelectedLead(null);

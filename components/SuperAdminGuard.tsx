@@ -5,6 +5,7 @@ import {
   getTenantPanelPath,
   isMegaAdminProfile,
   isPlatformAdminRole,
+  isPlatformOwnerRole,
 } from '../src/lib/panelNavigation';
 import FullScreenSpinner from './FullScreenSpinner';
 
@@ -39,21 +40,22 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
   if (loading) return <FullScreenSpinner />;
 
   const role = (profile?.role || '').toLowerCase();
-  const isSuperAdmin = isPlatformAdminRole(role);
+  const isSuperAdmin = isPlatformAdminRole(role) || isPlatformOwnerRole(role);
 
   if (isSuperAdmin && !isImpersonating) {
     const path = location.pathname;
     const isCurrentPathPublic = isPublicPath(path);
-    const isMegaAdmin = isMegaAdminProfile(profile);
+    const isMegaAdmin = isMegaAdminProfile(profile) || (isPlatformOwnerRole(role) && !profile?.organization?.is_reseller);
 
     if (isMegaAdmin) {
       if (
         !isCurrentPathPublic &&
         !path.startsWith('/megaadmin') &&
+        !path.startsWith('/woo-control') &&
         path !== '/login' &&
         path !== '/impersonate'
       ) {
-        return <Navigate to="/megaadmin" replace />;
+        return <Navigate to={isPlatformOwnerRole(role) ? '/woo-control' : '/megaadmin'} replace />;
       }
     } else {
       if (
@@ -65,7 +67,7 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
         return <Navigate to="/superadmin" replace />;
       }
     }
-  } else if (profile && !isPlatformAdminRole(role) && !isImpersonating) {
+  } else if (profile && !isSuperAdmin && !isImpersonating) {
     const path = location.pathname;
     if (path.startsWith('/megaadmin') || path.startsWith('/superadmin')) {
       const target = getTenantPanelPath(profile);

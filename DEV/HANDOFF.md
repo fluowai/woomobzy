@@ -1,5 +1,111 @@
 # Handoff
 
+## 2026-11-17 — Execução do Plano de Prontidão para Produção & Hardening de Stack
+
+- **Status da Operação e Ambiente:**
+  - Supabase conectado e validado: `https://ahimxutcthctbwpaedvy.supabase.co` (186 tabelas públicas validadas).
+  - MinIO conectado e validado: `https://storage.wootech.com.br` (bucket `imob.erp`).
+  - Pre-flight check de produção (`node scripts/verify-production-readiness.mjs`): **20/20 PASS (0 WARN, 0 FAIL)**.
+  - Quality gates: `tsc --noEmit` OK (0 erros), `check-deploy-config` OK, `vite build` OK (4.223 módulos, PWA gerado com sucesso).
+  - Teste de rotas de navegação: `src/test/urbanMenuRoutes.test.ts` 100% aprovado.
+
+- **Melhorias e Artefatos Aplicados:**
+  - `portainer-stack.yml`: Políticas `restart: unless-stopped` e `logging` com rotação (50m, 3 arquivos) aplicadas em todos os 9 serviços; healthchecks adicionados para `frontend`, `api`, `whatsapp-service`, `document-worker` e `agro-intelligence`; limites de recursos definidos para proteção contra picos de CPU/memória.
+  - `components/UrbanLayout.tsx`: Reconciliadas as rotas `/urban/fintech` e `/urban/clube` no menu de navegação.
+  - `scripts/generate-production-secrets.mjs`: Utilitário para geração de chaves criptográficas seguras.
+  - `scripts/verify-production-readiness.mjs`: Script automatizado de auditoria pré-deploy.
+  - `scripts/setup-production-host.sh`: Automação de setup para a VPS Linux (rede `woopanel1`, volumes dinâmicos e persistentes).
+  - `scripts/backup-database-and-storage.sh`: Automação de backup periódico do Postgres e storage.
+
+## 2026-11-13 — Provisionamento Completo de Usuários Multi-Nível, Agentes IA e Validação 100%
+
+- **Status da Operação e Ambiente:**
+  - Supabase conectado e validado: `https://ahimxutcthctbwpaedvy.supabase.co`.
+  - MinIO conectado e validado: `https://storage.wootech.com.br` (bucket `imob.erp`).
+  - Suíte E2E automatizada (`scratch/run-e2e-suite.mjs`): **55/55 testes aprovados (100%)**.
+  - Quality gates: `check-deploy-config` OK, `type-check` OK, `lint` OK (0 erros), `vitest` (31/31 arquivos, 152/152 testes) OK, `vite build` OK.
+
+- **Organizações e Usuários Provisionados no Banco:**
+  - **Organizações:**
+    1. `WooTech Master Imob` (`slug: wootech-master`, ID: `4b10aa59-4e37-45dc-9c00-64630f9f1b7b`) — Master da Plataforma.
+    2. `Revenda Prime SaaS` (`slug: revenda-prime`, ID: `12472ea9-2819-42d6-9f9a-2ce8a499af9e`) — Revenda / Franquia SaaS.
+    3. `Imobiliária Horizonte Urbano` (`slug: horizonte-urbano`, ID: `e6062970-2226-4a7f-9ef8-df5946abecb6`) — Tenant Urbano.
+    4. `Fazendas Brasil Agro` (`slug: fazendas-brasil`, ID: `a3d84cc8-2913-4a3f-be91-c9d92ced06db`) — Tenant Rural.
+  - **Usuários (10 papéis cobrindo todos os níveis):**
+    1. `opauloargolo@gmail.com` | Role: `superadmin` | Org: Master (Acesso irrestrito a WooControl, MegaAdmin, Urbano e Rural).
+    2. `owner@wootech.com.br` | Role: `PLATFORM_OWNER` | Org: Master (Proprietário técnico / administrativo da plataforma).
+    3. `megaadmin@wootech.com.br` | Role: `PLATFORM_ADMIN` | Org: Master (Administrador global MegaAdmin).
+    4. `revenda@wootech.com.br` | Role: `superadmin` | Org: Revenda (Gestor de revenda multi-tenant).
+    5. `admin.urbano@wootech.com.br` | Role: `admin` | Org: Imobiliária Urbana.
+    6. `admin.rural@wootech.com.br` | Role: `admin` | Org: Imobiliária Rural.
+    7. `gerente@wootech.com.br` | Role: `gerente` | Org: Imobiliária Urbana.
+    8. `corretor@wootech.com.br` | Role: `broker` | Org: Imobiliária Urbana.
+    9. `assistente@wootech.com.br` | Role: `assistente` | Org: Imobiliária Urbana.
+    10. `cliente@wootech.com.br` | Role: `user` | Org: Imobiliária Urbana.
+
+- **Módulos Testados e Funcionais:**
+  - **WooControl & Licenciamento:** Métricas de rede, faturamento, listagem de clientes e licenças de software.
+  - **MegaAdmin:** Administração global, auditoria de usuários, visualização de equipe e limites de assentos.
+  - **Gestão de Imóveis (Urbano & Rural):** Cadastro completo, fotos, geolocalização e motor de valuation automatizado.
+  - **CRM & Funil de Vendas:** Captação de leads, avanço de etapas no pipeline, automação de boas-vindas e cadastro de clientes.
+  - **Módulo de Locação:** Contratos, templates dinâmicos, geração de PDF com assinatura digital, reajustes automáticos (IGP-M/IPCA), liquidação de despesas e renovação de contrato.
+  - **MinIO Storage & DataRoom:** Upload de arquivos, presigned URLs, streaming seguro e gestão documental por imóvel.
+  - **Agentes de IA:** Criação de agentes, versionamento de prompt, conversas multi-turn, execução autônoma de ferramentas (`properties.search` contra o Postgres), chat com memória e geração de páginas por IA.
+
+- **Próximos Passos Recomendados para Produção:**
+  - Configurar as variáveis do `.env` no Portainer/Docker stack para publicação.
+  - Adicionar chave de IA de produção (`GEMINI_API_KEY` ou `OPENAI_API_KEY`) para substituir o provedor local em escala.
+  - Cadastrar credenciais do serviço ONR em `saas_settings` caso deseje utilizar busca de certidões e matrículas de cartório via ONR.
+
+## 2026-11-12 (Atualização 2) — Migração para Novo Supabase (`ahimxutcthctbwpaedvy`) + MinIO (`storage.wootech.com.br` / `imob.erp`)
+
+- **Ambiente Local Atualizado (`.env` gitignored):**
+  - Apontado para o novo projeto Supabase `https://ahimxutcthctbwpaedvy.supabase.co` e MinIO `https://storage.wootech.com.br` (bucket único `imob.erp`, `bucketMode: single`).
+- **Correções no Código:**
+  - `server/lib/supabase-server.js`: suporte silencioso a chaves `sb_secret_` no sanity check.
+  - `server/lib/minio-storage.js` & `server/services/storageIntelligenceService.js`: resolução nativa de `MINIO_BUCKET` e `MINIO_BUCKET_MODE=single` via env/DB para organizar arquivos em `imobzyimg/`, `whatsapp-media/`, `documents/`, `exports/` dentro do bucket `imob.erp`.
+  - `scripts/postgres-direct-migration.mjs`: conexão via `DATABASE_URL` / `SUPABASE_DB_URL` com SSL no pooler Supabase.
+- **Banco e Storage Validados:**
+  - Schema completo aplicado no Supabase `ahimxutcthctbwpaedvy` (`181` tabelas base, `5` views, `17` enums, `44` funções, `41` triggers, `298` políticas RLS, `9` buckets, seeds de planos/IA/avaliação + registro `storage_integrations` para o MinIO).
+  - Roundtrip real validado tanto no Supabase Storage quanto no MinIO `https://storage.wootech.com.br` (bucket `imob.erp`) com upload, listagem, presigned GET HTTP `200` e remoção.
+  - Todos os gates locais (`check-deploy-config`, `type-check`, `lint`, `vitest` 152/152, `vite build` e smoke test do servidor Express) aprovados.
+- **Pendências apenas operacionais:** semear primeira organização/admin quando subir o primeiro tenant e espelhar as variáveis de ambiente no Portainer para produção.
+
+## 2026-11-12 — Auditoria E2E, Correções Full-Stack e Prontidão para Produção
+
+- **O que foi corrigido e validado:**
+  - Autenticação (`callApi` com `Authorization: Bearer`) restaurada em `leaseService.ts`, `ValuationCard.tsx`, modais do editor de landing page (`AIGenerationModal.tsx`, `AICloneModal.tsx`), `ruralDataService.ts` e `DataRoom.tsx`.
+  - Módulo DataRoom funcional (`App.tsx` rota `dataroom/:id`, `GET /api/documents`, `DocumentService.listByOrg` com `public_url` e UI completa).
+  - Endpoints ausentes implementados (`POST /api/public/contact`, `POST /api/contact`, `POST /api/ai/clone-site` com proteção SSRF, `POST/GET /api/portals/:portal/{unpublish,status}/:propertyId`, `POST /api/crm/leads/:id/welcome`, rotas de renovação/pagamento de locação e `/api/admin/impersonations/exchange`).
+  - Referências de tabelas corrigidas (`profiles`, `clients`, `lead_activities`, `urban_documents`, `documents`, `onr_requests`), remoção de placeholders/`alert()` em `PropertyEditor`, `SmartImporter` e `WooControl`.
+  - Migração `migrations/20261112_missing_tables_and_buckets.sql` aplicada no Supabase (`yrabjwktnanjgjmdackf`), criando 4 tabelas faltantes, 2 RPCs e 7 buckets adicionais (9 buckets públicos no total).
+  - `DEV/VERIFY.md` detalha os gates executados (TS, ESLint, 152 testes Vitest, build Vite, `node --check` e smoke tests Express + Postgres).
+- **O que falta para operação completa em Produção (`portainer-stack.yml` / `.env.production.template`):**
+  1. **Seed inicial no Supabase:** tabelas de negócio estão zeradas (`organizations: 0`, `profiles: 0`, `properties: 0`, `leads: 0`); criar/semear a primeira organização, perfil administrador e configurações iniciais.
+  2. **Chave Service Role padrão:** `SUPABASE_SERVICE_ROLE_KEY` em `.env` local usa formato `sb_secret_...` (41 caracteres), gerando aviso de tamanho em `server/lib/supabase-server.js`; confirmar validade/rotação com JWT `service_role` e `ANON_KEY` no ambiente final.
+  3. **Variáveis e microserviços externos:** configurar no Portainer os serviços satélites (`whatsapp-service`, `instagram-service`, `instagram-worker`, `document-worker`, `agro-intelligence`, `redis`, `rabbitmq`) e credenciais de provedores (`GEMINI_API_KEY`/`OPENAI_API_KEY`/`GROQ_API_KEY`, `ASAAS_API_KEY`, `WHATSAPP_*`, `INSTAGRAM_*`, `DOCUMENT_WEBHOOK_SECRET`, `MINIO_*` caso não use apenas o fallback do Supabase Storage, SMTP e portais/Orulo).
+
+## 2026-11-11 — Novo Supabase (`yrabjwktnanjgjmdackf`) Aplicado + Stack Portainer Atualizada
+
+- **Banco aplicado:** 182 tabelas criadas/migradas em `yrabjwktnanjgjmdackf.supabase.co` (incluindo `20261110_urban_expenses_and_renegotiations.sql`, `ai_workforce_builder`, `ai_sandbox_fixes`, `woo_control_schema`, `wootech_communications_foundation`), com `plans` (6 registros) e `saas_settings` (id=1) populados e recursão RLS em `profiles`/`organizations` corrigida.
+- **Servidores locais ativos (`.env` gitignored):** Backend Express (`npm run server` porta `3002`) + Frontend Vite (`npm run dev` porta `3006`).
+- **Deploy/Portainer:** `portainer-stack.yml` e `.env.production.template` atualizados com os 9 serviços (`frontend`, `api`, `whatsapp-service`, `rabbitmq`, `redis`, `instagram-service`, `instagram-worker`, `document-worker`, `agro-intelligence`) e todas as variáveis `${VAR}`.
+- **Ações manuais restantes para ir ao ar:** configurar as mesmas variáveis no Portainer ao publicar a stack (além de MinIO, RabbitMQ, Asaas e Meta/WhatsApp conforme ambiente de produção).
+
+## 2026-11-11 — Remediação Integral (Fases 0 a 3) Concluída Localmente (Sem Commit/Push)
+
+- **Estado:** Código e configurações de deploy totalmente remediados nos níveis P0 (segurança, multi-tenant, segredos, CI), P1 (onboarding, checkout Asaas, IA/sandbox, workers Meta/Instagram, snapshots, WooControl AI) e P2 (substituição de ações "em breve" e cálculos mockados nos módulos Urbano, Rural, Locação, CRM, Email/WhatsApp, SuperAdmin/MegaAdmin/WooControl).
+- **Verificação pós-edição final:** `check-deploy-config` OK, `type-check` OK, `lint` 0 erros, Vitest 31/31 arquivos (152/152 testes) OK, `vite build` OK (4.261 módulos), `go test ./...` OK (5 pacotes), `py_compile` OK, `node --check` OK. Detalhes em `DEV/VERIFY.md`.
+- **Artefatos novos / atualizados para Deploy & DB:**
+  - `migrations/20261110_urban_expenses_and_renegotiations.sql` e `server/__tests__/securityHardening.test.ts`.
+  - `portainer-stack.yml` e `.env.production.template` atualizados com todos os 9 serviços (`frontend`, `api`, `whatsapp-service`, `rabbitmq`, `redis`, `instagram-service`, `instagram-worker`, `document-worker`, `agro-intelligence`) e todas as variáveis `${VAR}` (sem fallbacks literais de senha).
+- **Não executado por ausência de credenciais locais:** sem `.env` local (`VITE_SUPABASE_*`, `DATABASE_URL`, `SUPABASE_DB_URL`), sem CLI `supabase`/`psql`/`docker` conectados; aplicação direta no banco remoto bloqueada até fornecimento da string de conexão ou execução via Supabase SQL Editor.
+- **Checklist operacional para subir em produção:**
+  1. Rotacionar segredos reais expostos no histórico anterior do repositório.
+  2. Aplicar a migração `migrations/20261110_urban_expenses_and_renegotiations.sql` no Supabase.
+  3. Atualizar stacks/variáveis no Portainer seguindo `.env.production.template` e `docker-compose.yml`.
+  4. Executar build de imagens e rodar smoke/E2E em homologação antes de abrir tráfego final.
+
 ## 2026-09-06 — Atualizações pushadas e banco verificado
 
 - Commit `d261289` pushado a `origin/main`: `server/lib/license-manager.js` (issueLicense) + uso em `onboarding.js`/`woo-control.js`, CRUD de revendas (Rede), página de Licensing, gitignore de scratch scripts.

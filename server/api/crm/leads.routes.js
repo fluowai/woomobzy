@@ -488,6 +488,63 @@ router.delete('/leads/:id', verifyAuth, requireTenant, async (req, res) => {
 });
 
 router.post(
+  '/leads/:id/welcome',
+  verifyAuth,
+  requireTenant,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { data: lead, error: findError } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('id', id)
+        .eq('organization_id', req.orgId)
+        .maybeSingle();
+
+      if (findError) throw findError;
+      if (!lead) {
+        return res.status(404).json({ error: 'Lead nao encontrado' });
+      }
+
+      const { error: activityError } = await supabase
+        .from('lead_activities')
+        .insert({
+          organization_id: req.orgId,
+          lead_id: lead.id,
+          type: 'WhatsApp',
+          description: 'Mensagem de boas-vindas enviada',
+          created_by: req.authUserId || req.user?.id || null,
+          metadata: { source: 'crm-welcome', phone: lead.phone || null },
+        });
+
+      if (activityError) {
+        console.warn(
+          '[Leads] Nao foi possivel registrar atividade de boas-vindas:',
+          activityError.message
+        );
+      }
+
+      const { data: updatedLead } = await supabase
+        .from('leads')
+        .update({ last_contacted_at: new Date().toISOString() })
+        .eq('id', lead.id)
+        .eq('organization_id', req.orgId)
+        .select()
+        .maybeSingle();
+
+      res.json({
+        success: true,
+        message: 'Mensagem de boas-vindas registrada com sucesso',
+        lead: updatedLead || lead,
+      });
+    } catch (err) {
+      console.error('[Leads] Welcome error:', err.message);
+      res.status(500).json({ error: 'Erro ao registrar boas-vindas' });
+    }
+  }
+);
+
+router.post(
   '/leads/bulk-delete',
   verifyAuth,
   requireTenant,

@@ -77,6 +77,20 @@ router.post(
   }
 );
 
+router.get('/', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const propertyId = req.query.propertyId ? String(req.query.propertyId) : null;
+    if (propertyId && !isValidUUID(propertyId)) {
+      return res.status(400).json({ error: 'ID de propriedade invalido' });
+    }
+
+    const documents = await DocumentService.listByOrg(req.orgId, propertyId);
+    res.json({ success: true, documents });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.get('/:propertyId', verifyAuth, requireTenant, async (req, res) => {
   try {
     const { propertyId } = req.params;

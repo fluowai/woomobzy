@@ -37,6 +37,12 @@ const Cobranca: React.FC = () => {
     description: '',
     type: 'aluguel', // aluguel, parcela_venda, entrada
   });
+  const [renegotiatingBilling, setRenegotiatingBilling] = useState<Billing | null>(null);
+  const [renegotiationForm, setRenegotiationForm] = useState({
+    installments: 3,
+    entry: 0,
+    first_due_date: new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10),
+  });
 
   const loadBillings = useCallback(async () => {
     const data = await cobrancaService.listBillings();
@@ -429,9 +435,14 @@ const Cobranca: React.FC = () => {
                           )}
                           {b.status === 'vencido' && (
                             <button
-                              onClick={() =>
-                                toast.info('Renegociação em breve')
-                              }
+                              onClick={() => {
+                                setRenegotiatingBilling(b);
+                                setRenegotiationForm({
+                                  installments: 3,
+                                  entry: 0,
+                                  first_due_date: new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10),
+                                });
+                              }}
                               className="p-2 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100"
                               title="Renegociar"
                             >
@@ -546,6 +557,82 @@ const Cobranca: React.FC = () => {
               className="w-full mt-6 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-500"
             >
               Gerar Boleto
+            </button>
+          </div>
+        </div>
+      )}
+
+      {renegotiatingBilling && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-bold text-slate-900">Renegociar Débito</h3>
+              <button
+                onClick={() => setRenegotiatingBilling(null)}
+                className="p-2 text-slate-400 hover:text-slate-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="rounded-xl bg-orange-50 border border-orange-200 p-3 text-sm text-orange-900">
+              Valor original: <strong>{cobrancaService.formatCurrency(renegotiatingBilling.amount || 0)}</strong>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase">Entrada (R$)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={renegotiationForm.entry}
+                  onChange={(e) => setRenegotiationForm((f) => ({ ...f, entry: Number(e.target.value) }))}
+                  className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase">Parcelas</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={24}
+                  value={renegotiationForm.installments}
+                  onChange={(e) => setRenegotiationForm((f) => ({ ...f, installments: Number(e.target.value) }))}
+                  className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-slate-500 uppercase">1º Vencimento</label>
+              <input
+                type="date"
+                value={renegotiationForm.first_due_date}
+                onChange={(e) => setRenegotiationForm((f) => ({ ...f, first_due_date: e.target.value }))}
+                className="w-full mt-1 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200"
+              />
+            </div>
+            <button
+              onClick={async () => {
+                const res = await cobrancaService.createRenegotiation(
+                  renegotiatingBilling.contract_id || '',
+                  {
+                    billingId: renegotiatingBilling.id,
+                    total_debt: Number(renegotiatingBilling.amount || 0),
+                    installments: renegotiationForm.installments,
+                    entry: renegotiationForm.entry,
+                    first_due_date: renegotiationForm.first_due_date,
+                  }
+                );
+                if (!res?.success) {
+                  toast.error('Erro ao registrar renegociação.');
+                  return;
+                }
+                toast.success('Acordo de renegociação gerado com sucesso!');
+                setRenegotiatingBilling(null);
+                await loadBillings();
+                await loadDashboard();
+              }}
+              className="w-full bg-orange-600 text-white py-3 rounded-xl font-bold hover:bg-orange-500"
+            >
+              Confirmar Acordo
             </button>
           </div>
         </div>

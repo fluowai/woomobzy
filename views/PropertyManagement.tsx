@@ -43,6 +43,9 @@ const INITIAL_ORULO_FILTERS = {
 const PropertyManagement: React.FC = () => {
   const [viewType, setViewType] = useState<'grid' | 'list'>('grid');
   const [activeTab, setActiveTab] = useState<'all' | 'pending'>('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [oruloSyncing, setOruloSyncing] = useState(false);
@@ -194,11 +197,62 @@ const PropertyManagement: React.FC = () => {
   const getPortalPublishes = (property: Property) =>
     (property as any).portal_publishes || {};
 
+  const availableTypes = Array.from(
+    new Set(
+      properties
+        .filter((p) => (isRural ? isRuralProperty(p) : isUrbanProperty(p)))
+        .map((p) => String((p as any).property_type || p.type || '').trim())
+        .filter(Boolean)
+    )
+  ).sort();
+
+  const availableStatuses = Array.from(
+    new Set(
+      properties
+        .filter((p) => (isRural ? isRuralProperty(p) : isUrbanProperty(p)))
+        .map((p) => String(p.status || '').trim())
+        .filter(Boolean)
+    )
+  ).sort();
+
   const filteredProperties = properties.filter((p) => {
     const matchesNiche = isRural ? isRuralProperty(p) : isUrbanProperty(p);
     if (!matchesNiche) return false;
-    if (activeTab === 'pending') return p.status === 'Pendente';
-    return p.status !== 'Pendente';
+    if (activeTab === 'pending' && p.status !== 'Pendente') return false;
+    if (activeTab !== 'pending' && p.status === 'Pendente') return false;
+
+    if (typeFilter) {
+      const pType = String((p as any).property_type || p.type || '').trim();
+      if (pType !== typeFilter) return false;
+    }
+
+    if (statusFilter && String(p.status || '').trim() !== statusFilter) {
+      return false;
+    }
+
+    if (searchTerm.trim()) {
+      const q = searchTerm.trim().toLowerCase();
+      const loc = [
+        p.location?.city,
+        p.location?.state,
+        p.location?.neighborhood,
+        p.location?.address,
+        (p as any).city,
+        (p as any).state,
+        (p as any).neighborhood,
+        (p as any).address,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      const matches =
+        String(p.title || '').toLowerCase().includes(q) ||
+        String(p.id || '').toLowerCase().includes(q) ||
+        loc.includes(q);
+      if (!matches) return false;
+    }
+
+    return true;
   });
 
   const getUrbanFeatureSummary = (property: Property) => {
@@ -362,17 +416,39 @@ const PropertyManagement: React.FC = () => {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input
             type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Buscar por título, ID ou localização..."
             className="w-full pl-12 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
           />
         </div>
         <div className="flex items-center gap-3 w-full lg:w-auto">
-          <button onClick={() => toast.info('Filtro por tipo em breve!')} className="flex-1 lg:flex-none px-4 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl flex items-center justify-between gap-2 hover:bg-gray-50 transition-colors">
-            Tipo <ChevronDown size={16} className="text-gray-400" />
-          </button>
-          <button onClick={() => toast.info('Filtro por status em breve!')} className="flex-1 lg:flex-none px-4 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl flex items-center justify-between gap-2 hover:bg-gray-50 transition-colors">
-            Status <ChevronDown size={16} className="text-gray-400" />
-          </button>
+          <select
+            aria-label="Filtrar por tipo"
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="flex-1 lg:flex-none px-4 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="">Todos os tipos</option>
+            {availableTypes.map((typeOption) => (
+              <option key={typeOption} value={typeOption}>
+                {typeOption}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Filtrar por status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="flex-1 lg:flex-none px-4 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="">Todos os status</option>
+            {availableStatuses.map((statusOption) => (
+              <option key={statusOption} value={statusOption}>
+                {statusOption}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 

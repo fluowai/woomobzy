@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { supabase } from '@/services/supabase';
+import { useAuth } from '@/context/AuthContext';
 import {
   Megaphone,
   Globe2,
@@ -7,12 +10,12 @@ import {
   Layout,
   Search,
   MapPin,
-  Settings,
   Eye,
   CheckCircle2,
   Tractor,
   Building2,
   ArrowRight,
+  Trash2,
 } from 'lucide-react';
 
 interface SeoPage {
@@ -109,9 +112,93 @@ const SITE_TEMPLATES = [
   },
 ];
 
+const slugify = (val: string) =>
+  val
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
 const MarketingManager: React.FC = () => {
+  const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState<'seo' | 'templates'>('seo');
-  const [seoPages] = useState<SeoPage[]>([]);
+  const [seoPages, setSeoPages] = useState<SeoPage[]>([]);
+  const [keyword, setKeyword] = useState('');
+  const [targetCity, setTargetCity] = useState('');
+  const [targetState, setTargetState] = useState('');
+  const [savingSeo, setSavingSeo] = useState(false);
+  const [previewPage, setPreviewPage] = useState<SeoPage | null>(null);
+  const [previewTemplate, setPreviewTemplate] = useState<
+    (typeof SITE_TEMPLATES)[number] | null
+  >(null);
+
+  useEffect(() => {
+    const loadSeo = async () => {
+      if (!profile?.organization_id) return;
+      const { data } = await supabase
+        .from('site_settings')
+        .select('layout_config')
+        .eq('organization_id', profile.organization_id)
+        .maybeSingle();
+      const pages = (data?.layout_config as Record<string, any> | undefined)
+        ?.seo_pages;
+      if (Array.isArray(pages)) setSeoPages(pages);
+    };
+    loadSeo();
+  }, [profile?.organization_id]);
+
+  const persistSeoPages = async (nextPages: SeoPage[]) => {
+    setSeoPages(nextPages);
+    if (!profile?.organization_id) return;
+    const { data: current } = await supabase
+      .from('site_settings')
+      .select('layout_config')
+      .eq('organization_id', profile.organization_id)
+      .maybeSingle();
+    const { error } = await supabase
+      .from('site_settings')
+      .upsert(
+        {
+          organization_id: profile.organization_id,
+          layout_config: {
+            ...((current?.layout_config as Record<string, any>) || {}),
+            seo_pages: nextPages,
+          },
+        },
+        { onConflict: 'organization_id' }
+      );
+    if (error) {
+      toast.error('Erro ao salvar páginas SEO no banco.');
+    }
+  };
+
+  const handleGenerateSeo = async () => {
+    if (!keyword.trim() || !targetCity.trim() || !targetState.trim()) {
+      toast.error('Preencha palavra-chave, cidade e estado.');
+      return;
+    }
+    setSavingSeo(true);
+    try {
+      const slug = `/${slugify(keyword)}-${slugify(targetCity)}-${slugify(targetState)}`;
+      const newPage: SeoPage = {
+        id: String(Date.now()),
+        keyword: keyword.trim(),
+        targetCity: targetCity.trim(),
+        targetState: targetState.trim().toUpperCase(),
+        urlSlug: slug,
+        status: 'published',
+        visits: 0,
+      };
+      await persistSeoPages([newPage, ...seoPages]);
+      setKeyword('');
+      setTargetCity('');
+      setTargetState('');
+      toast.success(`Página SEO ${slug} gerada e publicada!`);
+    } finally {
+      setSavingSeo(false);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -147,8 +234,8 @@ const MarketingManager: React.FC = () => {
             <h2 className="text-lg font-bold text-slate-800">
               Estratégia de Dominação Local
             </h2>
-            <span className="rounded-xl bg-amber-50 px-4 py-2 text-sm font-bold text-amber-700">
-              Backend de SEO ainda não implementado
+            <span className="rounded-xl bg-emerald-50 px-4 py-2 text-xs font-bold text-emerald-700">
+              {seoPages.length} página(s) SEO publicada(s)
             </span>
           </div>
 
@@ -164,22 +251,31 @@ const MarketingManager: React.FC = () => {
               </p>
               <div className="space-y-3">
                 <input
-                  placeholder="Palavra-chave (ex: crm para imobiliaria)"
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  placeholder="Palavra-chave (ex: fazendas a venda)"
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-emerald-500"
                 />
                 <input
+                  value={targetCity}
+                  onChange={(e) => setTargetCity(e.target.value)}
                   placeholder="Cidade Alvo (ex: Curitiba)"
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-emerald-500"
                 />
                 <input
+                  value={targetState}
+                  onChange={(e) => setTargetState(e.target.value)}
                   placeholder="Estado (ex: PR)"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-emerald-500"
+                  maxLength={2}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm uppercase outline-none focus:border-emerald-500"
                 />
                 <button
-                  disabled
-                  className="w-full cursor-not-allowed bg-slate-300 text-white font-bold py-2 rounded-lg"
+                  type="button"
+                  disabled={savingSeo}
+                  onClick={handleGenerateSeo}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg transition disabled:opacity-50"
                 >
-                  Gerar e Publicar
+                  {savingSeo ? 'Gerando...' : 'Gerar e Publicar'}
                 </button>
               </div>
             </div>
@@ -212,11 +308,21 @@ const MarketingManager: React.FC = () => {
                       <p className="font-bold text-slate-800">{page.visits}</p>
                     </div>
                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition">
-                      <button className="p-2 text-slate-400 hover:text-emerald-600 bg-slate-50 hover:bg-emerald-50 rounded-lg">
+                      <button
+                        onClick={() => setPreviewPage(page)}
+                        title="Visualizar meta tags"
+                        className="p-2 text-slate-400 hover:text-emerald-600 bg-slate-50 hover:bg-emerald-50 rounded-lg"
+                      >
                         <Eye size={16} />
                       </button>
-                      <button className="p-2 text-slate-400 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 rounded-lg">
-                        <Settings size={16} />
+                      <button
+                        onClick={() =>
+                          persistSeoPages(seoPages.filter((p) => p.id !== page.id))
+                        }
+                        title="Remover página SEO"
+                        className="p-2 text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 rounded-lg"
+                      >
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   </div>
@@ -224,8 +330,8 @@ const MarketingManager: React.FC = () => {
               ))}
               {seoPages.length === 0 && (
                 <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-                  Nenhuma página SEO real está cadastrada. A persistência deste
-                  módulo ainda precisa ser implementada no backend.
+                  Nenhuma página SEO cadastrada ainda. Use o gerador ao lado para
+                  publicar sua primeira landing page geolocalizada.
                 </div>
               )}
             </div>
@@ -270,7 +376,10 @@ const MarketingManager: React.FC = () => {
                         <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
                           Disponível
                         </span>
-                        <button className="text-sm font-semibold text-slate-700 flex items-center gap-1 group-hover:text-emerald-600 transition">
+                        <button
+                          onClick={() => setPreviewTemplate(template)}
+                          className="text-sm font-semibold text-slate-700 flex items-center gap-1 group-hover:text-emerald-600 transition"
+                        >
                           Ver Demo <ArrowRight size={14} />
                         </button>
                       </div>
@@ -315,7 +424,10 @@ const MarketingManager: React.FC = () => {
                         <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
                           Disponível
                         </span>
-                        <button className="text-sm font-semibold text-slate-700 flex items-center gap-1 group-hover:text-blue-600 transition">
+                        <button
+                          onClick={() => setPreviewTemplate(template)}
+                          className="text-sm font-semibold text-slate-700 flex items-center gap-1 group-hover:text-blue-600 transition"
+                        >
                           Ver Demo <ArrowRight size={14} />
                         </button>
                       </div>
@@ -323,6 +435,62 @@ const MarketingManager: React.FC = () => {
                   </div>
                 )
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {previewPage && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-3 shadow-xl">
+            <h3 className="font-bold text-lg text-slate-900">
+              Preview Meta Tags SEO
+            </h3>
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+              <p className="text-xs text-emerald-700 font-mono">
+                {previewPage.urlSlug}
+              </p>
+              <p className="text-sm font-bold text-blue-700">
+                {previewPage.keyword} em {previewPage.targetCity} -{' '}
+                {previewPage.targetState}
+              </p>
+              <p className="text-xs text-slate-600">
+                Encontre as melhores oportunidades de {previewPage.keyword} em{' '}
+                {previewPage.targetCity}/{previewPage.targetState} com suporte
+                completo e documentação validada.
+              </p>
+            </div>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setPreviewPage(null)}
+                className="px-4 py-2 rounded-lg bg-slate-800 text-white text-xs font-bold"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {previewTemplate && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-3 shadow-xl">
+            <h3 className="font-bold text-lg text-slate-900">
+              Template: {previewTemplate.name}
+            </h3>
+            <p className="text-xs uppercase font-bold text-emerald-600">
+              Segmento: {previewTemplate.type === 'rural' ? 'Rural / Agro' : 'Urbano'}
+            </p>
+            <p className="text-sm text-slate-600">
+              {previewTemplate.description}
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setPreviewTemplate(null)}
+                className="px-4 py-2 rounded-lg bg-slate-800 text-white text-xs font-bold"
+              >
+                Fechar
+              </button>
             </div>
           </div>
         </div>

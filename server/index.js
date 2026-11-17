@@ -404,6 +404,14 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/admin/templates', adminTemplateRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/public', publicRoutes);
+app.post('/api/contact', (req, res, next) => {
+  req.url = '/contact';
+  return publicRoutes(req, res, next);
+});
+app.post('/api/support/exchange', (req, res, next) => {
+  req.url = '/impersonations/exchange';
+  return adminRoutes(req, res, next);
+});
 app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/domains', domainRoutes);
 app.use('/api/crm', crmRoutes);
@@ -434,13 +442,10 @@ app.use('/api/valuation', valuationRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/external-data', externalDataRoutes);
 app.use('/api/quiz', quizRoutes);
-// console.error('[INIT] Registrando healthRoutes...');
-// app.use('/health', healthRoutes);
-// console.error('[INIT] healthRoutes registrado.');
+app.use('/health', healthRoutes);
 
 // Teste: rota simples
 app.get('/test-health', (req, res) => {
-  console.error('[TEST] /test-health chamado');
   res.json({ test: 'ok' });
 });
 app.use('/api/jarvis', jarvisRoutes);
@@ -530,14 +535,18 @@ app.get('/api/system-status', async (req, res) => {
 app.get('/', (req, res) => res.send(`${PLATFORM_COMMERCIAL_NAME} API Online`));
 
 // --- Instagram Service Proxy ---
-// Forward /api/instagram/* to the Instagram service on port 3200
-app.use('/api/instagram', (req, res) => {
-  const url = new URL(req.originalUrl || req.url, 'http://localhost:3200');
+// Forward /api/instagram/* to the Instagram service
+const instagramProxyHandler = (req, res) => {
+  const targetBase =
+    process.env.INSTAGRAM_SERVICE_URL ||
+    (isProduction ? 'http://instagram-service:3200' : 'http://127.0.0.1:3200');
+  const target = new URL(targetBase);
+  const url = new URL(req.originalUrl || req.url, targetBase);
 
   const proxyReq = http.request(
     {
-      hostname: 'localhost',
-      port: 3200,
+      hostname: target.hostname,
+      port: target.port || (target.protocol === 'https:' ? 443 : 80),
       path: url.pathname + url.search,
       method: req.method,
       headers: req.headers,
@@ -554,7 +563,10 @@ app.use('/api/instagram', (req, res) => {
   });
 
   req.pipe(proxyReq);
-});
+};
+
+app.use('/api/instagram/webhooks', instagramProxyHandler);
+app.use('/api/instagram', verifyAuth, requireTenant, instagramProxyHandler);
 
 // --- Server Startup ---
 const PORT = process.env.PORT || 3002;
@@ -591,47 +603,50 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
   }
 });
 
-// Rota para acionar boas-vindas automaticas ao capturar lead via WhatsApp
-// Protegida com rate limit especifico (rota sem auth)
-app.post('/api/send-welcome', sendWelcomeLimiter, async (req, res) => {
-  try {
-    const { name, phone, propertyTitle } = req.body;
-    if (!name || !phone) {
-      return res
-        .status(400)
-        .json({ success: false, error: 'Nome e telefone sao obrigatorios' });
-    }
-
-    const activityData = {
-      organization_id: req.orgId || null,
-      type: 'WhatsApp',
-      description: `Boas-vindas enviada para ${name} (${phone}) - Imovel: ${propertyTitle || 'N/A'}`,
-      metadata: {
-        name,
-        phone,
-        property_title: propertyTitle,
-        source: 'lead-capture-modal',
-      },
-    };
-
+// Rota para registrar boas-vindas ao capturar lead via WhatsApp (autenticada por tenant)
+app.post(
+  '/api/send-welcome',
+  verifyAuth,
+  requireTenant,
+  sendWelcomeLimiter,
+  async (req, res) => {
     try {
-      const supabase = getSupabaseServer();
-      await supabase.from('lead_activities').insert(activityData);
-    } catch (dbErr) {
-      console.warn(
-        '[SendWelcome] Nao foi possivel registrar atividade:',
-        dbErr.message
-      );
-    }
+      const { name, phone, propertyTitle } = req.body;
+      if (!name || !phone) {
+        return res
+          .status(400)
+          .json({ success: false, error: 'Nome e telefone sao obrigatorios' });
+      }
 
-    res.json({ success: true, message: 'Boas-vindas registrada' });
-  } catch (err) {
-    console.error('[SendWelcome Error]', err.message);
-    res
-      .status(500)
-      .json({ success: false, error: 'Erro ao enviar boas-vindas' });
+      const activityData = {
+        organization_id: req.orgId,
+        type: 'WhatsApp',
+        description: `Boas-vindas enviada para ${name} (${phone}) - Imovel: ${propertyTitle || 'N/A'}`,
+        metadata: {
+          name,
+          phone,
+          property_title: propertyTitle,
+          source: 'lead-capture-modal',
+        },
+      };
+
+      const supabase = getSupabaseServer();
+      const { error: dbErr } = await supabase
+        .from('lead_activities')
+        .insert(activityData);
+      if (dbErr) {
+        throw dbErr;
+      }
+
+      res.json({ success: true, message: 'Boas-vindas registrada' });
+    } catch (err) {
+      console.error('[SendWelcome Error]', err.message);
+      res
+        .status(500)
+        .json({ success: false, error: 'Erro ao enviar boas-vindas' });
+    }
   }
-});
+);
 
 // Configura o Proxy de WhatsApp com Seguranca SaaS (API + WebSockets).
 // O server real e passado para registrar o upgrade do WebSocket.

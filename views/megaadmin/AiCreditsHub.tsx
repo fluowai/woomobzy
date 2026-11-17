@@ -59,7 +59,7 @@ export default function AiCreditsHub() {
     setProcessing(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch('/api/ai/transfer', {
+      const res = await fetch('/api/wootech-ai/transfer', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

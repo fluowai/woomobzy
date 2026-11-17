@@ -6,6 +6,7 @@ import logging
 
 from bullmq import Worker, Job
 import httpx
+from instagrapi.exceptions import LoginRequired
 
 from .config import REDIS_URL, NODE_SERVICE_URL, INTERNAL_TOKEN
 from .instagram_client import (
@@ -76,12 +77,54 @@ async def handle_qr_login(job: Job) -> dict:
 async def handle_send_broadcast(job: Job) -> dict:
     p = job.data
     broadcast_id = p["broadcastId"]
-    company_id = p["companyId"]
     account_id = p["accountId"]
-    template_id = p.get("templateId")
+    recipients = p.get("recipients") or []
+    message_text = p.get("content") or p.get("message") or ""
 
-    logger.info(f"Processing broadcast {broadcast_id}")
-    return {"success": True, "broadcastId": broadcast_id}
+    if not recipients or not message_text:
+        return {
+            "success": False,
+            "broadcastId": broadcast_id,
+            "error": "Broadcast sem destinatarios ou conteudo.",
+        }
+
+    cl = get_client(account_id)
+    sent = 0
+    failed = 0
+    errors: list[str] = []
+
+    for recipient in recipients:
+        username = recipient.get("username") if isinstance(recipient, dict) else str(recipient)
+        if not username:
+            continue
+        try:
+            send_message_to_username(cl, username, message_text)
+            sent += 1
+            await asyncio.sleep(2)
+        except LoginRequired:
+            await notify_node_service("/instagram/session-expired", {
+                "account_id": account_id,
+                "reason": "login_required",
+            })
+            return {
+                "success": False,
+                "broadcastId": broadcast_id,
+                "sent": sent,
+                "failed": len(recipients) - sent,
+                "error": "session_expired",
+            }
+        except Exception as exc:
+            failed += 1
+            errors.append(f"{username}: {exc}")
+
+    save_session(cl, account_id)
+    return {
+        "success": failed == 0,
+        "broadcastId": broadcast_id,
+        "sent": sent,
+        "failed": failed,
+        "errors": errors[:10],
+    }
 
 
 HANDLERS = {

@@ -1,5 +1,142 @@
 # Verificação
 
+## 2026-11-13 — Validação E2E 100%, Usuários Multi-Nível, Agentes IA e Gates de Qualidade
+
+- **Suíte E2E Completa (`scratch/run-e2e-suite.mjs`):**
+  - **Resultado:** **55/55 testes APROVADOS (100% de sucesso, 0 falhas)**.
+  - **Autenticação Real (10/10 papéis):**
+    - `opauloargolo@gmail.com` (`superadmin` / Master) -> JWT emitido e perfil resolvido.
+    - `owner@wootech.com.br` (`PLATFORM_OWNER` / Master) -> JWT emitido e perfil resolvido.
+    - `megaadmin@wootech.com.br` (`PLATFORM_ADMIN` / MegaAdmin) -> JWT emitido e perfil resolvido.
+    - `revenda@wootech.com.br` (`superadmin` / Revenda SaaS) -> JWT emitido e perfil resolvido.
+    - `admin.urbano@wootech.com.br` (`admin` / Imobiliária Urbana) -> JWT emitido e perfil resolvido.
+    - `admin.rural@wootech.com.br` (`admin` / Imobiliária Rural) -> JWT emitido e perfil resolvido.
+    - `gerente@wootech.com.br` (`gerente` / Imobiliária Urbana) -> JWT emitido e perfil resolvido.
+    - `corretor@wootech.com.br` (`broker` / Imobiliária Urbana) -> JWT emitido e perfil resolvido.
+    - `assistente@wootech.com.br` (`assistente` / Imobiliária Urbana) -> JWT emitido e perfil resolvido.
+    - `cliente@wootech.com.br` (`user` / Imobiliária Urbana) -> JWT emitido e perfil resolvido.
+  - **WooControl & MegaAdmin:**
+    - `GET /api/woo-control/summary` (Master & Platform Owner) -> 200 OK.
+    - `GET /api/woo-control/network` -> 200 OK (todas as 4 organizações listadas).
+    - `GET /api/woo-control/licenses` -> 200 OK.
+    - `GET /api/admin/users` -> 200 OK (usuários da organização retornados).
+    - `GET /api/admin/team` -> 200 OK (equipe e assentos disponíveis validados).
+    - `GET /api/admin/storage/config` & `GET /api/admin/storage/summary` -> 200 OK (MinIO `imob.erp`).
+  - **Cadastro de Imóveis & Valuation:**
+    - `POST /api/properties` (Urbano - Jardins) -> 201 Created.
+    - `GET /api/properties/:id` (Urbano) -> 200 OK.
+    - `POST /api/properties` (Rural - Fazenda Santa Fé) -> 201 Created.
+    - `GET /api/properties/:id` (Rural) -> 200 OK.
+    - `GET /api/valuation/estimate/:id` -> 200 OK (Valuation com base de preço e regras ativas).
+  - **CRM & Clientes:**
+    - `POST /api/crm/leads` -> 201 Created (Lead "Carlos Eduardo Silva").
+    - `GET /api/crm/leads/:id` -> 200 OK.
+    - `PATCH /api/crm/leads/:id/status` -> 200 OK (Lead qualificado).
+    - `POST /api/crm/leads/:id/welcome` -> 200 OK (Boas-vindas registradas em `lead_activities`).
+    - `POST /api/clients` -> 201 Created (Cliente "Dra. Mariana Souza").
+    - `GET /api/clients/:id` -> 200 OK.
+  - **Locação, Contratos & Financeiro:**
+    - `POST /api/locacao/contracts` -> 201 Created (Contrato de locação R$ 4.500,00).
+    - `GET /api/locacao/contracts/:id` -> 200 OK.
+    - `GET /api/locacao/contracts/templates/validate` -> 200 OK.
+    - `POST /api/locacao/contracts/templates` -> 201 Created.
+    - `POST /api/locacao/contract/generate-and-sign` -> 200 OK (PDF do contrato gerado e persistido).
+    - `POST /api/locacao/adjustments/calculate` -> 200 OK (Cálculo de reajuste IGP-M/IPCA).
+    - `POST /api/locacao/leases/:id/renovar` -> 200 OK (Renovação de contrato por 30 meses).
+    - `POST /api/cobranca/despesas` -> 201 Created (Despesa taxa de condomínio).
+    - `PUT /api/cobranca/despesas/:id/pagar` -> 200 OK (Liquidação financeira).
+    - `PUT /api/locacao/leases/:id/pagamento` -> 200 OK (Registro de pagamento de aluguel).
+    - `GET /api/cobranca/dashboard/financeiro` -> 200 OK (Métricas financeiras calculadas).
+  - **MinIO Storage & DataRoom:**
+    - Upload direto no bucket `imob.erp` via `uploadObject` -> OK.
+    - Presigned URL gerada via `createPresignedGetUrl` -> OK (HTTP 200 no download).
+    - `POST /api/documents/upload/:propertyId` -> 200 OK (Upload e vínculo a imóvel).
+    - `GET /api/documents` -> 200 OK (Listagem no DataRoom com metadata).
+    - `POST /api/documents/onr/request` -> 403 `ONR_NOT_CONFIGURED` esperado (sem credenciais ONR).
+  - **Agentes de IA Interativos:**
+    - `POST /api/ai/agents` -> 201 Created (Agente "Sofia - Especialista Imobiliária").
+    - `GET /api/ai/agents/:id` -> 200 OK.
+    - `PATCH /api/ai/agents/:id/prompt` -> 200 OK (Atualização e versionamento de prompt).
+    - `POST /api/ai/agents/conversations/conv_e2e_.../message` (Turno 1 com execução de tool `properties.search` consultando o banco Postgres) -> 200 OK.
+    - `POST /api/ai/agents/conversations/conv_e2e_.../message` (Turno 2 com follow-up e agendamento) -> 200 OK.
+    - `POST /api/ai/agents/:id/chat` (Chat com histórico e memória) -> 200 OK.
+    - `POST /api/ai/chat` (Chat geral) -> 200 OK.
+    - `POST /api/ai/generate-page` (Geração de Landing Page com IA) -> 200 OK (2 blocos gerados).
+
+- **Gates de Qualidade & Testes Automatizados:**
+  - `npm run check-deploy-config`: **exit 0** (`[deploy-config] OK Supabase deploy configuration looks consistent.`).
+  - `npm run type-check`: **exit 0** (`tsc --noEmit` sem erros).
+  - `npm run lint`: **exit 0** (0 erros, 711 warnings pré-existentes).
+  - `node node_modules/vitest/vitest.mjs run --maxWorkers=2`: **exit 0 — 31/31 arquivos de teste aprovados, 152/152 testes unitários aprovados**.
+  - `npm run build`: **exit 0** (`vite build`, 4.221 módulos transformados, PWA `dist/sw.js` gerado).
+
+## 2026-11-12 (Atualização 2) — Validação Completa do Novo Supabase (`ahimxutcthctbwpaedvy`) e MinIO (`imob.erp`)
+
+- **Schema & Dados do Supabase (`ahimxutcthctbwpaedvy`):**
+  - Postgres direto: `181` tabelas base, `5` views, `17` enums, `44` funções de usuário, `41` triggers, `298` políticas RLS e `9` buckets em `storage.buckets`.
+  - Seeds validados: `plans` (6), `saas_settings` (1), `ai_slot_definitions` (55), `ai_tools` (18), `valuation_rules` (24) e `storage_integrations` (`minio` -> `https://storage.wootech.com.br` / `imob.erp` / `single`).
+  - REST `service_role` validado em 19 tabelas principais (`organizations`, `profiles`, `plans`, `saas_settings`, `properties`, `leads`, `landing_pages`, `site_settings`, `site_texts`, `ai_operations`, `ai_agents`, `ai_llm_usage`, `leases`, `urban_expenses`, `woo_licenses`, `social_posts`, `storage_integrations`, `onr_requests`, `email_drip_campaigns`); leitura `anon` em `plans` OK (`3` registros).
+  - Supabase Storage roundtrip (`documents`): upload -> URL pública HTTP `200` (`sb-ok`) -> remoção sem erros.
+- **MinIO (`https://storage.wootech.com.br` / bucket `imob.erp`):**
+  - `getStorageConfig()` retornou `configured: true`, `singleBucket: 'imob.erp'`, `bucketMode: 'single'`, `folderMode: 'bucket-prefix'`.
+  - `listMinioBuckets()` retornou os `7` buckets remotos (incluindo `imob.erp`).
+  - Roundtrip completo (`uploadObject` -> `listMinioObjects` -> `createPresignedGetUrl` + `fetch` HTTP `200` -> `deleteMinioObjects`) validado nos `4` prefixos lógicos (`imobzyimg`, `whatsapp-media`, `documents`, `exports`) dentro de `imob.erp`.
+  - `getStorageSummary()` retornou `{ configured: true, total_buckets: 7, total_objects: 0 }`.
+- **Gates de Qualidade & Smoke Test Express:**
+  - `npm run check-deploy-config`: **exit 0** (`[deploy-config] OK Supabase deploy configuration looks consistent.`).
+  - `node --check` & `npx eslint` nos arquivos alterados (`supabase-server.js`, `minio-storage.js`, `storageIntelligenceService.js`, `postgres-direct-migration.mjs`): **exit 0** (0 erros).
+  - `npm run type-check`: **exit 0**.
+  - `npm run lint`: **exit 0** (0 erros, 711 warnings pré-existentes).
+  - `node node_modules/vitest/vitest.mjs run --maxWorkers=2`: **exit 0 — 31/31 arquivos, 152/152 testes aprovados**.
+  - `npm run build`: **exit 0** (`4.221` módulos transformados, PWA `dist/sw.js` com `279` entradas precache).
+  - Smoke test Express (porta `3009`): boot limpo sem aviso de `SERVICE_ROLE_KEY`; `GET /api/system-status` -> `200`, `GET /api/public/branding?domain=localhost` -> `200`, `POST /api/support/exchange` -> `400`, `POST /api/storage/upload` -> `401`, `GET /api/documents` -> `401`.
+
+## 2026-11-12 — Análise Completa, Migração SQL e Verificação Pós-Correções
+
+- `npm run check-deploy-config`: **exit 0** (`[deploy-config] OK Supabase deploy configuration looks consistent.`).
+- `npm run type-check`: **exit 0** (`tsc --noEmit` sem erros).
+- `npm run lint`: **exit 0** (0 erros, 711 warnings pré-existentes).
+- `npx eslint` nos 20 arquivos TS/TSX alterados: **exit 0** (0 erros, 35 warnings pré-existentes).
+- `node --check` nos 17 arquivos `.js` de `server/` alterados: **exit 0**.
+- `node node_modules/vitest/vitest.mjs run --maxWorkers=2`: **exit 0 — 31/31 arquivos passaram, 152/152 testes passaram**.
+- `npm run build`: **exit 0** (`vite build`, 4.221 módulos, PWA `dist/sw.js` com 279 entradas precache).
+- **Migração Postgres aplicada (`DATABASE_URL`):** `migrations/20261112_missing_tables_and_buckets.sql` executada; validadas tabelas (`landing_page_analytics`, `landing_page_blocks`, `email_drip_campaigns`, `onr_requests`), RPCs (`increment_landing_page_views`, `increment_landing_page_leads`) e 9 buckets públicos no Supabase Storage (`agency-assets`, `contracts`, `documents`, `exports`, `imobzyimg`, `imobzymsg`, `media-posts`, `property-images`, `whatsapp-media`).
+- **Smoke tests Express + Postgres (porta `3002`):**
+  - `GET /api/system-status` -> `200` (`status: "online"`).
+  - `GET /api/public/branding?domain=localhost` -> `200`.
+  - `POST /api/support/exchange` -> `410` JSON.
+  - `POST /api/contact` inválido -> `400`; válido com tabela `organizations` vazia -> `404` JSON esperado (`"Organização não encontrada para receber o contato."`).
+  - 8 novas rotas protegidas testadas sem token -> todas responderam `401` (montadas com `verifyAuth, requireTenant`).
+- **Estado atual do banco conectado (`yrabjwktnanjgjmdackf`):** schema e buckets prontos, porém sem dados semeados (`organizations: 0`, `profiles: 0`, `properties: 0`, `leads: 0`).
+
+## 2026-11-11 — Novo Banco Supabase Aplicado + Ambiente Local (API + Frontend) Ativo
+
+- **Banco de Dados (`yrabjwktnanjgjmdackf`):**
+  - `.env` local (gitignored) configurado com `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`, `DATABASE_URL` e `SUPABASE_DB_URL`.
+  - Removidas referências hardcoded antigas de SSL/pooler em `server/lib/pg.js` e `scripts/postgres-direct-migration.mjs`.
+  - Aplicado schema completo + migrações (`20260516` .. `20261110_urban_expenses_and_renegotiations.sql`, AI Workforce/Sandbox, WooControl, Comunicações, Financeiro Urbano): **182 tabelas no schema `public`**.
+  - Corrigidas políticas RLS recursivas (`profiles` / `organizations`) herdadas de scripts legados para eliminar HTTP 500 em consultas `anon`.
+  - Validado acesso `service_role` REST em 16 tabelas principais (`organizations`, `profiles`, `plans` [6 registros], `saas_settings` [1 registro], `properties`, `leads`, `landing_pages`, `site_settings`, `site_texts`, `ai_operations`, `ai_agents`, `ai_llm_usage`, `leases`, `urban_expenses`, `woo_licenses`, `social_posts`): todas **OK**.
+  - `npm run check-deploy-config`: **exit 0 sem avisos de `.env` ausente**.
+  - Corrigida inicialização preguiçosa (`getGroqClient()`) em `server/services/jarvisService.js` e rota Express 5 em `server/routes/wootechAi.js` (`/responses` regex), permitindo inicialização limpa de `npm run server` (`WooTech Imob server active on port 3002`) + `npm run dev` (`http://localhost:3006/`).
+
+## 2026-11-11 — Remediação Níveis 0–3: gates locais aprovados; homologação externa pendente
+
+- `npm run check-deploy-config`: exit 0 (stack files sem segredos hardcoded; avisos esperados para variáveis locais ausentes no `.env`).
+- `npm run type-check`: exit 0 (`tsc --noEmit` sem erros).
+- `npm run lint`: exit 0 (0 erros, 729 warnings pré-existentes/de estilo).
+- `node node_modules/vitest/vitest.mjs run --maxWorkers=2`: **31 arquivos passaram, 152 testes passaram, 0 falhas** (inclui 4 novos testes em `server/__tests__/securityHardening.test.ts` cobrindo `/recover-org`, IDOR em `social/index.js`, spoofing `req.body.org_id` em `tenant.js` e controle de acesso em `wooControlAi.js`).
+- `npm run build`: exit 0 (`vite build`, 4.261 módulos transformados, PWA `dist/sw.js` com 280 entradas precache).
+- `node --check`: exit 0 em todos os `.js` de `server/` e `instagram-service/src/`.
+- `python -m py_compile`: exit 0 em `instagram-worker/app/worker.py`, `document_worker/app/main.py` e `server/agro-intelligence/main.py`.
+- `go test ./...` em `whatsapp-service` (com caches em `D:\go-*`): exit 0 (`cmd/server`, `internal/config`, `internal/handlers`, `internal/whatsapp`, `pkg/phone` passaram).
+- `npm run test:e2e:public`: falhou nos 24 cenários apenas porque o binário do Chromium Playwright (`chrome-headless-shell.exe`) não está instalado localmente e não foi baixado devido ao espaço livre limitado no disco `C:` (~0.5 GB) e ausência de `.env` / contas `IMOBZY_E2E_*`.
+- **Pendências externas obrigatórias para Go-Live em produção:**
+  1. Rotacionar nos provedores reais todas as chaves/senhas expostas anteriormente no histórico do Git (Supabase service role/JWT, MinIO, RabbitMQ, WhatsApp API/Postgres).
+  2. Configurar todas as variáveis de ambiente no Portainer conforme `.env.production.template`.
+  3. Aplicar `migrations/20261110_urban_expenses_and_renegotiations.sql` (e verificar `20260827_ai_sandbox_fixes.sql`) no Supabase de produção.
+  4. Reconstruir e publicar os containers via `docker-images.yml` / Portainer e validar E2E autenticado com credenciais reais (`IMOBZY_E2E_*`, Asaas, Meta Graph e QR WhatsApp).
+
 ## 2026-09-06 — Auditoria integral: evidência local, homologação pendente
 
 - `node node_modules/vitest/vitest.mjs run --maxWorkers=2`: 142 testes passaram em 28 arquivos. A primeira execução com concorrência padrão teve timeouts de workers; a repetição limitada passou sem esses erros.

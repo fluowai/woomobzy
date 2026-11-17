@@ -138,8 +138,14 @@ router.get('/summary', verifyPlatformAdmin, async (req, res) => {
     // MRR estimado: soma de planos das organizações, considerando status de licença
     let mrr = 0;
     const orgPlanPrice = (org) => {
-      if (!org.plan_id) return 0;
-      const p = planList.find((x) => x.id === org.plan_id);
+      const planRef = org.plan_id || org.plan;
+      if (!planRef) return 0;
+      const p = planList.find(
+        (x) =>
+          x.id === planRef ||
+          x.slug === planRef ||
+          String(x.name || '').toLowerCase() === String(planRef).toLowerCase()
+      );
       return getWooPlanMonthlyPrice(p);
     };
     orgList.forEach((o) => {
@@ -794,6 +800,51 @@ router.put('/snapshots/:id', verifyPlatformAdmin, async (req, res) => {
   }
 });
 
+// GET /api/woo-control/snapshots/:id/download
+router.get('/snapshots/:id/download', verifyPlatformAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = supabase();
+    const { data: snapshot, error } = await db
+      .from('woo_snapshots')
+      .select('*, organizations(name), woo_products(name, slug)')
+      .or(`id.eq.${id},snapshot_id.eq.${id}`)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!snapshot) {
+      return res.status(404).json({ error: 'Snapshot não encontrado' });
+    }
+
+    if (snapshot.url && /^https?:\/\//i.test(snapshot.url)) {
+      return res.redirect(snapshot.url);
+    }
+
+    const manifestPayload = {
+      id: snapshot.id,
+      snapshot_id: snapshot.snapshot_id || snapshot.id,
+      product: snapshot.woo_products?.name || snapshot.product_id,
+      organization: snapshot.organizations?.name || snapshot.organization_id,
+      version: snapshot.version,
+      build_id: snapshot.build_id || null,
+      hash: snapshot.hash || null,
+      type: snapshot.type || 'FULL',
+      status: snapshot.status || 'GENERATED',
+      created_at: snapshot.created_at,
+    };
+
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="snapshot-${snapshot.version || snapshot.id}.json"`
+    );
+    return res.send(JSON.stringify(manifestPayload, null, 2));
+  } catch (error) {
+    console.error('[WooControl] download snapshot error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // DELETE /api/woo-control/snapshots/:id
 router.delete('/snapshots/:id', verifyPlatformAdmin, async (req, res) => {
   try {
@@ -1228,6 +1279,62 @@ router.get('/health-check', verifyPlatformAdmin, async (req, res) => {
     });
   } catch (error) {
     console.error('[WooControl] health-check error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/woo-control/settings — configurações globais da plataforma
+router.get('/settings', verifyPlatformAdmin, async (req, res) => {
+  try {
+    const db = supabase();
+    const { data, error } = await db
+      .from('saas_settings')
+      .select('*')
+      .eq('id', 1)
+      .maybeSingle();
+    if (error) throw error;
+    res.json({ success: true, settings: data || {} });
+  } catch (error) {
+    console.error('[WooControl] settings get error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/woo-control/settings — salva configurações globais da plataforma
+router.put('/settings', verifyPlatformAdmin, async (req, res) => {
+  try {
+    const db = supabase();
+    const {
+      maintenance_mode,
+      global_openai_key,
+      global_gemini_key,
+      global_anthropic_key,
+      global_groq_key,
+      global_openrouter_key,
+      platform_name,
+      support_email,
+    } = req.body || {};
+
+    const payload = { id: 1 };
+    if (maintenance_mode !== undefined) payload.maintenance_mode = Boolean(maintenance_mode);
+    if (global_openai_key !== undefined) payload.global_openai_key = global_openai_key || null;
+    if (global_gemini_key !== undefined) payload.global_gemini_key = global_gemini_key || null;
+    if (global_anthropic_key !== undefined) payload.global_anthropic_key = global_anthropic_key || null;
+    if (global_groq_key !== undefined) payload.global_groq_key = global_groq_key || null;
+    if (global_openrouter_key !== undefined) payload.global_openrouter_key = global_openrouter_key || null;
+    if (platform_name !== undefined) payload.platform_name = platform_name || null;
+    if (support_email !== undefined) payload.support_email = support_email || null;
+
+    const { data, error } = await db
+      .from('saas_settings')
+      .upsert(payload, { onConflict: 'id' })
+      .select()
+      .single();
+    if (error) throw error;
+
+    res.json({ success: true, settings: data });
+  } catch (error) {
+    console.error('[WooControl] settings save error:', error);
     res.status(500).json({ error: error.message });
   }
 });

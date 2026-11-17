@@ -146,6 +146,9 @@ const EmailCenter: React.FC = () => {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [agentStatus, setAgentStatus] = useState<'Disponível' | 'Ocupado' | 'Ausente'>('Disponível');
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
   const [replyOpen, setReplyOpen] = useState(false);
@@ -547,9 +550,9 @@ const EmailCenter: React.FC = () => {
     <div className="h-full min-h-[720px] overflow-hidden rounded-lg border border-slate-200 bg-white text-slate-800 shadow-sm">
       <header className="flex h-[72px] items-center gap-4 border-b border-slate-200 bg-white px-5">
         <button
-          onClick={() => toast.info('Menu lateral será liberado em breve')}
+          onClick={() => setSidebarOpen((prev) => !prev)}
           className="flex h-10 w-10 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100"
-          title="Menu"
+          title={sidebarOpen ? 'Ocultar menu lateral' : 'Mostrar menu lateral'}
         >
           <Menu size={22} />
         </button>
@@ -577,41 +580,124 @@ const EmailCenter: React.FC = () => {
             className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-600"
           />
         </div>
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-3 relative">
           <button
-            onClick={() => toast.info('Seletor de status em breve')}
-            className="hidden h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 xl:flex"
+            onClick={() =>
+              setAgentStatus((prev) =>
+                prev === 'Disponível'
+                  ? 'Ocupado'
+                  : prev === 'Ocupado'
+                    ? 'Ausente'
+                    : 'Disponível'
+              )
+            }
+            className="hidden h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 xl:flex hover:bg-slate-50"
+            title="Alternar status"
           >
-            <span className="h-3 w-3 rounded-full bg-emerald-500" />
-            Disponivel
+            <span
+              className={`h-3 w-3 rounded-full ${
+                agentStatus === 'Disponível'
+                  ? 'bg-emerald-500'
+                  : agentStatus === 'Ocupado'
+                    ? 'bg-amber-500'
+                    : 'bg-slate-400'
+              }`}
+            />
+            {agentStatus}
             <ChevronDown size={16} />
           </button>
-          {[HelpCircle, Settings, Grid3X3].map((Icon, index) => (
-            <button
-              key={index}
-              onClick={() => toast.info('Funcionalidade em desenvolvimento')}
-              className="hidden h-10 w-10 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 lg:flex"
-            >
-              <Icon size={21} />
-            </button>
-          ))}
           <button
-            onClick={() => toast.info('Central de notificações em breve')}
+            onClick={() =>
+              toast.info(
+                'Atalhos: selecione um e-mail para vincular ao lead no painel direito ou criar follow-up.'
+              )
+            }
+            title="Ajuda"
+            className="hidden h-10 w-10 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 lg:flex"
+          >
+            <HelpCircle size={21} />
+          </button>
+          <button
+            onClick={() => setConnectOpen(true)}
+            title="Configurar conta de e-mail"
+            className="hidden h-10 w-10 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 lg:flex"
+          >
+            <Settings size={21} />
+          </button>
+          <button
+            onClick={() => setView((prev) => (prev === 'mail' ? 'agenda' : 'mail'))}
+            title={view === 'mail' ? 'Abrir Diário de Bordo' : 'Voltar para Caixa de Entrada'}
+            className="hidden h-10 w-10 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 lg:flex"
+          >
+            <Grid3X3 size={21} />
+          </button>
+          <button
+            onClick={() => setNotificationsOpen((prev) => !prev)}
+            title="Notificações da agenda"
             className="relative hidden h-10 w-10 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 lg:flex"
           >
             <Bell size={21} />
-            <span className="absolute right-1 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-              3
-            </span>
+            {pendingAgenda.length > 0 && (
+              <span className="absolute right-1 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                {pendingAgenda.length}
+              </span>
+            )}
           </button>
+          {notificationsOpen && (
+            <div className="absolute right-0 top-12 z-40 w-72 rounded-xl border border-slate-200 bg-white p-3 shadow-xl">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-800">
+                  Pendências de E-mail ({pendingAgenda.length})
+                </span>
+                <button
+                  onClick={() => {
+                    setNotificationsOpen(false);
+                    setView('agenda');
+                  }}
+                  className="text-[11px] font-bold text-emerald-600 hover:underline"
+                >
+                  Ver agenda
+                </button>
+              </div>
+              {pendingAgenda.length === 0 ? (
+                <p className="text-xs text-slate-500 py-2">
+                  Nenhuma pendência no momento.
+                </p>
+              ) : (
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {pendingAgenda.slice(0, 5).map((item) => (
+                    <div
+                      key={item.id}
+                      className="rounded-lg bg-slate-50 p-2 text-xs text-slate-700"
+                    >
+                      <p className="font-bold truncate">{item.title}</p>
+                      <p className="text-[11px] text-slate-500 truncate">
+                        {item.subject || item.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <div className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-sm font-bold text-slate-700">
-            U
+            {(selectedAccount?.email || 'U').charAt(0).toUpperCase()}
           </div>
         </div>
       </header>
 
-      <div className="grid h-[calc(100%-72px)] grid-cols-1 lg:grid-cols-[276px_minmax(370px,500px)_minmax(520px,1fr)] 2xl:grid-cols-[276px_500px_minmax(640px,1fr)_320px]">
-        <aside className="hidden min-w-0 border-r border-slate-200 bg-slate-50/70 px-3 py-3 lg:flex lg:flex-col">
+      <div
+        className={`grid h-[calc(100%-72px)] grid-cols-1 ${
+          sidebarOpen
+            ? 'lg:grid-cols-[276px_minmax(370px,500px)_minmax(520px,1fr)] 2xl:grid-cols-[276px_500px_minmax(640px,1fr)_320px]'
+            : 'lg:grid-cols-[minmax(370px,500px)_minmax(520px,1fr)] 2xl:grid-cols-[500px_minmax(640px,1fr)_320px]'
+        }`}
+      >
+        <aside
+          className={`min-w-0 border-r border-slate-200 bg-slate-50/70 px-3 py-3 ${
+            sidebarOpen ? 'hidden lg:flex lg:flex-col' : 'hidden'
+          }`}
+        >
           <button
             onClick={() => setComposeOpen(true)}
             className="mb-5 flex h-14 w-36 items-center justify-center gap-3 rounded-2xl bg-white px-4 text-sm font-bold text-slate-700 shadow-md shadow-slate-200/80 ring-1 ring-slate-100 transition hover:shadow-lg"
@@ -764,9 +850,18 @@ const EmailCenter: React.FC = () => {
                     <ActionButton
                       icon={Undo2}
                       label="Encaminhar"
-                      onClick={() =>
-                        toast.info('Encaminhamento de email em breve')
-                      }
+                      onClick={() => {
+                        if (!selectedEmail) return;
+                        setCompose({
+                          to: '',
+                          subject: selectedEmail.subject?.startsWith('Fwd:')
+                            ? selectedEmail.subject
+                            : `Fwd: ${selectedEmail.subject || ''}`,
+                          body_html: `\n\n---------- Mensagem encaminhada ----------\nDe: ${selectedEmail.from_email || ''}\nAssunto: ${selectedEmail.subject || ''}\n\n${selectedEmail.body_text || selectedEmail.preview || ''}`,
+                          lead_id: selectedEmail.lead_id || '',
+                        });
+                        setComposeOpen(true);
+                      }}
                     />
                   </div>
                 </div>
@@ -792,6 +887,23 @@ const EmailCenter: React.FC = () => {
           selectedEmail={selectedEmail}
           linkSelectedLead={linkSelectedLead}
           archiveSelected={archiveSelected}
+          onCreateTask={() => {
+            setView('agenda');
+            loadAgenda();
+          }}
+          onScheduleFollowUp={() => {
+            setCompose({
+              to: linkedLead?.email || selectedEmail?.from_email || '',
+              subject: selectedEmail?.subject
+                ? `Follow-up: ${selectedEmail.subject}`
+                : 'Follow-up de atendimento',
+              body_html: linkedLead?.name
+                ? `Olá ${linkedLead.name},\n\nSeguindo com nosso atendimento...`
+                : 'Olá,\n\nSeguindo com nosso atendimento...',
+              lead_id: linkedLead?.id || selectedEmail?.lead_id || '',
+            });
+            setComposeOpen(true);
+          }}
           setView={setView}
           loadAgenda={loadAgenda}
           pendingCount={todayCount || pendingAgenda.length}
@@ -1147,6 +1259,8 @@ const LeadPanel: React.FC<{
   selectedEmail: VisualEmail | null;
   linkSelectedLead: (leadId: string) => void;
   archiveSelected: () => void;
+  onCreateTask: () => void;
+  onScheduleFollowUp: () => void;
   setView: (view: ViewKey) => void;
   loadAgenda: () => void;
   pendingCount: number;
@@ -1157,6 +1271,8 @@ const LeadPanel: React.FC<{
   selectedEmail,
   linkSelectedLead,
   archiveSelected,
+  onCreateTask,
+  onScheduleFollowUp,
   setView,
   loadAgenda,
   pendingCount,
@@ -1286,8 +1402,12 @@ const LeadPanel: React.FC<{
       </div>
 
       <div className="space-y-3 border-t border-slate-200 pt-5">
-        <SideAction icon={Calendar} label="Criar tarefa" />
-        <SideAction icon={Calendar} label="Agendar follow-up" />
+        <SideAction icon={Calendar} label="Diário de bordo" onClick={onCreateTask} />
+        <SideAction
+          icon={Calendar}
+          label="Enviar follow-up"
+          onClick={onScheduleFollowUp}
+        />
         <button
           onClick={archiveSelected}
           disabled={!selectedEmail}
@@ -1353,12 +1473,17 @@ const Interaction: React.FC<{
   </div>
 );
 
-const SideAction: React.FC<{ icon: React.ElementType; label: string }> = ({
+const SideAction: React.FC<{
+  icon: React.ElementType;
+  label: string;
+  onClick: () => void;
+}> = ({
   icon: Icon,
   label,
+  onClick,
 }) => (
   <button
-    onClick={() => toast.info(`${label} em breve`)}
+    onClick={onClick}
     className="flex h-11 w-full items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
   >
     <Icon size={17} />

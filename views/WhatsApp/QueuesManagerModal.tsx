@@ -1,6 +1,21 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { X, GitMerge, Plus, Trash2, Edit2, Users } from 'lucide-react';
+import { X, GitMerge, Plus, Trash2, Edit2, Users, Check } from 'lucide-react';
+import { supabase } from '../../services/supabase';
+import { useAuth } from '../../context/AuthContext';
+
+interface QueueItem {
+  id: string;
+  name: string;
+  agents: number;
+  active: boolean;
+}
+
+const DEFAULT_QUEUES: QueueItem[] = [
+  { id: '1', name: 'Vendas - Fazendas', agents: 3, active: true },
+  { id: '2', name: 'Vendas - Lotes', agents: 2, active: true },
+  { id: '3', name: 'Suporte Técnico', agents: 1, active: false },
+];
 
 interface QueuesManagerModalProps {
   onClose: () => void;
@@ -9,11 +24,83 @@ interface QueuesManagerModalProps {
 export const QueuesManagerModal: React.FC<QueuesManagerModalProps> = ({
   onClose,
 }) => {
-  const [queues] = useState([
-    { id: 1, name: 'Vendas - Fazendas', agents: 3, active: true },
-    { id: 2, name: 'Vendas - Lotes', agents: 2, active: true },
-    { id: 3, name: 'Suporte Técnico', agents: 1, active: false },
-  ]);
+  const { profile } = useAuth();
+  const [queues, setQueues] = useState<QueueItem[]>(DEFAULT_QUEUES);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [showNewForm, setShowNewForm] = useState(false);
+  const [draftName, setDraftName] = useState('');
+  const [draftAgents, setDraftAgents] = useState(1);
+
+  useEffect(() => {
+    const loadQueues = async () => {
+      if (!profile?.organization_id) return;
+      const { data } = await supabase
+        .from('organizations')
+        .select('settings')
+        .eq('id', profile.organization_id)
+        .single();
+      const saved = (data?.settings as Record<string, any> | undefined)
+        ?.whatsapp_queues;
+      if (Array.isArray(saved) && saved.length > 0) {
+        setQueues(saved);
+      }
+    };
+    loadQueues();
+  }, [profile?.organization_id]);
+
+  const persistQueues = async (next: QueueItem[]) => {
+    setQueues(next);
+    if (!profile?.organization_id) return;
+    const { data: orgData } = await supabase
+      .from('organizations')
+      .select('settings')
+      .eq('id', profile.organization_id)
+      .single();
+    const { error } = await supabase
+      .from('organizations')
+      .update({
+        settings: {
+          ...((orgData?.settings as Record<string, any>) || {}),
+          whatsapp_queues: next,
+        },
+      })
+      .eq('id', profile.organization_id);
+    if (error) {
+      toast.error('Erro ao salvar filas na organização.');
+    }
+  };
+
+  const handleSaveQueue = async () => {
+    if (!draftName.trim()) {
+      toast.error('Informe o nome da fila.');
+      return;
+    }
+    if (editingId) {
+      const next = queues.map((q) =>
+        q.id === editingId
+          ? { ...q, name: draftName.trim(), agents: Number(draftAgents || 1) }
+          : q
+      );
+      await persistQueues(next);
+      toast.success('Fila atualizada!');
+    } else {
+      const next = [
+        ...queues,
+        {
+          id: String(Date.now()),
+          name: draftName.trim(),
+          agents: Number(draftAgents || 1),
+          active: true,
+        },
+      ];
+      await persistQueues(next);
+      toast.success('Fila criada com sucesso!');
+    }
+    setEditingId(null);
+    setShowNewForm(false);
+    setDraftName('');
+    setDraftAgents(1);
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
@@ -46,14 +133,51 @@ export const QueuesManagerModal: React.FC<QueuesManagerModalProps> = ({
               Filas Cadastradas
             </h3>
             <button
-              onClick={() =>
-                toast.info('Criação de novas filas estará disponível em breve')
-              }
+              onClick={() => {
+                setEditingId(null);
+                setDraftName('');
+                setDraftAgents(1);
+                setShowNewForm((prev) => !prev);
+              }}
               className="h-9 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-2"
             >
               <Plus size={16} /> Nova Fila
             </button>
           </div>
+
+          {showNewForm && (
+            <div className="mb-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50/40 flex flex-wrap items-end gap-3">
+              <div className="flex-1 min-w-[200px]">
+                <label className="text-[10px] font-bold uppercase text-slate-500 block mb-1">
+                  Nome da Fila
+                </label>
+                <input
+                  value={draftName}
+                  onChange={(e) => setDraftName(e.target.value)}
+                  placeholder="Ex: Lançamentos Urbanos"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm"
+                />
+              </div>
+              <div className="w-28">
+                <label className="text-[10px] font-bold uppercase text-slate-500 block mb-1">
+                  Agentes
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  value={draftAgents}
+                  onChange={(e) => setDraftAgents(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm"
+                />
+              </div>
+              <button
+                onClick={handleSaveQueue}
+                className="h-9 px-4 rounded-lg bg-emerald-600 text-white text-xs font-bold flex items-center gap-1"
+              >
+                <Check size={14} /> Salvar
+              </button>
+            </div>
+          )}
 
           <div className="space-y-3">
             {queues.map((queue) => (
@@ -62,8 +186,16 @@ export const QueuesManagerModal: React.FC<QueuesManagerModalProps> = ({
                 className="border border-slate-200 rounded-xl p-4 flex items-center justify-between hover:border-purple-200 transition bg-white"
               >
                 <div className="flex items-center gap-4">
-                  <div
-                    className={`w-2 h-2 rounded-full ${queue.active ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                  <button
+                    onClick={() =>
+                      persistQueues(
+                        queues.map((q) =>
+                          q.id === queue.id ? { ...q, active: !q.active } : q
+                        )
+                      )
+                    }
+                    title={queue.active ? 'Desativar fila' : 'Ativar fila'}
+                    className={`w-3 h-3 rounded-full ${queue.active ? 'bg-emerald-500' : 'bg-slate-300'}`}
                   />
                   <div>
                     <h4 className="text-sm font-bold text-slate-900">
@@ -76,17 +208,23 @@ export const QueuesManagerModal: React.FC<QueuesManagerModalProps> = ({
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() =>
-                      toast.info('Edição de fila estará disponível em breve')
-                    }
+                    onClick={() => {
+                      setEditingId(queue.id);
+                      setDraftName(queue.name);
+                      setDraftAgents(queue.agents);
+                      setShowNewForm(true);
+                    }}
+                    title="Editar fila"
                     className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
                   >
                     <Edit2 size={16} />
                   </button>
                   <button
-                    onClick={() =>
-                      toast.info('Exclusão de fila estará disponível em breve')
-                    }
+                    onClick={async () => {
+                      await persistQueues(queues.filter((q) => q.id !== queue.id));
+                      toast.success('Fila removida.');
+                    }}
+                    title="Excluir fila"
                     className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-600 transition"
                   >
                     <Trash2 size={16} />

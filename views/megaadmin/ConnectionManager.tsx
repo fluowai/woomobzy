@@ -1,6 +1,7 @@
 import { logger } from '@/utils/logger';
 import React, { useState, useEffect } from 'react';
 import { callApi } from '@/src/lib/api';
+import { toast } from 'sonner';
 import {
   Plug, Plus, Trash2, ExternalLink, CheckCircle, XCircle,
   Clock, RefreshCw, AlertCircle, DollarSign, Users, Wifi,
@@ -48,6 +49,10 @@ const ConnectionManager: React.FC = () => {
   // Pool config
   const [poolCapacity, setPoolCapacity] = useState(0);
   const [savingPool, setSavingPool] = useState(false);
+  const [showMetaModal, setShowMetaModal] = useState(false);
+  const [metaAccountId, setMetaAccountId] = useState('');
+  const [metaAccessToken, setMetaAccessToken] = useState('');
+  const [savingMeta, setSavingMeta] = useState(false);
 
   // Allocate
   const [allocReseller, setAllocReseller] = useState('');
@@ -445,13 +450,80 @@ const ConnectionManager: React.FC = () => {
                 <p className="text-gray-400 text-xs mt-1">Conecte sua conta para publicar imóveis automaticamente no Facebook e Instagram.</p>
               </div>
               <button 
-                onClick={() => window.open('/api/social/auth/facebook', '_blank')}
+                onClick={() => setShowMetaModal(true)}
                 className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors w-full"
               >
                 Conectar Conta Meta
               </button>
             </div>
           </div>
+
+          {showMetaModal && (
+            <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+              <div className="bg-gray-900 border border-gray-700 rounded-xl max-w-md w-full p-6 space-y-4 text-white">
+                <h4 className="font-bold text-lg">Conectar Conta Meta (Instagram / Facebook)</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs text-gray-400 block mb-1">ID da Página / Conta IG Business</label>
+                    <input
+                      value={metaAccountId}
+                      onChange={(e) => setMetaAccountId(e.target.value)}
+                      placeholder="Ex: 17841400000000000"
+                      className="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-400 block mb-1">Access Token (Graph API)</label>
+                    <input
+                      type="password"
+                      value={metaAccessToken}
+                      onChange={(e) => setMetaAccessToken(e.target.value)}
+                      placeholder="EAAG..."
+                      className="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    onClick={() => setShowMetaModal(false)}
+                    className="px-4 py-2 rounded-lg bg-gray-800 text-gray-300 text-xs font-bold"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    disabled={savingMeta}
+                    onClick={async () => {
+                      if (!metaAccountId.trim() || !metaAccessToken.trim()) {
+                        toast.error('Informe o ID da conta e o Access Token.');
+                        return;
+                      }
+                      try {
+                        setSavingMeta(true);
+                        await callApi('/api/social/connect/facebook', {
+                          method: 'POST',
+                          body: JSON.stringify({
+                            account_id: metaAccountId.trim(),
+                            access_token: metaAccessToken.trim(),
+                          }),
+                        });
+                        toast.success('Conta Meta conectada com sucesso!');
+                        setShowMetaModal(false);
+                        setMetaAccountId('');
+                        setMetaAccessToken('');
+                      } catch (err: any) {
+                        toast.error(err?.message || 'Erro ao conectar conta Meta.');
+                      } finally {
+                        setSavingMeta(false);
+                      }
+                    }}
+                    className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold disabled:opacity-50"
+                  >
+                    {savingMeta ? 'Salvando...' : 'Salvar Conexão'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

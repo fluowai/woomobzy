@@ -27,16 +27,22 @@ export const WebChatWidget: React.FC = () => {
     setLoading(true);
 
     try {
-      // In a real scenario, we would pass an agentId or tenantId here.
-      // For now, this is a placeholder integration for the widget.
-      const response = await callApi('/api/gemini/chat', {
+      const response = await callApi('/api/ai/chat', {
         method: 'POST',
-        body: JSON.stringify({ message: userMessage }),
+        hideError: true,
+        body: JSON.stringify({
+          prompt: userMessage,
+          systemInstruction:
+            'Você é o assistente virtual imobiliário da plataforma. Responda em português de forma prestativa e objetiva.',
+        }),
       });
 
       setMessages((prev) => [
         ...prev,
-        { role: 'agent', content: response.reply || 'Recebido.' },
+        {
+          role: 'agent',
+          content: response.text || response.reply || 'Recebido.',
+        },
       ]);
     } catch (error) {
       setMessages((prev) => [

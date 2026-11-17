@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GraduationCap, BookOpen, Plus, X, Trash2, Edit } from 'lucide-react';
 import { fetchWooAcademy, createWooAcademy, updateWooAcademy, deleteWooAcademy } from '../../../services/wooControl';
@@ -102,7 +103,7 @@ export const Academy = () => {
         await deleteWooAcademy(id);
         loadCourses();
       } catch (err: any) {
-        alert(err.message || 'Erro ao excluir o curso');
+        toast.error(err.message || 'Erro ao excluir o curso');
       }
     }
   };

@@ -368,6 +368,7 @@ const AppContent: React.FC = () => {
               element={<Navigate to="/rural/territorio/dossie" replace />}
             />
             <Route path="dataroom" element={<DataRoom />} />
+            <Route path="dataroom/:id" element={<DataRoom />} />
             <Route path="crm" element={<CRMLeads />} />
             <Route path="kanban" element={<KanbanBoard />} />
             <Route path="agenda" element={<Agenda />} />

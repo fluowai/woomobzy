@@ -1,4 +1,5 @@
 import express from 'express';
+import crypto from 'node:crypto';
 import { z } from 'zod';
 import { getSupabaseServer } from '../lib/supabase-server.js';
 import { PUBLIC_APP_URL } from '../lib/platform-config.js';
@@ -121,18 +122,51 @@ router.post('/', registerLimiter, async (req, res) => {
           .status(400)
           .json({ error: 'Nome da imobiliária é obrigatório.' });
 
-      const slug = agencyName
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '');
+      const baseSlug =
+        agencyName
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '') || 'imobiliaria';
 
-      const { data: selectedPlan } = await supabase
-        .from('plans')
+      let slug = baseSlug;
+      const { data: existingSlug } = await supabase
+        .from('organizations')
         .select('id')
-        .ilike('slug', plan || 'trial')
+        .eq('slug', slug)
         .maybeSingle();
+      if (existingSlug) {
+        slug = `${baseSlug}-${crypto.randomBytes(2).toString('hex')}`;
+      }
+
+      let selectedPlan = null;
+      if (plan) {
+        const { data: requestedPlan } = await supabase
+          .from('plans')
+          .select('id')
+          .ilike('slug', plan)
+          .maybeSingle();
+        selectedPlan = requestedPlan;
+      }
+      if (!selectedPlan) {
+        const { data: trialPlan } = await supabase
+          .from('plans')
+          .select('id')
+          .ilike('slug', 'trial')
+          .maybeSingle();
+        selectedPlan = trialPlan;
+      }
+      if (!selectedPlan) {
+        const { data: fallbackPlan } = await supabase
+          .from('plans')
+          .select('id')
+          .eq('is_active', true)
+          .order('price_monthly', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        selectedPlan = fallbackPlan;
+      }
 
       const trialEndsAt = new Date(
         Date.now() + 7 * 24 * 60 * 60 * 1000
@@ -140,21 +174,27 @@ router.post('/', registerLimiter, async (req, res) => {
 
       let parentId = null;
 
-      // Tentar extrair o domínio da requisição para verificar se é um reseller
+      // Tentar extrair o domínio da requisição de forma segura para verificar se é um reseller
       try {
-        const reqHost = req.get('host'); // Ex: imob.revenda.com.br
-        if (reqHost) {
-          const domain = reqHost.split(':')[0];
-          const { data: resellerOrg } = await supabase
+        const reqHost = req.get('host');
+        const rawDomain = reqHost ? reqHost.split(':')[0].toLowerCase().trim() : '';
+        if (rawDomain && /^[a-z0-9.-]+$/.test(rawDomain)) {
+          const { data: resellers } = await supabase
             .from('organizations')
-            .select('id')
-            .or(`platform_domain.eq.${domain},custom_domain.eq.${domain}`)
-            .eq('is_reseller', true)
-            .maybeSingle();
-          
+            .select('id, platform_domain, custom_domain')
+            .eq('is_reseller', true);
+
+          const resellerOrg = (resellers || []).find(
+            (r) =>
+              String(r.platform_domain || '').toLowerCase() === rawDomain ||
+              String(r.custom_domain || '').toLowerCase() === rawDomain
+          );
+
           if (resellerOrg) {
             parentId = resellerOrg.id;
-            console.log(`[Onboarding] Vinculando nova organização ao reseller ${parentId} via domínio ${domain}`);
+            console.log(
+              `[Onboarding] Vinculando nova organização ao reseller ${parentId} via domínio ${rawDomain}`
+            );
           }
         }
       } catch (e) {
@@ -174,16 +214,23 @@ router.post('/', registerLimiter, async (req, res) => {
           owner_name: name || null,
           owner_email: email || null,
           parent_id: parentId,
+          ...(primaryColor ? { primary_color: primaryColor } : {}),
+          ...(secondaryColor ? { secondary_color: secondaryColor } : {}),
+          ...(logoUrl ? { logo_url: logoUrl } : {}),
         })
         .select()
         .single();
 
-      if (orgError)
+      if (orgError) {
+        await supabase.auth.admin.deleteUser(userId).catch((rollbackErr) => {
+          console.error('[Onboarding] Falha no rollback do Auth user:', rollbackErr.message);
+        });
         return res.status(400).json({
           error: isProduction
             ? 'Erro ao criar organização.'
             : `Erro ao criar organização: ${orgError.message}`,
         });
+      }
       organization = orgData;
       
       // Auto-emitir licença Trial (7 dias)
@@ -215,8 +262,8 @@ router.post('/', registerLimiter, async (req, res) => {
 
     if (organization) {
       const integrations = {};
-      const { llmProvider, apiKey, welcomeMessage, template } = validation.data;
-      
+      const { llmProvider, apiKey, welcomeMessage, template, teamEmails } = validation.data;
+
       if (llmProvider && apiKey) {
         integrations[llmProvider] = { apiKey };
       }
@@ -224,11 +271,31 @@ router.post('/', registerLimiter, async (req, res) => {
         integrations.whatsapp = { welcomeMessage };
       }
 
-      await supabase.from('site_settings').insert({
-        organization_id: organization.id,
-        integrations: Object.keys(integrations).length > 0 ? integrations : null,
-        theme: template ? { templateId: template } : null,
-      }).select().single();
+      const cleanedTeamEmails = Array.isArray(teamEmails)
+        ? teamEmails.map((e) => String(e || '').trim().toLowerCase()).filter(Boolean)
+        : [];
+
+      await supabase
+        .from('site_settings')
+        .insert({
+          organization_id: organization.id,
+          agency_name: agencyName || organization.name,
+          primary_color: primaryColor || null,
+          secondary_color: secondaryColor || null,
+          logo_url: logoUrl || null,
+          contact_email: email,
+          contact_phone: phone || whatsapp || null,
+          integrations: Object.keys(integrations).length > 0 ? integrations : null,
+          layout_config: {
+            onboarding: {
+              templateId: template || themeId || null,
+              region: region || null,
+              invitedEmails: cleanedTeamEmails,
+            },
+          },
+        })
+        .select()
+        .single();
     }
 
     let domain = null;

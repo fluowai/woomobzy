@@ -98,13 +98,22 @@ router.post('/', verifyAdmin, requireTenant, async (req, res) => {
         ? 'urbano'
         : '';
 
+    const finalNiche = explicitNiche || inferredNiche || propertyData.niche || null;
+    const isRural = finalNiche === 'rural' || isRuralType(propertyData.property_type);
+
+    const payload = {
+      ...propertyData,
+      niche: finalNiche,
+      organization_id: req.orgId, // FORÇADO
+    };
+
+    if (isRural && payload.area && !payload.total_area_ha) {
+      payload.total_area_ha = Number(payload.area);
+    }
+
     const { data, error } = await supabase
       .from('properties')
-      .insert({
-        ...propertyData,
-        niche: explicitNiche || inferredNiche || propertyData.niche || null,
-        organization_id: req.orgId, // FORÇADO
-      })
+      .insert(payload)
       .select()
       .single();
 

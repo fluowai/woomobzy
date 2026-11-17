@@ -10,38 +10,10 @@ const router = express.Router();
 async function findOrgByEmail(supabase, email) {
   const { data: org } = await supabase
     .from('organizations')
-    .select('id, name, status')
+    .select('id, name, status, owner_email')
     .ilike('owner_email', email)
     .maybeSingle();
   return org;
-}
-
-async function findOrgByDomain(supabase, email) {
-  const domain = email.split('@')[1];
-  if (!domain) return null;
-
-  const keywords = domain
-    .replace(/\.com\.br$|\.com$|\.net$|\.org$|\.br$/i, '')
-    .replace(/[.-]/g, ' ');
-
-  const words = keywords.split(/\s+/).filter(Boolean);
-  if (words.length === 0) return null;
-
-  for (const word of words) {
-    if (word.length < 3) continue;
-    const { data: orgs } = await supabase
-      .from('organizations')
-      .select('id, name, status')
-      .or(`name.ilike.%${word}%,slug.ilike.%${word}%`)
-      .limit(5);
-
-    if (orgs && orgs.length > 0) {
-      const active = orgs.find((o) => !o.status || o.status === 'active');
-      if (active) return active;
-      return orgs[0];
-    }
-  }
-  return null;
 }
 
 router.post('/recover-org', async (req, res) => {
@@ -64,6 +36,13 @@ router.post('/recover-org', async (req, res) => {
       return res
         .status(401)
         .json({ error: 'Token invalido', code: 'INVALID_TOKEN' });
+    }
+
+    if (!user.email_confirmed_at && !user.confirmed_at) {
+      return res.status(403).json({
+        error: 'E-mail nao confirmado para recuperacao de organizacao.',
+        code: 'EMAIL_NOT_CONFIRMED',
+      });
     }
 
     const email = String(user.email || '')
@@ -95,15 +74,11 @@ router.post('/recover-org', async (req, res) => {
       });
     }
 
-    let org = await findOrgByEmail(supabase, email);
-    let matchType = 'owner_email';
+    // Somente vincula se o e-mail verificado corresponder exatamente ao owner_email da organizacao.
+    const org = await findOrgByEmail(supabase, email);
+    const matchType = 'owner_email';
 
-    if (!org) {
-      org = await findOrgByDomain(supabase, email);
-      matchType = 'domain';
-    }
-
-    if (!org) {
+    if (!org || String(org.owner_email || '').toLowerCase().trim() !== email) {
       return res.status(404).json({
         error: 'Nenhuma organizacao encontrada para este email.',
         code: 'NO_ORG_FOUND',

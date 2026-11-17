@@ -8,7 +8,7 @@ services:
       VITE_WHATSAPP_API_URL: '/api/whatsapp'
       VITE_WHATSAPP_WS_URL: '/api/whatsapp/ws'
       VITE_SUPABASE_URL: '${VITE_SUPABASE_URL}'
-      VITE_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwZ2FmdHNqbXFtcGN6dnpzcmNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5NjUyNDUsImV4cCI6MjEwMDU0MTI0NX0.3p4x2i_BtGwzp4ElNV-HqeeVlQcQS53SWai5nJ2NTL0'
+      VITE_SUPABASE_ANON_KEY: '${VITE_SUPABASE_ANON_KEY}'
       VITE_PANEL_URL: 'https://imob.wootech.com.br'
       VITE_PUBLIC_APP_URL: 'https://imob.wootech.com.br'
     networks:
@@ -28,6 +28,26 @@ services:
       - 'traefik.http.routers.fazendasbrasil_frontend.priority=2'
       - 'traefik.http.routers.fazendasbrasil_frontend.service=wootech_imob_frontend'
       - 'traefik.http.services.wootech_imob_frontend.loadbalancer.server.port=80'
+    restart: unless-stopped
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '50m'
+        max-file: '3'
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://127.0.0.1:80/']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
 
   api:
     image: ghcr.io/fluowai/woomobzy-api:latest
@@ -50,26 +70,44 @@ services:
       WHATSMEOW_URL: 'http://whatsapp-service:3100'
       NODE_URL: 'http://api:3002'
       AGRO_INTEL_URL: 'http://agro-intelligence:8000'
-      OPENAI_API_KEY: '${OPENAI_API_KEY}'
-      GEMINI_API_KEY: '${GEMINI_API_KEY}'
-      GROQ_API_KEY: '${GROQ_API_KEY}'
+      INSTAGRAM_SERVICE_URL: 'http://instagram-service:3200'
+      INSTAGRAM_INTERNAL_TOKEN: '${INSTAGRAM_INTERNAL_TOKEN}'
+      DOCUMENT_WORKER_URL: 'http://document-worker:8001'
+      DOCUMENT_WEBHOOK_SECRET: '${DOCUMENT_WEBHOOK_SECRET}'
+      SIGNATURE_WEBHOOK_SECRET: '${SIGNATURE_WEBHOOK_SECRET}'
+      EMAIL_ENCRYPTION_KEY: '${EMAIL_ENCRYPTION_KEY}'
+      ASAAS_API_KEY: '${ASAAS_API_KEY:-}'
+      ASAAS_ENVIRONMENT: '${ASAAS_ENVIRONMENT:-production}'
+      ASAAS_WEBHOOK_TOKEN: '${ASAAS_WEBHOOK_TOKEN:-}'
+      OPENAI_API_KEY: '${OPENAI_API_KEY:-}'
+      ANTHROPIC_API_KEY: '${ANTHROPIC_API_KEY:-}'
+      GEMINI_API_KEY: '${GEMINI_API_KEY:-}'
+      GROQ_API_KEY: '${GROQ_API_KEY:-}'
+      OPENROUTER_API_KEY: '${OPENROUTER_API_KEY:-}'
       WHATSAPP_SERVICE_TOKEN: '${WHATSAPP_SERVICE_TOKEN}'
       WHATSAPP_INTERNAL_TOKEN: '${WHATSAPP_INTERNAL_TOKEN}'
       WHATSAPP_WS_JWT_SECRET: '${WHATSAPP_WS_JWT_SECRET}'
       WHATSAPP_AI_AUTOMATION: 'true'
-      RABBITMQ_URL: '${RABBITMQ_URL:-amqp://imobzy:ImobzyRabbit@2025!@rabbitmq:5672}'
+      REDIS_URL: 'redis://redis:6379'
+      RABBITMQ_URL: '${RABBITMQ_URL}'
       MEDIA_STORAGE_PROVIDER: 'minio'
       MINIO_ENDPOINT: '${MINIO_ENDPOINT}'
       MINIO_PUBLIC_URL: '${MINIO_PUBLIC_URL}'
       MINIO_ACCESS_KEY: '${MINIO_ACCESS_KEY}'
       MINIO_SECRET_KEY: '${MINIO_SECRET_KEY}'
-      MINIO_REGION: '${MINIO_REGION}'
-      MINIO_WHATSAPP_BUCKET: '${MINIO_WHATSAPP_BUCKET}'
+      MINIO_REGION: '${MINIO_REGION:-us-east-1}'
+      MINIO_MEDIA_BUCKET: '${MINIO_MEDIA_BUCKET:-imobzy-media}'
+      MINIO_DOCUMENTS_BUCKET: '${MINIO_DOCUMENTS_BUCKET:-imobzy-documents}'
+      MINIO_WHATSAPP_BUCKET: '${MINIO_WHATSAPP_BUCKET:-whatsapp-media}'
+      MINIO_EXPORTS_BUCKET: '${MINIO_EXPORTS_BUCKET:-imobzy-exports}'
+      MINIO_BACKUPS_BUCKET: '${MINIO_BACKUPS_BUCKET:-imobzy-backups}'
       TRAEFIK_DYNAMIC_DIR: '/app/traefik/dynamic'
       TRAEFIK_FRONTEND_SERVICE: 'wootech_imob_frontend@docker'
       TRAEFIK_API_SERVICE: 'wootech_imob_api@docker'
     depends_on:
       rabbitmq:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       - imobzy_traefik_dynamic:/app/traefik/dynamic
@@ -100,6 +138,26 @@ services:
       - 'traefik.http.routers.fazendasbrasil_api.priority=10'
       - 'traefik.http.routers.fazendasbrasil_api.service=wootech_imob_api'
       - 'traefik.http.services.wootech_imob_api.loadbalancer.server.port=3002'
+    restart: unless-stopped
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '50m'
+        max-file: '3'
+    healthcheck:
+      test: ['CMD-SHELL', 'node -e "fetch(\"http://127.0.0.1:3002/api/health\").then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 25s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+        reservations:
+          cpus: '0.2'
+          memory: 256M
 
   whatsapp-service:
     image: ghcr.io/fluowai/woomobzy-whatsapp:latest
@@ -130,6 +188,26 @@ services:
         condition: service_healthy
     volumes:
       - whatsapp_sessions:/app/.sessions
+    restart: unless-stopped
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '50m'
+        max-file: '3'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://127.0.0.1:3100/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1024M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
     networks:
       - imobfluow_internal
 
@@ -137,12 +215,18 @@ services:
     image: rabbitmq:3.13-management-alpine
     hostname: rabbitmq-server
     environment:
-      RABBITMQ_ERLANG_COOKIE: '${RABBITMQ_ERLANG_COOKIE:-ImobzyRabbitMQSecretCookie2025XYZ!}'
-      RABBITMQ_DEFAULT_USER: 'imobzy'
-      RABBITMQ_DEFAULT_PASS: '${RABBITMQ_DEFAULT_PASS:-ImobzyRabbit@2025!}'
+      RABBITMQ_ERLANG_COOKIE: '${RABBITMQ_ERLANG_COOKIE}'
+      RABBITMQ_DEFAULT_USER: '${RABBITMQ_DEFAULT_USER:-imobzy}'
+      RABBITMQ_DEFAULT_PASS: '${RABBITMQ_DEFAULT_PASS}'
       RABBITMQ_NODENAME: 'rabbit@rabbitmq-server'
     volumes:
       - rabbitmq_data_v4:/var/lib/rabbitmq/mnesia
+    restart: unless-stopped
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '50m'
+        max-file: '3'
     networks:
       - imobfluow_internal
     healthcheck:
@@ -152,8 +236,115 @@ services:
       retries: 5
       start_period: 30s
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '50m'
+        max-file: '3'
+    networks:
+      - imobfluow_internal
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  instagram-service:
+    image: ghcr.io/fluowai/woomobzy-instagram-service:latest
+    restart: unless-stopped
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '50m'
+        max-file: '3'
+    environment:
+      NODE_ENV: production
+      PORT: 3200
+      ALLOWED_ORIGINS: 'https://imob.wootech.com.br,https://imobfluow.consultio.com.br,https://okaimoveis.com.br,https://www.okaimoveis.com.br,https://fazendasbrasil.com,https://www.fazendasbrasil.com'
+      SUPABASE_URL: '${VITE_SUPABASE_URL}'
+      SUPABASE_SERVICE_ROLE_KEY: '${SUPABASE_SERVICE_ROLE_KEY}'
+      SUPABASE_JWT_SECRET: '${SUPABASE_JWT_SECRET}'
+      REDIS_URL: 'redis://redis:6379'
+      INSTAGRAM_WORKER_URL: 'http://instagram-worker:8000'
+      INSTAGRAM_INTERNAL_TOKEN: '${INSTAGRAM_INTERNAL_TOKEN}'
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - imobfluow_internal
+
+  instagram-worker:
+    image: ghcr.io/fluowai/woomobzy-instagram-worker:latest
+    restart: unless-stopped
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '50m'
+        max-file: '3'
+    environment:
+      REDIS_URL: 'redis://redis:6379'
+      NODE_SERVICE_URL: 'http://instagram-service:3200'
+      INTERNAL_TOKEN: '${INSTAGRAM_INTERNAL_TOKEN}'
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - imobfluow_internal
+
+  document-worker:
+    image: ghcr.io/fluowai/woomobzy-document-worker:latest
+    restart: unless-stopped
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '50m'
+        max-file: '3'
+    environment:
+      GEMINI_API_KEY: '${GEMINI_API_KEY:-}'
+      WEBHOOK_URL: 'http://api:3002/api/documents/webhook/worker-result'
+      DOCUMENT_WEBHOOK_SECRET: '${DOCUMENT_WEBHOOK_SECRET}'
+    healthcheck:
+      test: ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8001/health")']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+        reservations:
+          cpus: '0.2'
+          memory: 256M
+    networks:
+      - imobfluow_internal
+
   agro-intelligence:
     image: ghcr.io/fluowai/woomobzy-agro:latest
+    restart: unless-stopped
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '50m'
+        max-file: '3'
+    healthcheck:
+      test: ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/")']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
     networks:
       - imobfluow_internal
 

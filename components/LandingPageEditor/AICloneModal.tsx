@@ -1,7 +1,7 @@
 import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
 import { X, Wand2, Loader, Globe } from 'lucide-react';
-import axios from 'axios';
+import { callApi } from '@/src/lib/api';
 import { useAuth } from '../../context/AuthContext';
 
 interface AICloneModalProps {
@@ -25,12 +25,16 @@ const AICloneModal: React.FC<AICloneModalProps> = ({ onClone, onClose }) => {
       setStatus('Acessando o site...');
 
       // Call Backend
-      const response = await axios.post('/api/ai/clone-site', {
-        url,
-        organizationId: profile?.organization_id,
+      const response = await callApi('/api/ai/clone-site', {
+        method: 'POST',
+        hideError: true,
+        body: JSON.stringify({
+          url,
+          organizationId: profile?.organization_id,
+        }),
       });
 
-      const layoutData = response.data.layout;
+      const layoutData = response?.layout;
 
       if (!layoutData || !layoutData.blocks) {
         throw new Error('Formato inválido recebido da IA');
@@ -42,7 +46,7 @@ const AICloneModal: React.FC<AICloneModalProps> = ({ onClone, onClose }) => {
       onClone(layoutData);
     } catch (err: any) {
       logger.error('Erro ao clonar:', err);
-      setError(err.response?.data?.error || err.message || 'Erro desconhecido');
+      setError(err?.message || 'Erro desconhecido');
     } finally {
       setLoading(false);
     }

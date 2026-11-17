@@ -8,6 +8,7 @@ import {
   RefreshCw,
   Brain,
 } from 'lucide-react';
+import { callApi } from '../lib/api';
 
 interface ValuationData {
   id: string;
@@ -37,11 +38,10 @@ const ValuationCard: React.FC<ValuationCardProps> = ({ propertyId }) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/valuation/estimate/${propertyId}`, {
+      const data = await callApi(`/api/valuation/estimate/${propertyId}`, {
         method: 'POST',
-        credentials: 'include',
+        hideError: true,
       });
-      const data = await res.json();
       if (!data.success) throw new Error(data.error);
       setValuation(data.valuation);
     } catch (err: any) {
@@ -54,10 +54,9 @@ const ValuationCard: React.FC<ValuationCardProps> = ({ propertyId }) => {
   const handleLoadComparables = async () => {
     setLoadingComparables(true);
     try {
-      const res = await fetch(`/api/valuation/comparables/${propertyId}`, {
-        credentials: 'include',
+      const data = await callApi(`/api/valuation/comparables/${propertyId}`, {
+        hideError: true,
       });
-      const data = await res.json();
       if (data.success) setComparables(data.comparables);
     } catch {
       // Silently fail
@@ -86,10 +85,9 @@ const ValuationCard: React.FC<ValuationCardProps> = ({ propertyId }) => {
 
   const hasValuationHistory = async () => {
     try {
-      const res = await fetch(`/api/valuation/history/${propertyId}`, {
-        credentials: 'include',
+      const data = await callApi(`/api/valuation/history/${propertyId}`, {
+        hideError: true,
       });
-      const data = await res.json();
       if (data.success && data.history?.length > 0 && !valuation) {
         setValuation(data.history[0]);
       }

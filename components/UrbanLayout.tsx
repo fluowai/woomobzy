@@ -3,309 +3,186 @@ import React, { useState } from 'react';
 import { NavLink, Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
-  LayoutGrid,
-  Calculator,
+  MessageSquare,
   Users,
-  FileText,
-  LogOut,
+  Briefcase,
+  Calendar,
+  Home,
+  Building2,
   PieChart,
   Settings,
   Menu,
   X,
-  Calendar,
-  DollarSign,
-  MessageSquare,
-  Mail,
-  Map as MapIcon,
-  ShieldAlert,
-  Building2,
-  Key,
-  LayoutTemplate,
-  FileQuestion,
-  ChevronRight,
+  LogOut,
+  ChevronDown,
+  TrendingUp,
   Headset,
-  Bot,
-  Link as LinkIcon,
-  Globe,
-  LucideIcon,
+  ArrowRight,
+  ShieldAlert,
   Landmark,
   Trophy,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useSettings } from '../context/SettingsContext';
-import { useBranding } from '../context/BrandingContext';
 import SupportModal from './SupportModal';
-
-type MenuItem = {
-  icon: LucideIcon;
-  label: string;
-  path: string;
-};
-
-type MenuSection = {
-  title: string;
-  items: MenuItem[];
-};
+import WooTechLogo from './WooTechLogo';
+import WorkspaceTopBar from './WorkspaceTopBar';
 
 const UrbanLayout: React.FC = () => {
-  const { profile, signOut, isImpersonating, loading: authLoading } = useAuth();
-  const { settings, loading: settingsLoading } = useSettings();
-  const { branding } = useBranding();
-
-  const displayLogo = settings?.logoUrl || branding?.logo_url || '/logo-wootech-imob.svg';
-  const displayTitle = settings?.agencyName || branding?.platform_name || 'WooTech Imob';
-
-  const loading = authLoading || settingsLoading;
-  const subtype = settings?.urbanSubtype || 'imobiliaria';
-
+  const { profile, signOut, isImpersonating, loading } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const { pathname } = useLocation();
-  const isWorkspaceRoute =
-    pathname.startsWith('/urban/whatsapp') ||
-    pathname.startsWith('/urban/email');
-  const isLandingPageEditor =
-    (pathname.includes('/landing-pages/') ||
-      pathname.includes('/site/pages/')) &&
-    pathname.split('/').length > 3;
-
-  if (!loading && profile?.role === 'superadmin' && !isImpersonating) {
-    logger.info(
-      '[UrbanLayout] Guard triggered. Redirecting Super Admin to their panel'
-    );
-    const isMegaAdmin = !profile?.organization?.is_reseller;
-    return <Navigate to={isMegaAdmin ? '/megaadmin' : '/superadmin'} replace />;
-  }
 
   const handleLogout = async () => {
     try {
       await signOut();
       window.location.href = '/login';
     } catch (error) {
-      logger.error('Logout error:', error);
+      logger.error('UrbanLayout logout error:', error);
     }
   };
 
-  const operationItems: MenuItem[] = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/urban' },
-    { icon: MessageSquare, label: 'Mensagens', path: '/urban/whatsapp' },
-    { icon: Mail, label: 'Email', path: '/urban/email' },
-    { icon: Building2, label: 'Funil Captação', path: '/urban/captacao' },
-    { icon: LayoutGrid, label: 'Funil / CRM', path: '/urban/kanban' },
+  const navMenuItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/urban', exact: true },
+    { icon: MessageSquare, label: 'Atendimento', path: '/urban/whatsapp' },
+    { icon: Users, label: 'Leads', path: '/urban/crm' },
+    { icon: Briefcase, label: 'Funil / CRM', path: '/urban/kanban' },
     { icon: Calendar, label: 'Minha Agenda', path: '/urban/agenda' },
-    { icon: Users, label: 'Clientes Unificado', path: '/urban/clients' },
-  ];
-
-  let assetItems: MenuItem[] = [];
-
-  if (subtype === 'loteadora') {
-    assetItems = [
-      { icon: MapIcon, label: 'Loteamentos', path: '/urban/loteamentos' },
-    ];
-  } else if (subtype === 'incorporadora') {
-    assetItems = [
-      { icon: Building2, label: 'Unidades', path: '/urban/properties' },
-      { icon: MapIcon, label: 'Empreendimentos', path: '/urban/loteamentos' },
-    ];
-  } else {
-    // imobiliaria (default)
-    assetItems = [
-      { icon: Building2, label: 'Imóveis Urbanos', path: '/urban/properties' },
-      { icon: Key, label: 'Gestão de Locação', path: '/urban/locacao' },
-      { icon: MapIcon, label: 'Loteamentos', path: '/urban/loteamentos' },
-      {
-        icon: Building2,
-        label: 'Adm. Condomínios',
-        path: '/urban/condominios',
-      },
-      { icon: Key, label: 'Controle de Chaves', path: '/urban/chaves' },
-    ];
-  }
-
-  const managementItems: MenuItem[] = [
-    { icon: DollarSign, label: 'Financeiro & ERP', path: '/urban/financeiro' },
-    {
-      icon: Landmark,
-      label: 'Simulador & Financial Hub',
-      path: '/urban/fintech',
-    },
-    { icon: Trophy, label: 'Clube Imobzy', path: '/urban/clube' },
-    { icon: FileText, label: 'Contratos & Jurídico', path: '/urban/contracts' },
-    { icon: FileText, label: 'Documentos (GED)', path: '/urban/documentos' },
-  ];
-
-  const growthItems: MenuItem[] = [
-    { icon: Globe, label: 'Meu Site', path: '/urban/site' },
-    { icon: Bot, label: 'Central de IA', path: '/urban/ai' },
-    {
-      icon: LayoutTemplate,
-      label: 'Landing Pages',
-      path: '/urban/landing-pages',
-    },
-    { icon: FileQuestion, label: 'Quiz', path: '/urban/quiz' },
-    { icon: PieChart, label: 'Relatórios Gerenciais', path: '/urban/reports' },
-  ];
-
-  const systemItems: MenuItem[] = [
-    { icon: LinkIcon, label: 'Conexões', path: '/urban/connections' },
-    { icon: Users, label: 'Equipes', path: '/urban/users' },
+    { icon: Home, label: 'Imóveis', path: '/urban/properties' },
+    { icon: Building2, label: 'Locação', path: '/urban/locacao' },
+    { icon: Landmark, label: 'Fintech', path: '/urban/fintech' },
+    { icon: Trophy, label: 'Clube', path: '/urban/clube' },
+    { icon: PieChart, label: 'Relatórios', path: '/urban/reports' },
     { icon: Settings, label: 'Configurações', path: '/urban/settings' },
   ];
 
   if (profile?.role === 'superadmin') {
     const isMegaAdmin = !profile?.organization?.is_reseller;
-    systemItems.push({
+    navMenuItems.push({
       icon: ShieldAlert,
       label: isMegaAdmin ? 'Mega Admin' : 'Super Admin',
       path: isMegaAdmin ? '/megaadmin' : '/superadmin',
     });
   }
 
-  const menuSections: MenuSection[] = [
-    { title: 'Operação', items: operationItems },
-    { title: 'Carteira Urbana', items: assetItems },
-    { title: 'Gestão', items: managementItems },
-    { title: 'Crescimento', items: growthItems },
-    { title: 'Sistema', items: systemItems },
-  ];
+  const isMenuItemActive = (path: string, exact?: boolean) => {
+    if (exact) return pathname === path;
+    return pathname.startsWith(path);
+  };
 
-  const isMenuItemActive = (path: string, isActive: boolean) =>
-    isActive || (path !== '/urban' && pathname.startsWith(path));
+  const displayName =
+    profile?.full_name ||
+    (profile as any)?.name ||
+    'Paulo Argolo';
 
-  const renderMenuItem = (item: MenuItem) => (
-    <NavLink
-      key={item.path}
-      to={item.path}
-      end={item.path === '/urban'}
-      onClick={() => setIsMobileMenuOpen(false)}
-      className={({ isActive }) => {
-        const active = isMenuItemActive(item.path, isActive);
-        return `workspace-nav-item flex items-center justify-between group ${
-          active ? 'workspace-nav-item-active' : ''
-        }`;
-      }}
-    >
-      {({ isActive }) => {
-        const active = isMenuItemActive(item.path, isActive);
-
-        return (
-          <>
-            <div className="flex items-center gap-3.5 min-w-0">
-              <item.icon
-                size={20}
-                className={
-                  active
-                    ? 'text-primary shrink-0'
-                    : 'text-slate-400 group-hover:text-primary shrink-0'
-                }
-              />
-              <span className="truncate">{item.label}</span>
-            </div>
-            {item.path !== '/urban' && (
-              <ChevronRight
-                size={14}
-                className={
-                  active
-                    ? 'text-primary/70 shrink-0'
-                    : 'text-slate-300 group-hover:text-primary shrink-0'
-                }
-              />
-            )}
-          </>
-        );
-      }}
-    </NavLink>
-  );
+  const userInitials =
+    displayName
+      .split(' ')
+      .map((n: string) => n[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase() || 'PA';
 
   const renderSidebarContent = () => (
-    <>
-      <div className="px-6 py-5">
-        <Link
-          to="/urban"
-          className="flex items-center gap-3 group"
-          onClick={() => setIsMobileMenuOpen(false)}
-        >
-          <img
-            src={displayLogo}
-            alt={displayTitle}
-            className="workspace-logo transition-transform group-hover:scale-[1.02]"
-          />
+    <div className="flex flex-col h-full bg-[#0b0e14] border-r border-white/5 select-none">
+      {/* Top Logo */}
+      <div className="px-5 py-6">
+        <Link to="/urban" className="block transition hover:opacity-90">
+          <WooTechLogo variant="dark" subtitle="crm" size="sm" />
         </Link>
       </div>
 
-      <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-5 custom-scrollbar">
-        {menuSections.map((section) => (
-          <div key={section.title} className="space-y-2">
-            <p className="workspace-section-title">{section.title}</p>
-            <div className="space-y-1">{section.items.map(renderMenuItem)}</div>
+      {/* User Profile snippet (Exact match to Image 3 & 4) */}
+      <div className="px-4 mb-4">
+        <div className="flex items-center justify-between rounded-xl border border-white/5 bg-[#12151e] p-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[#ff5500] to-[#ff7a00] text-xs font-black text-white shadow-md shadow-orange-500/20">
+              {userInitials}
+            </div>
+            <div className="truncate">
+              <p className="text-xs font-black text-white truncate">
+                {displayName}
+              </p>
+              <p className="text-[10px] font-medium text-zinc-500 truncate">
+                Gestor • Urbano
+              </p>
+            </div>
           </div>
-        ))}
+          <ChevronDown size={14} className="text-zinc-500 shrink-0" />
+        </div>
+      </div>
 
-        <button
-          onClick={() => setIsSupportOpen(true)}
-          className="workspace-nav-item flex items-center justify-between w-full group"
-        >
-          <div className="flex items-center gap-3.5">
-            <Headset
-              size={20}
-              className="text-slate-400 group-hover:text-primary"
-            />
-            <span>Suporte</span>
-          </div>
-        </button>
+      {/* Nav Menu */}
+      <nav className="flex-1 px-3 space-y-1.5 overflow-y-auto custom-scrollbar">
+        {navMenuItems.map((item) => {
+          const Icon = item.icon;
+          const active = isMenuItemActive(item.path, item.exact);
+
+          return (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={`flex items-center gap-3.5 rounded-xl px-4 py-2.5 text-xs font-bold transition-all ${
+                active
+                  ? 'bg-gradient-to-r from-[#ff5500] to-[#ff7a00] text-white shadow-lg shadow-orange-500/25'
+                  : 'text-zinc-400 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <Icon size={18} className={active ? 'text-white' : 'text-zinc-400'} />
+              <span>{item.label}</span>
+            </NavLink>
+          );
+        })}
       </nav>
 
-      <div className="p-4 border-t border-slate-100 bg-slate-50/60">
-        <div className="flex items-center gap-3 mb-3 p-2 rounded-xl border border-slate-200 bg-white">
-          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold border border-primary/20">
-            {profile?.full_name?.charAt(0) || profile?.name?.charAt(0) || 'U'}
+      {/* Bottom Promo Support Card */}
+      <div className="p-4 space-y-3">
+        <div className="rounded-2xl border border-orange-500/20 bg-gradient-to-br from-[#1c130b] via-[#151720] to-[#0e1118] p-4 text-left shadow-lg">
+          <div className="flex items-center gap-2 text-[#ff6a00]">
+            <TrendingUp size={16} />
+            <h4 className="text-xs font-bold text-white">Seu negócio mais forte!</h4>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-900 truncate">
-              {profile?.full_name || profile?.name || 'Carregando...'}
-            </p>
-            {profile?.role === 'superadmin' ? (
-              <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-semibold uppercase tracking-wide rounded">
-                SUPER ADMIN
-              </span>
-            ) : (
-              <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide truncate">
-                {profile?.role === 'admin'
-                  ? 'Admin Imobiliária'
-                  : loading
-                    ? '...'
-                    : profile?.role || 'Corretor'}
-              </p>
-            )}
-          </div>
+          <p className="mt-1 text-[11px] font-medium text-zinc-400 leading-snug">
+            Conte com a Wootech para crescer ainda mais.
+          </p>
+          <button
+            onClick={() => setIsSupportOpen(true)}
+            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#ff6a00] py-2 text-[11px] font-bold text-white shadow-md shadow-orange-500/20 hover:bg-[#ff7a1a] transition cursor-pointer"
+          >
+            Falar com suporte <ArrowRight size={13} />
+          </button>
         </div>
 
+        {/* Sair do Sistema */}
         <button
           onClick={handleLogout}
-          className="flex items-center gap-2 text-slate-500 hover:text-red-600 text-xs font-semibold transition-all w-full p-2 rounded-lg hover:bg-red-50"
+          className="flex w-full items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold text-zinc-500 hover:text-rose-400 hover:bg-white/5 transition cursor-pointer"
         >
-          <LogOut size={14} /> Sair
+          <LogOut size={16} /> Sair do Sistema
         </button>
       </div>
+
       <SupportModal
         isOpen={isSupportOpen}
         onClose={() => setIsSupportOpen(false)}
       />
-    </>
+    </div>
   );
 
   return (
-    <div className="workspace-shell flex h-screen h-dvh overflow-hidden selection:bg-primary/20 selection:text-primary">
+    <div className="flex h-screen w-full overflow-hidden bg-[#090b0e] text-white">
+      {/* Mobile Drawer */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-[110] md:hidden">
+        <div className="fixed inset-0 z-50 md:hidden">
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          <aside className="workspace-sidebar absolute left-0 top-0 bottom-0 text-slate-900 flex flex-col animate-in slide-in-from-left duration-300">
+          <aside className="absolute left-0 top-0 bottom-0 w-64 text-white z-50">
             <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-all z-50"
+              className="absolute top-4 right-4 text-zinc-400 hover:text-white"
             >
               <X size={20} />
             </button>
@@ -314,32 +191,31 @@ const UrbanLayout: React.FC = () => {
         </div>
       )}
 
-      {!isLandingPageEditor && (
-        <aside className="workspace-sidebar text-slate-900 hidden md:flex flex-col shrink-0 overflow-hidden">
-          {renderSidebarContent()}
-        </aside>
-      )}
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex w-64 shrink-0 flex-col h-full">
+        {renderSidebarContent()}
+      </aside>
 
-      <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+      {/* Main Container */}
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        {/* Topbar */}
+        <WorkspaceTopBar currentSection="Dashboard Urbano" />
+
+        {/* Mobile menu trigger */}
         <button
           onClick={() => setIsMobileMenuOpen(true)}
-          className="fixed left-3 top-3 z-[110] flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-md md:hidden"
-          aria-label="Abrir menu"
+          className="fixed left-3 top-3 z-50 flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-[#12151e] text-zinc-300 md:hidden"
         >
-          <Menu size={21} />
+          <Menu size={20} />
         </button>
-        <div
-          className={`flex-1 overflow-y-auto ${
-            isLandingPageEditor
-              ? 'p-0'
-              : isWorkspaceRoute
-                ? 'p-2 sm:p-3 md:p-4'
-                : 'p-3 sm:p-4 md:p-6'
-          }`}
-        >
-          <Outlet />
-        </div>
-      </main>
+
+        {/* Scrollable View Content */}
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 custom-scrollbar">
+          <div className="mx-auto max-w-[1520px]">
+            <Outlet />
+          </div>
+        </main>
+      </div>
     </div>
   );
 };

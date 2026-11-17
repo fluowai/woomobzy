@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 
-export const AdminTicketsBoard = ({ initialTickets = [] }) => {
-  const [tickets, setTickets] = useState(initialTickets);
+export const AdminTicketsBoard = ({ initialTickets = [] }: { initialTickets?: any[] }) => {
+  const [tickets] = useState<any[]>(initialTickets);
   const [filter, setFilter] = useState('open');
+  const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
 
   const filteredTickets = tickets.filter(
     (t) => t.status === filter || filter === 'all'
@@ -84,7 +85,7 @@ export const AdminTicketsBoard = ({ initialTickets = [] }) => {
               <td style={{ padding: '12px' }}>{ticket.status}</td>
               <td style={{ padding: '12px' }}>
                 <button
-                  onClick={() => toast.info('Visualização de ticket em breve')}
+                  onClick={() => setSelectedTicket(ticket)}
                   style={{
                     padding: '6px 12px',
                     background: '#2196f3',
@@ -111,6 +112,55 @@ export const AdminTicketsBoard = ({ initialTickets = [] }) => {
           )}
         </tbody>
       </table>
+
+      {selectedTicket && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 50,
+            padding: '16px',
+          }}
+        >
+          <div
+            style={{
+              background: '#fff',
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '480px',
+              width: '100%',
+            }}
+          >
+            <h3 style={{ marginTop: 0 }}>Chamado #{String(selectedTicket.id).substring(0, 6)}</h3>
+            <p><strong>Assunto:</strong> {selectedTicket.subject}</p>
+            <p><strong>Cliente:</strong> {selectedTicket.client_name}</p>
+            <p><strong>Unidade:</strong> {selectedTicket.unit_label}</p>
+            <p><strong>Prioridade:</strong> {selectedTicket.priority}</p>
+            <p><strong>Status:</strong> {selectedTicket.status}</p>
+            {selectedTicket.description && (
+              <p><strong>Descrição:</strong> {selectedTicket.description}</p>
+            )}
+            <button
+              onClick={() => setSelectedTicket(null)}
+              style={{
+                marginTop: '12px',
+                padding: '8px 16px',
+                background: '#111',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+              }}
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

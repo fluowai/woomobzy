@@ -7,24 +7,25 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  Download,
-  Eye,
   Lock,
-  Search,
-  Filter,
-  MoreVertical,
   ExternalLink,
   ChevronRight,
   Loader2,
   RefreshCw,
   Upload,
   Brain,
+  Trash2,
+  X,
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import DocumentUpload from '../src/components/DocumentUpload';
+import { callApi } from '../src/lib/api';
+import { propertyService } from '../services/properties';
+import type { Property } from '../types';
 
 interface ApiDocument {
   id: string;
+  property_id?: string;
   document_type: string;
   original_name: string;
   status: string;
@@ -33,7 +34,15 @@ interface ApiDocument {
   classification_confidence: number;
   ocr_confidence: number;
   extracted_data: Record<string, any>;
+  raw_text?: string;
+  public_url?: string | null;
   created_at: string;
+}
+
+interface DocumentAnalysisPayload {
+  document: ApiDocument;
+  analyses?: any[];
+  external_validations?: any[];
 }
 
 const DOC_TYPE_LABELS: Record<string, { name: string; icon: string }> = {
@@ -60,33 +69,91 @@ const DataRoom: React.FC = () => {
   const { settings } = useSettings();
   const [loading, setLoading] = useState(true);
   const [documents, setDocuments] = useState<ApiDocument[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>(id || '');
+  const [uploadPropertyId, setUploadPropertyId] = useState<string>(id || '');
   const [showUpload, setShowUpload] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [analysisModal, setAnalysisModal] =
+    useState<DocumentAnalysisPayload | null>(null);
+  const [loadingAnalysisId, setLoadingAnalysisId] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
-    if (!id) {
-      setLoading(false);
-      return;
+    setSelectedPropertyId(id || '');
+    if (id) {
+      setUploadPropertyId(id);
     }
+  }, [id]);
 
+  useEffect(() => {
+    let active = true;
+    propertyService
+      .list(1, 100)
+      .then((list) => {
+        if (!active) return;
+        setProperties(list);
+        if (!id && !uploadPropertyId && list.length > 0) {
+          setUploadPropertyId(list[0].id);
+        }
+      })
+      .catch(() => {
+        // Ignore property list error in dropdown
+      });
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  useEffect(() => {
     const loadDocuments = async () => {
+      setLoading(true);
       try {
-        const res = await fetch(`/api/documents/${id}`, {
-          credentials: 'include',
-        });
-        const data = await res.json();
-        if (data.success) {
+        const endpoint = selectedPropertyId
+          ? `/api/documents/${selectedPropertyId}`
+          : '/api/documents';
+        const data = await callApi(endpoint, { hideError: true });
+        if (data?.success) {
           setDocuments(data.documents || []);
         }
       } catch {
-        // Silently fail, show empty
+        setDocuments([]);
       } finally {
         setLoading(false);
       }
     };
 
     loadDocuments();
-  }, [id, refreshKey]);
+  }, [selectedPropertyId, refreshKey]);
+
+  const handleOpenAnalysis = async (docId: string) => {
+    setLoadingAnalysisId(docId);
+    try {
+      const data = await callApi(`/api/documents/${docId}/analysis`);
+      if (data?.success && data.document) {
+        setAnalysisModal({
+          document: data.document,
+          analyses: data.analyses || [],
+          external_validations: data.external_validations || [],
+        });
+      }
+    } catch {
+      // callApi already triggers toast
+    } finally {
+      setLoadingAnalysisId(null);
+    }
+  };
+
+  const handleDeleteDocument = async (docId: string) => {
+    try {
+      await callApi(`/api/documents/${docId}`, { method: 'DELETE' });
+      toast.success('Documento removido do Data Room.');
+      setRefreshKey((k) => k + 1);
+    } catch {
+      // callApi already triggers toast
+    }
+  };
 
   const getStatusConfig = (doc: ApiDocument) => {
     if (doc.validation_status === 'valid' && doc.validation_score >= 70) {
@@ -191,7 +258,24 @@ const DataRoom: React.FC = () => {
           </h1>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {!id && (
+            <select
+              value={selectedPropertyId}
+              onChange={(e) => {
+                setSelectedPropertyId(e.target.value);
+                if (e.target.value) setUploadPropertyId(e.target.value);
+              }}
+              className="px-4 py-3 bg-white rounded-xl border border-slate-200 text-slate-700 text-xs font-semibold outline-none focus:border-indigo-500"
+            >
+              <option value="">Todos os Imóveis</option>
+              {properties.map((prop) => (
+                <option key={prop.id} value={prop.id}>
+                  {prop.title}
+                </option>
+              ))}
+            </select>
+          )}
           <button
             onClick={() => setRefreshKey((k) => k + 1)}
             className="p-3 bg-white rounded-xl border border-slate-200 text-slate-500 hover:text-indigo-600 transition-all"
@@ -208,15 +292,41 @@ const DataRoom: React.FC = () => {
         </div>
       </div>
 
-      {showUpload && id && (
-        <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100">
-          <DocumentUpload
-            propertyId={id}
-            onUploadComplete={() => {
-              setShowUpload(false);
-              setRefreshKey((k) => k + 1);
-            }}
-          />
+      {showUpload && (
+        <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 space-y-4">
+          {!id && (
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                Selecione o Imóvel para o Documento
+              </label>
+              <select
+                value={uploadPropertyId}
+                onChange={(e) => setUploadPropertyId(e.target.value)}
+                className="w-full md:w-96 px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 text-slate-800 text-sm font-medium outline-none focus:border-indigo-500"
+              >
+                <option value="">Selecione um imóvel...</option>
+                {properties.map((prop) => (
+                  <option key={prop.id} value={prop.id}>
+                    {prop.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {uploadPropertyId ? (
+            <DocumentUpload
+              propertyId={uploadPropertyId}
+              onUploadComplete={() => {
+                setShowUpload(false);
+                setRefreshKey((k) => k + 1);
+              }}
+            />
+          ) : (
+            <p className="text-sm text-amber-600 font-medium">
+              Cadastre ou selecione um imóvel para vincular o documento.
+            </p>
+          )}
         </div>
       )}
 
@@ -304,23 +414,40 @@ const DataRoom: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                      <div className="flex items-center gap-2 opacity-90 group-hover:opacity-100 transition-all">
                         <button
-                          onClick={() =>
-                            window.open(
-                              `/api/documents/${doc.id}/analysis`,
-                              '_blank'
-                            )
-                          }
-                          className="p-3 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-indigo-600 transition-all"
+                          onClick={() => handleOpenAnalysis(doc.id)}
+                          title="Ver Análise e Dados Extraídos"
+                          disabled={loadingAnalysisId === doc.id}
+                          className="p-3 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-indigo-600 transition-all disabled:opacity-50"
                         >
-                          <Brain size={18} />
+                          {loadingAnalysisId === doc.id ? (
+                            <Loader2 size={18} className="animate-spin" />
+                          ) : (
+                            <Brain size={18} />
+                          )}
                         </button>
+                        {doc.public_url && (
+                          <button
+                            onClick={() =>
+                              window.open(
+                                doc.public_url!,
+                                '_blank',
+                                'noopener,noreferrer'
+                              )
+                            }
+                            title="Abrir arquivo original"
+                            className="p-3 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-indigo-600 transition-all"
+                          >
+                            <ExternalLink size={18} />
+                          </button>
+                        )}
                         <button
-                          onClick={() => toast.info('Menu de opções em breve')}
-                          className="p-3 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-indigo-600 transition-all"
+                          onClick={() => handleDeleteDocument(doc.id)}
+                          title="Excluir documento"
+                          className="p-3 hover:bg-rose-50 rounded-xl text-slate-400 hover:text-rose-600 transition-all"
                         >
-                          <MoreVertical size={18} />
+                          <Trash2 size={18} />
                         </button>
                       </div>
                     </div>
@@ -403,7 +530,7 @@ const DataRoom: React.FC = () => {
               </div>
 
               <button
-                onClick={() => toast.info('Geração de PDF do dossiê em breve')}
+                onClick={() => window.print()}
                 className="w-full mt-8 py-4 bg-white text-slate-900 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:scale-105 transition-all shadow-lg"
               >
                 Gerar Dossiê Completo (PDF)
@@ -439,6 +566,86 @@ const DataRoom: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {analysisModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] overflow-hidden shadow-2xl flex flex-col">
+            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">
+                  Análise do Documento
+                </h3>
+                <p className="text-xs text-slate-500">
+                  {analysisModal.document.original_name} •{' '}
+                  {analysisModal.document.document_type || 'Não classificado'}
+                </p>
+              </div>
+              <button
+                onClick={() => setAnalysisModal(null)}
+                className="p-2 rounded-xl hover:bg-slate-100 text-slate-500"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto space-y-5 text-sm">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <div className="text-[10px] uppercase font-bold text-slate-400">
+                    Status
+                  </div>
+                  <div className="font-bold text-slate-800 mt-1">
+                    {analysisModal.document.validation_status ||
+                      analysisModal.document.status}
+                  </div>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <div className="text-[10px] uppercase font-bold text-slate-400">
+                    Score Validação
+                  </div>
+                  <div className="font-bold text-slate-800 mt-1">
+                    {analysisModal.document.validation_score || 0}%
+                  </div>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <div className="text-[10px] uppercase font-bold text-slate-400">
+                    Confiança OCR
+                  </div>
+                  <div className="font-bold text-slate-800 mt-1">
+                    {Math.round(
+                      (analysisModal.document.ocr_confidence || 0) * 100
+                    )}
+                    %
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                  Dados Extraídos
+                </h4>
+                <pre className="p-4 rounded-2xl bg-slate-900 text-emerald-300 text-xs overflow-x-auto">
+                  {JSON.stringify(
+                    analysisModal.document.extracted_data || {},
+                    null,
+                    2
+                  )}
+                </pre>
+              </div>
+
+              {analysisModal.document.raw_text && (
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                    Texto Extraído (OCR)
+                  </h4>
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs text-slate-700 whitespace-pre-wrap max-h-56 overflow-y-auto">
+                    {analysisModal.document.raw_text}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -30,6 +30,7 @@ const LoteamentoDetails: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedLot, setSelectedLot] = useState<Lot | null>(null);
   const [filterStatus, setFilterStatus] = useState<LotStatus | 'Todos'>('Todos');
+  const [searchLot, setSearchLot] = useState('');
   const [showReserveModal, setShowReserveModal] = useState(false);
   const [reserveForm, setReserveForm] = useState({ name: '', phone: '' });
 
@@ -150,10 +151,61 @@ const LoteamentoDetails: React.FC = () => {
     }
   };
 
-  const filteredLots =
-    filterStatus === 'Todos'
-      ? lots
-      : lots.filter((l) => l.status === filterStatus);
+  const filteredLots = lots.filter((l) => {
+    if (filterStatus !== 'Todos' && l.status !== filterStatus) return false;
+    const q = searchLot.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      String(l.block_id || '').toLowerCase().includes(q) ||
+      String(l.number || '').toLowerCase().includes(q)
+    );
+  });
+
+  const handleExportMap = () => {
+    if (!development) return;
+    if (development.svg_map) {
+      const blob = new Blob([development.svg_map], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${development.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-mapa.svg`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Mapa SVG exportado!');
+      return;
+    }
+
+    const csvHeader = 'Quadra,Lote,Area_m2,Valor_BRL,Status';
+    const csvRows = lots.map((l) =>
+      [
+        `"${String(l.block_id || '').replace(/"/g, '""')}"`,
+        `"${String(l.number || '').replace(/"/g, '""')}"`,
+        l.area_m2,
+        l.price,
+        `"${l.status}"`,
+      ].join(',')
+    );
+    const blob = new Blob(['\uFEFF' + [csvHeader, ...csvRows].join('\n')], {
+      type: 'text/csv;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${development.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-espelho-lotes.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Espelho de lotes exportado em CSV!');
+  };
+
+  const handleSendLotWhatsApp = () => {
+    if (!selectedLot || !development) return;
+    const formattedPrice = selectedLot.price.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    });
+    const text = `Olá! Seguem as informações do lote ${selectedLot.block_id} - Lote ${selectedLot.number} no empreendimento ${development.name}:\n• Área: ${selectedLot.area_m2.toFixed(2)} m²\n• Valor: ${formattedPrice}\n• Situação: ${selectedLot.status}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+  };
 
   const getStatusColor = (status: LotStatus) => {
     switch (status) {
@@ -245,7 +297,7 @@ const LoteamentoDetails: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => toast.info('Exportação de mapa em breve')}
+            onClick={handleExportMap}
             className="flex items-center gap-2 px-5 py-3 bg-slate-900 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-slate-900/10"
           >
             <Download size={16} /> Exportar Mapa
@@ -287,6 +339,8 @@ const LoteamentoDetails: React.FC = () => {
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
               />
               <input
+                value={searchLot}
+                onChange={(e) => setSearchLot(e.target.value)}
                 placeholder="Buscar Lote/Quadra..."
                 className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-full text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 transition-all w-48"
               />
@@ -426,7 +480,7 @@ const LoteamentoDetails: React.FC = () => {
                   <FileText size={18} /> Gerar Reserva / Simulação
                 </button>
                 <button
-                  onClick={() => toast.info('Envio por WhatsApp em breve')}
+                  onClick={handleSendLotWhatsApp}
                   className="w-full py-4 bg-emerald-500 text-white rounded-2xl font-bold uppercase tracking-widest shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
                 >
                   <Phone size={18} /> Enviar p/ Cliente (WhatsApp)
@@ -443,7 +497,7 @@ const LoteamentoDetails: React.FC = () => {
                       Proprietário / Comprador
                     </p>
                     <p className="text-xs font-bold text-red-900 truncate">
-                      João da Silva Pereira
+                      {(selectedLot as any).buyer_name || (selectedLot.coordinates as any)?.client_name || 'Comprador vinculado no contrato'}
                     </p>
                   </div>
                 </div>

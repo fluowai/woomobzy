@@ -57,7 +57,7 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
     let query = supabase
-      .from('rental_contracts')
+      .from('leases')
       .select('*', { count: 'exact' })
       .eq('organization_id', req.orgId)
       .order('created_at', { ascending: false })
@@ -100,14 +100,19 @@ router.post('/', verifyAuth, requireTenant, async (req, res) => {
         .json({ error: 'Dados inválidos', details: validation.error.issues });
     }
 
+    const { observation, ...leasePayload } = validation.data;
+    if (observation !== undefined && leasePayload.analysis_notes === undefined) {
+      leasePayload.analysis_notes = observation;
+    }
+
     const supabase = getSupabaseServer();
     const { data, error } = await supabase
-      .from('rental_contracts')
+      .from('leases')
       .insert({
         organization_id: req.orgId,
         created_by: req.authUserId,
         status: 'draft',
-        ...validation.data,
+        ...leasePayload,
       })
       .select()
       .single();
@@ -139,7 +144,7 @@ router.get('/:id', verifyAuth, requireTenant, async (req, res) => {
 
     const supabase = getSupabaseServer();
     const { data, error } = await supabase
-      .from('rental_contracts')
+      .from('leases')
       .select('*')
       .eq('id', id)
       .eq('organization_id', req.orgId)
@@ -170,10 +175,15 @@ router.put('/:id', verifyAuth, requireTenant, async (req, res) => {
         .json({ error: 'Dados inválidos', details: validation.error.issues });
     }
 
+    const { observation: obsUpdate, ...updatePayload } = validation.data;
+    if (obsUpdate !== undefined && updatePayload.analysis_notes === undefined) {
+      updatePayload.analysis_notes = obsUpdate;
+    }
+
     const supabase = getSupabaseServer();
     const { data, error } = await supabase
-      .from('rental_contracts')
-      .update({ ...validation.data, updated_by: req.authUserId })
+      .from('leases')
+      .update({ ...updatePayload, updated_by: req.authUserId })
       .eq('id', id)
       .eq('organization_id', req.orgId)
       .select()
@@ -200,7 +210,7 @@ router.delete('/:id', verifyAuth, requireTenant, async (req, res) => {
 
     const supabase = getSupabaseServer();
     const { error } = await supabase
-      .from('rental_contracts')
+      .from('leases')
       .update({ status: 'archived', updated_by: req.authUserId })
       .eq('id', id)
       .eq('organization_id', req.orgId);
@@ -246,7 +256,7 @@ router.patch('/:id/status', verifyAuth, requireTenant, async (req, res) => {
       updates.terminated_at = new Date().toISOString();
 
     const { data, error } = await supabase
-      .from('rental_contracts')
+      .from('leases')
       .update(updates)
       .eq('id', id)
       .eq('organization_id', req.orgId)
@@ -260,6 +270,129 @@ router.patch('/:id/status', verifyAuth, requireTenant, async (req, res) => {
     res.json({ success: true, data });
   } catch (error) {
     console.error('[LeaseRoutes] Status error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/locacao/leases/:id/renovar
+ */
+router.post('/:id/renovar', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nova_data_fim, novo_aluguel, novo_indice } = req.body || {};
+
+    if (!isValidUUID(id)) return res.status(400).json({ error: 'ID inválido' });
+    if (!nova_data_fim) {
+      return res.status(400).json({ error: 'nova_data_fim é obrigatório' });
+    }
+
+    const supabase = getSupabaseServer();
+    const { data: existing, error: fetchError } = await supabase
+      .from('leases')
+      .select('*')
+      .eq('id', id)
+      .eq('organization_id', req.orgId)
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
+    if (!existing) {
+      return res.status(404).json({ error: 'Contrato não encontrado' });
+    }
+
+    const updates = {
+      end_date: nova_data_fim,
+      status: 'active',
+      updated_by: req.authUserId,
+    };
+    if (novo_aluguel !== undefined && Number(novo_aluguel) > 0) {
+      updates.monthly_rent = Number(novo_aluguel);
+    }
+    if (novo_indice) {
+      updates.adjustment_index = novo_indice;
+    }
+
+    const { data: updated, error: updateError } = await supabase
+      .from('leases')
+      .update(updates)
+      .eq('id', id)
+      .eq('organization_id', req.orgId)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+
+    await supabase.from('lease_history').insert({
+      lease_id: id,
+      organization_id: req.orgId,
+      action: 'renewed',
+      description: `Contrato renovado até ${nova_data_fim}`,
+      user_id: req.authUserId,
+      metadata: {
+        previous_end_date: existing.end_date,
+        new_end_date: nova_data_fim,
+        previous_rent: existing.monthly_rent,
+        new_rent: updated.monthly_rent,
+      },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        renewal: updated,
+        novo_aluguel: updated.monthly_rent,
+      },
+    });
+  } catch (error) {
+    console.error('[LeaseRoutes] Renew error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * PUT /api/locacao/leases/:id/pagamento
+ */
+router.put('/:id/pagamento', verifyAuth, requireTenant, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, data_pagamento, valor_pago } = req.body || {};
+
+    if (!isValidUUID(id)) return res.status(400).json({ error: 'ID inválido' });
+
+    const validPaymentStatuses = ['em_dia', 'atrasado', 'inadimplente'];
+    if (!validPaymentStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Status de pagamento inválido' });
+    }
+
+    const supabase = getSupabaseServer();
+    const { data: updated, error } = await supabase
+      .from('leases')
+      .update({
+        payment_status: status,
+        updated_by: req.authUserId,
+      })
+      .eq('id', id)
+      .eq('organization_id', req.orgId)
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!updated) {
+      return res.status(404).json({ error: 'Contrato não encontrado' });
+    }
+
+    await supabase.from('lease_history').insert({
+      lease_id: id,
+      organization_id: req.orgId,
+      action: 'payment_updated',
+      description: `Pagamento registrado (${status}) - R$ ${valor_pago ?? updated.monthly_rent}`,
+      user_id: req.authUserId,
+      metadata: { status, data_pagamento, valor_pago },
+    });
+
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    console.error('[LeaseRoutes] Payment error:', error);
     res.status(500).json({ error: error.message });
   }
 });

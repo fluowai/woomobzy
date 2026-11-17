@@ -20,11 +20,17 @@ const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [saving, setSaving] = useState(false);
   const [requestedPlanId, setRequestedPlanId] = useState<string | null>(null);
+  const [paymentInfo, setPaymentInfo] = useState<{
+    invoiceUrl?: string | null;
+    bankSlipUrl?: string | null;
+    pixCopyPaste?: string | null;
+    paymentUnavailableReason?: string | null;
+  } | null>(null);
 
   // Fetch plans when organization changes
   useEffect(() => {
     if (!profile?.organization_id) return;
-    
+
     let cancelled = false;
     supabase
       .from('plans')
@@ -67,14 +73,29 @@ const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({
   const selectPlan = async (planId: string) => {
     setSaving(true);
     try {
-      await callApi('/api/subscription/select-plan', {
+      const response: {
+        payment?: {
+          invoiceUrl?: string | null;
+          bankSlipUrl?: string | null;
+          pixCopyPaste?: string | null;
+        } | null;
+        paymentUnavailableReason?: string | null;
+      } = await callApi('/api/subscription/select-plan', {
         method: 'POST',
         body: JSON.stringify({ planId }),
       });
 
       setRequestedPlanId(planId);
+      setPaymentInfo({
+        invoiceUrl: response?.payment?.invoiceUrl || null,
+        bankSlipUrl: response?.payment?.bankSlipUrl || null,
+        pixCopyPaste: response?.payment?.pixCopyPaste || null,
+        paymentUnavailableReason: response?.paymentUnavailableReason || null,
+      });
       toast.success(
-        'Plano selecionado. A ativação ocorrerá após a confirmação do pagamento.'
+        response?.payment?.invoiceUrl
+          ? 'Cobrança gerada. Finalize o pagamento pelo link exibido.'
+          : 'Plano selecionado. A ativação ocorrerá após a confirmação do pagamento.'
       );
     } catch (error) {
       toast.error(
@@ -106,9 +127,55 @@ const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({
         </div>
 
         {effectiveRequestedPlanId && (
-          <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900">
-            O plano escolhido está aguardando confirmação de pagamento. O
-            acesso será liberado somente depois da confirmação.
+          <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900 space-y-3">
+            <p>
+              O plano escolhido está aguardando confirmação de pagamento. O
+              acesso será liberado somente depois da confirmação.
+            </p>
+            {(paymentInfo?.invoiceUrl || paymentInfo?.bankSlipUrl) && (
+              <div className="flex flex-wrap gap-2">
+                {paymentInfo.invoiceUrl && (
+                  <a
+                    href={paymentInfo.invoiceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700"
+                  >
+                    Abrir Checkout / Fatura
+                  </a>
+                )}
+                {paymentInfo.bankSlipUrl && (
+                  <a
+                    href={paymentInfo.bankSlipUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-800 hover:bg-slate-50"
+                  >
+                    Visualizar Boleto
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  className="inline-flex items-center rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-100"
+                >
+                  Já paguei — Atualizar Acesso
+                </button>
+              </div>
+            )}
+            {paymentInfo?.pixCopyPaste && (
+              <div className="rounded-xl border border-amber-300 bg-white p-3 text-xs text-slate-700">
+                <p className="font-bold text-slate-900 mb-1">PIX Copia e Cola:</p>
+                <code className="block break-all text-[11px] text-slate-600">
+                  {paymentInfo.pixCopyPaste}
+                </code>
+              </div>
+            )}
+            {!paymentInfo?.invoiceUrl && paymentInfo?.paymentUnavailableReason && (
+              <p className="text-xs font-normal text-amber-800">
+                {paymentInfo.paymentUnavailableReason}
+              </p>
+            )}
           </div>
         )}
 

@@ -1,3 +1,4 @@
+import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
 import { getApiUrl } from '../src/lib/api';
 import {
@@ -54,7 +55,7 @@ export const uploadFile = async (
         clearImpersonationSession();
       }
       logger.error('Erro detalhado no upload:', data);
-      alert(`Erro no upload: ${message}`);
+      toast.error(`Erro no upload: ${message}`);
       throw new Error(message);
     }
 

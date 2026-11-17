@@ -596,7 +596,7 @@ async function readStoredMinioIntegration() {
 async function loadAndApplyStoredMinioConfig() {
   const stored = await readStoredMinioIntegration();
   const config = mergeMinioConfig(stored?.config || {});
-  if (stored?.config) setMinioRuntimeConfig(config);
+  setMinioRuntimeConfig(config);
   storedMinioConfigLoaded = true;
   return config;
 }
@@ -609,6 +609,21 @@ function mergeMinioConfig(input = {}, previous = {}) {
     typeof config.useSsl === 'boolean'
       ? config.useSsl
       : inferUseSsl(endpoint || env.endpoint);
+  const singleBucket = cleanValue(
+    config.singleBucket || process.env.MINIO_BUCKET || process.env.S3_BUCKET
+  );
+  const envBucketMode = cleanValue(
+    process.env.MINIO_BUCKET_MODE || process.env.S3_BUCKET_MODE
+  ).toLowerCase();
+  const bucketMode = ['single', 'separate'].includes(config.bucketMode)
+    ? config.bucketMode
+    : ['single', 'separate'].includes(envBucketMode)
+      ? envBucketMode
+      : singleBucket &&
+          !process.env.MINIO_MEDIA_BUCKET &&
+          !process.env.MINIO_WHATSAPP_BUCKET
+        ? 'single'
+        : 'separate';
 
   return {
     endpoint,
@@ -618,12 +633,8 @@ function mergeMinioConfig(input = {}, previous = {}) {
     secretKey: cleanValue(
       config.secretKey || previous.secretKey || env.secretKey
     ),
-    singleBucket: cleanValue(
-      config.singleBucket || process.env.MINIO_BUCKET || process.env.S3_BUCKET
-    ),
-    bucketMode: ['single', 'separate'].includes(config.bucketMode)
-      ? config.bucketMode
-      : 'separate',
+    singleBucket,
+    bucketMode,
     folderMode: ['bucket-prefix', 'tenant-prefix', 'flat'].includes(
       config.folderMode
     )

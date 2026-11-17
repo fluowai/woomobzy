@@ -83,6 +83,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const chatPhone =
     chat.platform === 'instagram'
       ? chat.instagram_contact_username
@@ -442,18 +443,27 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               <button
                 className="wa-icon-btn"
                 title="Ligar"
-                onClick={() =>
-                  toast.info('Chamada de voz será liberada em breve')
-                }
+                onClick={() => {
+                  const digits = (rawPhone || '').replace(/\D/g, '');
+                  if (!digits) {
+                    toast.error('Número de telefone não disponível neste chat.');
+                    return;
+                  }
+                  window.location.href = `tel:+${digits.startsWith('55') ? digits : `55${digits}`}`;
+                }}
               >
                 <Phone size={18} />
               </button>
               <button
                 className="wa-icon-btn"
-                title="Videochamada"
-                onClick={() =>
-                  toast.info('Videochamada será liberada em breve')
-                }
+                title="Criar link de videochamada"
+                onClick={() => {
+                  const meetUrl = 'https://meet.google.com/new';
+                  setInputText((prev) =>
+                    prev ? `${prev}\nLink da reunião: ${meetUrl}` : `Link da reunião: ${meetUrl}`
+                  );
+                  window.open(meetUrl, '_blank', 'noopener,noreferrer');
+                }}
               >
                 <Video size={18} />
               </button>
@@ -770,15 +780,35 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
       {/* Input Area */}
       <form
-        className="wa-input-area"
+        className="wa-input-area relative"
         onSubmit={handleSubmit}
         id="message-input-form"
       >
+        {showEmojiPicker && (
+          <div className="absolute bottom-full left-3 mb-2 bg-white border border-slate-200 rounded-xl shadow-xl p-2 grid grid-cols-6 gap-1 z-30">
+            {[
+              '👍', '👋', '😊', '🏡', '🌾', '🚜',
+              '📄', '✅', '📅', '📍', '💰', '🙏',
+            ].map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => {
+                  setInputText((prev) => `${prev}${emoji}`);
+                  setShowEmojiPicker(false);
+                }}
+                className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-lg"
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        )}
         <button
           type="button"
           className="wa-icon-btn"
           title="Emoji"
-          onClick={() => toast.info('Seletor de Emojis em breve')}
+          onClick={() => setShowEmojiPicker((prev) => !prev)}
         >
           <Smile size={22} />
         </button>

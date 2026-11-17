@@ -643,6 +643,22 @@ router.post('/impersonations', verifyPlatformAdmin, async (req, res) => {
   await handleCreateImpersonationSession(req, res);
 });
 
+router.post('/impersonations/exchange', async (req, res) => {
+  const { code } = req.body || {};
+  if (!code) {
+    return res.status(400).json({
+      success: false,
+      error: 'Código de autorização obrigatório.',
+    });
+  }
+
+  return res.status(410).json({
+    success: false,
+    error:
+      'Fluxo legado de troca por código desativado. Utilize o modo suporte via /admin.',
+  });
+});
+
 // --- 🏢 Organizations Management ---
 
 router.post('/impersonate', verifyPlatformAdmin, async (req, res) => {

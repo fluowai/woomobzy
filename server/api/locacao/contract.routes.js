@@ -3,31 +3,63 @@ import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { verifyAuth } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
 import { ContractGenerationService } from '../../services/contractGenerationService.js';
+import { isValidUUID } from '../../lib/shared-utils.js';
 import crypto from 'crypto';
 
 const router = Router();
 
-router.post('/generate-and-sign', verifyAuth, requireTenant, async (req, res) => {
+const handleGenerateContract = async (req, res) => {
   try {
-    const { leaseId, contractData, signatureProvider } = req.body;
+    const { leaseId, contractData = {}, signatureProvider } = req.body;
     const supabase = getSupabaseServer();
 
-    // Cria o PDF do contrato preenchido (Mock, na prática deve misturar template com contractData)
-    // Para fins deste plano, vamos usar o contractData textualmente
-    const fullText = `
+    let leaseRecord = null;
+    if (leaseId && isValidUUID(leaseId)) {
+      const { data: existingLease } = await supabase
+        .from('leases')
+        .select('*')
+        .eq('id', leaseId)
+        .eq('organization_id', req.orgId)
+        .maybeSingle();
+      leaseRecord = existingLease || null;
+    }
+
+    let fullText = '';
+    const templateId = contractData?.template_id || leaseRecord?.current_template_id || null;
+    if (templateId) {
+      const { data: tpl } = await supabase
+        .from('contract_templates')
+        .select('content')
+        .eq('id', templateId)
+        .eq('organization_id', req.orgId)
+        .maybeSingle();
+
+      if (tpl?.content) {
+        fullText = String(tpl.content).replace(/\{\{([^}]+)\}\}/g, (_, key) => {
+          const k = key.trim();
+          const val = contractData[k] ?? leaseRecord?.[k];
+          return val !== undefined && val !== null ? String(val) : '';
+        });
+      }
+    }
+
+    const locadorNome = contractData.locador_nome || 'Locador';
+    const locatarioNome = contractData.locatario_nome || leaseRecord?.tenant_name || 'Locatário';
+
+    if (!fullText.trim()) {
+      fullText = `
 CONTRATO DE LOCAÇÃO DE IMÓVEL URBANO
 
-LOCADOR: ${contractData.locador_nome}, portador do CPF ${contractData.locador_cpf}.
-LOCATÁRIO: ${contractData.locatario_nome}, portador do CPF ${contractData.locatario_cpf}.
+LOCADOR: ${locadorNome}, portador do CPF ${contractData.locador_cpf || ''}.
+LOCATÁRIO: ${locatarioNome}, portador do CPF ${contractData.locatario_cpf || leaseRecord?.tenant_cpf || ''}.
 
-IMÓVEL: ${contractData.imovel_endereco} - ${contractData.imovel_cidade}
-VALOR: R$ ${contractData.aluguel_valor} com vencimento dia ${contractData.aluguel_vencimento}.
-    `;
+IMÓVEL: ${contractData.imovel_endereco || ''} - ${contractData.imovel_cidade || ''}
+VALOR: R$ ${contractData.aluguel_valor || leaseRecord?.monthly_rent || ''} com vencimento dia ${contractData.aluguel_vencimento || leaseRecord?.due_day || ''}.
+      `.trim();
+    }
 
-    // Gerar e salvar PDF usando o service que já temos, ou passar leaseData
-    // Simulação: Apenas chamamos o serviço enviando o texto.
     const result = await ContractGenerationService.generateFromLeaseData(
-      { contract_number: 'N/A' },
+      { id: leaseId || undefined, contract_number: contractData.contract_number || leaseRecord?.contract_number || 'N/A' },
       fullText,
       req.orgId,
       req.authUserId
@@ -37,19 +69,48 @@ VALOR: R$ ${contractData.aluguel_valor} com vencimento dia ${contractData.alugue
     const bucket = 'contracts';
     const objectKey = `${req.orgId}/lease_${Date.now()}_contract.pdf`;
     
-    await supabase.storage.from(bucket).upload(objectKey, result.pdf_buffer, {
+    const { error: uploadError } = await supabase.storage.from(bucket).upload(objectKey, result.pdf_buffer, {
       contentType: 'application/pdf',
       upsert: false,
     });
+    if (uploadError) throw uploadError;
     
     const { data: publicUrlData } = supabase.storage.from(bucket).getPublicUrl(objectKey);
     const pdfUrl = publicUrlData.publicUrl;
 
-    // Gerar assinaturas para as partes
+    if (leaseId) {
+      const { error: leaseUpdateError } = await supabase
+        .from('leases')
+        .update({ signed_document_url: pdfUrl, signature_method: signatureProvider || 'internal' })
+        .eq('id', leaseId)
+        .eq('organization_id', req.orgId);
+      if (leaseUpdateError) throw leaseUpdateError;
+
+      await supabase.from('generated_contracts').insert({
+        lease_id: leaseId,
+        template_id: templateId || null,
+        organization_id: req.orgId,
+        content: result.content,
+        content_html: result.content_html,
+        pdf_url: pdfUrl,
+        hash_sha256: result.hash_sha256,
+        version: 1,
+      });
+    }
+
+    // Gerar assinaturas para as partes com nome definido
     const signers = [
-      { name: contractData.locador_nome, email: contractData.locador_email, type: 'locador' },
-      { name: contractData.locatario_nome, type: 'locatario' } // assumindo email ausente ou não coletado no state inicial
-    ];
+      {
+        name: locadorNome,
+        email: contractData.locador_email || null,
+        type: 'locador',
+      },
+      {
+        name: locatarioNome,
+        email: contractData.locatario_email || leaseRecord?.tenant_email || null,
+        type: 'locatario',
+      },
+    ].filter((s) => typeof s.name === 'string' && s.name.trim().length > 0);
 
     for (const signer of signers) {
       const token = crypto.randomBytes(32).toString('hex');
@@ -66,11 +127,14 @@ VALOR: R$ ${contractData.aluguel_valor} com vencimento dia ${contractData.alugue
       });
     }
 
-    res.json({ success: true, pdfUrl });
+    res.json({ success: true, pdfUrl, hash: result.hash_sha256 });
   } catch (error) {
     console.error('Erro ao gerar contrato:', error);
     res.status(500).json({ error: error.message });
   }
-});
+};
+
+router.post('/generate-and-sign', verifyAuth, requireTenant, handleGenerateContract);
+router.post('/generate', verifyAuth, requireTenant, handleGenerateContract);
 
 export default router;

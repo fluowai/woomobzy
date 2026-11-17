@@ -60,7 +60,7 @@ export class LocacaoService {
       if (filters?.property_id) params.set('property_id', filters.property_id);
 
       const result = await callApi(
-        `/api/locacao${params.toString() ? '?' + params.toString() : ''}`
+        `/api/locacao/leases${params.toString() ? '?' + params.toString() : ''}`
       );
       return result.data || [];
     } catch (error) {
@@ -71,7 +71,7 @@ export class LocacaoService {
 
   async getContract(id: string): Promise<Contract | null> {
     try {
-      const result = await callApi(`/api/locacao/${id}`);
+      const result = await callApi(`/api/locacao/leases/${id}`);
       return result.data || null;
     } catch (error) {
       logger.error('Erro ao buscar contrato:', error);
@@ -81,7 +81,7 @@ export class LocacaoService {
 
   async createContract(data: Partial<Contract>): Promise<Contract | null> {
     try {
-      const result = await callApi('/api/locacao', {
+      const result = await callApi('/api/locacao/leases', {
         method: 'POST',
         body: JSON.stringify(data),
       });
@@ -97,7 +97,7 @@ export class LocacaoService {
     data: Partial<Contract>
   ): Promise<Contract | null> {
     try {
-      const result = await callApi(`/api/locacao/${id}`, {
+      const result = await callApi(`/api/locacao/leases/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
@@ -110,7 +110,7 @@ export class LocacaoService {
 
   async deleteContract(id: string): Promise<boolean> {
     try {
-      await callApi(`/api/locacao/${id}`, {
+      await callApi(`/api/locacao/leases/${id}`, {
         method: 'DELETE',
       });
       return true;
@@ -135,11 +135,25 @@ export class LocacaoService {
     indice?: string
   ): Promise<ReajusteResponse | null> {
     try {
-      const url = indice
-        ? `/api/locacao/calculo/reajuste/${id}?novo_indice=${indice}`
-        : `/api/locacao/calculo/reajuste/${id}`;
-      const result = await callApi(url);
-      return result.data || null;
+      const result = await callApi('/api/locacao/adjustments/calculate', {
+        method: 'POST',
+        body: JSON.stringify({ lease_id: id, index: indice }),
+      });
+      const calc = result.data;
+      if (!calc) return null;
+      const nextAdjustment = new Date();
+      nextAdjustment.setFullYear(nextAdjustment.getFullYear() + 1);
+      return {
+        contrato_id: id,
+        valor_atual: calc.current_rent,
+        indice_aplicado: calc.index,
+        nome_indice: calc.index_name,
+        taxa_percentual: calc.rate_percent,
+        valor_reajustado: calc.new_rent,
+        diferenca_mensal: calc.difference,
+        diferenca_anual: Math.round((calc.difference || 0) * 12 * 100) / 100,
+        data_proximo_reajuste: nextAdjustment.toISOString().split('T')[0],
+      };
     } catch (error) {
       logger.error('Erro ao calcular reajuste:', error);
       return null;
@@ -155,7 +169,7 @@ export class LocacaoService {
     }
   ): Promise<{ renewal: any; novo_aluguel: number } | null> {
     try {
-      const result = await callApi(`/api/locacao/${id}/renovar`, {
+      const result = await callApi(`/api/locacao/leases/${id}/renovar`, {
         method: 'POST',
         body: JSON.stringify(data),
       });
@@ -175,7 +189,7 @@ export class LocacaoService {
     }
   ): Promise<Contract | null> {
     try {
-      const result = await callApi(`/api/locacao/${id}/pagamento`, {
+      const result = await callApi(`/api/locacao/leases/${id}/pagamento`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });

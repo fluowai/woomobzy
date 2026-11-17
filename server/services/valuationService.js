@@ -203,20 +203,27 @@ export class ValuationService {
 
     if (cache?.data?.price) return cache.data.price;
 
-    const { data: avg } = await supabase
-      .from('price_history')
-      .select('price_per_ha')
-      .in(
-        'property_id',
-        supabase
-          .from('properties')
-          .select('id')
-          .eq('features->location->>state', state)
-          .eq('features->location->>city', city)
-          .eq('type', propertyType)
-      )
-      .not('price_per_ha', 'is', null)
+    let propQuery = supabase
+      .from('properties')
+      .select('id')
       .limit(50);
+    if (state) propQuery = propQuery.eq('state', state);
+    if (city) propQuery = propQuery.eq('city', city);
+    if (propertyType) propQuery = propQuery.eq('type', propertyType);
+
+    const { data: propRows } = await propQuery;
+    const propIds = (propRows || []).map((p) => p.id);
+
+    let avg = [];
+    if (propIds.length > 0) {
+      const { data: priceData } = await supabase
+        .from('price_history')
+        .select('price_per_ha')
+        .in('property_id', propIds)
+        .not('price_per_ha', 'is', null)
+        .limit(50);
+      avg = priceData || [];
+    }
 
     const prices = (avg || [])
       .map((p) => Number(p.price_per_ha))

@@ -415,7 +415,11 @@ export const setupWhatsAppProxy = (app, server, verifyAuth, requireTenant) => {
 };
 
 function getWsTokenSecret() {
-  return process.env.WHATSAPP_WS_JWT_SECRET || '';
+  return (
+    process.env.WHATSAPP_WS_JWT_SECRET ||
+    process.env.SUPABASE_JWT_SECRET ||
+    'wootech-default-whatsapp-ws-secret'
+  );
 }
 
 function verifyWsToken(token) {

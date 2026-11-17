@@ -17,7 +17,7 @@ router.get('/resumo', verifyAuth, requireTenant, async (req, res) => {
     const supabase = getSupabaseServer();
 
     const { data: leases } = await supabase
-      .from('rental_contracts')
+      .from('leases')
       .select('*')
       .eq('organization_id', req.orgId);
 
@@ -26,6 +26,7 @@ router.get('/resumo', verifyAuth, requireTenant, async (req, res) => {
         success: true,
         data: {
           total: 0,
+          total_contratos: 0,
           ativos: 0,
           em_andamento: 0,
           encerrados: 0,
@@ -37,6 +38,8 @@ router.get('/resumo', verifyAuth, requireTenant, async (req, res) => {
           valor_inadimplencia: 0,
           vencendo_30_dias: 0,
           vencendo_90_dias: 0,
+          contratos_vencendo_30_dias: 0,
+          contratos_vencendo_90_dias: 0,
         },
       });
     }
@@ -89,6 +92,7 @@ router.get('/resumo', verifyAuth, requireTenant, async (req, res) => {
       success: true,
       data: {
         total: leases.length,
+        total_contratos: leases.length,
         ativos: ativos.length,
         em_andamento: em_andamento.length,
         encerrados: encerrados.length,
@@ -100,6 +104,8 @@ router.get('/resumo', verifyAuth, requireTenant, async (req, res) => {
         valor_inadimplencia: valorInadimplencia,
         vencendo_30_dias: vencendo30.length,
         vencendo_90_dias: vencendo90.length,
+        contratos_vencendo_30_dias: vencendo30.length,
+        contratos_vencendo_90_dias: vencendo90.length,
       },
     });
   } catch (error) {
@@ -117,7 +123,7 @@ router.get('/timeline', verifyAuth, requireTenant, async (req, res) => {
     const supabase = getSupabaseServer();
 
     const { data: leases } = await supabase
-      .from('rental_contracts')
+      .from('leases')
       .select(
         'id, contract_number, tenant_name, monthly_rent, due_day, end_date, next_rent_adjustment, status'
       )

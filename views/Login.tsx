@@ -1,40 +1,38 @@
 import React, { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useSettings } from '../context/SettingsContext';
-import { useBranding } from '../context/BrandingContext';
 import { getAuthenticatedPanelPath } from '../src/lib/panelNavigation';
-import { COMMERCIAL_PRODUCT_NAME } from '../utils/branding';
 import {
   AlertCircle,
   ArrowRight,
-  Building2,
+  BarChart3,
   CheckCircle2,
   Eye,
   EyeOff,
   Lock,
   Loader2,
   Mail,
-  MapPin,
+  Monitor,
   ShieldCheck,
-  Sparkles,
+  Zap,
 } from 'lucide-react';
+import WooTechLogo from '../components/WooTechLogo';
 
-const capabilityItems = [
+const features = [
   {
-    icon: Building2,
-    label: 'Urbano e rural',
-    text: 'Carteiras, captacao, estoque e oportunidades no mesmo painel.',
+    icon: BarChart3,
+    title: 'Gestão completa',
+    description: 'Controle total da sua imobiliária.',
   },
   {
-    icon: MapPin,
-    label: 'Territorio inteligente',
-    text: 'Dados de localizacao e indicadores para decisoes comerciais.',
+    icon: Zap,
+    title: 'Produtividade e automação',
+    description: 'Processos mais rápidos e inteligentes.',
   },
   {
     icon: ShieldCheck,
-    label: 'Operacao protegida',
-    text: 'Controle de acesso, contratos e rotinas com mais previsibilidade.',
+    title: 'Segurança e estabilidade',
+    description: 'Seus dados protegidos 24/7.',
   },
 ];
 
@@ -54,11 +52,6 @@ const Login: React.FC = () => {
     isImpersonating,
     loading: authLoading,
   } = useAuth();
-  const { settings } = useSettings();
-  const { branding } = useBranding();
-
-  const displayProductName = settings?.agencyName || branding?.platform_name || COMMERCIAL_PRODUCT_NAME;
-  const displayLogo = settings?.logoUrl || branding?.logo_url || '/logo-wootech-imob.svg';
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('wootech-login-email');
@@ -79,16 +72,16 @@ const Login: React.FC = () => {
       setIsSuccess(false);
       setSubmitting(false);
       setError(
-        'Sua conta ainda nao esta vinculada a uma empresa. Fale com o administrador para liberar o acesso ao painel.'
+        'Sua conta ainda não está vinculada a uma empresa. Fale com o administrador para liberar o acesso ao painel.'
       );
     }
   }, [authLoading, isSuccess, profile?.organization_id, profile?.role, user]);
 
   if (user && authLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f5f7f4]">
-        <div className="inline-flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-600 shadow-sm">
-          <Loader2 className="animate-spin text-[#14b87a]" size={20} />
+      <div className="flex min-h-screen items-center justify-center bg-[#0d1017]">
+        <div className="inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-[#161b26] px-6 py-5 text-sm font-semibold text-white shadow-2xl">
+          <Loader2 className="animate-spin text-[#ff6a00]" size={22} />
           Preparando seu painel...
         </div>
       </div>
@@ -123,249 +116,283 @@ const Login: React.FC = () => {
     }
   };
 
+  const handleGoogleLogin = () => {
+    setError('O login corporativo via Google deve ser configurado no painel de administração da sua imobiliária.');
+  };
+
   return (
-    <main className="min-h-screen bg-[#f4f7f2] text-slate-950">
-      <div className="flex min-h-screen w-full flex-col lg:flex-row">
-        <section className="relative hidden w-full overflow-hidden bg-[#0b1c18] px-10 py-8 text-white lg:flex lg:w-[45%] lg:flex-col lg:justify-between xl:w-[42%]">
-          <div className="absolute inset-0">
-            <img
-              src="/templates/urban/urban_ready_move.png"
-              alt="Apartamento moderno gerenciado pelo WooTech Imob"
-              className="h-full w-full object-cover opacity-26"
-            />
-            <div className="absolute inset-0 bg-[linear-gradient(125deg,rgba(11,28,24,0.98),rgba(11,28,24,0.82)_48%,rgba(20,184,122,0.36))]" />
-          </div>
+    <main className="relative min-h-screen w-full bg-[#0b0e14] text-white flex flex-col justify-center overflow-hidden">
+      {/* Dynamic ambient glowing neon curves and blurred lights in background */}
+      <div className="pointer-events-none absolute -top-40 -left-40 h-[600px] w-[600px] rounded-full bg-gradient-to-tr from-[#ff5500]/20 to-transparent blur-[120px]" />
+      <div className="pointer-events-none absolute bottom-0 right-1/4 h-[500px] w-[500px] rounded-full bg-[#ff7a1a]/15 blur-[140px]" />
 
-          <div className="relative z-10">
-            <Link
-              to="/"
-              aria-label="Voltar para a pagina inicial"
-              className="inline-flex rounded-xl focus:outline-none focus:ring-2 focus:ring-[#c8ff66] focus:ring-offset-4 focus:ring-offset-[#0b1c18]"
-            >
-              <img
-                src={displayLogo}
-                alt={displayProductName}
-                className="h-12 w-auto brightness-0 invert object-contain"
-              />
-            </Link>
-          </div>
+      <div className="relative z-10 mx-auto flex w-full max-w-[1440px] min-h-screen items-center justify-between px-6 py-10 lg:px-16 xl:px-24">
+        {/* Left Side: Brand and Value Proposition */}
+        <div className="hidden lg:flex flex-col justify-between max-w-[620px] py-6">
+          {/* Top Logo */}
+          <Link to="/" className="inline-block transition-transform hover:scale-[1.02]">
+            <WooTechLogo variant="dark" subtitle="crm-erp" size="lg" />
+          </Link>
 
-          <div className="relative z-10 max-w-[560px]">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/16 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-[#c8ff66]">
-              <Sparkles size={15} />
-              Painel operacional
+          {/* Center Content */}
+          <div className="my-10 space-y-6">
+            {/* Pill Badge */}
+            <div className="inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-semibold tracking-wide text-zinc-300 backdrop-blur-md">
+              <Monitor size={15} className="text-[#ff6a00]" />
+              Painel Operacional
             </div>
 
-            <h1 className="mt-8 max-w-[560px] text-5xl font-black leading-[1.03] text-white xl:text-6xl">
-              Uma central unica para vender, atender e gerir imoveis.
+            {/* Headline */}
+            <h1 className="text-4xl xl:text-5xl font-black leading-[1.12] tracking-tight text-white">
+              Acesse seu painel e gerencie toda a{' '}
+              <span className="text-[#ff6a00] drop-shadow-[0_2px_15px_rgba(255,106,0,0.35)]">
+                operação imobiliária.
+              </span>
             </h1>
 
-            <p className="mt-6 max-w-[500px] text-lg font-medium leading-relaxed text-white/76">
-              {displayProductName} organiza leads, carteira, contratos e
-              inteligencia territorial para equipes urbanas e rurais.
+            {/* Subtitle */}
+            <p className="text-base xl:text-lg font-medium leading-relaxed text-zinc-400">
+              Leads, imóveis, vendas, locações, contratos, financeiro e muito mais, em um só lugar.
             </p>
-          </div>
 
-          <div className="relative z-10 grid gap-3">
-            {capabilityItems.map((item) => (
-              <article
-                key={item.label}
-                className="flex items-start gap-4 rounded-2xl border border-white/12 bg-white/8 p-4 backdrop-blur"
-              >
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#c8ff66] text-[#0b1c18]">
-                  <item.icon size={21} />
-                </span>
-                <div>
-                  <h2 className="mb-0 text-base font-bold text-white">
-                    {item.label}
-                  </h2>
-                  <p className="mb-0 mt-1 text-sm font-medium leading-relaxed text-white/66">
-                    {item.text}
-                  </p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="flex min-h-screen w-full items-center justify-center px-5 py-8 sm:px-8 lg:w-[55%] lg:px-12 xl:w-[58%]">
-          <div className="w-full max-w-[520px]">
-            <div className="mb-10 flex items-center justify-between gap-4 lg:hidden">
-              <Link
-                to="/"
-                aria-label="Voltar para a pagina inicial"
-                className="inline-flex"
-              >
-                <img
-                  src={displayLogo}
-                  alt={displayProductName}
-                  className="h-12 w-auto object-contain"
-                />
-              </Link>
+            {/* 3 Value Proposition Cards */}
+            <div className="space-y-4 pt-4">
+              {features.map((feat) => {
+                const Icon = feat.icon;
+                return (
+                  <div key={feat.title} className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#ff6a00]/15 text-[#ff6a00] border border-[#ff6a00]/30 shadow-[0_0_15px_rgba(255,106,0,0.15)]">
+                      <Icon size={22} />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-white tracking-wide">
+                        {feat.title}
+                      </h3>
+                      <p className="text-sm font-medium text-zinc-400">
+                        {feat.description}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
+          </div>
 
-            <div className="rounded-[28px] border border-white bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.12)] sm:p-8">
-              {isSuccess ? (
-                <div className="mb-6 flex items-start gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-emerald-800">
-                  <CheckCircle2 className="mt-0.5 shrink-0" size={20} />
-                  <div>
-                    <p className="mb-0 text-sm font-bold">Acesso confirmado</p>
-                    <p className="mb-0 mt-1 text-sm font-medium text-emerald-700">
-                      Preparando seu ambiente de trabalho...
-                    </p>
-                  </div>
-                </div>
-              ) : null}
+          {/* Architectural building with neon orange ambient wave accent */}
+          <div className="relative mt-4 h-48 w-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+            <img
+              src="/templates/urban/urban_ready_move.png"
+              alt="WooTech Imob Imóveis"
+              className="h-full w-full object-cover object-center opacity-40 brightness-90 contrast-125"
+            />
+            {/* Glowing neon orange arc overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0b0e14] via-transparent to-transparent" />
+            <svg
+              className="absolute inset-0 h-full w-full pointer-events-none"
+              preserveAspectRatio="none"
+              viewBox="0 0 400 160"
+            >
+              <path
+                d="M-20,140 Q160,20 420,90"
+                fill="none"
+                stroke="#ff6a00"
+                strokeWidth="3.5"
+                strokeLinecap="round"
+                className="opacity-90 drop-shadow-[0_0_12px_#ff6a00]"
+              />
+            </svg>
+          </div>
+        </div>
 
-              <div className="mb-8">
-                <p className="mb-3 text-xs font-black uppercase tracking-[0.22em] text-[#14b87a]">
-                  Painel administrativo
-                </p>
-                <h2 className="mb-0 text-3xl font-black leading-tight text-slate-950 sm:text-4xl">
-                  Entrar no {displayProductName}
-                </h2>
-                <p className="mb-0 mt-4 text-base font-medium leading-relaxed text-slate-500">
-                  Acesse seu ambiente para acompanhar leads, imoveis, contratos,
-                  atendimento e operacoes.
-                </p>
-              </div>
+        {/* Right Side: Clean White Floating Login Card */}
+        <div className="w-full flex justify-center lg:justify-end">
+          <div className="w-full max-w-[460px] rounded-[32px] bg-white p-8 sm:p-10 shadow-[0_30px_90px_rgba(0,0,0,0.45)] text-zinc-900 border border-zinc-100">
+            {/* Header: Centered Logo */}
+            <div className="flex flex-col items-center text-center">
+              <WooTechLogo variant="light" subtitle="crm-erp" size="md" />
 
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="space-y-2">
-                  <label
-                    htmlFor="email"
-                    className="block text-sm font-bold text-slate-800"
-                  >
-                    E-mail corporativo
-                  </label>
-                  <div className="relative">
-                    <Mail
-                      size={19}
-                      className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
-                    <input
-                      id="email"
-                      type="email"
-                      required
-                      autoComplete="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="h-14 w-full rounded-2xl border border-slate-200 bg-[#f8fafc] pl-12 pr-4 text-base font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#14b87a] focus:bg-white focus:ring-4 focus:ring-emerald-100"
-                      placeholder="voce@imobiliaria.com.br"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-4">
-                    <label
-                      htmlFor="password"
-                      className="block text-sm font-bold text-slate-800"
-                    >
-                      Senha
-                    </label>
-                    <Link
-                      to="/forgot-password"
-                      className="text-sm font-bold text-[#0d8f62] hover:text-[#06704b]"
-                    >
-                      Esqueci minha senha
-                    </Link>
-                  </div>
-                  <div className="relative">
-                    <Lock
-                      size={19}
-                      className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
-                    <input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      autoComplete="current-password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="h-14 w-full rounded-2xl border border-slate-200 bg-[#f8fafc] pl-12 pr-12 text-base font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#14b87a] focus:bg-white focus:ring-4 focus:ring-emerald-100"
-                      placeholder="Digite sua senha"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((current) => !current)}
-                      className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                      aria-label={
-                        showPassword ? 'Ocultar senha' : 'Mostrar senha'
-                      }
-                    >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                </div>
-
-                <label className="flex items-center gap-3 text-sm font-semibold text-slate-600">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300 text-[#14b87a] focus:ring-[#14b87a]"
-                  />
-                  Lembrar meu e-mail neste dispositivo
-                </label>
-
-                {error ? (
-                  <div className="flex items-start gap-3 rounded-2xl border border-rose-100 bg-rose-50 p-4 text-rose-700">
-                    <AlertCircle size={18} className="mt-0.5 shrink-0" />
-                    <p className="mb-0 text-sm font-semibold leading-relaxed">
-                      {error}
-                    </p>
-                  </div>
-                ) : null}
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="inline-flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#0b1c18] px-5 text-base font-black text-white shadow-[0_16px_36px_rgba(11,28,24,0.22)] transition hover:bg-[#123329] disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="animate-spin" size={21} />
-                      Entrando...
-                    </>
-                  ) : (
-                    <>
-                      Entrar no painel
-                      <ArrowRight size={19} />
-                    </>
-                  )}
-                </button>
-              </form>
-
-              <div className="mt-7 rounded-2xl border border-slate-200 bg-[#f8fafc] p-4">
-                <div className="flex items-start gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-[#0d8f62]">
-                    <ShieldCheck size={20} />
-                  </span>
-                  <div>
-                    <p className="mb-0 text-sm font-bold text-slate-900">
-                      Acesso seguro
-                    </p>
-                    <p className="mb-0 mt-1 text-sm font-medium leading-relaxed text-slate-500">
-                      Use as credenciais liberadas pelo administrador da sua
-                      imobiliaria.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <p className="mb-0 mt-7 text-center text-sm font-medium text-slate-500">
-                Ainda nao tem acesso?{' '}
-                <Link
-                  to="/register"
-                  className="font-black text-[#0d8f62] hover:text-[#06704b]"
-                >
-                  Solicitar acesso
-                </Link>
+              <h2 className="mt-6 text-2xl sm:text-[26px] font-black tracking-tight text-zinc-950">
+                Entrar no WooTech Imob
+              </h2>
+              <p className="mt-2 text-xs sm:text-sm font-medium leading-relaxed text-zinc-500">
+                Acesse sua conta para acompanhar leads, imóveis, contratos, atendimentos e operações.
               </p>
             </div>
+
+            {/* Success alert */}
+            {isSuccess && (
+              <div className="mt-6 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-emerald-800">
+                <CheckCircle2 className="mt-0.5 shrink-0 text-emerald-600" size={18} />
+                <div className="text-xs sm:text-sm font-semibold">
+                  Acesso confirmado! Preparando seu ambiente...
+                </div>
+              </div>
+            )}
+
+            {/* Error alert */}
+            {error && (
+              <div className="mt-6 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-rose-700">
+                <AlertCircle className="mt-0.5 shrink-0 text-rose-600" size={18} />
+                <p className="text-xs sm:text-sm font-medium leading-relaxed">
+                  {error}
+                </p>
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              {/* Email */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="email"
+                  className="block text-xs sm:text-sm font-bold text-zinc-800"
+                >
+                  E-mail corporativo
+                </label>
+                <div className="relative">
+                  <Mail
+                    size={18}
+                    className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400"
+                  />
+                  <input
+                    id="email"
+                    type="email"
+                    required
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="h-12 w-full rounded-xl border border-zinc-200 bg-zinc-50/60 pl-10 pr-4 text-sm font-medium text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-[#ff6a00] focus:bg-white focus:ring-2 focus:ring-[#ff6a00]/20"
+                    placeholder="seuemail@empresa.com"
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="password"
+                    className="block text-xs sm:text-sm font-bold text-zinc-800"
+                  >
+                    Senha
+                  </label>
+                  <Link
+                    to="/forgot-password"
+                    className="text-xs font-semibold text-[#ff6a00] transition hover:text-[#e05800] hover:underline"
+                  >
+                    Esqueci minha senha
+                  </Link>
+                </div>
+                <div className="relative">
+                  <Lock
+                    size={18}
+                    className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400"
+                  />
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-12 w-full rounded-xl border border-zinc-200 bg-zinc-50/60 pl-10 pr-11 text-sm font-medium text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-[#ff6a00] focus:bg-white focus:ring-2 focus:ring-[#ff6a00]/20"
+                    placeholder="••••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-zinc-400 transition hover:text-zinc-700"
+                    aria-label={showPassword ? 'Ocultar senha' : 'Exibir senha'}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Remember checkbox */}
+              <div className="flex items-center gap-2.5 pt-1">
+                <input
+                  id="rememberMe"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 rounded border-zinc-300 text-[#ff6a00] focus:ring-[#ff6a00] cursor-pointer"
+                />
+                <label
+                  htmlFor="rememberMe"
+                  className="text-xs sm:text-sm font-medium text-zinc-600 cursor-pointer select-none"
+                >
+                  Lembrar meu e-mail neste dispositivo
+                </label>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={submitting}
+                className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#ff5500] via-[#ff6a00] to-[#ff7a00] px-6 text-sm sm:text-base font-bold text-white shadow-[0_8px_24px_rgba(255,106,0,0.35)] transition-all hover:brightness-105 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70 cursor-pointer"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="animate-spin" size={19} />
+                    Entrando...
+                  </>
+                ) : (
+                  <>
+                    Entrar no painel
+                    <ArrowRight size={18} />
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Divider */}
+            <div className="relative my-5 flex items-center justify-center">
+              <div className="w-full border-t border-zinc-200" />
+              <span className="absolute bg-white px-3 text-xs font-semibold uppercase text-zinc-400">
+                ou
+              </span>
+            </div>
+
+            {/* Google Sign In Button */}
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 hover:border-zinc-300 active:scale-[0.99] cursor-pointer"
+            >
+              <svg className="h-5 w-5" viewBox="0 0 24 24">
+                <path
+                  fill="#4285F4"
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                />
+              </svg>
+              Entrar com o Google
+            </button>
+
+            {/* Footer */}
+            <p className="mt-6 text-center text-xs sm:text-sm font-medium text-zinc-500">
+              Ainda não tem acesso?{' '}
+              <Link
+                to="/register"
+                className="font-bold text-[#ff6a00] hover:text-[#e05800] hover:underline"
+              >
+                Solicitar acesso
+              </Link>
+            </p>
           </div>
-        </section>
+        </div>
       </div>
     </main>
   );
@@ -376,16 +403,16 @@ function getLoginErrorMessage(err: any) {
   const status = err?.status;
 
   if (status === 400 || message.includes('invalid login credentials')) {
-    return 'E-mail ou senha invalidos. Se esta conta acabou de ser criada pelo SuperAdmin, confirme se a imobiliaria foi salva com uma senha de acesso.';
+    return 'E-mail ou senha inválidos. Confirme suas credenciais com o administrador da sua imobiliária.';
   }
 
   if (message.includes('email not confirmed')) {
-    return 'E-mail ainda nao confirmado. Peca ao administrador para confirmar ou recriar o acesso.';
+    return 'E-mail ainda não confirmado. Verifique sua caixa de entrada ou contate o suporte.';
   }
 
   return (
     err?.message ||
-    'Nao foi possivel entrar agora. Verifique suas credenciais e tente novamente.'
+    'Não foi possível entrar agora. Verifique suas credenciais e tente novamente.'
   );
 }
 

@@ -8,6 +8,7 @@ import {
   testEmailConnection,
   normalizeEmailConnectionConfig,
 } from '../../services/email/emailService.js';
+import { getLLMOrchestrator } from '../../services/ai/llmProvider.js';
 
 const router = Router();
 const isProduction = process.env.NODE_ENV === 'production';
@@ -150,6 +151,10 @@ router.put('/', verifyAdmin, requireTenant, async (req, res) => {
         .single();
     }, payload);
 
+    if (payload.integrations) {
+      getLLMOrchestrator().invalidateCache();
+    }
+
     return res.json({
       success: true,
       settings: result.data,
@@ -239,6 +244,10 @@ router.post('/smtp', verifyAdmin, requireTenant, async (req, res) => {
         .select()
         .single();
     }, payload);
+
+    if (payload.integrations) {
+      getLLMOrchestrator().invalidateCache();
+    }
 
     return res.json({
       success: true,

@@ -146,50 +146,68 @@ router.post(
   }
 );
 
+async function handleUnpublish(req, res) {
+  try {
+    const result = await unpublishFromPortal({
+      supabase,
+      organizationId: req.orgId,
+      propertyId: req.params.propertyId,
+      portal: req.params.portal,
+    });
+
+    res.json({ success: true, ...result });
+  } catch (err) {
+    console.error('[Portals] Unpublish error:', err.message);
+    res
+      .status(err.statusCode || 500)
+      .json({ error: 'Erro ao despublicar do portal' });
+  }
+}
+
+async function handleGetStatus(req, res) {
+  try {
+    const status = await getPortalPublishStatus({
+      supabase,
+      organizationId: req.orgId,
+      propertyId: req.params.propertyId,
+      portal: req.params.portal,
+    });
+
+    res.json({ success: true, status });
+  } catch (err) {
+    console.error('[Portals] Status error:', err.message);
+    res
+      .status(err.statusCode || 500)
+      .json({ error: 'Erro ao verificar status do portal' });
+  }
+}
+
 router.delete(
   '/:portal/publish/:propertyId',
   verifyAdmin,
   requireTenant,
-  async (req, res) => {
-    try {
-      const result = await unpublishFromPortal({
-        supabase,
-        organizationId: req.orgId,
-        propertyId: req.params.propertyId,
-        portal: req.params.portal,
-      });
+  handleUnpublish
+);
 
-      res.json({ success: true, ...result });
-    } catch (err) {
-      console.error('[Portals] Unpublish error:', err.message);
-      res
-        .status(err.statusCode || 500)
-        .json({ error: 'Erro ao despublicar do portal' });
-    }
-  }
+router.post(
+  '/:portal/unpublish/:propertyId',
+  verifyAdmin,
+  requireTenant,
+  handleUnpublish
 );
 
 router.get(
   '/:portal/publish/:propertyId',
   verifyAuth,
   requireTenant,
-  async (req, res) => {
-    try {
-      const status = await getPortalPublishStatus({
-        supabase,
-        organizationId: req.orgId,
-        propertyId: req.params.propertyId,
-        portal: req.params.portal,
-      });
+  handleGetStatus
+);
 
-      res.json({ success: true, status });
-    } catch (err) {
-      console.error('[Portals] Status error:', err.message);
-      res
-        .status(err.statusCode || 500)
-        .json({ error: 'Erro ao verificar status do portal' });
-    }
-  }
+router.get(
+  '/:portal/status/:propertyId',
+  verifyAuth,
+  requireTenant,
+  handleGetStatus
 );
 
 function getPortalLabel(name) {

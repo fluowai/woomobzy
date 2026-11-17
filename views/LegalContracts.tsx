@@ -268,8 +268,8 @@ const LegalContracts: React.FC = () => {
         /{{property_location}}/g,
         property
           ? [property.city, property.state].filter(Boolean).join(', ') ||
-              property.address ||
-              'Local não informado'
+          property.address ||
+          'Local não informado'
           : 'Local não informado'
       )
       .replace(/{{property_registration}}/g, registration || 'Não informada')
@@ -324,7 +324,7 @@ const LegalContracts: React.FC = () => {
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-gray-900 via-gray-800 to-black p-8 shadow-lg shadow-gray-900/20 flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="absolute right-0 top-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
         <div className="absolute left-0 bottom-0 w-48 h-48 bg-white/5 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4"></div>
-        
+
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-2">
             <span className="px-2.5 py-1 rounded-full bg-white/10 text-white/90 text-[10px] font-bold tracking-wider uppercase backdrop-blur-sm border border-white/10">
@@ -339,7 +339,7 @@ const LegalContracts: React.FC = () => {
             Monitoramento de contratos, escrituras e conformidade legal.
           </p>
         </div>
-        
+
         <div className="relative z-10">
           <button
             onClick={() => setIsCreateModalOpen(true)}
@@ -457,9 +457,17 @@ const LegalContracts: React.FC = () => {
                         <Eye size={18} />
                       </button>
                       <button
-                        onClick={() =>
-                          toast.info('Download de documento em breve')
-                        }
+                        onClick={() => {
+                          const content = `MINUTA CONTRATUAL - ${contract.title || contract.propertyName || contract.id}\nImóvel: ${contract.propertyName || 'N/A'}\nTipo: ${contract.type}\nParte: ${contract.clientName || 'N/A'}\nValor: R$ ${Number(contract.value || 0).toLocaleString('pt-BR')}\nStatus: ${contract.status}\nData: ${(contract as any).updatedAt || (contract as any).created_at || new Date().toLocaleDateString('pt-BR')}\n`;
+                          const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `contrato-${contract.id}.txt`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                          toast.success('Documento baixado!');
+                        }}
                         className="p-3 text-black/30 hover:text-black transition-colors"
                       >
                         <Download size={18} />
@@ -730,7 +738,7 @@ const LegalContracts: React.FC = () => {
               </div>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => toast.info('Impressão em breve')}
+                  onClick={() => window.print()}
                   className="flex items-center gap-2 px-6 py-3 bg-slate-50 text-black/60 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-slate-100 transition-all"
                 >
                   <Printer size={16} /> Imprimir
@@ -745,7 +753,7 @@ const LegalContracts: React.FC = () => {
                   {isSendingWhatsApp ? 'Enviando...' : 'Enviar WhatsApp'}
                 </button>
                 <button
-                  onClick={() => toast.info('Exportação PDF em breve')}
+                  onClick={() => window.print()}
                   style={{ backgroundColor: settings.primaryColor }}
                   className="flex items-center gap-2 px-6 py-3 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg hover:scale-105 transition-all"
                 >

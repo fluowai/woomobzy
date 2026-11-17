@@ -1,7 +1,7 @@
 import { logger } from '@/utils/logger';
 import React, { useState } from 'react';
 import { X, Sparkles, Loader, Info } from 'lucide-react';
-import axios from 'axios';
+import { callApi } from '@/src/lib/api';
 import { useAuth } from '../../context/AuthContext';
 
 interface AIGenerationModalProps {
@@ -26,22 +26,26 @@ const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
       setLoading(true);
       setError(null);
 
-      const response = await axios.post('/api/ai/generate-page', {
-        prompt,
-        niche,
-        organizationId: profile?.organization_id,
+      const response = await callApi('/api/ai/generate-page', {
+        method: 'POST',
+        hideError: true,
+        body: JSON.stringify({
+          prompt,
+          niche,
+          organizationId: profile?.organization_id,
+        }),
       });
 
-      if (response.data.layout) {
-        onGenerate(response.data.layout);
+      if (response?.layout) {
+        onGenerate(response.layout);
       } else {
         throw new Error('Falha ao gerar layout');
       }
     } catch (err: any) {
       logger.error('Erro ao gerar com IA:', err);
       setError(
-        err.response?.data?.error ||
-          'Erro ao conectar com Namo Bana. Verifique sua chave nas configurações.'
+        err?.message ||
+          'Erro ao conectar com a IA. Verifique sua chave nas configurações.'
       );
     } finally {
       setLoading(false);

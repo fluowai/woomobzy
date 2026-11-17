@@ -39,6 +39,7 @@ router.use('/dashboard', dashboardRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/bordero', borderoRoutes);
 router.use('/contract', contractRoutes);
+router.use('/contracts', contractRoutes);
 router.use('/internal-signature', internalSignatureRoutes);
 
 export default router;

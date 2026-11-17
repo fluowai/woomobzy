@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
+import { uploadFile } from '../services/storage';
 import {
   CheckCircle2,
   ArrowRight,
@@ -112,25 +113,21 @@ const SetupWhitelabel: React.FC = () => {
         let faviconUrl = null;
 
         if (logoFile) {
-          const { data, error } = await supabase.storage
-            .from('imobfluow')
-            .upload(`whitelabel/${orgId}/logo-${Date.now()}`, logoFile);
-          if (error) throw error;
-          const { data: publicUrlData } = supabase.storage
-            .from('imobfluow')
-            .getPublicUrl(data.path);
-          logoUrl = publicUrlData.publicUrl;
+          logoUrl = await uploadFile(
+            logoFile,
+            'agency-assets',
+            `whitelabel/${orgId}`
+          );
+          if (!logoUrl) throw new Error('Falha ao enviar logotipo.');
         }
 
         if (faviconFile) {
-          const { data, error } = await supabase.storage
-            .from('imobfluow')
-            .upload(`whitelabel/${orgId}/favicon-${Date.now()}`, faviconFile);
-          if (error) throw error;
-          const { data: publicUrlData } = supabase.storage
-            .from('imobfluow')
-            .getPublicUrl(data.path);
-          faviconUrl = publicUrlData.publicUrl;
+          faviconUrl = await uploadFile(
+            faviconFile,
+            'agency-assets',
+            `whitelabel/${orgId}`
+          );
+          if (!faviconUrl) throw new Error('Falha ao enviar favicon.');
         }
 
         const { error: orgError } = await supabase

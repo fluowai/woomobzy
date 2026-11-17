@@ -56,7 +56,7 @@ const ImpersonateCallback: React.FC = () => {
 
         // 4. Redirect to dashboard
         // Force reload to ensure all contexts refresh with new user
-        window.location.href = '/admin/dashboard';
+        window.location.href = '/admin';
       } catch (err: any) {
         logger.error('Impersonation Error:', err);
         setError(err.message || 'Erro desconhecido ao acessar conta.');

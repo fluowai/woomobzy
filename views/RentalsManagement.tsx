@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import {
@@ -38,17 +39,30 @@ interface DashboardStats {
 }
 
 export function RentalsManagement() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { settings } = useSettings();
   const [leases, setLeases] = useState<Lease[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreatingContract, setIsCreatingContract] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedLease, setSelectedLease] = useState<Lease | null>(null);
   const [stats, setStats] = useState<DashboardStats>({
     receita_mensal: 0,
     valor_inadimplencia: 0,
     ativos: 0,
     pending_signatures: 0,
   });
+
+  const filteredLeases = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return leases;
+    return leases.filter(
+      (l) =>
+        (l.tenant_name || '').toLowerCase().includes(query) ||
+        (l.contract_number || '').toLowerCase().includes(query)
+    );
+  }, [leases, searchTerm]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -152,7 +166,7 @@ export function RentalsManagement() {
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
           <button
-            onClick={() => toast.info('Borderô / Repasses em breve!')}
+            onClick={() => navigate('/urban/locacao/bordero')}
             className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-750 hover:border-gray-300 transition-all shadow-sm"
           >
             <DollarSign className="w-4 h-4 text-emerald-500" />
@@ -240,6 +254,8 @@ export function RentalsManagement() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Buscar por inquilino, imóvel..."
               className="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow shadow-sm"
             />
@@ -271,7 +287,7 @@ export function RentalsManagement() {
                     </div>
                   </td>
                 </tr>
-              ) : leases.length === 0 ? (
+              ) : filteredLeases.length === 0 ? (
                 <tr>
                   <td
                     colSpan={6}
@@ -297,9 +313,10 @@ export function RentalsManagement() {
                   </td>
                 </tr>
               ) : (
-                leases.map((lease) => (
+                filteredLeases.map((lease) => (
                   <tr
                     key={lease.id}
+                    onClick={() => setSelectedLease(lease)}
                     className="hover:bg-gray-50/80 dark:hover:bg-gray-750/50 transition-colors group cursor-pointer"
                   >
                     <td className="px-6 py-4">
@@ -326,9 +343,10 @@ export function RentalsManagement() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button
-                        onClick={() =>
-                          toast.info('Gerenciamento de contrato em breve!')
-                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedLease(lease);
+                        }}
                         className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-500/10 opacity-0 group-hover:opacity-100 transition-all focus:opacity-100"
                       >
                         Detalhes
@@ -342,6 +360,74 @@ export function RentalsManagement() {
           </table>
         </div>
       </div>
+
+      {selectedLease && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-gray-800 p-6 shadow-2xl border border-gray-100 dark:border-gray-700 space-y-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase text-indigo-600">
+                  Contrato {selectedLease.contract_number || 'S/N'}
+                </p>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mt-1">
+                  {selectedLease.tenant_name}
+                </h3>
+              </div>
+              <button
+                onClick={() => setSelectedLease(null)}
+                className="text-sm font-semibold text-gray-400 hover:text-gray-600"
+              >
+                Fechar
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="rounded-xl bg-gray-50 dark:bg-gray-900 p-3">
+                <p className="text-xs text-gray-500">Aluguel Mensal</p>
+                <p className="font-bold text-gray-900 dark:text-white mt-0.5">
+                  {formatCurrency(selectedLease.monthly_rent)}
+                </p>
+              </div>
+              <div className="rounded-xl bg-gray-50 dark:bg-gray-900 p-3">
+                <p className="text-xs text-gray-500">Status</p>
+                <div className="mt-1">{getStatusBadge(selectedLease.status)}</div>
+              </div>
+              <div className="rounded-xl bg-gray-50 dark:bg-gray-900 p-3">
+                <p className="text-xs text-gray-500">Início</p>
+                <p className="font-semibold text-gray-900 dark:text-white mt-0.5">
+                  {selectedLease.start_date
+                    ? new Date(selectedLease.start_date).toLocaleDateString('pt-BR')
+                    : '-'}
+                </p>
+              </div>
+              <div className="rounded-xl bg-gray-50 dark:bg-gray-900 p-3">
+                <p className="text-xs text-gray-500">Fim da Vigência</p>
+                <p className="font-semibold text-gray-900 dark:text-white mt-0.5">
+                  {selectedLease.end_date
+                    ? new Date(selectedLease.end_date).toLocaleDateString('pt-BR')
+                    : '-'}
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+              <button
+                onClick={() => setSelectedLease(null)}
+                className="px-4 py-2 text-sm font-medium rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200"
+              >
+                Fechar
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedLease(null);
+                  navigate('/urban/locacao/bordero');
+                }}
+                className="px-4 py-2 text-sm font-medium rounded-xl bg-indigo-600 text-white hover:bg-indigo-700"
+              >
+                Abrir Borderôs
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

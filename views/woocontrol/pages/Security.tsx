@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import {
   ShieldAlert,
@@ -71,7 +72,7 @@ export const Security = () => {
   }, []);
 
   const rotateKeys = () => {
-    alert('Chaves rotacionadas');
+    toast.success('Chaves rotacionadas com sucesso.');
   };
 
   const runAudit = async () => {

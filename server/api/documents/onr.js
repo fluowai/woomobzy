@@ -9,21 +9,24 @@ const router = Router();
 
 // Função auxiliar para obter as credenciais ONR da organização logada
 async function getOrgOnrConfig(supabase, orgId) {
-  const { data, error } = await supabase
-    .from('organizations')
-    .select('settings')
-    .eq('id', orgId)
-    .single();
+  try {
+    const { data } = await supabase
+      .from('organizations')
+      .select('id, feature_flags')
+      .eq('id', orgId)
+      .maybeSingle();
 
-  if (error || !data) {
-    throw new Error('Organização não encontrada.');
+    const flags = data?.feature_flags || {};
+    return {
+      onr_client_id: flags.onr_client_id || flags.onr?.client_id || process.env.ONR_CLIENT_ID || null,
+      onr_client_secret: flags.onr_client_secret || flags.onr?.client_secret || process.env.ONR_CLIENT_SECRET || null,
+    };
+  } catch {
+    return {
+      onr_client_id: process.env.ONR_CLIENT_ID || null,
+      onr_client_secret: process.env.ONR_CLIENT_SECRET || null,
+    };
   }
-
-  const settings = data.settings || {};
-  return {
-    onr_client_id: settings.onr_client_id,
-    onr_client_secret: settings.onr_client_secret,
-  };
 }
 
 /**
@@ -60,22 +63,34 @@ router.post('/request', verifyAuth, requireTenant, async (req, res) => {
       certificateType,
     });
 
-    // Se o ONR retornou o protocolo, podemos registrar no nosso banco (se houver a tabela)
-    // Exemplo:
-    /*
-    await supabase.from('onr_requests').insert([{
-      organization_id: req.orgId,
-      property_id: propertyId,
-      protocol: onrResponse.protocolo,
-      status: 'PENDENTE',
-      requested_by: req.user.id
-    }]);
-    */
+    const protocol =
+      onrResponse.protocolo || onrResponse.id || String(onrResponse);
+
+    try {
+      await supabase.from('onr_requests').insert([
+        {
+          organization_id: req.orgId,
+          property_id: isValidUUID(propertyId) ? propertyId : null,
+          registration_number: registrationNumber,
+          cns,
+          certificate_type: certificateType || 'INTEIRO_TEOR',
+          protocol,
+          status: 'PENDENTE',
+          requested_by: req.authUserId || req.user?.id || null,
+          result_data: typeof onrResponse === 'object' ? onrResponse : { raw: onrResponse },
+        },
+      ]);
+    } catch (persistErr) {
+      console.warn(
+        '[ONR Route] Falha nao critica ao persistir onr_requests:',
+        persistErr?.message
+      );
+    }
 
     res.json({
       success: true,
       message: 'Certidão solicitada com sucesso.',
-      protocol: onrResponse.protocolo || onrResponse.id || onrResponse,
+      protocol,
     });
   } catch (error) {
     console.error('[ONR Route] Erro ao solicitar certidao:', error.message);

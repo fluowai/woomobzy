@@ -58,14 +58,11 @@ export const requireTenant = async (req, res, next) => {
     });
   }
 
-  if (
-    req.body &&
-    req.body.organization_id &&
-    req.body.organization_id !== req.orgId
-  ) {
+  const requestedBodyOrgId = req.body?.organization_id || req.body?.org_id;
+  if (requestedBodyOrgId && requestedBodyOrgId !== req.orgId) {
     if (!req.isImpersonating) {
       console.warn(
-        `[Security] Tentativa de spoofing de OrgID detectada do usuario ${req.user.email}`
+        `[Security] Tentativa de spoofing de OrgID detectada do usuario ${req.user?.email || 'desconhecido'}`
       );
       return res.status(400).json({
         error:

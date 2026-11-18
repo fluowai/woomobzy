@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Landmark,
+import {
+  Landmark,
   Shield,
   Calculator,
   ChevronRight,
@@ -289,11 +290,10 @@ const CreditSimulator: React.FC<{ orgId: string }> = ({ orgId }) => {
                   <button
                     key={mod}
                     onClick={() => f('modality', mod)}
-                    className={`py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all border ${
-                      form.modality === mod
+                    className={`py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all border ${form.modality === mod
                         ? 'bg-primary text-white border-primary shadow-md shadow-primary/20'
                         : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-primary/40'
-                    }`}
+                      }`}
                   >
                     {mod.toUpperCase()}
                   </button>
@@ -313,11 +313,10 @@ const CreditSimulator: React.FC<{ orgId: string }> = ({ orgId }) => {
               <button
                 key={bank.id}
                 onClick={() => setSelectedBank(bank)}
-                className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all text-left group ${
-                  selectedBank.id === bank.id
+                className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all text-left group ${selectedBank.id === bank.id
                     ? 'border-primary bg-primary/5 shadow-sm shadow-primary/10'
                     : 'border-slate-100 hover:border-primary/30 bg-white'
-                }`}
+                  }`}
               >
                 <div
                   className={`w-9 h-9 rounded-xl ${bank.color} flex items-center justify-center text-white text-lg shrink-0`}
@@ -351,7 +350,7 @@ const CreditSimulator: React.FC<{ orgId: string }> = ({ orgId }) => {
       {/* RIGHT: Results */}
       <div className="xl:col-span-5 space-y-4">
         {result && (
-          <div className="card-premium bg-slate-900 text-white rounded-3xl p-7 space-y-6 sticky top-6">
+          <div className="bg-[#12151e] border border-white/10 text-white rounded-3xl p-7 space-y-6 sticky top-6 shadow-2xl">
             <div>
               <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">
                 {selectedBank.name} · {form.modality.toUpperCase()}
@@ -1066,7 +1065,7 @@ const DiretoSimulator: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <h3 className="text-xl font-bold text-slate-900 uppercase italic tracking-tighter leading-none mb-1">
-             <span className="text-blue-600">Financiamento Direto</span>
+            <span className="text-blue-600">Financiamento Direto</span>
           </h3>
           <p className="text-slate-500 font-medium italic text-sm">
             Cálculos avançados de parcelamento, balões e projeção de juros (Loteamentos/Incorporadoras).
@@ -1247,7 +1246,7 @@ const DiretoSimulator: React.FC = () => {
             </div>
 
             <div className="space-y-3 pt-2">
-               <div className="flex items-center gap-2 text-white/60">
+              <div className="flex items-center gap-2 text-white/60">
                 <TrendingUp size={14} className="text-blue-400" />
                 <p className="text-xs font-medium">Correção sugerida: <strong>IPCA + 0,5%</strong></p>
               </div>
@@ -1292,7 +1291,7 @@ const FinancialHub: React.FC = () => {
       icon: Landmark,
       desc: 'Simule financiamentos',
     },
-    
+
     {
       id: 'direto' as ActiveTab,
       label: 'Parcelamento Direto',
@@ -1315,11 +1314,11 @@ const FinancialHub: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="h1 flex items-center gap-3 text-slate-900">
-            <Landmark className="text-primary" size={30} />
+          <h1 className="text-2xl font-black flex items-center gap-3 text-white">
+            <Landmark className="text-[#ff6a00]" size={30} />
             Financial Hub
           </h1>
-          <p className="body mt-1 text-slate-500">
+          <p className="text-sm mt-1 text-zinc-400">
             Serviços financeiros integrados ao seu CRM imobiliário.
           </p>
         </div>
@@ -1337,11 +1336,10 @@ const FinancialHub: React.FC = () => {
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`flex items-center gap-3 px-5 py-3.5 rounded-2xl border-2 transition-all text-left ${
-              tab === t.id
+            className={`flex items-center gap-3 px-5 py-3.5 rounded-2xl border-2 transition-all text-left ${tab === t.id
                 ? 'border-primary bg-primary text-white shadow-md shadow-primary/20'
                 : 'border-slate-100 bg-white text-slate-600 hover:border-primary/30'
-            }`}
+              }`}
           >
             <t.icon size={18} />
             <div>

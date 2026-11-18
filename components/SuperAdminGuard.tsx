@@ -45,27 +45,33 @@ const SuperAdminGuard: React.FC<{ children: React.ReactNode }> = ({
   if (isSuperAdmin && !isImpersonating) {
     const path = location.pathname;
     const isCurrentPathPublic = isPublicPath(path);
-    const isMegaAdmin = isMegaAdminProfile(profile) || (isPlatformOwnerRole(role) && !profile?.organization?.is_reseller);
+    const isMegaAdmin =
+      isMegaAdminProfile(profile) ||
+      (isPlatformOwnerRole(role) && !profile?.organization?.is_reseller);
 
-    if (isMegaAdmin) {
-      if (
-        !isCurrentPathPublic &&
-        !path.startsWith('/megaadmin') &&
-        !path.startsWith('/woo-control') &&
-        path !== '/login' &&
-        path !== '/impersonate'
-      ) {
-        return <Navigate to={isPlatformOwnerRole(role) ? '/woo-control' : '/megaadmin'} replace />;
+    // SuperAdmin e MegaAdmin têm acesso livre a todos os painéis (/megaadmin, /woo-control, /superadmin, /urban, /rural)
+    const isAllowedAdminPath =
+      path.startsWith('/megaadmin') ||
+      path.startsWith('/woo-control') ||
+      path.startsWith('/superadmin') ||
+      path.startsWith('/urban') ||
+      path.startsWith('/rural');
+
+    if (
+      !isCurrentPathPublic &&
+      !isAllowedAdminPath &&
+      path !== '/login' &&
+      path !== '/impersonate'
+    ) {
+      if (isMegaAdmin) {
+        return (
+          <Navigate
+            to={isPlatformOwnerRole(role) ? '/woo-control' : '/megaadmin'}
+            replace
+          />
+        );
       }
-    } else {
-      if (
-        !isCurrentPathPublic &&
-        !path.startsWith('/superadmin') &&
-        path !== '/login' &&
-        path !== '/impersonate'
-      ) {
-        return <Navigate to="/superadmin" replace />;
-      }
+      return <Navigate to="/superadmin" replace />;
     }
   } else if (profile && !isSuperAdmin && !isImpersonating) {
     const path = location.pathname;

@@ -8,6 +8,10 @@ const urbanLayoutSource = fs.readFileSync(
   path.join(projectRoot, 'components', 'UrbanLayout.tsx'),
   'utf8'
 );
+const navigationConfigSource = fs.readFileSync(
+  path.join(projectRoot, 'src', 'lib', 'navigationConfig.ts'),
+  'utf8'
+);
 
 describe('rotas do menu urbano', () => {
   const expectedRoutes = [
@@ -26,7 +30,10 @@ describe('rotas do menu urbano', () => {
   it.each(expectedRoutes)(
     'mantém $menuPath registrado no menu e no roteador',
     ({ menuPath, routePath, component }) => {
-      expect(urbanLayoutSource).toContain(`path: '${menuPath}'`);
+      expect(
+        urbanLayoutSource.includes(`path: '${menuPath}'`) ||
+        navigationConfigSource.includes(`path: '${menuPath}'`)
+      ).toBe(true);
       expect(appSource).toContain(
         `<Route path="${routePath}" element={<${component} />} />`
       );

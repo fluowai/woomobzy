@@ -34,10 +34,10 @@ const ImpersonationBanner: React.FC = () => {
 
         <button
           onClick={stopImpersonation}
-          className="flex items-center gap-2 px-4 py-1.5 bg-white text-red-600 rounded-lg text-xs font-bold hover:bg-red-50 transition-all shadow-sm"
+          className="flex items-center gap-2 px-4 py-1.5 bg-white text-red-600 rounded-lg text-xs font-bold hover:bg-red-50 transition-all shadow-sm cursor-pointer"
         >
           <LogOut size={14} />
-          Sair do Modo Suporte
+          Encerrar acesso
         </button>
       </div>
     </div>

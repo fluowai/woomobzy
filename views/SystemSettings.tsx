@@ -271,7 +271,8 @@ const SystemSettings: React.FC = () => {
     );
   }
 
-  if (profile?.role === 'broker') {
+  const normalizedUserRole = String(profile?.role || '').toLowerCase().trim();
+  if (normalizedUserRole === 'broker' || normalizedUserRole === 'corretor') {
     return (
       <div className="max-w-3xl mx-auto space-y-6">
         <div>

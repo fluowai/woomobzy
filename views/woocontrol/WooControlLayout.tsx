@@ -1,273 +1,210 @@
-import React, { useState, useEffect } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { 
-  Command, 
-  Network, 
-  Building2,
-  Package, 
-  Key, 
-  Server, 
-  Camera, 
-  Rocket, 
-  Wand2, 
-  Headset, 
-  GraduationCap, 
-  DollarSign, 
-  ShieldAlert, 
-  Search, 
-  Settings,
-  Bell,
+import React, { useState, useMemo } from 'react';
+import { Outlet, useNavigate, NavLink, Link, useLocation } from 'react-router-dom';
+import {
+  Activity,
+  Network,
+  Server,
+  Headset,
+  DollarSign,
+  ShieldAlert,
+  ChevronDown,
+  ChevronRight,
   Menu,
   X,
-  ChevronDown,
-  Activity,
-  LogOut
+  LucideIcon,
+  Building2,
+  Package,
+  Key,
+  Camera,
+  Rocket,
+  Wand2,
+  GraduationCap,
+  Command,
+  Settings,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import WooTechLogo from '../../components/WooTechLogo';
+import WorkspaceTopBar from '../../components/WorkspaceTopBar';
+import ImpersonationBanner from '../../components/ImpersonationBanner';
+import { getNavigationForProfile, NavigationItem } from '@/src/lib/navigationConfig';
 
-export const WooControlLayout = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const navigate = useNavigate();
-  const { profile, signOut } = useAuth();
+const iconMap: Record<string, LucideIcon> = {
+  Activity,
+  Network,
+  Server,
+  Headset,
+  DollarSign,
+  ShieldAlert,
+  Building2,
+  Package,
+  Key,
+  Camera,
+  Rocket,
+  Wand2,
+  GraduationCap,
+  Command,
+  Settings,
+};
 
-  // Command Palette listener
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setIsCommandPaletteOpen((prev) => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+export const WooControlLayout: React.FC = () => {
+  const { profile } = useAuth();
+  const location = useLocation();
+  const pathname = location.pathname;
 
-  const menuItems = [
-    { name: 'Visão Geral', icon: <Activity size={18} />, path: '/woo-control' },
-    { name: 'Revendas Whitelabel', icon: <Network size={18} />, path: '/woo-control/resellers' },
-    { name: 'Clientes Imobiliárias', icon: <Building2 size={18} />, path: '/woo-control/customers' },
-    { name: 'Produtos', icon: <Package size={18} />, path: '/woo-control/products' },
-    { name: 'Licenciamento', icon: <Key size={18} />, path: '/woo-control/licensing' },
-    { name: 'Implantações', icon: <Server size={18} />, path: '/woo-control/deployments' },
-    { name: 'Snapshots', icon: <Camera size={18} />, path: '/woo-control/snapshots' },
-    { name: 'Releases', icon: <Rocket size={18} />, path: '/woo-control/releases' },
-    { name: 'Gerador de Stack', icon: <Wand2 size={18} />, path: '/woo-control/stack-generator' },
-    { name: 'Suporte', icon: <Headset size={18} />, path: '/woo-control/support' },
-    { name: 'Academia', icon: <GraduationCap size={18} />, path: '/woo-control/academy' },
-    { name: 'Receita', icon: <DollarSign size={18} />, path: '/woo-control/revenue' },
-    { name: 'Segurança', icon: <ShieldAlert size={18} />, path: '/woo-control/security' },
-    { name: 'Auditoria', icon: <Command size={18} />, path: '/woo-control/audit' },
-    { name: 'Configurações', icon: <Settings size={18} />, path: '/woo-control/settings' },
-  ];
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
-  return (
-    <div className="flex h-screen overflow-hidden text-[#F5F6F8] font-sans" style={{ backgroundColor: '#080A0F' }}>
-      
-      {/* Sidebar */}
-      <motion.aside 
-        initial={{ width: 250 }}
-        animate={{ width: isSidebarOpen ? 250 : 70 }}
-        className="flex flex-col flex-shrink-0 transition-all duration-300 border-r"
-        style={{ backgroundColor: '#11141C', borderColor: '#252A35' }}
-      >
-        <div className="flex items-center justify-between h-16 px-4 border-b" style={{ borderColor: '#252A35' }}>
-          <AnimatePresence>
-            {isSidebarOpen && (
-              <motion.div 
-                initial={{ opacity: 0 }} 
-                animate={{ opacity: 1 }} 
-                exit={{ opacity: 0 }}
-                className="flex items-center gap-2 font-bold tracking-wider"
-              >
-                <Command size={20} className="text-[#d4af37]" />
-                <span>WOO CONTROL</span>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-1 rounded hover:bg-white/5 transition-colors">
-            <Menu size={20} className="text-[#9097A5]" />
-          </button>
-        </div>
+  const navItems = useMemo(
+    () => getNavigationForProfile(profile?.role, 'woocontrol'),
+    [profile?.role]
+  );
 
-        <div className="flex-1 overflow-y-auto py-4 space-y-1 custom-scrollbar">
-          {menuItems.map((item) => (
-            <NavLink
-              key={item.name}
-              to={item.path}
-              end={item.path === '/woo-control'}
-              className={({ isActive }) => 
-                `flex items-center gap-3 px-4 py-2.5 mx-2 rounded-md transition-colors ${
-                  isActive 
-                    ? 'bg-[#161A23] text-white border border-[#252A35]' 
-                    : 'text-[#9097A5] hover:bg-[#161A23]/50 hover:text-white'
-                }`
-              }
-              title={!isSidebarOpen ? item.name : undefined}
-            >
-              {item.icon}
-              <AnimatePresence>
-                {isSidebarOpen && (
-                  <motion.span 
-                    initial={{ opacity: 0, width: 0 }} 
-                    animate={{ opacity: 1, width: 'auto' }} 
-                    exit={{ opacity: 0, width: 0 }}
-                    className="whitespace-nowrap text-sm font-medium"
-                  >
-                    {item.name}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </NavLink>
-          ))}
-        </div>
+  const toggleGroup = (id: string, currentState: boolean) => {
+    setOpenGroups((prev) => ({ ...prev, [id]: !currentState }));
+  };
 
-        <div className="p-4 border-t" style={{ borderColor: '#252A35' }}>
-          <button 
-            className="w-full flex items-center justify-center gap-2 py-2 rounded-md bg-[#161A23] hover:bg-[#252A35] transition-colors border border-[#252A35] text-xs text-[#9097A5]"
-            onClick={() => setIsCommandPaletteOpen(true)}
-          >
-            <Search size={14} />
-            {isSidebarOpen && <span>Ctrl + K</span>}          </button>
-        </div>
-      </motion.aside>
+  const isItemActive = (item: NavigationItem) => {
+    if (item.exact) return pathname === item.path;
+    if (item.children && item.children.length > 0) {
+      return (
+        pathname === item.path ||
+        item.children.some(
+          (child) => pathname === child.path || pathname.startsWith(`${child.path}/`)
+        )
+      );
+    }
+    return pathname === item.path || pathname.startsWith(`${item.path}/`);
+  };
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        
-        {/* Header */}
-        <header className="h-16 flex items-center justify-between px-6 border-b" style={{ backgroundColor: '#11141C', borderColor: '#252A35' }}>
-          <div className="flex items-center gap-4">
-            <h1 className="text-lg font-semibold tracking-wide">Central de Controle da Plataforma</h1>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#080A0F] border border-[#252A35] text-xs text-[#9097A5]">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              Operacional
-            </div>
-            
-            <button className="p-2 rounded-full hover:bg-[#161A23] transition-colors relative">
-              <Bell size={18} className="text-[#9097A5]" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
-            
-            <div className="flex items-center gap-2 pl-4 border-l border-[#252A35] relative">
-              <div 
-                className="flex items-center gap-2 cursor-pointer"
-                onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-              >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#064e3b] to-[#d4af37] flex items-center justify-center text-sm font-bold text-white shadow-lg uppercase">
-                  {profile?.name?.substring(0, 2) || 'PO'}
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium leading-tight text-white max-w-[120px] truncate" title={profile?.name}>
-                    {profile?.name || 'Dono da Plataforma'}
-                  </span>
-                  <span className="text-xs text-[#9097A5] leading-tight">WooTech</span>
-                </div>
-                <ChevronDown size={14} className="text-[#9097A5] ml-1" />
-              </div>
-              
-              <AnimatePresence>
-                {isProfileMenuOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setIsProfileMenuOpen(false)}></div>
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className="absolute right-0 top-12 mt-1 w-56 rounded-lg shadow-xl py-2 z-50 border"
-                      style={{ backgroundColor: '#161A23', borderColor: '#252A35' }}
-                    >
-                      <button 
-                        onClick={() => {
-                          setIsProfileMenuOpen(false);
-                          signOut();
-                        }}
-                        className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-[#252A35] transition-colors flex items-center gap-2"
-                      >
-                        <LogOut size={16} />
-                        Sair / Desconectar
-                      </button>
-                    </motion.div>
-                  </>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-        </header>
-
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-6 relative">
-          <Outlet />
-        </main>
+  const renderSidebarContent = () => (
+    <div className="flex h-full flex-col bg-[#FFFFFF] border-r border-[#E5E7EB] text-[#182230] select-none">
+      <div className="flex h-16 items-center px-5 border-b border-[#E5E7EB]">
+        <Link to="/woo-control" className="flex items-center gap-2 transition hover:opacity-90">
+          <WooTechLogo variant="light" subtitle="crm" size="sm" />
+        </Link>
       </div>
 
-      {/* Command Palette Overlay */}
-      <AnimatePresence>
-        {isCommandPaletteOpen && (
-          <>
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-start justify-center pt-[15vh]"
-              onClick={() => setIsCommandPaletteOpen(false)}
-            >
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95, y: -20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: -20 }}
-                onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden border"
-                style={{ backgroundColor: '#11141C', borderColor: '#252A35' }}
-              >
-                <div className="flex items-center px-4 py-3 border-b border-[#252A35]">
-                  <Search size={20} className="text-[#9097A5] mr-3" />
-                  <input 
-                    autoFocus
-                    type="text" 
-                    placeholder="Buscar organizações, domínios, licenças..." 
-                    className="flex-1 bg-transparent border-none outline-none text-[#F5F6F8] placeholder-[#9097A5] text-lg"
-                  />
-                  <button onClick={() => setIsCommandPaletteOpen(false)} className="p-1 text-[#9097A5] hover:text-white rounded">
-                    <X size={20} />
-                  </button>
-                </div>
-                <div className="max-h-[60vh] overflow-y-auto p-2">
-                  <div className="px-3 py-2 text-xs font-semibold text-[#9097A5] uppercase tracking-wider">
-                    Pesquisas Recentes
-                  </div>
-                  <div className="p-2 flex items-center justify-between hover:bg-[#161A23] rounded-lg cursor-pointer transition-colors group">
-                    <div className="flex items-center gap-3">
-                      <Network size={16} className="text-[#d4af37]" />
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium group-hover:text-white">Grupo Alpha</span>
-                        <span className="text-xs text-[#9097A5]">Revenda Master</span>
-                      </div>
-                    </div>
-                    <span className="text-xs text-[#9097A5] px-2 py-1 rounded bg-[#252A35]">Abrir</span>
-                  </div>
-                  <div className="p-2 flex items-center justify-between hover:bg-[#161A23] rounded-lg cursor-pointer transition-colors group">
-                    <div className="flex items-center gap-3">
-                      <Key size={16} className="text-emerald-500" />
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium group-hover:text-white">crm.alpha.com.br</span>
-                        <span className="text-xs text-[#9097A5]">Imobzy v4.8.0 • ATIVA</span>
-                      </div>
-                    </div>
-                    <span className="text-xs text-[#9097A5] px-2 py-1 rounded bg-[#252A35]">Licença</span>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1 custom-scrollbar">
+        {navItems.map((item) => {
+          const Icon = iconMap[item.iconName] || Activity;
+          const hasChildren = item.children && item.children.length > 0;
+          const active = isItemActive(item);
+          const isOpen = openGroups[item.id] !== undefined ? openGroups[item.id] : active;
 
+          if (!hasChildren) {
+            return (
+              <NavLink
+                key={item.id}
+                to={item.path}
+                className={`relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all ${
+                  active
+                    ? 'bg-orange-50/70 text-[#FF6A00]'
+                    : 'text-[#526071] hover:bg-gray-50 hover:text-[#182230]'
+                }`}
+              >
+                {active && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-[#FF6A00]" />
+                )}
+                <Icon size={18} className={active ? 'text-[#FF6A00]' : 'text-[#526071]'} />
+                <span>{item.label}</span>
+              </NavLink>
+            );
+          }
+
+          return (
+            <div key={item.id} className="space-y-0.5">
+              <div
+                onClick={() => toggleGroup(item.id, isOpen)}
+                className={`relative flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-semibold cursor-pointer transition-all ${
+                  active
+                    ? 'bg-orange-50/70 text-[#FF6A00]'
+                    : 'text-[#526071] hover:bg-gray-50 hover:text-[#182230]'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  {active && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-[#FF6A00]" />
+                  )}
+                  <Icon size={18} className={active ? 'text-[#FF6A00]' : 'text-[#526071]'} />
+                  <span>{item.label}</span>
+                </div>
+                {isOpen ? (
+                  <ChevronDown size={15} className="text-[#526071]" />
+                ) : (
+                  <ChevronRight size={15} className="text-[#526071]" />
+                )}
+              </div>
+
+              {isOpen && (
+                <div className="pl-9 pr-2 py-1 space-y-0.5">
+                  {item.children?.map((child) => {
+                    const isChildActive = child.exact
+                      ? pathname === child.path
+                      : pathname === child.path || pathname.startsWith(`${child.path}/`);
+
+                    return (
+                      <NavLink
+                        key={child.id}
+                        to={child.path}
+                        className={`block rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all ${
+                          isChildActive
+                            ? 'font-bold text-[#FF6A00] bg-orange-50/50'
+                            : 'text-[#526071] hover:text-[#182230] hover:bg-gray-50'
+                        }`}
+                      >
+                        {child.label}
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </nav>
+    </div>
+  );
+
+  return (
+    <div className="flex h-screen flex-col bg-[#F8FAFC] font-sans antialiased text-[#182230]">
+      <ImpersonationBanner />
+
+      <div className="flex flex-1 overflow-hidden">
+        <aside className="hidden md:flex w-60 flex-col shrink-0">
+          {renderSidebarContent()}
+        </aside>
+
+        {isMobileMenuOpen && (
+          <div
+            className="fixed inset-0 z-50 md:hidden bg-black/40"
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            <div
+              className="absolute left-0 top-0 bottom-0 w-64 bg-white shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-end p-2 border-b border-[#E5E7EB]">
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-1 rounded-lg hover:bg-gray-100 text-[#526071]"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              {renderSidebarContent()}
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <WorkspaceTopBar />
+          <main className="flex-1 overflow-y-auto bg-[#F8FAFC]">
+            <Outlet />
+          </main>
+        </div>
+      </div>
     </div>
   );
 };
+
+export default WooControlLayout;

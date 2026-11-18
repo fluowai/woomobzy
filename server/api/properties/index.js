@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { verifyAuth, verifyAdmin } from '../../middleware/auth.js';
+import { verifyAuth, verifyAdmin, verifyManagerOrAdmin } from '../../middleware/auth.js';
 import { requireTenant } from '../../middleware/tenant.js';
 import { getSupabaseServer } from '../../lib/supabase-server.js';
 import { enrichPropertyWithAcp } from '../../services/acpPropertyAgent.js';
@@ -88,7 +88,7 @@ router.get('/', verifyAuth, requireTenant, async (req, res) => {
 /**
  * POST /api/properties
  */
-router.post('/', verifyAdmin, requireTenant, async (req, res) => {
+router.post('/', verifyManagerOrAdmin, requireTenant, async (req, res) => {
   try {
     const propertyData = req.body;
     const explicitNiche = normalizeNiche(propertyData.niche);
@@ -128,7 +128,7 @@ router.post('/', verifyAdmin, requireTenant, async (req, res) => {
 /**
  * PUT /api/properties/:id
  */
-router.put('/:id', verifyAdmin, requireTenant, async (req, res) => {
+router.put('/:id', verifyManagerOrAdmin, requireTenant, async (req, res) => {
   try {
     const { id } = req.params;
     const propertyData = req.body;
@@ -178,7 +178,7 @@ router.get('/:id', verifyAuth, requireTenant, async (req, res) => {
 /**
  * POST /api/properties/:id/acp
  */
-router.post('/:id/acp', verifyAdmin, requireTenant, async (req, res) => {
+router.post('/:id/acp', verifyManagerOrAdmin, requireTenant, async (req, res) => {
   try {
     const { data: property, error: loadError } = await supabase
       .from('properties')

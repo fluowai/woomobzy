@@ -443,6 +443,7 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/external-data', externalDataRoutes);
 app.use('/api/quiz', quizRoutes);
 app.use('/health', healthRoutes);
+app.use('/api/health', healthRoutes);
 
 // Teste: rota simples
 app.get('/test-health', (req, res) => {

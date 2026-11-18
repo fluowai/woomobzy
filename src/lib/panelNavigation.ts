@@ -82,6 +82,12 @@ export function getAuthenticatedPanelPath(
     return '/megaadmin';
   }
 
+  // Usuário autenticado genérico (user / customer_user) sem perfil de operador
+  const normalizedRole = String(profile.role || '').toLowerCase().trim();
+  if (normalizedRole === 'user' || normalizedRole === 'customer_user') {
+    return '/acesso-pendente';
+  }
+
   if (!profile.organization_id && !isPlatformAdminRole(profile.role) && !isPlatformOwnerRole(profile.role)) {
     return '/onboarding';
   }

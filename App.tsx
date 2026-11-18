@@ -152,6 +152,8 @@ const PortalProprietarioUrbano = lazy(
 const PortalCompradorUrbano = lazy(
   () => import('./views/urban/PortalCompradorUrbano')
 );
+const PortalLayout = lazy(() => import('./components/PortalLayout'));
+const PendingAccess = lazy(() => import('./views/portal/PendingAccess'));
 const AdmCondominios = lazy(() => import('./views/urban/AdmCondominios'));
 const ControleChaves = lazy(() => import('./views/urban/ControleChaves'));
 const FinanceiroUrbano = lazy(() => import('./views/urban/FinanceiroUrbano'));
@@ -286,7 +288,42 @@ const AppContent: React.FC = () => {
             element={<PublicLandingPage forceComingSoon={true} />}
           />
           <Route path="/register" element={<Register />} />
-          <Route path="/portal-locatario" element={<PortalLocatario />} />
+
+          {/* ====== PORTAIS EXTERNOS & ACESSO PENDENTE (PORTAL LAYOUT) ====== */}
+          <Route element={<PortalLayout />}>
+            <Route
+              path="/portal-proprietario"
+              element={
+                <ProtectedRoute>
+                  <PortalProprietarioUrbano />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/portal-comprador"
+              element={
+                <ProtectedRoute>
+                  <PortalCompradorUrbano />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/portal-locatario"
+              element={
+                <ProtectedRoute>
+                  <PortalLocatario />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/acesso-pendente"
+              element={
+                <ProtectedRoute>
+                  <PendingAccess />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/setup-whitelabel" element={<SetupWhitelabel />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
@@ -369,16 +406,23 @@ const AppContent: React.FC = () => {
             />
             <Route path="dataroom" element={<DataRoom />} />
             <Route path="dataroom/:id" element={<DataRoom />} />
+            <Route path="documentos" element={<GestaoDocumentos />} />
+            <Route path="exportador" element={<ExportadorPortais />} />
             <Route path="crm" element={<CRMLeads />} />
+            <Route path="clients" element={<ClientsManager />} />
             <Route path="kanban" element={<KanbanBoard />} />
             <Route path="agenda" element={<Agenda />} />
             <Route path="matchmaking" element={<Matchmaking360 />} />
+            <Route path="users" element={<UserManagement />} />
             <Route path="reports" element={<BIRural />} />
             <Route
               path="portal-proprietario"
-              element={<PortalProprietarioRural />}
+              element={<Navigate to="/portal-proprietario" replace />}
             />
-            <Route path="portal-comprador" element={<PortalCompradorRural />} />
+            <Route
+              path="portal-comprador"
+              element={<Navigate to="/portal-comprador" replace />}
+            />
             <Route path="landing-pages" element={<LandingPageManager />} />
             <Route path="quiz" element={<QuizCampaigns />} />
             <Route path="landing-pages/:id" element={<LandingPageEditor />} />
@@ -475,6 +519,9 @@ const AppContent: React.FC = () => {
             <Route path="clients" element={<ClientsManager />} />
             <Route path="kanban" element={<KanbanBoard />} />
             <Route path="agenda" element={<Agenda />} />
+            <Route path="matchmaking" element={<Matchmaking360 />} />
+            <Route path="dataroom" element={<DataRoom />} />
+            <Route path="dataroom/:id" element={<DataRoom />} />
             <Route path="reports" element={<BIUrbano />} />
             <Route path="condominios" element={<AdmCondominios />} />
             <Route path="chaves" element={<ControleChaves />} />
@@ -484,13 +531,16 @@ const AppContent: React.FC = () => {
             <Route path="documentos" element={<GestaoDocumentos />} />
             <Route
               path="portal-proprietario"
-              element={<PortalProprietarioUrbano />}
+              element={<Navigate to="/portal-proprietario" replace />}
             />
             <Route
               path="portal-comprador"
-              element={<PortalCompradorUrbano />}
+              element={<Navigate to="/portal-comprador" replace />}
             />
-            <Route path="portal-locatario" element={<PortalLocatario />} />
+            <Route
+              path="portal-locatario"
+              element={<Navigate to="/portal-locatario" replace />}
+            />
             <Route path="landing-pages" element={<LandingPageManager />} />
             <Route path="quiz" element={<QuizCampaigns />} />
             <Route path="landing-pages/:id" element={<LandingPageEditor />} />
@@ -588,6 +638,19 @@ const AppContent: React.FC = () => {
             <Route index element={<MegaAdminDashboard />} />
             <Route path="resellers" element={<ResellerManager />} />
             <Route path="direct-clients" element={<DirectClientsManager />} />
+            <Route path="tenants" element={<TenantManager />} />
+            <Route path="plans" element={<PlanManager />} />
+            <Route path="domains" element={<DomainManager />} />
+            <Route path="templates" element={<TemplateManager />} />
+            <Route path="support" element={<SupportManager />} />
+            <Route path="team" element={<TeamManager />} />
+            <Route path="marketing" element={<MarketingManager />} />
+            <Route path="landing-pages" element={<LandingPageManager />} />
+            <Route path="landing-pages/:id" element={<LandingPageEditor />} />
+            <Route path="site" element={<SiteManager />} />
+            <Route path="site/pages/:id" element={<SitePageEditor />} />
+            <Route path="quiz" element={<QuizCampaigns />} />
+            <Route path="ai" element={<AICentral />} />
             <Route path="analytics" element={<AnalyticsDashboard />} />
             <Route path="monitoring" element={<PlatformMonitoring />} />
             <Route path="ai-credits" element={<AiCreditsHub />} />
@@ -625,6 +688,13 @@ const AppContent: React.FC = () => {
             <Route path="templates" element={<TemplateManager />} />
             <Route path="marketing" element={<MarketingManager />} />
             <Route path="connection-credits" element={<ConnectionCredits />} />
+            <Route path="landing-pages" element={<LandingPageManager />} />
+            <Route path="landing-pages/:id" element={<LandingPageEditor />} />
+            <Route path="site" element={<SiteManager />} />
+            <Route path="site/pages/:id" element={<SitePageEditor />} />
+            <Route path="quiz" element={<QuizCampaigns />} />
+            <Route path="ai" element={<AICentral />} />
+            <Route path="feature-flags" element={<FeatureFlags />} />
             {/* O reseller também tem settings, vamos manter a rota por enquanto até adaptarmos */}
             <Route path="settings" element={<GlobalSettings />} />
           </Route>

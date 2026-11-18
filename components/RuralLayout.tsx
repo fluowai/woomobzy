@@ -1,230 +1,267 @@
-import { logger } from '@/utils/logger';
-import React, { useState, useEffect } from 'react';
-import {
-  NavLink,
-  Navigate,
-  Outlet,
-  useLocation,
-  Link,
-} from 'react-router-dom';
+import React, { useState, useMemo } from 'react';
+import { NavLink, Link, Outlet, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
+  Home,
   MessageSquare,
+  Send,
+  Instagram,
+  Mail,
   Users,
   Briefcase,
   Calendar,
-  Home,
+  Building2,
+  Key,
+  Receipt,
+  DollarSign,
   MapPin,
-  PieChart,
+  Trees,
+  Globe,
+  LayoutTemplate,
+  FileQuestion,
+  FileText,
+  FolderLock,
+  ShieldCheck,
   Settings,
+  Plug,
+  Clock,
+  Compass,
+  Trophy,
+  Landmark,
+  Search,
+  Share2,
+  HelpCircle,
+  CreditCard,
+  Network,
+  Server,
+  Activity,
+  ShieldAlert,
+  Crown,
+  Command,
+  Headset,
+  Heart,
+  User,
+  ChevronDown,
+  ChevronRight,
   Menu,
   X,
-  LogOut,
-  ChevronDown,
-  TrendingUp,
-  Headset,
-  ArrowRight,
-  ShieldAlert,
+  LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import SupportModal from './SupportModal';
 import WooTechLogo from './WooTechLogo';
 import WorkspaceTopBar from './WorkspaceTopBar';
+import ImpersonationBanner from './ImpersonationBanner';
+import {
+  getNavigationForProfile,
+  NavigationItem,
+  normalizeProfileRole,
+} from '@/src/lib/navigationConfig';
 
-const RuralLayout: React.FC = () => {
-  const { profile, signOut, isImpersonating, loading } = useAuth();
+const iconMap: Record<string, LucideIcon> = {
+  LayoutDashboard,
+  Home,
+  MessageSquare,
+  Send,
+  Instagram,
+  Mail,
+  Users,
+  Briefcase,
+  Calendar,
+  Building2,
+  Key,
+  Receipt,
+  DollarSign,
+  MapPin,
+  Trees,
+  Globe,
+  LayoutTemplate,
+  FileQuestion,
+  FileText,
+  FolderLock,
+  ShieldCheck,
+  Settings,
+  Plug,
+  Clock,
+  Compass,
+  Trophy,
+  Landmark,
+  Search,
+  Share2,
+  HelpCircle,
+  CreditCard,
+  Network,
+  Server,
+  Activity,
+  ShieldAlert,
+  Crown,
+  Command,
+  Headset,
+  Heart,
+  User,
+};
+
+export const RuralLayout: React.FC = () => {
+  const { profile } = useAuth();
+  const location = useLocation();
+  const pathname = location.pathname;
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSupportOpen, setIsSupportOpen] = useState(false);
-  const { pathname } = useLocation();
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      window.location.href = '/login';
-    } catch (error) {
-      logger.error('Logout error:', error);
+  const role = normalizeProfileRole(profile?.role);
+  const navItems = useMemo(
+    () => getNavigationForProfile(profile?.role, 'rural'),
+    [profile?.role]
+  );
+
+  const toggleGroup = (id: string, currentState: boolean) => {
+    setOpenGroups((prev) => ({ ...prev, [id]: !currentState }));
+  };
+
+  const isItemActive = (item: NavigationItem) => {
+    if (item.exact) return pathname === item.path;
+    if (item.children && item.children.length > 0) {
+      return (
+        pathname === item.path ||
+        item.children.some(
+          (child) => pathname === child.path || pathname.startsWith(`${child.path}/`)
+        )
+      );
     }
+    return pathname === item.path || pathname.startsWith(`${item.path}/`);
   };
-
-  const navMenuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/rural', exact: true },
-    { icon: MessageSquare, label: 'Mensagens', path: '/rural/whatsapp' },
-    { icon: Users, label: 'Leads', path: '/rural/crm' },
-    { icon: Briefcase, label: 'Funil / CRM', path: '/rural/kanban' },
-    { icon: Calendar, label: 'Minha Agenda', path: '/rural/agenda' },
-    { icon: Home, label: 'Imóveis', path: '/rural/properties' },
-    { icon: MapPin, label: 'Território', path: '/rural/territorio' },
-    { icon: PieChart, label: 'Relatórios', path: '/rural/reports' },
-    { icon: Settings, label: 'Configurações', path: '/rural/settings' },
-  ];
-
-  if (profile?.role === 'superadmin') {
-    const isMegaAdmin = !profile?.organization?.is_reseller;
-    navMenuItems.push({
-      icon: ShieldAlert,
-      label: isMegaAdmin ? 'Mega Admin' : 'Super Admin',
-      path: isMegaAdmin ? '/megaadmin' : '/superadmin',
-    });
-  }
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
-
-  if (!loading && profile?.role === 'superadmin' && !isImpersonating) {
-    const isMegaAdmin = !profile?.organization?.is_reseller;
-    return <Navigate to={isMegaAdmin ? '/megaadmin' : '/superadmin'} replace />;
-  }
-
-  const isMenuItemActive = (path: string, exact?: boolean) => {
-    if (exact) return pathname === path;
-    return pathname.startsWith(path);
-  };
-
-  const displayName =
-    profile?.full_name ||
-    (profile as any)?.name ||
-    'Paulo Argolo';
-
-  const userInitials =
-    displayName
-      .split(' ')
-      .map((n: string) => n[0])
-      .slice(0, 2)
-      .join('')
-      .toUpperCase() || 'PA';
 
   const renderSidebarContent = () => (
-    <div className="flex flex-col h-full bg-[#0b0e14] border-r border-white/5 select-none">
-      {/* Top Logo */}
-      <div className="px-5 py-6">
-        <Link to="/rural" className="block transition hover:opacity-90">
-          <WooTechLogo variant="dark" subtitle="crm" size="sm" />
+    <div className="flex h-full flex-col bg-[#FFFFFF] border-r border-[#E5E7EB] text-[#182230] select-none">
+      {/* Brand Header */}
+      <div className="flex h-16 items-center px-5 border-b border-[#E5E7EB]">
+        <Link to="/rural" className="flex items-center gap-2 transition hover:opacity-90">
+          <WooTechLogo variant="light" subtitle="crm" size="sm" />
         </Link>
       </div>
 
-      {/* User Profile snippet (Exact match to Image 3) */}
-      <div className="px-4 mb-4">
-        <div className="flex items-center justify-between rounded-xl border border-white/5 bg-[#12151e] p-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[#ff5500] to-[#ff7a00] text-xs font-black text-white shadow-md shadow-orange-500/20">
-              {userInitials}
-            </div>
-            <div className="truncate">
-              <p className="text-xs font-black text-white truncate">
-                {displayName}
-              </p>
-              <p className="text-[10px] font-medium text-zinc-500 truncate">
-                Gestor • Master
-              </p>
-            </div>
-          </div>
-          <ChevronDown size={14} className="text-zinc-500 shrink-0" />
-        </div>
-      </div>
+      {/* Navigation List */}
+      <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1 custom-scrollbar">
+        {navItems.map((item) => {
+          const Icon = iconMap[item.iconName] || Home;
+          const hasChildren = item.children && item.children.length > 0;
+          const active = isItemActive(item);
+          const isOpen = openGroups[item.id] !== undefined ? openGroups[item.id] : active;
 
-      {/* Nav Menu */}
-      <nav className="flex-1 px-3 space-y-1.5 overflow-y-auto custom-scrollbar">
-        {navMenuItems.map((item) => {
-          const Icon = item.icon;
-          const active = isMenuItemActive(item.path, item.exact);
+          if (!hasChildren) {
+            return (
+              <NavLink
+                key={item.id}
+                to={item.path}
+                className={`relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all ${
+                  active
+                    ? 'bg-orange-50/70 text-[#FF6A00]'
+                    : 'text-[#526071] hover:bg-gray-50 hover:text-[#182230]'
+                }`}
+              >
+                {active && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-[#FF6A00]" />
+                )}
+                <Icon size={18} className={active ? 'text-[#FF6A00]' : 'text-[#526071]'} />
+                <span>{item.label}</span>
+              </NavLink>
+            );
+          }
 
           return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={`flex items-center gap-3.5 rounded-xl px-4 py-2.5 text-xs font-bold transition-all ${active
-                  ? 'bg-gradient-to-r from-[#ff5500] to-[#ff7a00] text-white shadow-lg shadow-orange-500/25'
-                  : 'text-zinc-400 hover:bg-white/5 hover:text-white'
+            <div key={item.id} className="space-y-0.5">
+              <div
+                onClick={() => toggleGroup(item.id, isOpen)}
+                className={`relative flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-semibold cursor-pointer transition-all ${
+                  active
+                    ? 'bg-orange-50/70 text-[#FF6A00]'
+                    : 'text-[#526071] hover:bg-gray-50 hover:text-[#182230]'
                 }`}
-            >
-              <Icon size={18} className={active ? 'text-white' : 'text-zinc-400'} />
-              <span>{item.label}</span>
-            </NavLink>
+              >
+                <div className="flex items-center gap-3">
+                  {active && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-[#FF6A00]" />
+                  )}
+                  <Icon size={18} className={active ? 'text-[#FF6A00]' : 'text-[#526071]'} />
+                  <span>{item.label}</span>
+                </div>
+                {isOpen ? (
+                  <ChevronDown size={15} className="text-[#526071]" />
+                ) : (
+                  <ChevronRight size={15} className="text-[#526071]" />
+                )}
+              </div>
+
+              {isOpen && (
+                <div className="pl-9 pr-2 py-1 space-y-0.5">
+                  {item.children?.map((child) => {
+                    const isChildActive = child.exact
+                      ? pathname === child.path
+                      : pathname === child.path || pathname.startsWith(`${child.path}/`);
+
+                    return (
+                      <NavLink
+                        key={child.id}
+                        to={child.path}
+                        className={`block rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all ${
+                          isChildActive
+                            ? 'font-bold text-[#FF6A00] bg-orange-50/50'
+                            : 'text-[#526071] hover:text-[#182230] hover:bg-gray-50'
+                        }`}
+                      >
+                        {child.label}
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           );
         })}
       </nav>
-
-      {/* Bottom Promo Support Card (Image 3) */}
-      <div className="p-4 space-y-3">
-        <div className="rounded-2xl border border-orange-500/20 bg-gradient-to-br from-[#1c130b] via-[#151720] to-[#0e1118] p-4 text-left shadow-lg">
-          <div className="flex items-center gap-2 text-[#ff6a00]">
-            <TrendingUp size={16} />
-            <h4 className="text-xs font-bold text-white">Seu negócio mais forte!</h4>
-          </div>
-          <p className="mt-1 text-[11px] font-medium text-zinc-400 leading-snug">
-            Conte com a Wootech para crescer ainda mais.
-          </p>
-          <button
-            onClick={() => setIsSupportOpen(true)}
-            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#ff6a00] py-2 text-[11px] font-bold text-white shadow-md shadow-orange-500/20 hover:bg-[#ff7a1a] transition cursor-pointer"
-          >
-            Falar com suporte <ArrowRight size={13} />
-          </button>
-        </div>
-
-        {/* Sair do Sistema */}
-        <button
-          onClick={handleLogout}
-          className="flex w-full items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold text-zinc-500 hover:text-rose-400 hover:bg-white/5 transition cursor-pointer"
-        >
-          <LogOut size={16} /> Sair do Sistema
-        </button>
-      </div>
-
-      <SupportModal
-        isOpen={isSupportOpen}
-        onClose={() => setIsSupportOpen(false)}
-      />
     </div>
   );
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[#090b0e] text-white">
-      {/* Mobile Drawer */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
+    <div className="flex h-screen flex-col bg-[#F8FAFC] font-sans antialiased text-[#182230]">
+      <ImpersonationBanner />
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Desktop Sidebar (240px) */}
+        <aside className="hidden md:flex w-60 flex-col shrink-0">
+          {renderSidebarContent()}
+        </aside>
+
+        {/* Mobile Drawer */}
+        {isMobileMenuOpen && (
           <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            className="fixed inset-0 z-50 md:hidden bg-black/40"
             onClick={() => setIsMobileMenuOpen(false)}
-          />
-          <aside className="absolute left-0 top-0 bottom-0 w-64 text-white z-50">
-            <button
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="absolute top-4 right-4 text-zinc-400 hover:text-white"
+          >
+            <div
+              className="absolute left-0 top-0 bottom-0 w-64 bg-white shadow-xl"
+              onClick={(e) => e.stopPropagation()}
             >
-              <X size={20} />
-            </button>
-            {renderSidebarContent()}
-          </aside>
-        </div>
-      )}
-
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 shrink-0 flex-col h-full">
-        {renderSidebarContent()}
-      </aside>
-
-      {/* Main Container */}
-      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        {/* Topbar */}
-        <WorkspaceTopBar currentSection="Dashboard" />
-
-        {/* Mobile menu trigger */}
-        <button
-          onClick={() => setIsMobileMenuOpen(true)}
-          className="fixed left-3 top-3 z-50 flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-[#12151e] text-zinc-300 md:hidden"
-        >
-          <Menu size={20} />
-        </button>
-
-        {/* Scrollable View Content */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 custom-scrollbar">
-          <div className="mx-auto max-w-[1520px]">
-            <Outlet />
+              <div className="flex justify-end p-2 border-b border-[#E5E7EB]">
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-1 rounded-lg hover:bg-gray-100 text-[#526071]"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              {renderSidebarContent()}
+            </div>
           </div>
-        </main>
+        )}
+
+        {/* Workspace Canvas */}
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <WorkspaceTopBar />
+          <main className="flex-1 overflow-y-auto bg-[#F8FAFC]">
+            <Outlet />
+          </main>
+        </div>
       </div>
     </div>
   );

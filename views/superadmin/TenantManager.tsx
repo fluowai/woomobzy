@@ -517,10 +517,11 @@ const TenantManager: React.FC = () => {
                             toast.error(`Erro: ${err.message}`);
                           }
                         }}
-                        className="p-1.5 text-purple-600 bg-purple-50 hover:bg-purple-100 rounded mr-2"
-                        title="Acessar Como (Modo Suporte)"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-[#FF6A00] hover:bg-orange-50 rounded-lg transition mr-1 cursor-pointer"
+                        title="Acessar em modo suporte"
                       >
-                        <Key size={18} />
+                        <Key size={15} />
+                        <span className="hidden lg:inline">Acessar em modo suporte</span>
                       </button>
                       <button
                         onClick={() => deleteTenant(tenant.id, tenant.name)}

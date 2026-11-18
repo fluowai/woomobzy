@@ -683,7 +683,7 @@ export async function completeProfileOrganization(
   return updatedProfile;
 }
 
-function normalizeRole(role) {
+export function normalizeRole(role) {
   const normalized = String(role || '')
     .toLowerCase()
     .trim()
@@ -711,9 +711,13 @@ function normalizeRole(role) {
   ) {
     return 'admin';
   }
-  if (normalized === 'gerente') return 'gerente';
-  if (normalized === 'broker') return 'broker';
-  if (normalized === 'assistente') return 'assistente';
+  if (['gerente', 'manager', 'commercialmanager'].includes(normalized)) {
+    return 'gerente';
+  }
+  if (['broker', 'corretor'].includes(normalized)) return 'broker';
+  if (['assistente', 'atendente', 'assistant'].includes(normalized)) {
+    return 'assistente';
+  }
   if (['user', 'customeruser', 'supportagent'].includes(normalized)) {
     return 'user';
   }
@@ -892,6 +896,44 @@ export const verifyAdmin = (req, res, next) => {
     if (req.userRole !== 'admin' && req.userRole !== 'superadmin') {
       return res.status(403).json({
         error: 'Acesso negado: Requer privilégios de administrador',
+      });
+    }
+
+    next();
+  });
+};
+
+/** Shortcut para rotas que permitem Gerente Comercial ou Admin da Organização */
+export const verifyManagerOrAdmin = (req, res, next) => {
+  verifyAuth(req, res, (err) => {
+    if (err) return next(err);
+
+    if (!['superadmin', 'admin', 'gerente'].includes(req.userRole)) {
+      return res.status(403).json({
+        error: 'Acesso negado: Requer privilégios de gerente ou administrador',
+      });
+    }
+
+    next();
+  });
+};
+
+/** Shortcut para rotas internas da imobiliária (bloqueia usuário externo/portal) */
+export const verifyStaff = (req, res, next) => {
+  verifyAuth(req, res, (err) => {
+    if (err) return next(err);
+
+    if (
+      ![
+        'superadmin',
+        'admin',
+        'gerente',
+        'broker',
+        'assistente',
+      ].includes(req.userRole)
+    ) {
+      return res.status(403).json({
+        error: 'Acesso negado: Requer vínculo operacional na imobiliária',
       });
     }
 

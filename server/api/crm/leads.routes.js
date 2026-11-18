@@ -44,6 +44,20 @@ router.get('/leads', verifyAuth, requireTenant, async (req, res) => {
     if (intent === 'parceria')
       query = query.eq('classification', 'Corretor/Parceria');
 
+    // Escopo de autorização para leads (carteira do corretor vs organização)
+    if (req.userRole === 'broker' || req.query.mine === 'true') {
+      if (req.query.mine === 'true') {
+        query = query.eq('assigned_to', req.userId);
+      } else if (req.query.unassigned === 'true') {
+        query = query.is('assigned_to', null);
+      } else {
+        // Carteira do corretor: atribuídos ao corretor ou sem atribuição direta
+        query = query.or(`assigned_to.eq.${req.userId},assigned_to.is.null`);
+      }
+    } else if (req.query.assigned_to) {
+      query = query.eq('assigned_to', req.query.assigned_to);
+    }
+
     if (cursorCreatedAt && cursorId) {
       query = query.or(
         `created_at.lt.${cursorCreatedAt},and(created_at.eq.${cursorCreatedAt},id.lt.${cursorId})`

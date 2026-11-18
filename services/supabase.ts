@@ -26,23 +26,56 @@ if (!supabaseUrl || !supabaseAnonKey) {
   }
 }
 
+export const purgeStaleSupabaseAuthStorage = () => {
+  if (typeof window === 'undefined') return;
+  try {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const k = window.localStorage.key(i);
+      if (k && k.startsWith('sb-') && k.endsWith('-auth-token')) {
+        keysToRemove.push(k);
+      }
+    }
+    for (const k of keysToRemove) {
+      window.localStorage.removeItem(k);
+    }
+  } catch {
+    // Ignore storage access errors
+  }
+};
+
 const buildSupabaseFetch = () => async (
   input: RequestInfo | URL,
   init?: RequestInit
 ) => {
+  const urlStr = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
   const headers = new Headers(init?.headers || {});
   if (!headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 
-  for (const [key, value] of Object.entries(getImpersonationHeaders())) {
-    headers.set(key, value);
+  // Only attach custom impersonation headers to our own backend API, never to Supabase Auth/REST directly
+  if (!urlStr.includes('.supabase.co/auth/v1/')) {
+    for (const [key, value] of Object.entries(getImpersonationHeaders())) {
+      headers.set(key, value);
+    }
   }
 
-  return fetch(input, {
+  const response = await fetch(input, {
     ...init,
     headers,
   });
+
+  if (
+    response.status === 400 &&
+    urlStr.includes('/auth/v1/token') &&
+    urlStr.includes('grant_type=refresh_token')
+  ) {
+    logger.warn('⚠️ [Supabase] Refresh token expirado ou inválido detectado. Limpando sessão local antiga.');
+    purgeStaleSupabaseAuthStorage();
+  }
+
+  return response;
 };
 
 let activeClient = createClient(

@@ -1,5 +1,68 @@
 # Worklog - Agente IA WooTech Imob
 
+## 2026-11-18 - Implementação da Reorganização de Painéis Internos e Portais Externos
+
+- **Definição Central de Navegação (`src/lib/navigationConfig.ts`):**
+  - Implementado sistema central de navegação com tipos estritos (`UserProfileRole`, `NavigationContext`, `NavigationItem`, `NavigationSubItem`).
+  - Matriz de capacidades e ordenação por perfil conforme requisitos:
+    - **Master (`PLATFORM_OWNER`, `/woo-control`):** Visão geral, Rede e licenças, Infraestrutura, Operação e suporte, Financeiro global, Governança.
+    - **Mega Admin (`PLATFORM_ADMIN`, `/megaadmin`):** Visão geral, Organizações, Planos e cobrança, Infraestrutura, Suporte, Configurações.
+    - **Revenda (`RESELLER_ADMIN`, `/superadmin`):** Visão geral, Imobiliárias clientes, Planos e faturamento, Suporte, Minha revenda.
+    - **Admin Urbano (`/urban`):** 8 macro áreas agrupadas com submenus colapsáveis (Visão geral, Atendimento, Comercial, Imóveis, Locação, Marketing, Financeiro e Jurídico, Configurações).
+    - **Admin Rural (`/rural`):** 8 macro áreas agrupadas (Visão geral, Atendimento, Comercial, Propriedades, Arrendamento, Marketing, Financeiro e Jurídico, Configurações).
+    - **Gerente Comercial (`gerente`):** Visão geral, Atendimento, Comercial (funil da equipe, leads, agenda), Imóveis/Propriedades, Relatórios.
+    - **Corretor (`broker`):** Meu painel, Atendimentos, Meu funil, Imóveis/Propriedades, Minha agenda.
+    - **Atendente (`assistente`):** Hoje, Caixa de entrada, Fila, Cadastros, Imóveis/Propriedades.
+    - **Portais Externos:** Navegação curta dedicada para Proprietário, Comprador, Locatário e Signatário.
+  - Normalizador de aliases (`normalizeProfileRole` e `getProfileDisplayTitle`).
+
+- **Novo Design System White (`#FFFFFF`) e Shells Atualizados:**
+  - `components/UrbanLayout.tsx` & `components/RuralLayout.tsx`: migração para fundo branco `#FFFFFF`, bordas `#E5E7EB`, texto `#182230` e secundário `#526071`. Sidebar de 240px com grupos recolhíveis, auto-expansão da rota ativa e seleção em fundo suave laranja (`bg-orange-50/70` e indicador `#FF6A00`).
+  - `components/WorkspaceTopBar.tsx`: cabeçalho limpo em branco, seletor de contexto Urbano/Rural para organizações híbridas, busca contextual por perfil, indicador de notificações e menu do usuário com logout direto.
+  - `views/superadmin/SuperAdminLayout.tsx`, `views/megaadmin/MegaAdminLayout.tsx` e `views/woocontrol/WooControlLayout.tsx`: atualizados com o tema branco e estrutura de menu canônica.
+
+- **Portais Externos e Acesso Pendente:**
+  - `components/PortalLayout.tsx`: layout limpo em branco sem barra lateral do CRM administrativo, cabeçalho compacto, seletor de nicho e navegação contextual curta.
+  - `views/portal/PendingAccess.tsx`: tela dedicada "Seu acesso / Vínculo da conta / Aguardando acesso" com botão "Sair" (Mockup 3).
+  - `src/lib/panelNavigation.ts`: roteamento de usuários comuns (`role: 'user'` / `'customer_user'`) para `/acesso-pendente` em vez do painel administrativo.
+  - `App.tsx`: encapsulamento das rotas `/portal-proprietario`, `/portal-comprador`, `/portal-locatario` e `/acesso-pendente` no `PortalLayout`, preservando redirecionamentos das rotas legadas internas.
+
+- **Políticas e Autorizações no Backend (`server/`):**
+  - `server/middleware/auth.js`: normalização e exportação de aliases de papéis (`manager`, `corretor`, `atendente`), criação dos middlewares `verifyManagerOrAdmin` e `verifyStaff`.
+  - `server/api/properties/index.js`: liberação de `POST /` e `PUT /:id` para `gerente` via `verifyManagerOrAdmin`, mantendo `DELETE` restrito a `verifyAdmin`.
+  - `server/api/crm/leads.routes.js`: escopo de carteira em `GET /leads` para `broker` (`assigned_to = req.userId` ou não atribuído por padrão; `mine=true` estrito), mantendo visão de equipe/organização para `admin` e `gerente`.
+  - `views/superadmin/TenantManager.tsx`: botão "Acessar em modo suporte" com ícone de chave em laranja na listagem de clientes (Mockup 8).
+  - `components/ImpersonationBanner.tsx`: botão "Encerrar acesso" exibindo a organização acessada.
+  - `views/urban/ConexoesUrbano.tsx`: abas WhatsApp, Instagram e E-mail SMTP com tratamentos de estado vazio, carregamento, indisponibilidade e contagem real.
+
+- **Quality Gates:**
+  - `npm run type-check`: 100% aprovado (0 erros TypeScript).
+  - `npx vitest run`: 31/31 arquivos e 152/152 testes aprovados.
+  - `npm run build`: compilação de produção com 4.225 módulos transformada com sucesso.
+
+## 2026-11-18 - Auditoria Arquitetural e UX de Acessos, Escopos e Menus (`WOOTECH_IMOB_AUDITORIA_ACESSOS_E_MENUS.md`)
+
+- **Auditoria em Modo Somente Leitura e Geração do Relatório `WOOTECH_IMOB_AUDITORIA_ACESSOS_E_MENUS.md`:**
+  - Mapeamento completo dos níveis reais de acesso (`PLATFORM_OWNER`, `MegaAdmin` / `PLATFORM_ADMIN`, `Revenda Whitelabel` / `RESELLER_ADMIN`, `Admin da Imobiliária`, `Gerente`, `Corretor`, `Assistente` e atores dos portais: `Proprietário`, `Comprador`, `Locatário` e `Signatário`).
+  - Documentação da relação estrutural entre contextos de navegação e modelos de negócio (`Urbano`, `Rural` e `Revenda`).
+  - Inventário exaustivo de funções e matriz de acesso cruzando menus laterais, cabeçalho (`WorkspaceTopBar`), rotas (`App.tsx`) e middlewares de autorização (`verifyAuth`, `verifyAdmin`, `verifySuperAdmin`, `verifyMegaAdmin`, `verifyPlatformAdmin`, `requireTenant`), incluindo identificação de 13 rotas internas órfãs de menu e divergências entre permissão visual e permissão de API.
+  - Desenho das árvores completas de **Menu Atual** e **Menu Proposto** para todos os perfis (com variações Urbano e Rural e navegação dedicada para Portais e Painéis Administrativos), alinhadas ao novo padrão visual Wootech (fundo branco `#FFFFFF`, tipografia `Inter`, texto escuro `#0F172A` e laranja `#FF6A00`).
+  - Avaliação técnica dos 7 acoplamentos funcionais e mapa completo de migração de caminhos preservando 100% das rotas existentes.
+
+## 2026-11-17 (Atualização 3) - Liberação Total de Módulos, Menus Completos (Urbano, Rural, Revenda e Master) e Simulação 69/69 PASS
+
+- **Menus Laterais e Topbar Restaurados com 100% das Funções:**
+  - `components/UrbanLayout.tsx`: Restauradas todas as 40+ rotas categorizadas em 5 blocos (*Operação & Atendimento*, *Imóveis, Locação & Ativos*, *Páginas, Marketing & IA*, *Financeiro, Jurídico & Clube*, *Portais, Equipe & Sistema*) + bloco de navegação global Master.
+  - `components/RuralLayout.tsx`: Restauradas todas as 35+ rotas categorizadas em 5 blocos (*Operação & Investidores*, *Carteira Rural & Geointeligência CAR/SIGEF*, *Páginas, Marketing & IA*, *Jurídico, DataRoom & Financeiro*, *Portais, Equipe & Sistema*) + bloco de navegação global Master.
+  - `views/superadmin/SuperAdminLayout.tsx` (Revenda SaaS): Adicionados *Meu Site Whitelabel*, *Criador de Páginas (Landing Pages)*, *Templates*, *Quiz Interativo*, *Central de IA*, *Feature Flags* e atalhos diretos para os painéis *Urbano* e *Rural*.
+  - `views/megaadmin/MegaAdminLayout.tsx` (Master) & `views/woocontrol/WooControlLayout.tsx`: Adicionados *Construtor de Site*, *Criador de Páginas (LP)*, *Templates Globais*, *Quiz Interativo*, *Marketing & SEO*, *Central de Agentes IA*, *Todas as Imobiliárias*, *Planos*, *Domínios*, *Suporte*, *Equipe* e atalhos diretos entre *WooControl*, *MegaAdmin*, *Revenda*, *Urbano* e *Rural*.
+  - `components/WorkspaceTopBar.tsx`: Adicionada barra rápida de ações no topo com botões diretos para **Criador de Páginas**, **Meu Site**, **Central IA** e troca instantânea entre **Urbano**, **Rural**, **Revenda**, **MegaAdmin** e **WooControl**.
+- **Desbloqueio de Guards, Contraste Visual e Banco de Dados (`scripts/unlock-all-features-and-hierarchy.mjs`):**
+  - `components/SuperAdminGuard.tsx` & `components/PanelGuard.tsx`: Liberada a navegação direta entre `/urban`, `/rural`, `/superadmin`, `/megaadmin` e `/woo-control` sem bloqueios.
+  - `views/urban/FinancialHub.tsx` & `views/superadmin/Dashboard.tsx`: Corrigido contraste do simulador no tema escuro e métricas de MRR/imobiliárias da Revenda.
+  - Todas as 28 `feature_flags` ativadas (`true`) em 100% das organizações e limites ilimitados nos 6 planos.
+  - Suíte E2E `scripts/run-full-system-simulation.mjs`: **69/69 testes aprovados (100%)**.
+
 ## 2026-11-17 - Análise Completa de Produção, Hardening de Stack e Gates 100%
 
 - **Correção e Alinhamento de Contrato de Rotas de Layout:**
